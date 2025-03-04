@@ -14,7 +14,7 @@ import {
 } from "@/lib/ensure-tool-responses";
 import { LangGraphLogoSVG } from "../icons/langgraph";
 import { TooltipIconButton } from "./tooltip-icon-button";
-import { ArrowDown, SquarePen } from "lucide-react";
+import { ArrowDown, LoaderCircle, SquarePen } from "lucide-react";
 import { StringParam, useQueryParam } from "use-query-params";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 
@@ -211,12 +211,19 @@ export function Thread() {
                     />
 
                     <div className="flex items-center justify-end p-2 pt-0">
-                      <Button
-                        type="submit"
-                        disabled={isLoading || !input.trim()}
-                      >
-                        Send
-                      </Button>
+                      {stream.isLoading ? (
+                        <Button key="stop" onClick={() => stream.stop()}>
+                          <LoaderCircle className="w-4 h-4 animate-spin" />
+                          Cancel
+                        </Button>
+                      ) : (
+                        <Button
+                          type="submit"
+                          disabled={isLoading || !input.trim()}
+                        >
+                          Send
+                        </Button>
+                      )}
                     </div>
                   </form>
                 </div>
