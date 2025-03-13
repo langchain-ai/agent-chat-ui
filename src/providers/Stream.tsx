@@ -22,19 +22,35 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { getApiKey } from "@/lib/api-key";
 import { useThreads } from "./Thread";
 import { toast } from "sonner";
+import { RunnableConfig } from "@langchain/core/runnables";
 
-export type StateType = { messages: Message[]; ui?: UIMessage[] };
+export type StateType = {
+  messages: Message[];
+  ui?: UIMessage[];
+  config?: RunnableConfig;
+};
 
-const useTypedStream = useStream<
-  StateType,
-  {
+type StreamOptions = {
+  apiUrl: string;
+  apiKey?: string;
+  assistantId: string;
+  threadId: string | null;
+  config?: RunnableConfig;
+  initialState?: StateType;
+  onCustomEvent: (event: UIMessage | RemoveUIMessage, options: any) => void;
+  onThreadId: (id: string) => void;
+};
+
+const useTypedStream = (options: StreamOptions) => {
+  return useStream<StateType, {
     UpdateType: {
       messages?: Message[] | Message | string;
       ui?: (UIMessage | RemoveUIMessage)[] | UIMessage | RemoveUIMessage;
+      config?: RunnableConfig;
     };
     CustomEventType: UIMessage | RemoveUIMessage;
-  }
->;
+  }>(options);
+};
 
 type StreamContextType = ReturnType<typeof useTypedStream>;
 const StreamContext = createContext<StreamContextType | undefined>(undefined);
@@ -68,23 +84,32 @@ const StreamSession = ({
   apiKey,
   apiUrl,
   assistantId,
+  userId,
 }: {
   children: ReactNode;
   apiKey: string | null;
   apiUrl: string;
   assistantId: string;
+  userId: string;
 }) => {
   const [threadId, setThreadId] = useQueryParam("threadId", StringParam);
   const { getThreads, setThreads } = useThreads();
+  const config = {
+    user_id: userId,
+    thread_id: threadId ?? undefined,
+  } as RunnableConfig;
+
   const streamValue = useTypedStream({
     apiUrl,
     apiKey: apiKey ?? undefined,
     assistantId,
     threadId: threadId ?? null,
+    config,
+    initialState: { messages: [], config },
     onCustomEvent: (event, options) => {
-      options.mutate((prev) => {
+      options.mutate((prev: StateType) => {
         const ui = uiMessageReducer(prev.ui ?? [], event);
-        return { ...prev, ui };
+        return { ...prev, ui, config };
       });
     },
     onThreadId: (id) => {
@@ -127,10 +152,20 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
   const [apiKey, _setApiKey] = useState(() => {
     return getApiKey();
   });
+  const [userId, setUserId] = useState(() => {
+    return window.localStorage.getItem("lg:chat:userId") ?? "";
+  });
+  const [, setUserIdParam] = useQueryParam("userId", StringParam);
 
   const setApiKey = (key: string) => {
     window.localStorage.setItem("lg:chat:apiKey", key);
     _setApiKey(key);
+  };
+
+  const setUserIdValue = (id: string) => {
+    window.localStorage.setItem("lg:chat:userId", id);
+    setUserId(id);
+    setUserIdParam(id);
   };
 
   const [assistantId, setAssistantId] = useQueryParam(
@@ -138,7 +173,7 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
     StringParam,
   );
 
-  if (!apiUrl || !assistantId) {
+  if (!apiUrl || !assistantId || !userId) {
     return (
       <div className="flex items-center justify-center min-h-screen w-full p-4">
         <div className="animate-in fade-in-0 zoom-in-95 flex flex-col border bg-background shadow-lg rounded-lg max-w-3xl">
@@ -151,7 +186,7 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
             </div>
             <p className="text-muted-foreground">
               Welcome to Agent Chat! Before you get started, you need to enter
-              the URL of the deployment and the assistant / graph ID.
+              the URL of the deployment, the assistant / graph ID, and your user ID.
             </p>
           </div>
           <form
@@ -163,10 +198,12 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
               const apiUrl = formData.get("apiUrl") as string;
               const assistantId = formData.get("assistantId") as string;
               const apiKey = formData.get("apiKey") as string;
+              const userId = formData.get("userId") as string;
 
               setApiUrl(apiUrl);
               setApiKey(apiKey);
               setAssistantId(assistantId);
+              setUserIdValue(userId);
 
               form.reset();
             }}
@@ -208,6 +245,22 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
             </div>
 
             <div className="flex flex-col gap-2">
+              <Label htmlFor="userId">
+                User ID<span className="text-rose-500">*</span>
+              </Label>
+              <p className="text-muted-foreground text-sm">
+                This is your unique identifier. It will be included in all requests to the LangGraph server.
+              </p>
+              <Input
+                id="userId"
+                name="userId"
+                className="bg-background"
+                defaultValue={userId ?? ""}
+                required
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
               <Label htmlFor="apiKey">LangSmith API Key</Label>
               <p className="text-muted-foreground text-sm">
                 This is <strong>NOT</strong> required if using a local LangGraph
@@ -237,7 +290,7 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
   }
 
   return (
-    <StreamSession apiKey={apiKey} apiUrl={apiUrl} assistantId={assistantId}>
+    <StreamSession apiKey={apiKey} apiUrl={apiUrl} assistantId={assistantId} userId={userId}>
       {children}
     </StreamSession>
   );

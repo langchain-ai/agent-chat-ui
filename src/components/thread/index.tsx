@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { Label } from "../ui/label";
 import { Switch } from "../ui/switch";
+import { RunnableConfig } from "@langchain/core/runnables";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -69,6 +70,7 @@ function ScrollToBottom(props: { className?: string }) {
 
 export function Thread() {
   const [threadId, setThreadId] = useQueryParam("threadId", StringParam);
+  const [userId] = useQueryParam("userId", StringParam);
   const [chatHistoryOpen, setChatHistoryOpen] = useQueryParam(
     "chatHistoryOpen",
     BooleanParam,
@@ -141,10 +143,15 @@ export function Thread() {
     };
 
     const toolMessages = ensureToolCallsHaveResponses(stream.messages);
+    const config = {
+      user_id: userId,
+      thread_id: threadId ?? undefined,
+    } as RunnableConfig;
     stream.submit(
       { messages: [...toolMessages, newHumanMessage] },
       {
         streamMode: ["values"],
+        config,
         optimisticValues: (prev) => ({
           ...prev,
           messages: [
@@ -152,6 +159,7 @@ export function Thread() {
             ...toolMessages,
             newHumanMessage,
           ],
+          config,
         }),
       },
     );
