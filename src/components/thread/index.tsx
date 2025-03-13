@@ -1,33 +1,47 @@
-import { v4 as uuidv4 } from "uuid";
-import { ReactNode, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
-import { useStreamContext } from "@/providers/Stream";
-import { useState, FormEvent } from "react";
-import { Button } from "../ui/button";
-import { Checkpoint, Message } from "@langchain/langgraph-sdk";
-import { AssistantMessage, AssistantMessageLoading } from "./messages/ai";
-import { HumanMessage } from "./messages/human";
 import {
   DO_NOT_RENDER_ID_PREFIX,
   ensureToolCallsHaveResponses,
 } from "@/lib/ensure-tool-responses";
-import { LangGraphLogoSVG } from "../icons/langgraph";
-import { TooltipIconButton } from "./tooltip-icon-button";
+import { cn } from "@/lib/utils";
+import { useStreamContext } from "@/providers/Stream";
+import { Checkpoint, Message } from "@langchain/langgraph-sdk";
+import { motion } from "framer-motion";
 import {
   ArrowDown,
+  CircleX,
+  CloudUpload,
+  FileSpreadsheet,
   LoaderCircle,
-  PanelRightOpen,
   PanelRightClose,
-  SquarePen,
+  PanelRightOpen,
+  SquarePen
 } from "lucide-react";
+import { FormEvent, ReactNode, useEffect, useRef, useState } from "react";
+import { v4 as uuidv4 } from "uuid";
+import { Button } from "../ui/button";
+import { AssistantMessage, AssistantMessageLoading } from "./messages/ai";
+import { HumanMessage } from "./messages/human";
+import { TooltipIconButton } from "./tooltip-icon-button";
+
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { Callout, Button as RadixButton, Spinner } from "@radix-ui/themes";
+import { toast } from "sonner";
 import { BooleanParam, StringParam, useQueryParam } from "use-query-params";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
-import ThreadHistory from "./history";
-import { toast } from "sonner";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { Label } from "../ui/label";
 import { Switch } from "../ui/switch";
+import ThreadHistory from "./history";
+
+const GITHUB_API_URL = "https://api.github.com";
+const REPO_OWNER = "datagenie-ai";
+const REPO_NAME = "dg-onboarding-ui";
+const GITHUB_TOKEN = "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";
+
+interface FileLinkResponse {
+  content: {
+    download_url: string;
+  };
+}
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -87,6 +101,10 @@ export function Thread() {
 
   const lastError = useRef<string | undefined>(undefined);
 
+  const [file, setFile] = useState<File | null>(null);
+  const [fileLink, setFileLink] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+
   useEffect(() => {
     if (!stream.error) {
       lastError.current = undefined;
@@ -142,7 +160,10 @@ export function Thread() {
 
     const toolMessages = ensureToolCallsHaveResponses(stream.messages);
     stream.submit(
-      { messages: [...toolMessages, newHumanMessage] },
+      {
+        messages: [...toolMessages, newHumanMessage],
+        sample_data_location: fileLink ?? "",
+      },
       {
         streamMode: ["values"],
         optimisticValues: (prev) => ({
@@ -171,8 +192,72 @@ export function Thread() {
     });
   };
 
-  const chatStarted = !!threadId || !!messages.length;
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    console.log(event);
+    const selectedFile = event.target.files?.[0];
+    if (selectedFile && selectedFile.type === "text/csv") {
+      setFile(selectedFile);
+      startUpload(selectedFile);
+    } else {
+      alert("Please select a CSV file.");
+    }
 
+    event.target.value = "";
+  };
+
+  const startUpload = async (file: File) => {
+    setIsUploading(true);
+    const fileContent = await file.text();
+
+    try {
+      const response = await fetch("https://api.github.com/gists", {
+        method: "POST",
+        headers: {
+          Authorization: `token ${GITHUB_TOKEN}`,
+          Accept: "application/vnd.github.v3+json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          description: `Upload ${file.name}`,
+          public: true,
+          files: {
+            [file.name]: {
+              content: fileContent,
+            },
+          },
+        }),
+      });
+      if (!response.ok) {
+        throw new Error("Failed to upload file to GitHub Gist");
+      }
+
+      const data = await response.json();
+      const fileUrl = data.files[file.name].raw_url; // URL to the raw file
+      setFileLink(fileUrl);
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      alert("Failed to upload file.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setFile(null);
+    setFileLink(null);
+  };
+
+  const chatStarted = !!threadId || !!messages.length;
+  const handleClick = () => {
+    const fileInput = document.getElementById(
+      "file-input",
+    ) as HTMLInputElement | null;
+    if (fileInput) {
+      fileInput.click();
+    }
+  };
   return (
     <div className="flex w-full h-screen overflow-hidden">
       <div className="relative lg:flex hidden">
@@ -263,9 +348,12 @@ export function Thread() {
                   damping: 30,
                 }}
               >
-                <LangGraphLogoSVG width={32} height={32} />
+                <img
+                  src="src/components/icons/logo192.png"
+                  className="h-10 rounded-full"
+                />
                 <span className="text-xl font-semibold tracking-tight">
-                  Agent Chat
+                  Guided Onboarding
                 </span>
               </motion.button>
             </div>
@@ -288,10 +376,10 @@ export function Thread() {
           <StickyToBottomContent
             className={cn(
               "absolute inset-0 overflow-y-scroll [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent",
-              !chatStarted && "flex flex-col items-stretch mt-[25vh]",
+              !chatStarted && "flex flex-col items-stretch mt-[5vh]",
               chatStarted && "grid grid-rows-[1fr_auto]",
             )}
-            contentClassName="pt-8 pb-16  max-w-3xl mx-auto flex flex-col gap-4 w-full"
+            contentClassName="pt-8 pb-16 mx-auto flex flex-col gap-4 w-[80%]"
             content={
               <>
                 {messages
@@ -318,12 +406,15 @@ export function Thread() {
               </>
             }
             footer={
-              <div className="sticky flex flex-col items-center gap-8 bottom-0 px-4 bg-white">
+              <div className="sticky flex flex-col items-center gap-8 bottom-0 pb-12 pt-4 bg-white">
                 {!chatStarted && (
                   <div className="flex gap-3 items-center">
-                    <LangGraphLogoSVG className="flex-shrink-0 h-8" />
+                    <img
+                      src="src/components/icons/logo192.png"
+                      className="h-10 rounded-full"
+                    />
                     <h1 className="text-2xl font-semibold tracking-tight">
-                      Agent Chat
+                      Guided Onboarding
                     </h1>
                   </div>
                 )}
@@ -347,11 +438,42 @@ export function Thread() {
                         }
                       }}
                       placeholder="Type your message..."
-                      className="p-3.5 pb-0 border-none bg-transparent field-sizing-content shadow-none ring-0 outline-none focus:outline-none focus:ring-0 resize-none"
+                      className="p-3.5 pb-0 border-none bg-transparent field-sizing-content shadow-none ring-0 outline-none focus:outline-none focus:ring-0 resize-none max-h-[400px]"
                     />
-
+                    {/* #0878e8 */}
                     <div className="flex items-center justify-between p-2 pt-4">
-                      <div>
+                      <div className="flex gap-4">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="file"
+                            id="file-input"
+                            accept=".csv"
+                            style={{ display: "none" }}
+                            onChange={handleFileChange}
+                          />
+                          {file ? (
+                            <Callout.Root className="relative p-2!">
+                              <Callout.Icon>
+                                {isUploading ? (
+                                  <Spinner />
+                                ) : (
+                                  <FileSpreadsheet />
+                                )}
+                              </Callout.Icon>
+                              <Callout.Text>
+                                {`${file.name.slice(0, 10)}...`}
+                              </Callout.Text>
+                              <CircleX
+                                className="absolute top-0 right-0 h-3 w-3 mt-[-5px] mr-[-5px] fill-[#002bb7c5] text-white"
+                                onClick={handleRemoveFile}
+                              />
+                            </Callout.Root>
+                          ) : (
+                            <RadixButton className="cursor-pointer" onClick={handleClick}>
+                              Upload CSV <CloudUpload className="w-4" />
+                            </RadixButton>
+                          )}
+                        </div>
                         <div className="flex items-center space-x-2">
                           <Switch
                             id="render-tool-calls"
@@ -375,7 +497,7 @@ export function Thread() {
                         <Button
                           type="submit"
                           className="transition-all shadow-md"
-                          disabled={isLoading || !input.trim()}
+                          disabled={isLoading || !input.trim() || isUploading}
                         >
                           Send
                         </Button>

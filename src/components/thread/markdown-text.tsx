@@ -160,13 +160,15 @@ const defaultComponents = memoizeMarkdownComponents({
     <hr className={cn("my-5 border-b", className)} {...props} />
   ),
   table: ({ className, ...props }) => (
-    <table
-      className={cn(
-        "my-5 w-full border-separate border-spacing-0 overflow-y-auto",
-        className,
-      )}
-      {...props}
-    />
+    <div className="max-w-[80%]">
+      <table
+        className={cn(
+          "my-5 w-full border-separate border-spacing-0 overflow-y-auto ",
+          className,
+        )}
+        {...props}
+      />
+    </div>
   ),
   th: ({ className, ...props }) => (
     <th

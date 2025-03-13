@@ -103,7 +103,7 @@ export function AssistantMessage({
   }
 
   return (
-    <div className="flex items-start mr-auto gap-2 group">
+    <div className="gap-2 group">
       {isToolResult ? (
         <ToolResult message={message} />
       ) : (

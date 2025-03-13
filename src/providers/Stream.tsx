@@ -142,11 +142,14 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
     return (
       <div className="flex items-center justify-center min-h-screen w-full p-4">
         <div className="animate-in fade-in-0 zoom-in-95 flex flex-col border bg-background shadow-lg rounded-lg max-w-3xl">
-          <div className="flex flex-col gap-2 mt-14 p-6 border-b">
-            <div className="flex items-start flex-col gap-2">
-              <LangGraphLogoSVG className="h-7" />
+          <div className="flex flex-col gap-2 p-6 border-b">
+            <div className="flex items-center gap-2">
+              <img
+                src="src/components/icons/logo192.png"
+                className="h-10 rounded-full"
+              />
               <h1 className="text-xl font-semibold tracking-tight">
-                Agent Chat
+                Guided Onboarding
               </h1>
             </div>
             <p className="text-muted-foreground">
