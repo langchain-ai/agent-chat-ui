@@ -81,31 +81,18 @@ export default function ThreadHistory() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    console.log("[ThreadHistory] Starting initial thread load");
     setThreadsLoading(true);
     getThreads()
       .then(threads => {
-        console.log("[ThreadHistory] Initial thread load completed", {
-          threadCount: threads.length,
-          threadIds: threads.map(t => t.thread_id)
-        });
         setThreads(threads);
       })
       .catch(error => {
         console.error("[ThreadHistory] Error during initial thread load:", error);
       })
       .finally(() => {
-        console.log("[ThreadHistory] Finished loading threads");
         setThreadsLoading(false);
       });
   }, []);
-
-  console.log("[ThreadHistory] Rendering with state:", {
-    threadsLoading,
-    threadCount: threads.length,
-    isLargeScreen,
-    chatHistoryOpen
-  });
 
   return (
     <>

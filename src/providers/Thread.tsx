@@ -41,28 +41,12 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
   const { session } = useUser();
 
   const getThreads = useCallback(async (): Promise<Thread[]> => {
-    console.log("[ThreadProvider] Starting getThreads call", {
-      hasApiUrl: !!apiUrl,
-      hasAssistantId: !!assistantId,
-      apiUrl,
-      assistantId
-    });
-
     if (!apiUrl || !assistantId) {
-      console.log("[ThreadProvider] Missing required params, returning empty array");
       return [];
     }
     
-    console.log("[ThreadProvider] Session state:", {
-      hasSession: !!session,
-      accessToken: session?.access_token ? "[present]" : "[missing]"
-    });
-    
     try {
       const client = createClient(apiUrl, session?.access_token);
-      console.log("[ThreadProvider] Created client, fetching threads with metadata:", 
-        getThreadSearchMetadata(assistantId)
-      );
 
       const threads = await client.threads.search({
         metadata: {
@@ -71,14 +55,8 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
         limit: 100,
       });
 
-      console.log("[ThreadProvider] Successfully fetched threads:", {
-        threadCount: threads.length,
-        threadIds: threads.map(t => t.thread_id)
-      });
-
       return threads;
     } catch (error) {
-      console.error("[ThreadProvider] Error fetching threads:", error);
       throw error; // Re-throw to be handled by caller
     }
   }, [apiUrl, assistantId, session?.access_token]);

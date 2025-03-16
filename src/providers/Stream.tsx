@@ -78,21 +78,6 @@ const StreamSession = ({
   const [threadId, setThreadId] = useQueryParam("threadId", StringParam);
   const { getThreads, setThreads } = useThreads();
 
-  console.log("[StreamSession] Initializing with:", {
-    hasAccessToken: !!accessToken,
-    accessTokenType: typeof accessToken,
-    apiUrl,
-    assistantId,
-    currentThreadId: threadId
-  });
-
-  useEffect(() => {
-    console.log("[StreamSession] Access token changed:", {
-      hasAccessToken: !!accessToken,
-      accessTokenType: typeof accessToken
-    });
-  }, [accessToken]);
-
   const stream = useTypedStream({
     apiUrl,
     defaultHeaders: accessToken
@@ -101,29 +86,15 @@ const StreamSession = ({
     assistantId,
     threadId: threadId ?? null,
     onThreadId: (id) => {
-      console.log("[StreamSession] Thread ID changed:", {
-        from: threadId,
-        to: id,
-        hasAccessToken: !!accessToken,
-        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined
-      });
       setThreadId(id);
       // Refetch threads list when thread ID changes
-      console.log("[StreamSession] Starting sleep before thread refresh");
       sleep().then(() => {
-        console.log("[StreamSession] Sleep finished, fetching threads with token:", !!accessToken);
         getThreads()
           .then(threads => {
-            console.log("[StreamSession] Thread fetch completed", {
-              threadCount: threads.length,
-              hasAccessToken: !!accessToken
-            });
             setThreads(threads);
           })
           .catch(error => {
-            console.error("[StreamSession] Error fetching threads after sleep:", error, {
-              hasAccessToken: !!accessToken
-            });
+            console.error("[StreamSession] Error fetching threads after sleep:", error);
           });
       });
     },
@@ -143,16 +114,8 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
   const apiUrl = import.meta.env.VITE_LANGCHAIN_API_URL;
   const assistantId = import.meta.env.VITE_ASSISTANT_ID || "agent";
 
-  console.log("[StreamProvider] Rendering with session:", {
-    hasSession: !!session,
-    hasAccessToken: !!session?.access_token,
-    accessTokenType: session?.access_token ? typeof session.access_token : 'undefined',
-    isLoading: loading
-  });
-
   useEffect(() => {
     if (!loading && !session?.access_token) {
-      console.log("[StreamProvider] No valid session, redirecting to login");
       navigate('/login', { replace: true });
     }
   }, [loading, session?.access_token, navigate]);
