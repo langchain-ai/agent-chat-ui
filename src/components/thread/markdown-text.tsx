@@ -148,13 +148,13 @@ const defaultComponents = memoizeMarkdownComponents({
   ),
   ul: ({ className, ...props }) => (
     <ul
-      className={cn("my-5 ml-6 list-disc [&>li]:mt-2", className)}
+      className={cn("my-6 ml-8 list-disc space-y-3 [&>li]:pl-2", className)}
       {...props}
     />
   ),
   ol: ({ className, ...props }) => (
     <ol
-      className={cn("my-5 ml-6 list-decimal [&>li]:mt-2", className)}
+      className={cn("my-6 ml-8 list-decimal space-y-3 [&>li]:pl-2", className)}
       {...props}
     />
   ),
