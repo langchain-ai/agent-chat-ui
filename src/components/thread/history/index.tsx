@@ -83,9 +83,15 @@ export default function ThreadHistory() {
     if (typeof window === "undefined") return;
     setThreadsLoading(true);
     getThreads()
-      .then(setThreads)
-      .catch(console.error)
-      .finally(() => setThreadsLoading(false));
+      .then(threads => {
+        setThreads(threads);
+      })
+      .catch(error => {
+        console.error("[ThreadHistory] Error during initial thread load:", error);
+      })
+      .finally(() => {
+        setThreadsLoading(false);
+      });
   }, []);
 
   return (

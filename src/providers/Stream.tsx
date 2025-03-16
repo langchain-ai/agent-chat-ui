@@ -19,9 +19,10 @@ import { LangGraphLogoSVG } from "@/components/icons/langgraph";
 import { Label } from "@/components/ui/label";
 import { ArrowRight } from "lucide-react";
 import { PasswordInput } from "@/components/ui/password-input";
-import { getApiKey } from "@/lib/api-key";
+import { useUser } from "@/contexts/UserContext";
 import { useThreads } from "./Thread";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 export type StateType = { messages: Message[]; ui?: UIMessage[] };
 
@@ -45,199 +46,107 @@ async function sleep(ms = 4000) {
 
 async function checkGraphStatus(
   apiUrl: string,
-  apiKey: string | null,
+  accessToken: string | undefined,
 ): Promise<boolean> {
   try {
-    const res = await fetch(`${apiUrl}/info`, {
-      ...(apiKey && {
-        headers: {
-          "X-Api-Key": apiKey,
-        },
-      }),
+    const headers: Record<string, string> = {};
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
+    }
+    
+    const response = await fetch(`${apiUrl}/info`, {
+      headers,
     });
-
-    return res.ok;
+    return response.ok;
   } catch (e) {
-    console.error(e);
+    console.error('Error checking graph status:', e);
     return false;
   }
 }
 
 const StreamSession = ({
   children,
-  apiKey,
+  accessToken,
   apiUrl,
   assistantId,
 }: {
   children: ReactNode;
-  apiKey: string | null;
+  accessToken: string | undefined;
   apiUrl: string;
   assistantId: string;
 }) => {
   const [threadId, setThreadId] = useQueryParam("threadId", StringParam);
   const { getThreads, setThreads } = useThreads();
-  const streamValue = useTypedStream({
+
+  const stream = useTypedStream({
     apiUrl,
-    apiKey: apiKey ?? undefined,
+    defaultHeaders: accessToken
+      ? { Authorization: `Bearer ${accessToken}` }
+      : undefined,
     assistantId,
     threadId: threadId ?? null,
-    onCustomEvent: (event, options) => {
-      options.mutate((prev) => {
-        const ui = uiMessageReducer(prev.ui ?? [], event);
-        return { ...prev, ui };
-      });
-    },
     onThreadId: (id) => {
       setThreadId(id);
-      // Refetch threads list when thread ID changes.
-      // Wait for some seconds before fetching so we're able to get the new thread that was created.
-      sleep().then(() => getThreads().then(setThreads).catch(console.error));
+      // Refetch threads list when thread ID changes
+      sleep().then(() => {
+        getThreads()
+          .then(threads => {
+            setThreads(threads);
+          })
+          .catch(error => {
+            console.error("[StreamSession] Error fetching threads after sleep:", error);
+          });
+      });
     },
   });
 
-  useEffect(() => {
-    checkGraphStatus(apiUrl, apiKey).then((ok) => {
-      if (!ok) {
-        toast.error("Failed to connect to LangGraph server", {
-          description: () => (
-            <p>
-              Please ensure your graph is running at <code>{apiUrl}</code> and
-              your API key is correctly set (if connecting to a deployed graph).
-            </p>
-          ),
-          duration: 10000,
-          richColors: true,
-          closeButton: true,
-        });
-      }
-    });
-  }, [apiKey, apiUrl]);
-
   return (
-    <StreamContext.Provider value={streamValue}>
-      {children}
-    </StreamContext.Provider>
+    <StreamContext.Provider value={stream}>{children}</StreamContext.Provider>
   );
 };
 
 export const StreamProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
-  const [apiUrl, setApiUrl] = useQueryParam("apiUrl", StringParam);
-  const [apiKey, _setApiKey] = useState(() => {
-    return getApiKey();
-  });
+  const { session, loading } = useUser();
+  const navigate = useNavigate();
 
-  const setApiKey = (key: string) => {
-    window.localStorage.setItem("lg:chat:apiKey", key);
-    _setApiKey(key);
-  };
+  const apiUrl = import.meta.env.VITE_LANGCHAIN_API_URL;
+  const assistantId = import.meta.env.VITE_ASSISTANT_ID || "agent";
 
-  const [assistantId, setAssistantId] = useQueryParam(
-    "assistantId",
-    StringParam,
-  );
+  useEffect(() => {
+    if (!loading && !session?.access_token) {
+      navigate('/login', { replace: true });
+    }
+  }, [loading, session?.access_token, navigate]);
 
-  if (!apiUrl || !assistantId) {
+  // Show loading state while session is being fetched
+  if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen w-full p-4">
-        <div className="animate-in fade-in-0 zoom-in-95 flex flex-col border bg-background shadow-lg rounded-lg max-w-3xl">
-          <div className="flex flex-col gap-2 mt-14 p-6 border-b">
-            <div className="flex items-start flex-col gap-2">
-              <LangGraphLogoSVG className="h-7" />
-              <h1 className="text-xl font-semibold tracking-tight">
-                Agent Chat
-              </h1>
-            </div>
-            <p className="text-muted-foreground">
-              Welcome to Agent Chat! Before you get started, you need to enter
-              the URL of the deployment and the assistant / graph ID.
-            </p>
-          </div>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-
-              const form = e.target as HTMLFormElement;
-              const formData = new FormData(form);
-              const apiUrl = formData.get("apiUrl") as string;
-              const assistantId = formData.get("assistantId") as string;
-              const apiKey = formData.get("apiKey") as string;
-
-              setApiUrl(apiUrl);
-              setApiKey(apiKey);
-              setAssistantId(assistantId);
-
-              form.reset();
-            }}
-            className="flex flex-col gap-6 p-6 bg-muted/50"
-          >
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="apiUrl">
-                Deployment URL<span className="text-rose-500">*</span>
-              </Label>
-              <p className="text-muted-foreground text-sm">
-                This is the URL of your LangGraph deployment. Can be a local, or
-                production deployment.
-              </p>
-              <Input
-                id="apiUrl"
-                name="apiUrl"
-                className="bg-background"
-                defaultValue={apiUrl ?? "http://localhost:2024"}
-                required
-              />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="assistantId">
-                Assistant / Graph ID<span className="text-rose-500">*</span>
-              </Label>
-              <p className="text-muted-foreground text-sm">
-                This is the ID of the graph (can be the graph name), or
-                assistant to fetch threads from, and invoke when actions are
-                taken.
-              </p>
-              <Input
-                id="assistantId"
-                name="assistantId"
-                className="bg-background"
-                defaultValue={assistantId ?? "agent"}
-                required
-              />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="apiKey">LangSmith API Key</Label>
-              <p className="text-muted-foreground text-sm">
-                This is <strong>NOT</strong> required if using a local LangGraph
-                server. This value is stored in your browser's local storage and
-                is only used to authenticate requests sent to your LangGraph
-                server.
-              </p>
-              <PasswordInput
-                id="apiKey"
-                name="apiKey"
-                defaultValue={apiKey ?? ""}
-                className="bg-background"
-                placeholder="lsv2_pt_..."
-              />
-            </div>
-
-            <div className="flex justify-end mt-2">
-              <Button type="submit" size="lg">
-                Continue
-                <ArrowRight className="size-5" />
-              </Button>
-            </div>
-          </form>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">Loading session...</h2>
+          <p className="text-gray-600">Please wait while we verify your session.</p>
         </div>
       </div>
     );
   }
 
+  // Return null if no session (navigation will happen in useEffect)
+  if (!session?.access_token) {
+    return null;
+  }
+
+  if (!apiUrl) {
+    throw new Error("VITE_LANGCHAIN_API_URL environment variable is not set");
+  }
+
   return (
-    <StreamSession apiKey={apiKey} apiUrl={apiUrl} assistantId={assistantId}>
+    <StreamSession
+      apiUrl={apiUrl}
+      accessToken={session?.access_token}
+      assistantId={assistantId}
+    >
       {children}
     </StreamSession>
   );
