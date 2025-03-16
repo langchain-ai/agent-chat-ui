@@ -87,14 +87,6 @@ export default function useInterruptedActions({
         {
           command: {
             resume: response,
-            update: {
-              messages: [
-                {
-                  type: "human",
-                  content: `Sending type '${response[0].type}' to interrupt...`,
-                },
-              ],
-            },
           },
         },
       );
