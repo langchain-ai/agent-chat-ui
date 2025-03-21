@@ -339,7 +339,12 @@ export function Thread() {
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey && !e.metaKey) {
+                        if (
+                          e.key === "Enter" &&
+                          !e.shiftKey &&
+                          !e.metaKey &&
+                          !e.nativeEvent.isComposing
+                        ) {
                           e.preventDefault();
                           const el = e.target as HTMLElement | undefined;
                           const form = el?.closest("form");

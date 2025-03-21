@@ -84,7 +84,7 @@ export function HumanMessage({
             onSubmit={handleSubmitEdit}
           />
         ) : (
-          <p className="text-right px-4 py-2 rounded-3xl bg-muted">
+          <p className="text-right px-4 py-2 rounded-3xl bg-muted w-fit ml-auto">
             {contentString}
           </p>
         )}
