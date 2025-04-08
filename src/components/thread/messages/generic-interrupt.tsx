@@ -1,16 +1,21 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useStreamContext } from "@/providers/Stream";
 
 function isComplexValue(value: any): boolean {
   return Array.isArray(value) || (typeof value === "object" && value !== null);
 }
 
-export function GenericInterruptView({
-  interrupt,
-}: {
-  interrupt: unknown;
-}) {
+export function GenericInterruptView({ interrupt }: { interrupt: unknown }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const contentStr = JSON.stringify(interrupt, null, 2);
@@ -84,27 +89,29 @@ export function GenericInterruptView({
             >
               <table className="min-w-full divide-y divide-gray-200">
                 <tbody className="divide-y divide-gray-200">
-                  {Array.isArray(displayEntries) ? displayEntries.map((item, argIdx) => {
-                    const [key, value] = Array.isArray(interrupt)
-                      ? [argIdx.toString(), item]
-                      : (item as [string, any]);
-                    return (
-                      <tr key={argIdx}>
-                        <td className="px-4 py-2 text-sm font-medium text-gray-900 whitespace-nowrap">
-                          {key}
-                        </td>
-                        <td className="px-4 py-2 text-sm text-gray-500">
-                          {isComplexValue(value) ? (
-                            <code className="bg-gray-50 rounded px-2 py-1 font-mono text-sm">
-                              {JSON.stringify(value, null, 2)}
-                            </code>
-                          ) : (
-                            String(value)
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  }) : (
+                  {Array.isArray(displayEntries) ? (
+                    displayEntries.map((item, argIdx) => {
+                      const [key, value] = Array.isArray(interrupt)
+                        ? [argIdx.toString(), item]
+                        : (item as [string, any]);
+                      return (
+                        <tr key={argIdx}>
+                          <td className="px-4 py-2 text-sm font-medium text-gray-900 whitespace-nowrap">
+                            {key}
+                          </td>
+                          <td className="px-4 py-2 text-sm text-gray-500">
+                            {isComplexValue(value) ? (
+                              <code className="bg-gray-50 rounded px-2 py-1 font-mono text-sm">
+                                {JSON.stringify(value, null, 2)}
+                              </code>
+                            ) : (
+                              String(value)
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
                     <tr>
                       <td className="px-4 py-2 text-sm font-medium text-gray-900 whitespace-nowrap">
                         {displayEntries}
@@ -129,6 +136,72 @@ export function GenericInterruptView({
           </motion.button>
         )}
       </motion.div>
+    </div>
+  );
+}
+
+const QuestionCircle = () => (
+  <div className="flex w-4 h-4 items-center justify-center rounded-full border-[1px] border-gray-300">
+    <p className="text-xs text-gray-500">?</p>
+  </div>
+);
+
+const Code = ({ children }: { children: React.ReactNode }) => (
+  <code className="text-orange-600 bg-gray-300 rounded px-1">{children}</code>
+);
+
+export function ResumeGenericInterrupt() {
+  const [resumeValue, setResumeValue] = useState("");
+  const stream = useStreamContext();
+
+  const handleResume = (
+    e:
+      | React.MouseEvent<HTMLButtonElement, MouseEvent>
+      | React.FormEvent<HTMLFormElement>,
+  ) => {
+    e.preventDefault();
+    stream.submit(null, {
+      command: {
+        resume: resumeValue,
+      },
+    });
+  };
+
+  return (
+    <div className="flex flex-col items-start justify-start gap-2 mt-3 max-w-sm sm:max-w-xl md:max-w-3xl">
+      <TooltipProvider>
+        <Tooltip delayDuration={200}>
+          <TooltipTrigger className="flex items-center justify-center gap-1">
+            <p className="text-xs text-gray-500">What&apos;s this</p>
+            <QuestionCircle />
+          </TooltipTrigger>
+          <TooltipContent className="flex flex-col gap-2 py-3">
+            <p>
+              This input offers a way to resume your graph from the point of the
+              interrupt.
+            </p>
+            <p>
+              The graph will be resumed using the <Code>Command</Code> API, with
+              the input you provide passed as a string value to the{" "}
+              <Code>resume</Code> key.
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      <form
+        className="flex items-center gap-2 h-16 bg-muted rounded-2xl border w-full"
+        onSubmit={handleResume}
+      >
+        <Input
+          placeholder="Resume input"
+          value={resumeValue}
+          onChange={(e) => setResumeValue(e.target.value)}
+          className="bg-inherit border-none shadow-none"
+        />
+        <Button size="sm" variant="brand" className="mr-3" type="submit">
+          Resume
+        </Button>
+      </form>
     </div>
   );
 }
