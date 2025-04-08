@@ -143,7 +143,7 @@ export function AssistantMessage({
             )}
           {threadInterrupt?.value &&
           !isAgentInboxInterruptSchema(threadInterrupt.value) &&
-          isLastMessage ? (
+          (isLastMessage || hasNoAIOrToolMessages) ? (
             <GenericInterruptView interrupt={threadInterrupt.value} />
           ) : null}
           <div

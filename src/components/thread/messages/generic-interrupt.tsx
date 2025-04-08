@@ -9,7 +9,7 @@ function isComplexValue(value: any): boolean {
 export function GenericInterruptView({
   interrupt,
 }: {
-  interrupt: Record<string, any> | Record<string, any>[];
+  interrupt: unknown;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -39,23 +39,25 @@ export function GenericInterruptView({
   };
 
   // Process entries based on expanded state
-  const processEntries = () => {
+  const processEntries = (): unknown[] | string => {
     if (Array.isArray(interrupt)) {
       return isExpanded ? interrupt : interrupt.slice(0, 5);
-    } else {
+    } else if (typeof interrupt === "object" && interrupt !== null) {
       const entries = Object.entries(interrupt);
       if (!isExpanded && shouldTruncate) {
         // When collapsed, process each value to potentially truncate it
         return entries.map(([key, value]) => [key, truncateValue(value)]);
       }
       return entries;
+    } else {
+      return interrupt?.toString() ?? "";
     }
   };
 
   const displayEntries = processEntries();
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden">
+    <div className="border border-gray-200 rounded-lg overflow-hidden max-w-sm sm:max-w-xl md:max-w-3xl">
       <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <h3 className="font-medium text-gray-900">Human Interrupt</h3>
@@ -82,7 +84,7 @@ export function GenericInterruptView({
             >
               <table className="min-w-full divide-y divide-gray-200">
                 <tbody className="divide-y divide-gray-200">
-                  {displayEntries.map((item, argIdx) => {
+                  {Array.isArray(displayEntries) ? displayEntries.map((item, argIdx) => {
                     const [key, value] = Array.isArray(interrupt)
                       ? [argIdx.toString(), item]
                       : (item as [string, any]);
@@ -102,7 +104,13 @@ export function GenericInterruptView({
                         </td>
                       </tr>
                     );
-                  })}
+                  }) : (
+                    <tr>
+                      <td className="px-4 py-2 text-sm font-medium text-gray-900 whitespace-nowrap">
+                        {displayEntries}
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </motion.div>
