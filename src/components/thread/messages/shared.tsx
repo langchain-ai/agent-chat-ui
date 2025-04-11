@@ -36,7 +36,10 @@ function ContentCopyable({
       tooltip="Copy content"
       disabled={disabled}
     >
-      <AnimatePresence mode="wait" initial={false}>
+      <AnimatePresence
+        mode="wait"
+        initial={false}
+      >
         {copied ? (
           <motion.div
             key="check"
@@ -187,7 +190,10 @@ export function CommandBar({
 
   return (
     <div className="flex items-center gap-2">
-      <ContentCopyable content={content} disabled={isLoading} />
+      <ContentCopyable
+        content={content}
+        disabled={isLoading}
+      />
       {isAiMessage && !!handleRegenerate && (
         <TooltipIconButton
           disabled={isLoading}

@@ -113,7 +113,7 @@ export function AssistantMessage({
   }
 
   return (
-    <div className="flex items-start mr-auto gap-2 group">
+    <div className="group mr-auto flex items-start gap-2">
       {isToolResult ? (
         <ToolResult message={message} />
       ) : (
@@ -136,7 +136,12 @@ export function AssistantMessage({
             </>
           )}
 
-          {message && <CustomComponent message={message} thread={thread} />}
+          {message && (
+            <CustomComponent
+              message={message}
+              thread={thread}
+            />
+          )}
           {isAgentInboxInterruptSchema(threadInterrupt?.value) &&
             (isLastMessage || hasNoAIOrToolMessages) && (
               <ThreadView interrupt={threadInterrupt.value} />
@@ -148,7 +153,7 @@ export function AssistantMessage({
           ) : null}
           <div
             className={cn(
-              "flex gap-2 items-center mr-auto transition-opacity",
+              "mr-auto flex items-center gap-2 transition-opacity",
               "opacity-0 group-focus-within:opacity-100 group-hover:opacity-100",
             )}
           >
@@ -173,11 +178,11 @@ export function AssistantMessage({
 
 export function AssistantMessageLoading() {
   return (
-    <div className="flex items-start mr-auto gap-2">
-      <div className="flex items-center gap-1 rounded-2xl bg-muted px-4 py-2 h-8">
-        <div className="w-1.5 h-1.5 rounded-full bg-foreground/50 animate-[pulse_1.5s_ease-in-out_infinite]"></div>
-        <div className="w-1.5 h-1.5 rounded-full bg-foreground/50 animate-[pulse_1.5s_ease-in-out_0.5s_infinite]"></div>
-        <div className="w-1.5 h-1.5 rounded-full bg-foreground/50 animate-[pulse_1.5s_ease-in-out_1s_infinite]"></div>
+    <div className="mr-auto flex items-start gap-2">
+      <div className="bg-muted flex h-8 items-center gap-1 rounded-2xl px-4 py-2">
+        <div className="bg-foreground/50 h-1.5 w-1.5 animate-[pulse_1.5s_ease-in-out_infinite] rounded-full"></div>
+        <div className="bg-foreground/50 h-1.5 w-1.5 animate-[pulse_1.5s_ease-in-out_0.5s_infinite] rounded-full"></div>
+        <div className="bg-foreground/50 h-1.5 w-1.5 animate-[pulse_1.5s_ease-in-out_1s_infinite] rounded-full"></div>
       </div>
     </div>
   );

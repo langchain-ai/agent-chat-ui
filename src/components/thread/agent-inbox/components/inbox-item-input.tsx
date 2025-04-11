@@ -16,7 +16,7 @@ function ResetButton({ handleReset }: { handleReset: () => void }) {
       variant="ghost"
       className="flex items-center justify-center gap-2 text-gray-500 hover:text-red-500"
     >
-      <Undo2 className="w-4 h-4" />
+      <Undo2 className="h-4 w-4" />
       <span>Reset</span>
     </Button>
   );
@@ -24,7 +24,7 @@ function ResetButton({ handleReset }: { handleReset: () => void }) {
 
 function ArgsRenderer({ args }: { args: Record<string, any> }) {
   return (
-    <div className="flex flex-col gap-6 items-start w-full">
+    <div className="flex w-full flex-col items-start gap-6">
       {Object.entries(args).map(([k, v]) => {
         let value = "";
         if (["string", "number"].includes(typeof v)) {
@@ -34,11 +34,14 @@ function ArgsRenderer({ args }: { args: Record<string, any> }) {
         }
 
         return (
-          <div key={`args-${k}`} className="flex flex-col gap-1 items-start">
-            <p className="text-sm leading-[18px] text-gray-600 text-wrap">
+          <div
+            key={`args-${k}`}
+            className="flex flex-col items-start gap-1"
+          >
+            <p className="text-sm leading-[18px] text-wrap text-gray-600">
               {prettifyText(k)}:
             </p>
-            <span className="text-[13px] leading-[18px] text-black bg-zinc-100 rounded-xl p-3 w-full max-w-full">
+            <span className="w-full max-w-full rounded-xl bg-zinc-100 p-3 text-[13px] leading-[18px] text-black">
               <MarkdownText>{value}</MarkdownText>
             </span>
           </div>
@@ -104,9 +107,9 @@ function ResponseComponent({
   };
 
   return (
-    <div className="flex flex-col gap-4 p-6 items-start w-full rounded-xl border-[1px] border-gray-300">
-      <div className="flex items-center justify-between w-full">
-        <p className="font-semibold text-black text-base">
+    <div className="flex w-full flex-col items-start gap-4 rounded-xl border-[1px] border-gray-300 p-6">
+      <div className="flex w-full items-center justify-between">
+        <p className="text-base font-semibold text-black">
           Respond to assistant
         </p>
         <ResetButton
@@ -120,8 +123,8 @@ function ResponseComponent({
         <ArgsRenderer args={interruptValue.action_request.args} />
       )}
 
-      <div className="flex flex-col gap-[6px] items-start w-full">
-        <p className="text-sm min-w-fit font-medium">Response</p>
+      <div className="flex w-full flex-col items-start gap-[6px]">
+        <p className="min-w-fit text-sm font-medium">Response</p>
         <Textarea
           disabled={streaming}
           value={res.args}
@@ -132,8 +135,12 @@ function ResponseComponent({
         />
       </div>
 
-      <div className="flex items-center justify-end w-full gap-2">
-        <Button variant="brand" disabled={streaming} onClick={handleSubmit}>
+      <div className="flex w-full items-center justify-end gap-2">
+        <Button
+          variant="brand"
+          disabled={streaming}
+          onClick={handleSubmit}
+        >
           Send Response
         </Button>
       </div>
@@ -154,7 +161,7 @@ function AcceptComponent({
   ) => Promise<void>;
 }) {
   return (
-    <div className="flex flex-col gap-4 items-start w-full p-6 rounded-lg border-[1px] border-gray-300">
+    <div className="flex w-full flex-col items-start gap-4 rounded-lg border-[1px] border-gray-300 p-6">
       {actionRequestArgs && Object.keys(actionRequestArgs).length > 0 && (
         <ArgsRenderer args={actionRequestArgs} />
       )}
@@ -251,9 +258,9 @@ function EditAndOrAcceptComponent({
   };
 
   return (
-    <div className="flex flex-col gap-4 items-start w-full p-6 rounded-lg border-[1px] border-gray-300">
-      <div className="flex items-center justify-between w-full">
-        <p className="font-semibold text-black text-base">{header}</p>
+    <div className="flex w-full flex-col items-start gap-4 rounded-lg border-[1px] border-gray-300 p-6">
+      <div className="flex w-full items-center justify-between">
+        <p className="text-base font-semibold text-black">{header}</p>
         <ResetButton handleReset={handleReset} />
       </div>
 
@@ -276,11 +283,11 @@ function EditAndOrAcceptComponent({
 
         return (
           <div
-            className="flex flex-col gap-1 items-start w-full h-full px-[1px]"
+            className="flex h-full w-full flex-col items-start gap-1 px-[1px]"
             key={`allow-edit-args--${k}-${idx}`}
           >
-            <div className="flex flex-col gap-[6px] items-start w-full">
-              <p className="text-sm min-w-fit font-medium">{prettifyText(k)}</p>
+            <div className="flex w-full flex-col items-start gap-[6px]">
+              <p className="min-w-fit text-sm font-medium">{prettifyText(k)}</p>
               <Textarea
                 disabled={streaming}
                 className="h-full"
@@ -294,8 +301,12 @@ function EditAndOrAcceptComponent({
         );
       })}
 
-      <div className="flex items-center justify-end w-full gap-2">
-        <Button variant="brand" disabled={streaming} onClick={handleSubmit}>
+      <div className="flex w-full items-center justify-end gap-2">
+        <Button
+          variant="brand"
+          disabled={streaming}
+          onClick={handleSubmit}
+        >
           {buttonText}
         </Button>
       </div>
@@ -480,12 +491,12 @@ export function InboxItemInput({
   };
 
   return (
-    <div className="w-full flex flex-col items-start justify-start gap-2">
+    <div className="flex w-full flex-col items-start justify-start gap-2">
       {showArgsOutsideActionCards && (
         <ArgsRenderer args={interruptValue.action_request.args} />
       )}
 
-      <div className="flex flex-col gap-2 items-start w-full">
+      <div className="flex w-full flex-col items-start gap-2">
         <EditAndOrAccept
           humanResponse={humanResponse}
           streaming={streaming}
@@ -495,7 +506,7 @@ export function InboxItemInput({
           handleSubmit={handleSubmit}
         />
         {supportsMultipleMethods ? (
-          <div className="flex gap-3 items-center mx-auto mt-3">
+          <div className="mx-auto mt-3 flex items-center gap-3">
             <Separator className="w-[full]" />
             <p className="text-sm text-gray-500">Or</p>
             <Separator className="w-full" />
@@ -511,7 +522,7 @@ export function InboxItemInput({
         />
         {streaming && <p className="text-sm text-gray-600">Running...</p>}
         {streamFinished && (
-          <p className="text-base text-green-600 font-medium">
+          <p className="text-base font-medium text-green-600">
             Successfully finished Graph invocation.
           </p>
         )}

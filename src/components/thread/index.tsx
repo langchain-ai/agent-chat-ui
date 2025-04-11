@@ -49,7 +49,10 @@ function StickyToBottomContent(props: {
       style={{ width: "100%", height: "100%" }}
       className={props.className}
     >
-      <div ref={context.contentRef} className={props.contentClassName}>
+      <div
+        ref={context.contentRef}
+        className={props.contentClassName}
+      >
         {props.content}
       </div>
 
@@ -68,7 +71,7 @@ function ScrollToBottom(props: { className?: string }) {
       className={props.className}
       onClick={() => scrollToBottom()}
     >
-      <ArrowDown className="w-4 h-4" />
+      <ArrowDown className="h-4 w-4" />
       <span>Scroll to bottom</span>
     </Button>
   );
@@ -84,7 +87,10 @@ function OpenGitHubRepo() {
             target="_blank"
             className="flex items-center justify-center"
           >
-            <GitHubSVG width="24" height="24" />
+            <GitHubSVG
+              width="24"
+              height="24"
+            />
           </a>
         </TooltipTrigger>
         <TooltipContent side="left">
@@ -205,10 +211,10 @@ export function Thread() {
   );
 
   return (
-    <div className="flex w-full h-screen overflow-hidden">
-      <div className="relative lg:flex hidden">
+    <div className="flex h-screen w-full overflow-hidden">
+      <div className="relative hidden lg:flex">
         <motion.div
-          className="absolute h-full border-r bg-white overflow-hidden z-20"
+          className="absolute z-20 h-full overflow-hidden border-r bg-white"
           style={{ width: 300 }}
           animate={
             isLargeScreen
@@ -222,14 +228,17 @@ export function Thread() {
               : { duration: 0 }
           }
         >
-          <div className="relative h-full" style={{ width: 300 }}>
+          <div
+            className="relative h-full"
+            style={{ width: 300 }}
+          >
             <ThreadHistory />
           </div>
         </motion.div>
       </div>
       <motion.div
         className={cn(
-          "flex-1 flex flex-col min-w-0 overflow-hidden relative",
+          "relative flex min-w-0 flex-1 flex-col overflow-hidden",
           !chatStarted && "grid-rows-[1fr]",
         )}
         layout={isLargeScreen}
@@ -248,7 +257,7 @@ export function Thread() {
         }
       >
         {!chatStarted && (
-          <div className="absolute top-0 left-0 w-full flex items-center justify-between gap-3 p-2 pl-4 z-10">
+          <div className="absolute top-0 left-0 z-10 flex w-full items-center justify-between gap-3 p-2 pl-4">
             <div>
               {(!chatHistoryOpen || !isLargeScreen) && (
                 <Button
@@ -270,8 +279,8 @@ export function Thread() {
           </div>
         )}
         {chatStarted && (
-          <div className="flex items-center justify-between gap-3 p-2 z-10 relative">
-            <div className="flex items-center justify-start gap-2 relative">
+          <div className="relative z-10 flex items-center justify-between gap-3 p-2">
+            <div className="relative flex items-center justify-start gap-2">
               <div className="absolute left-0 z-10">
                 {(!chatHistoryOpen || !isLargeScreen) && (
                   <Button
@@ -288,7 +297,7 @@ export function Thread() {
                 )}
               </div>
               <motion.button
-                className="flex gap-2 items-center cursor-pointer"
+                className="flex cursor-pointer items-center gap-2"
                 onClick={() => setThreadId(null)}
                 animate={{
                   marginLeft: !chatHistoryOpen ? 48 : 0,
@@ -299,7 +308,10 @@ export function Thread() {
                   damping: 30,
                 }}
               >
-                <LangGraphLogoSVG width={32} height={32} />
+                <LangGraphLogoSVG
+                  width={32}
+                  height={32}
+                />
                 <span className="text-xl font-semibold tracking-tight">
                   Agent Chat
                 </span>
@@ -321,15 +333,15 @@ export function Thread() {
               </TooltipIconButton>
             </div>
 
-            <div className="absolute inset-x-0 top-full h-5 bg-gradient-to-b from-background to-background/0" />
+            <div className="from-background to-background/0 absolute inset-x-0 top-full h-5 bg-gradient-to-b" />
           </div>
         )}
 
         <StickToBottom className="relative flex-1 overflow-hidden">
           <StickyToBottomContent
             className={cn(
-              "absolute px-4 inset-0 overflow-y-scroll [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent",
-              !chatStarted && "flex flex-col items-stretch mt-[25vh]",
+              "absolute inset-0 overflow-y-scroll px-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent",
+              !chatStarted && "mt-[25vh] flex flex-col items-stretch",
               chatStarted && "grid grid-rows-[1fr_auto]",
             )}
             contentClassName="pt-8 pb-16  max-w-3xl mx-auto flex flex-col gap-4 w-full"
@@ -369,22 +381,22 @@ export function Thread() {
               </>
             }
             footer={
-              <div className="sticky flex flex-col items-center gap-8 bottom-0 bg-white">
+              <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-white">
                 {!chatStarted && (
-                  <div className="flex gap-3 items-center">
-                    <LangGraphLogoSVG className="flex-shrink-0 h-8" />
+                  <div className="flex items-center gap-3">
+                    <LangGraphLogoSVG className="h-8 flex-shrink-0" />
                     <h1 className="text-2xl font-semibold tracking-tight">
                       Agent Chat
                     </h1>
                   </div>
                 )}
 
-                <ScrollToBottom className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 animate-in fade-in-0 zoom-in-95" />
+                <ScrollToBottom className="animate-in fade-in-0 zoom-in-95 absolute bottom-full left-1/2 mb-4 -translate-x-1/2" />
 
-                <div className="bg-muted rounded-2xl border shadow-xs mx-auto mb-8 w-full max-w-3xl relative z-10">
+                <div className="bg-muted relative z-10 mx-auto mb-8 w-full max-w-3xl rounded-2xl border shadow-xs">
                   <form
                     onSubmit={handleSubmit}
-                    className="grid grid-rows-[1fr_auto] gap-2 max-w-3xl mx-auto"
+                    className="mx-auto grid max-w-3xl grid-rows-[1fr_auto] gap-2"
                   >
                     <textarea
                       value={input}
@@ -403,7 +415,7 @@ export function Thread() {
                         }
                       }}
                       placeholder="Type your message..."
-                      className="p-3.5 pb-0 border-none bg-transparent field-sizing-content shadow-none ring-0 outline-none focus:outline-none focus:ring-0 resize-none"
+                      className="field-sizing-content resize-none border-none bg-transparent p-3.5 pb-0 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none"
                     />
 
                     <div className="flex items-center justify-between p-2 pt-4">
@@ -423,14 +435,17 @@ export function Thread() {
                         </div>
                       </div>
                       {stream.isLoading ? (
-                        <Button key="stop" onClick={() => stream.stop()}>
-                          <LoaderCircle className="w-4 h-4 animate-spin" />
+                        <Button
+                          key="stop"
+                          onClick={() => stream.stop()}
+                        >
+                          <LoaderCircle className="h-4 w-4 animate-spin" />
                           Cancel
                         </Button>
                       ) : (
                         <Button
                           type="submit"
-                          className="transition-all shadow-md"
+                          className="shadow-md transition-all"
                           disabled={isLoading || !input.trim()}
                         >
                           Send

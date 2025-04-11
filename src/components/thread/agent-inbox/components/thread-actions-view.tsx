@@ -27,7 +27,7 @@ function ButtonGroup({
   showingDescription: boolean;
 }) {
   return (
-    <div className="flex flex-row gap-0 items-center justify-center">
+    <div className="flex flex-row items-center justify-center gap-0">
       <Button
         variant="outline"
         className={cn(
@@ -103,14 +103,14 @@ export function ThreadActionsView({
   const ignoreAllowed = interrupt.config.allow_ignore;
 
   return (
-    <div className="flex flex-col min-h-full w-full gap-9">
+    <div className="flex min-h-full w-full flex-col gap-9">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between w-full gap-3">
+      <div className="flex w-full flex-wrap items-center justify-between gap-3">
         <div className="flex items-center justify-start gap-3">
           <p className="text-2xl tracking-tighter text-pretty">{threadTitle}</p>
           {threadId && <ThreadIdCopyable threadId={threadId} />}
         </div>
-        <div className="flex flex-row gap-2 items-center justify-start">
+        <div className="flex flex-row items-center justify-start gap-2">
           {apiUrl && (
             <Button
               size="sm"
@@ -130,10 +130,10 @@ export function ThreadActionsView({
         </div>
       </div>
 
-      <div className="flex flex-row gap-2 items-center justify-start w-full">
+      <div className="flex w-full flex-row items-center justify-start gap-2">
         <Button
           variant="outline"
-          className="text-gray-800 border-gray-500 font-normal bg-white"
+          className="border-gray-500 bg-white font-normal text-gray-800"
           onClick={handleResolve}
           disabled={actionsDisabled}
         >
@@ -142,7 +142,7 @@ export function ThreadActionsView({
         {ignoreAllowed && (
           <Button
             variant="outline"
-            className="text-gray-800 border-gray-500 font-normal bg-white"
+            className="border-gray-500 bg-white font-normal text-gray-800"
             onClick={handleIgnore}
             disabled={actionsDisabled}
           >

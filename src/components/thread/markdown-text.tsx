@@ -49,7 +49,10 @@ const CodeHeader: FC<CodeHeaderProps> = ({ language, code }) => {
   return (
     <div className="flex items-center justify-between gap-4 rounded-t-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white">
       <span className="lowercase [&>span]:text-xs">{language}</span>
-      <TooltipIconButton tooltip="Copy" onClick={onCopy}>
+      <TooltipIconButton
+        tooltip="Copy"
+        onClick={onCopy}
+      >
         {!isCopied && <CopyIcon />}
         {isCopied && <CheckIcon />}
       </TooltipIconButton>
@@ -70,7 +73,7 @@ const defaultComponents: any = {
   h2: ({ className, ...props }: { className?: string }) => (
     <h2
       className={cn(
-        "mb-4 mt-8 scroll-m-20 text-3xl font-semibold tracking-tight first:mt-0 last:mb-0",
+        "mt-8 mb-4 scroll-m-20 text-3xl font-semibold tracking-tight first:mt-0 last:mb-0",
         className,
       )}
       {...props}
@@ -79,7 +82,7 @@ const defaultComponents: any = {
   h3: ({ className, ...props }: { className?: string }) => (
     <h3
       className={cn(
-        "mb-4 mt-6 scroll-m-20 text-2xl font-semibold tracking-tight first:mt-0 last:mb-0",
+        "mt-6 mb-4 scroll-m-20 text-2xl font-semibold tracking-tight first:mt-0 last:mb-0",
         className,
       )}
       {...props}
@@ -88,7 +91,7 @@ const defaultComponents: any = {
   h4: ({ className, ...props }: { className?: string }) => (
     <h4
       className={cn(
-        "mb-4 mt-6 scroll-m-20 text-xl font-semibold tracking-tight first:mt-0 last:mb-0",
+        "mt-6 mb-4 scroll-m-20 text-xl font-semibold tracking-tight first:mt-0 last:mb-0",
         className,
       )}
       {...props}
@@ -111,7 +114,7 @@ const defaultComponents: any = {
   ),
   p: ({ className, ...props }: { className?: string }) => (
     <p
-      className={cn("mb-5 mt-5 leading-7 first:mt-0 last:mb-0", className)}
+      className={cn("mt-5 mb-5 leading-7 first:mt-0 last:mb-0", className)}
       {...props}
     />
   ),
@@ -143,7 +146,10 @@ const defaultComponents: any = {
     />
   ),
   hr: ({ className, ...props }: { className?: string }) => (
-    <hr className={cn("my-5 border-b", className)} {...props} />
+    <hr
+      className={cn("my-5 border-b", className)}
+      {...props}
+    />
   ),
   table: ({ className, ...props }: { className?: string }) => (
     <table
@@ -190,7 +196,7 @@ const defaultComponents: any = {
   pre: ({ className, ...props }: { className?: string }) => (
     <pre
       className={cn(
-        "overflow-x-auto rounded-lg bg-black text-white max-w-4xl",
+        "max-w-4xl overflow-x-auto rounded-lg bg-black text-white",
         className,
       )}
       {...props}
@@ -212,8 +218,14 @@ const defaultComponents: any = {
 
       return (
         <>
-          <CodeHeader language={language} code={code} />
-          <SyntaxHighlighter language={language} className={className}>
+          <CodeHeader
+            language={language}
+            code={code}
+          />
+          <SyntaxHighlighter
+            language={language}
+            className={className}
+          >
             {code}
           </SyntaxHighlighter>
         </>
@@ -221,7 +233,10 @@ const defaultComponents: any = {
     }
 
     return (
-      <code className={cn("rounded font-semibold", className)} {...props}>
+      <code
+        className={cn("rounded font-semibold", className)}
+        {...props}
+      >
         {children}
       </code>
     );

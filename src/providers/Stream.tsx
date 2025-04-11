@@ -158,10 +158,10 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
   // Show the form if we: don't have an API URL, or don't have an assistant ID
   if (!finalApiUrl || !finalAssistantId) {
     return (
-      <div className="flex items-center justify-center min-h-screen w-full p-4">
-        <div className="animate-in fade-in-0 zoom-in-95 flex flex-col border bg-background shadow-lg rounded-lg max-w-3xl">
-          <div className="flex flex-col gap-2 mt-14 p-6 border-b">
-            <div className="flex items-start flex-col gap-2">
+      <div className="flex min-h-screen w-full items-center justify-center p-4">
+        <div className="animate-in fade-in-0 zoom-in-95 bg-background flex max-w-3xl flex-col rounded-lg border shadow-lg">
+          <div className="mt-14 flex flex-col gap-2 border-b p-6">
+            <div className="flex flex-col items-start gap-2">
               <LangGraphLogoSVG className="h-7" />
               <h1 className="text-xl font-semibold tracking-tight">
                 Agent Chat
@@ -188,7 +188,7 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
 
               form.reset();
             }}
-            className="flex flex-col gap-6 p-6 bg-muted/50"
+            className="bg-muted/50 flex flex-col gap-6 p-6"
           >
             <div className="flex flex-col gap-2">
               <Label htmlFor="apiUrl">
@@ -242,8 +242,11 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
               />
             </div>
 
-            <div className="flex justify-end mt-2">
-              <Button type="submit" size="lg">
+            <div className="mt-2 flex justify-end">
+              <Button
+                type="submit"
+                size="lg"
+              >
                 Continue
                 <ArrowRight className="size-5" />
               </Button>
@@ -255,7 +258,11 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
   }
 
   return (
-    <StreamSession apiKey={apiKey} apiUrl={apiUrl} assistantId={assistantId}>
+    <StreamSession
+      apiKey={apiKey}
+      apiUrl={apiUrl}
+      assistantId={assistantId}
+    >
       {children}
     </StreamSession>
   );

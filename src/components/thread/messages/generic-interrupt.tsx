@@ -55,9 +55,9 @@ export function GenericInterruptView({
   const displayEntries = processEntries();
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden">
-      <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
+    <div className="overflow-hidden rounded-lg border border-gray-200">
+      <div className="border-b border-gray-200 bg-gray-50 px-4 py-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="font-medium text-gray-900">Human Interrupt</h3>
         </div>
       </div>
@@ -68,7 +68,10 @@ export function GenericInterruptView({
         transition={{ duration: 0.3 }}
       >
         <div className="p-3">
-          <AnimatePresence mode="wait" initial={false}>
+          <AnimatePresence
+            mode="wait"
+            initial={false}
+          >
             <motion.div
               key={isExpanded ? "expanded" : "collapsed"}
               initial={{ opacity: 0, y: 20 }}
@@ -88,12 +91,12 @@ export function GenericInterruptView({
                       : (item as [string, any]);
                     return (
                       <tr key={argIdx}>
-                        <td className="px-4 py-2 text-sm font-medium text-gray-900 whitespace-nowrap">
+                        <td className="px-4 py-2 text-sm font-medium whitespace-nowrap text-gray-900">
                           {key}
                         </td>
                         <td className="px-4 py-2 text-sm text-gray-500">
                           {isComplexValue(value) ? (
-                            <code className="bg-gray-50 rounded px-2 py-1 font-mono text-sm">
+                            <code className="rounded bg-gray-50 px-2 py-1 font-mono text-sm">
                               {JSON.stringify(value, null, 2)}
                             </code>
                           ) : (
@@ -112,7 +115,7 @@ export function GenericInterruptView({
           (Array.isArray(interrupt) && interrupt.length > 5)) && (
           <motion.button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="w-full py-2 flex items-center justify-center border-t-[1px] border-gray-200 text-gray-500 hover:text-gray-600 hover:bg-gray-50 transition-all ease-in-out duration-200 cursor-pointer"
+            className="flex w-full cursor-pointer items-center justify-center border-t-[1px] border-gray-200 py-2 text-gray-500 transition-all duration-200 ease-in-out hover:bg-gray-50 hover:text-gray-600"
             initial={{ scale: 1 }}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}

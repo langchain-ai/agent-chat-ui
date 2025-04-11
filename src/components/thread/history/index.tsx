@@ -25,7 +25,7 @@ function ThreadList({
   const [threadId, setThreadId] = useQueryState("threadId");
 
   return (
-    <div className="h-full flex flex-col w-full gap-2 items-start justify-start overflow-y-scroll [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent">
+    <div className="flex h-full w-full flex-col items-start justify-start gap-2 overflow-y-scroll [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent">
       {threads.map((t) => {
         let itemText = t.thread_id;
         if (
@@ -39,10 +39,13 @@ function ThreadList({
           itemText = getContentString(firstMessage.content);
         }
         return (
-          <div key={t.thread_id} className="w-full px-1">
+          <div
+            key={t.thread_id}
+            className="w-full px-1"
+          >
             <Button
               variant="ghost"
-              className="text-left items-start justify-start font-normal w-[280px]"
+              className="w-[280px] items-start justify-start text-left font-normal"
               onClick={(e) => {
                 e.preventDefault();
                 onThreadClick?.(t.thread_id);
@@ -61,9 +64,12 @@ function ThreadList({
 
 function ThreadHistoryLoading() {
   return (
-    <div className="h-full flex flex-col w-full gap-2 items-start justify-start overflow-y-scroll [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent">
+    <div className="flex h-full w-full flex-col items-start justify-start gap-2 overflow-y-scroll [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent">
       {Array.from({ length: 30 }).map((_, i) => (
-        <Skeleton key={`skeleton-${i}`} className="w-[280px] h-10" />
+        <Skeleton
+          key={`skeleton-${i}`}
+          className="h-10 w-[280px]"
+        />
       ))}
     </div>
   );
@@ -90,8 +96,8 @@ export default function ThreadHistory() {
 
   return (
     <>
-      <div className="hidden lg:flex flex-col border-r-[1px] border-slate-300 items-start justify-start gap-6 h-screen w-[300px] shrink-0 shadow-inner-right">
-        <div className="flex items-center justify-between w-full pt-1.5 px-4">
+      <div className="shadow-inner-right hidden h-screen w-[300px] shrink-0 flex-col items-start justify-start gap-6 border-r-[1px] border-slate-300 lg:flex">
+        <div className="flex w-full items-center justify-between px-4 pt-1.5">
           <Button
             className="hover:bg-gray-100"
             variant="ghost"
@@ -121,7 +127,10 @@ export default function ThreadHistory() {
             setChatHistoryOpen(open);
           }}
         >
-          <SheetContent side="left" className="lg:hidden flex">
+          <SheetContent
+            side="left"
+            className="flex lg:hidden"
+          >
             <SheetHeader>
               <SheetTitle>Thread History</SheetTitle>
             </SheetHeader>
