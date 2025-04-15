@@ -9,10 +9,13 @@ import { cn } from "@/lib/utils";
 import { ToolCalls, ToolResult } from "./tool-calls";
 import { MessageContentComplex } from "@langchain/core/messages";
 import { Fragment } from "react/jsx-runtime";
+import { useState } from "react";
 import { isAgentInboxInterruptSchema } from "@/lib/agent-inbox-interrupt";
 import { ThreadView } from "../agent-inbox";
 import { useQueryState, parseAsBoolean } from "nuqs";
 import { GenericInterruptView } from "./generic-interrupt";
+import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 function CustomComponent({
   message,
@@ -74,6 +77,7 @@ export function AssistantMessage({
   isLoading: boolean;
   handleRegenerate: (parentCheckpoint: Checkpoint | null | undefined) => void;
 }) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const content = message?.content ?? [];
   const contentString = getContentString(content);
   const [hideToolCalls] = useQueryState(
@@ -108,6 +112,23 @@ export function AssistantMessage({
   const hasAnthropicToolCalls = !!anthropicStreamedToolCalls?.length;
   const isToolResult = message?.type === "tool";
 
+  // additional_kwargs.type에 따른 스타일 클래스
+  const getMessageStyle = () => {
+    const additionalKwargs = (message as any)?.additional_kwargs;
+    if (!additionalKwargs?.type) return "";
+    
+    switch (additionalKwargs.type) {
+      case 'get_question':
+        return "bg-blue-50 border border-blue-200";
+      case 'retrieve':
+        return "bg-green-50 border border-green-200";
+      default:
+        return "";
+    }
+  };
+
+  const isRetrieveType = (message as any)?.additional_kwargs?.type === 'retrieve';
+
   if (isToolResult && hideToolCalls) {
     return null;
   }
@@ -117,10 +138,34 @@ export function AssistantMessage({
       {isToolResult ? (
         <ToolResult message={message} />
       ) : (
-        <div className="flex flex-col gap-2">
+        <div className={`flex flex-col gap-2 p-4 rounded-lg ${getMessageStyle()}`}>
           {contentString.length > 0 && (
             <div className="py-1">
-              <MarkdownText>{contentString}</MarkdownText>
+              {isRetrieveType ? (
+                <>
+                  <div className={cn(!isExpanded && "line-clamp-3")}>
+                    <MarkdownText>{contentString}</MarkdownText>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="mt-2 text-sm text-muted-foreground hover:text-foreground"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                  >
+                    {isExpanded ? (
+                      <>
+                        접기 <ChevronUp className="ml-1 h-4 w-4" />
+                      </>
+                    ) : (
+                      <>
+                        더보기 <ChevronDown className="ml-1 h-4 w-4" />
+                      </>
+                    )}
+                  </Button>
+                </>
+              ) : (
+                <MarkdownText>{contentString}</MarkdownText>
+              )}
             </div>
           )}
 
