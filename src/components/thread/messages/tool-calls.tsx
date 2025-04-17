@@ -94,24 +94,26 @@ export function ToolResult({ message }: { message: ToolMessage }) {
       : contentStr;
 
   return (
-    <div className="overflow-hidden rounded-lg border border-gray-200">
-      <div className="border-b border-gray-200 bg-gray-50 px-4 py-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          {message.name ? (
-            <h3 className="font-medium text-gray-900">
-              Tool Result:{" "}
-              <code className="rounded bg-gray-100 px-2 py-1">
-                {message.name}
+    <div className="w-full max-w-4xl space-y-4">
+      <div className="overflow-hidden rounded-lg border border-gray-200">
+        <div className="border-b border-gray-200 bg-gray-50 px-4 py-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            {message.name ? (
+              <h3 className="font-medium text-gray-900">
+                Tool Result:{" "}
+                <code className="rounded bg-gray-100 px-2 py-1">
+                  {message.name}
+                </code>
+              </h3>
+            ) : (
+              <h3 className="font-medium text-gray-900">Tool Result</h3>
+            )}
+            {message.tool_call_id && (
+              <code className="ml-2 rounded bg-gray-100 px-2 py-1 text-sm">
+                {message.tool_call_id}
               </code>
-            </h3>
-          ) : (
-            <h3 className="font-medium text-gray-900">Tool Result</h3>
-          )}
-          {message.tool_call_id && (
-            <code className="ml-2 rounded bg-gray-100 px-2 py-1 text-sm">
-              {message.tool_call_id}
-            </code>
-          )}
+            )}
+          </div>
         </div>
       </div>
       <motion.div
