@@ -65,6 +65,32 @@ function parseAnthropicStreamedToolCalls(
   });
 }
 
+interface InterruptProps {
+  interruptValue?: unknown;
+  isLastMessage: boolean;
+  hasNoAIOrToolMessages: boolean;
+}
+
+function Interrupt({
+  interruptValue,
+  isLastMessage,
+  hasNoAIOrToolMessages,
+}: InterruptProps) {
+  return (
+    <>
+      {isAgentInboxInterruptSchema(interruptValue) &&
+        (isLastMessage || hasNoAIOrToolMessages) && (
+          <ThreadView interrupt={interruptValue} />
+        )}
+      {interruptValue &&
+      !isAgentInboxInterruptSchema(interruptValue) &&
+      isLastMessage ? (
+        <GenericInterruptView interrupt={interruptValue} />
+      ) : null}
+    </>
+  );
+}
+
 export function AssistantMessage({
   message,
   isLoading,
@@ -118,15 +144,11 @@ export function AssistantMessage({
         {isToolResult ? (
           <>
             <ToolResult message={message} />
-            {isAgentInboxInterruptSchema(threadInterrupt?.value) &&
-              (isLastMessage || hasNoAIOrToolMessages) && (
-                <ThreadView interrupt={threadInterrupt.value} />
-              )}
-            {threadInterrupt?.value &&
-            !isAgentInboxInterruptSchema(threadInterrupt.value) &&
-            isLastMessage ? (
-              <GenericInterruptView interrupt={threadInterrupt.value} />
-            ) : null}
+            <Interrupt
+              interruptValue={threadInterrupt?.value}
+              isLastMessage={isLastMessage}
+              hasNoAIOrToolMessages={hasNoAIOrToolMessages}
+            />
           </>
         ) : (
           <>
@@ -144,7 +166,9 @@ export function AssistantMessage({
                   (hasAnthropicToolCalls && (
                     <ToolCalls toolCalls={anthropicStreamedToolCalls} />
                   )) ||
-                  (hasToolCalls && <ToolCalls toolCalls={message.tool_calls} />)}
+                  (hasToolCalls && (
+                    <ToolCalls toolCalls={message.tool_calls} />
+                  ))}
               </>
             )}
 
@@ -154,15 +178,11 @@ export function AssistantMessage({
                 thread={thread}
               />
             )}
-            {isAgentInboxInterruptSchema(threadInterrupt?.value) &&
-              (isLastMessage || hasNoAIOrToolMessages) && (
-                <ThreadView interrupt={threadInterrupt.value} />
-              )}
-            {threadInterrupt?.value &&
-            !isAgentInboxInterruptSchema(threadInterrupt.value) &&
-            isLastMessage ? (
-              <GenericInterruptView interrupt={threadInterrupt.value} />
-            ) : null}
+            <Interrupt
+              interruptValue={threadInterrupt?.value}
+              isLastMessage={isLastMessage}
+              hasNoAIOrToolMessages={hasNoAIOrToolMessages}
+            />
             <div
               className={cn(
                 "mr-auto flex items-center gap-2 transition-opacity",
