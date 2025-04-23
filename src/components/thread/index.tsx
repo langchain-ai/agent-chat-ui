@@ -26,6 +26,8 @@ import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 import ThreadHistory from "./history";
 import { toast } from "sonner";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useUIConfig } from "@/hooks/useUIConfig";
+import { ThemeToggleButton } from "../dark-mode-switcher";
 import { Label } from "../ui/label";
 import { Switch } from "../ui/switch";
 import { GitHubSVG } from "../icons/github";
@@ -114,6 +116,7 @@ export function Thread() {
   const [input, setInput] = useState("");
   const [firstTokenReceived, setFirstTokenReceived] = useState(false);
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
+  const { config } = useUIConfig();
 
   const stream = useStreamContext();
   const messages = stream.messages;
@@ -212,30 +215,32 @@ export function Thread() {
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
-      <div className="relative hidden lg:flex">
-        <motion.div
-          className="absolute z-20 h-full overflow-hidden border-r bg-white"
-          style={{ width: 300 }}
-          animate={
-            isLargeScreen
-              ? { x: chatHistoryOpen ? 0 : -300 }
-              : { x: chatHistoryOpen ? 0 : -300 }
-          }
-          initial={{ x: -300 }}
-          transition={
-            isLargeScreen
-              ? { type: "spring", stiffness: 300, damping: 30 }
-              : { duration: 0 }
-          }
-        >
-          <div
-            className="relative h-full"
+      {!config.layout.hideThreadHistory && (
+        <div className="relative hidden lg:flex">
+          <motion.div
+            className="absolute z-20 h-full overflow-hidden border-r bg-white"
             style={{ width: 300 }}
+            animate={
+              isLargeScreen
+                ? { x: chatHistoryOpen ? 0 : -300 }
+                : { x: chatHistoryOpen ? 0 : -300 }
+            }
+            initial={{ x: -300 }}
+            transition={
+              isLargeScreen
+                ? { type: "spring", stiffness: 300, damping: 30 }
+                : { duration: 0 }
+            }
           >
-            <ThreadHistory />
-          </div>
-        </motion.div>
-      </div>
+            <div
+              className="relative h-full"
+              style={{ width: 300 }}
+            >
+              <ThreadHistory />
+            </div>
+          </motion.div>
+        </div>
+      )}
       <motion.div
         className={cn(
           "relative flex min-w-0 flex-1 flex-col overflow-hidden",
@@ -258,23 +263,26 @@ export function Thread() {
       >
         {!chatStarted && (
           <div className="absolute top-0 left-0 z-10 flex w-full items-center justify-between gap-3 p-2 pl-4">
-            <div>
-              {(!chatHistoryOpen || !isLargeScreen) && (
-                <Button
-                  className="hover:bg-gray-100"
-                  variant="ghost"
-                  onClick={() => setChatHistoryOpen((p) => !p)}
-                >
-                  {chatHistoryOpen ? (
-                    <PanelRightOpen className="size-5" />
-                  ) : (
-                    <PanelRightClose className="size-5" />
-                  )}
-                </Button>
-              )}
-            </div>
-            <div className="absolute top-2 right-4 flex items-center">
-              <OpenGitHubRepo />
+            {!config.layout.hideThreadHistory && (
+              <div>
+                {(!chatHistoryOpen || !isLargeScreen) && (
+                  <Button
+                    className="hover:bg-gray-100"
+                    variant="ghost"
+                    onClick={() => setChatHistoryOpen((p) => !p)}
+                  >
+                    {chatHistoryOpen ? (
+                      <PanelRightOpen className="size-5" />
+                    ) : (
+                      <PanelRightClose className="size-5" />
+                    )}
+                  </Button>
+                )}
+              </div>
+            )}
+            <div className="absolute top-2 right-4 flex items-center gap-4">
+              {config.layout.showThemeToggle && <ThemeToggleButton />}
+              {!config.layout.hideGithubButton && <OpenGitHubRepo />}
             </div>
           </div>
         )}
@@ -308,20 +316,29 @@ export function Thread() {
                   damping: 30,
                 }}
               >
-                <LangGraphLogoSVG
-                  width={32}
-                  height={32}
-                />
-                <span className="text-xl font-semibold tracking-tight">
-                  Agent Chat
-                </span>
+                {config.brand.brandHeaderTopLeft ? (
+                  config.brand.brandHeaderTopLeft()
+                ) : (
+                  <>
+                    <LangGraphLogoSVG
+                      width={32}
+                      height={32}
+                    />
+                    <span className="text-xl font-semibold tracking-tight">
+                      Agent Chat
+                    </span>
+                  </>
+                )}
               </motion.button>
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="flex items-center">
-                <OpenGitHubRepo />
-              </div>
+              {!config.layout.hideGithubButton && (
+                <div className="flex items-center">
+                  <OpenGitHubRepo />
+                </div>
+              )}
+              {config.layout.showThemeToggle && <ThemeToggleButton />}
               <TooltipIconButton
                 size="lg"
                 className="p-4"
@@ -381,15 +398,17 @@ export function Thread() {
               </>
             }
             footer={
-              <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-white">
-                {!chatStarted && (
+              <div className="sticky bottom-0 flex flex-col items-center gap-8">
+                {!chatStarted && config.brand.brandHeaderWelcome ? (
+                  config.brand.brandHeaderWelcome()
+                ) : !config.layout.hideBrandHeaderAboveChatBox ? (
                   <div className="flex items-center gap-3">
                     <LangGraphLogoSVG className="h-8 flex-shrink-0" />
                     <h1 className="text-2xl font-semibold tracking-tight">
                       Agent Chat
                     </h1>
                   </div>
-                )}
+                ) : null}
 
                 <ScrollToBottom className="animate-in fade-in-0 zoom-in-95 absolute bottom-full left-1/2 mb-4 -translate-x-1/2" />
 
@@ -420,19 +439,21 @@ export function Thread() {
 
                     <div className="flex items-center justify-between p-2 pt-4">
                       <div>
-                        <div className="flex items-center space-x-2">
-                          <Switch
-                            id="render-tool-calls"
-                            checked={hideToolCalls ?? false}
-                            onCheckedChange={setHideToolCalls}
-                          />
-                          <Label
-                            htmlFor="render-tool-calls"
-                            className="text-sm text-gray-600"
-                          >
-                            Hide Tool Calls
-                          </Label>
-                        </div>
+                        {!config.layout.hideToolCallsToggleButton && (
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              id="render-tool-calls"
+                              checked={hideToolCalls ?? false}
+                              onCheckedChange={setHideToolCalls}
+                            />
+                            <Label
+                              htmlFor="render-tool-calls"
+                              className="text-sm text-gray-600"
+                            >
+                              Hide Tool Calls
+                            </Label>
+                          </div>
+                        )}
                       </div>
                       {stream.isLoading ? (
                         <Button

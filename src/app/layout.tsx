@@ -1,8 +1,9 @@
+import { UIConfigProvider } from "@/lib/ui-config-provider";
 import type { Metadata } from "next";
-import "./globals.css";
 import { Inter } from "next/font/google";
-import React from "react";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+import React from "react";
+import "./globals.css";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -21,10 +22,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <NuqsAdapter>{children}</NuqsAdapter>
-      </body>
-    </html>
+    <UIConfigProvider>
+      <html lang="en">
+        <body className={inter.className}>
+          <NuqsAdapter>{children}</NuqsAdapter>
+        </body>
+      </html>
+    </UIConfigProvider>
   );
 }
