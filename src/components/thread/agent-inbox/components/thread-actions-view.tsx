@@ -81,10 +81,13 @@ export function ThreadActionsView({
   } = useInterruptedActions({
     interrupt,
   });
-  const [apiUrl] = useQueryState("apiUrl");
+  const envFixedApiUrl = process.env.NEXT_PUBLIC_FIXED_API_URL;
+  const [apiUrlParam] = useQueryState("apiUrl");
+
+  const finalApiUrl = envFixedApiUrl || apiUrlParam;
 
   const handleOpenInStudio = () => {
-    if (!apiUrl) {
+    if (!finalApiUrl) {
       toast.error("Error", {
         description: "Please set the LangGraph deployment URL in settings.",
         duration: 5000,
@@ -94,7 +97,10 @@ export function ThreadActionsView({
       return;
     }
 
-    const studioUrl = constructOpenInStudioURL(apiUrl, threadId ?? undefined);
+    const studioUrl = constructOpenInStudioURL(
+      finalApiUrl,
+      threadId ?? undefined,
+    );
     window.open(studioUrl, "_blank");
   };
 
@@ -111,7 +117,7 @@ export function ThreadActionsView({
           {threadId && <ThreadIdCopyable threadId={threadId} />}
         </div>
         <div className="flex flex-row items-center justify-start gap-2">
-          {apiUrl && (
+          {finalApiUrl && (
             <Button
               size="sm"
               variant="outline"

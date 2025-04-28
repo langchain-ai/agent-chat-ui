@@ -128,32 +128,29 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   // Get environment variables
-  const envApiUrl: string | undefined = process.env.NEXT_PUBLIC_API_URL;
-  const envAssistantId: string | undefined =
-    process.env.NEXT_PUBLIC_ASSISTANT_ID;
+  const fixedApiUrl = process.env.NEXT_PUBLIC_FIXED_API_URL;
+  const fixedAssistantId = process.env.NEXT_PUBLIC_FIXED_ASSISTANT_ID;
+  const hasFixedValues = fixedApiUrl && fixedAssistantId;
 
-  // Use URL params with env var fallbacks
   const [apiUrl, setApiUrl] = useQueryState("apiUrl", {
-    defaultValue: envApiUrl || "",
+    defaultValue: process.env.NEXT_PUBLIC_API_URL || "",
   });
   const [assistantId, setAssistantId] = useQueryState("assistantId", {
-    defaultValue: envAssistantId || "",
+    defaultValue: process.env.NEXT_PUBLIC_ASSISTANT_ID || "",
   });
 
-  // For API key, use localStorage with env var fallback
-  const [apiKey, _setApiKey] = useState(() => {
-    const storedKey = getApiKey();
-    return storedKey || "";
-  });
-
+  const [apiKey, _setApiKey] = useState(() => getApiKey() || "");
   const setApiKey = (key: string) => {
     window.localStorage.setItem("lg:chat:apiKey", key);
     _setApiKey(key);
   };
 
-  // Determine final values to use, prioritizing URL params then env vars
-  const finalApiUrl = apiUrl || envApiUrl;
-  const finalAssistantId = assistantId || envAssistantId;
+  const finalApiUrl = hasFixedValues
+    ? fixedApiUrl!
+    : apiUrl || process.env.NEXT_PUBLIC_API_URL || "";
+  const finalAssistantId = hasFixedValues
+    ? fixedAssistantId!
+    : assistantId || process.env.NEXT_PUBLIC_ASSISTANT_ID || "";
 
   // Show the form if we: don't have an API URL, or don't have an assistant ID
   if (!finalApiUrl || !finalAssistantId) {
