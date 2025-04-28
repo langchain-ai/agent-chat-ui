@@ -215,7 +215,7 @@ export function Thread() {
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
-      {!config.layout.hideThreadHistory && (
+      {!config.layout?.hideThreadHistory && (
         <div className="relative hidden lg:flex">
           <motion.div
             className="absolute z-20 h-full overflow-hidden border-r bg-white"
@@ -263,7 +263,7 @@ export function Thread() {
       >
         {!chatStarted && (
           <div className="absolute top-0 left-0 z-10 flex w-full items-center justify-between gap-3 p-2 pl-4">
-            {!config.layout.hideThreadHistory && (
+            {!config.layout?.hideThreadHistory && (
               <div>
                 {(!chatHistoryOpen || !isLargeScreen) && (
                   <Button
@@ -281,8 +281,8 @@ export function Thread() {
               </div>
             )}
             <div className="absolute top-2 right-4 flex items-center gap-4">
-              {config.layout.showThemeToggle && <ThemeToggleButton />}
-              {!config.layout.hideGithubButton && <OpenGitHubRepo />}
+              {config.layout?.showThemeToggle && <ThemeToggleButton />}
+              {!config.layout?.hideGithubButton && <OpenGitHubRepo />}
             </div>
           </div>
         )}
@@ -333,12 +333,12 @@ export function Thread() {
             </div>
 
             <div className="flex items-center gap-4">
-              {!config.layout.hideGithubButton && (
+              {!config.layout?.hideGithubButton && (
                 <div className="flex items-center">
                   <OpenGitHubRepo />
                 </div>
               )}
-              {config.layout.showThemeToggle && <ThemeToggleButton />}
+              {config.layout?.showThemeToggle && <ThemeToggleButton />}
               <TooltipIconButton
                 size="lg"
                 className="p-4"
@@ -401,7 +401,7 @@ export function Thread() {
               <div className="sticky bottom-0 flex flex-col items-center gap-8">
                 {!chatStarted && config.brand.brandHeaderWelcome ? (
                   config.brand.brandHeaderWelcome()
-                ) : !config.layout.hideBrandHeaderAboveChatBox ? (
+                ) : !config.layout?.hideBrandHeaderAboveChatBox ? (
                   <div className="flex items-center gap-3">
                     <LangGraphLogoSVG className="h-8 flex-shrink-0" />
                     <h1 className="text-2xl font-semibold tracking-tight">
@@ -439,7 +439,7 @@ export function Thread() {
 
                     <div className="flex items-center justify-between p-2 pt-4">
                       <div>
-                        {!config.layout.hideToolCallsToggleButton && (
+                        {!config.layout?.hideToolCallsToggleButton && (
                           <div className="flex items-center space-x-2">
                             <Switch
                               id="render-tool-calls"
