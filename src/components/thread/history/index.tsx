@@ -14,6 +14,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { PanelRightOpen, PanelRightClose } from "lucide-react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { FormattedMessage } from "react-intl";
 
 function ThreadList({
   threads,
@@ -110,7 +111,7 @@ export default function ThreadHistory() {
             )}
           </Button>
           <h1 className="text-xl font-semibold tracking-tight">
-            Thread History
+            <FormattedMessage id="thread-history" />
           </h1>
         </div>
         {threadsLoading ? (
@@ -132,7 +133,9 @@ export default function ThreadHistory() {
             className="flex lg:hidden"
           >
             <SheetHeader>
-              <SheetTitle>Thread History</SheetTitle>
+              <SheetTitle>
+                <FormattedMessage id="thread-history" />
+              </SheetTitle>
             </SheetHeader>
             <ThreadList
               threads={threads}
