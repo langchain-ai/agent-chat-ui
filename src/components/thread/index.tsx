@@ -35,6 +35,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "../ui/tooltip";
+import { useIntl, FormattedMessage } from "react-intl";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -118,6 +120,7 @@ export function Thread() {
   const stream = useStreamContext();
   const messages = stream.messages;
   const isLoading = stream.isLoading;
+  const intl = useIntl();
 
   const lastError = useRef<string | undefined>(undefined);
 
@@ -274,6 +277,9 @@ export function Thread() {
               )}
             </div>
             <div className="absolute top-2 right-4 flex items-center">
+              <div className="flex justify-end p-4">
+                <LanguageSelector />
+              </div>
               <OpenGitHubRepo />
             </div>
           </div>
@@ -319,6 +325,9 @@ export function Thread() {
             </div>
 
             <div className="flex items-center gap-4">
+              <div className="flex justify-end p-4">
+                <LanguageSelector />
+              </div>
               <div className="flex items-center">
                 <OpenGitHubRepo />
               </div>
@@ -414,7 +423,7 @@ export function Thread() {
                           form?.requestSubmit();
                         }
                       }}
-                      placeholder="Type your message..."
+                      placeholder={intl.formatMessage({ id: "type-message" })}
                       className="field-sizing-content resize-none border-none bg-transparent p-3.5 pb-0 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none"
                     />
 
@@ -430,7 +439,7 @@ export function Thread() {
                             htmlFor="render-tool-calls"
                             className="text-sm text-gray-600"
                           >
-                            Hide Tool Calls
+                            <FormattedMessage id="hide-tool-calls" />
                           </Label>
                         </div>
                       </div>
@@ -448,7 +457,7 @@ export function Thread() {
                           className="shadow-md transition-all"
                           disabled={isLoading || !input.trim()}
                         >
-                          Send
+                          <FormattedMessage id="send" />
                         </Button>
                       )}
                     </div>

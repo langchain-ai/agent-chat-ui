@@ -43,6 +43,7 @@
     "nuqs": "^2.4.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-intl": "^7.1.11",
     "react-markdown": "^10.0.1",
     "react-syntax-highlighter": "^15.5.0",
     "recharts": "^2.15.1",
@@ -84,5 +85,5 @@
     "react-is": "^19.0.0-rc-69d4b800-20241021",
     "@langchain/langgraph-checkpoint": "^0.0.16"
   },
-  "packageManager": "pnpm@10.5.1"
+  "packageManager": "pnpm@10.10.0"
 }
