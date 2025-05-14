@@ -5,8 +5,7 @@ import { StreamProvider } from "@/providers/Stream";
 import { ThreadProvider } from "@/providers/Thread";
 import { ArtifactProvider } from "@/components/thread/artifact";
 import { Toaster } from "@/components/ui/sonner";
-import { ServerStatusChecker } from "@/components/server-status-checker";
-import { serverConfig } from "@/lib/server-config";
+import { ServerStatusChecker } from "@/components/ui/server-status-checker";
 import React from "react";
 
 export default function DemoPage(): React.ReactNode {
@@ -17,11 +16,7 @@ export default function DemoPage(): React.ReactNode {
         <StreamProvider>
           <ArtifactProvider>
             <Thread />
-            <ServerStatusChecker
-              serverUrls={serverConfig.serverUrls}
-              checkInterval={serverConfig.checkInterval}
-              retryInterval={serverConfig.retryInterval}
-            />
+            <ServerStatusChecker />
           </ArtifactProvider>
         </StreamProvider>
       </ThreadProvider>

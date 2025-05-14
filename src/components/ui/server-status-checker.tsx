@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { AlertCircle, CheckCircle, XCircle } from "lucide-react";
-import { Button } from "./ui/button";
+import { Button } from "./button";
 import { cn } from "@/lib/utils";
+import { useQueryState } from "nuqs";
 
 interface ServerStatus {
   isChecking: boolean;
@@ -12,17 +13,24 @@ interface ServerStatus {
   lastChecked: Date | null;
 }
 
-interface ServerStatusCheckerProps {
-  serverUrls: string[];
-  checkInterval?: number; // 檢查間隔，單位為毫秒，預設為3分鐘
-  retryInterval?: number; // 重試間隔，單位為毫秒，預設為5秒
-}
+const showSuccess = () => {
+  toast.success("所有伺服器已恢復在線狀態", {
+    description: "服務已正常運行",
+    duration: 5000,
+  });
+};
 
-export function ServerStatusChecker({
-  serverUrls,
-  checkInterval = 3 * 60 * 1000, // 3分鐘
-  retryInterval = 5 * 1000, // 5秒
-}: ServerStatusCheckerProps) {
+export function ServerStatusChecker() {
+  const hasRunRef = useRef(false);
+  const [apiUrlParam] = useQueryState("apiUrl");
+  const langGraphApiUrl = process.env.NEXT_PUBLIC_API_URL || apiUrlParam || "";
+  const gstudioApiUrl = `${langGraphApiUrl}/gstudio`;
+  const [serverUrls] = useState({
+    "Langgraph Server": langGraphApiUrl,
+    Gstudio: gstudioApiUrl,
+  });
+  const checkInterval = 3 * 60 * 1000;
+  const retryInterval = 5 * 1000;
   const [statuses, setStatuses] = useState<Record<string, ServerStatus>>({});
   const [showStatusWindow, setShowStatusWindow] = useState(false);
 
@@ -77,7 +85,7 @@ export function ServerStatusChecker({
   // 檢查所有伺服器狀態
   const checkAllServers = async () => {
     const results = await Promise.all(
-      serverUrls.map((url) => checkServerStatus(url)),
+      Object.values(serverUrls).map((url) => checkServerStatus(url)),
     );
 
     // 如果有任何一個伺服器離線，顯示狀態視窗
@@ -92,7 +100,7 @@ export function ServerStatusChecker({
 
   // 初始化狀態
   useEffect(() => {
-    serverUrls.forEach((url) => {
+    Object.values(serverUrls).forEach((url) => {
       setStatuses((prev) => ({
         ...prev,
         [url]: {
@@ -107,7 +115,11 @@ export function ServerStatusChecker({
   // 定期檢查伺服器狀態
   useEffect(() => {
     // 立即進行第一次檢查
-    checkAllServers();
+    if (!hasRunRef.current) {
+      checkAllServers();
+      showSuccess();
+      hasRunRef.current = true;
+    }
 
     // 設置定期檢查
     const intervalId = setInterval(() => {
@@ -124,10 +136,7 @@ export function ServerStatusChecker({
     const retryId = setInterval(() => {
       checkAllServers().then((allOnline) => {
         if (allOnline) {
-          toast.success("所有伺服器已恢復在線狀態", {
-            description: "服務已正常運行",
-            duration: 5000,
-          });
+          showSuccess();
         }
       });
     }, retryInterval);
@@ -152,7 +161,7 @@ export function ServerStatusChecker({
       </div>
 
       <div className="space-y-2">
-        {serverUrls.map((url) => {
+        {Object.entries(serverUrls).map(([name, url]) => {
           const status = statuses[url];
           return (
             <div
@@ -171,7 +180,7 @@ export function ServerStatusChecker({
                   className="max-w-[180px] truncate text-sm"
                   title={url}
                 >
-                  {new URL(url).hostname}
+                  {name}
                 </span>
               </div>
               <span
@@ -191,7 +200,9 @@ export function ServerStatusChecker({
         <Button
           size="sm"
           onClick={() => checkAllServers()}
-          disabled={serverUrls.some((url) => statuses[url]?.isChecking)}
+          disabled={Object.values(serverUrls).some(
+            (url) => statuses[url]?.isChecking,
+          )}
         >
           立即檢查
         </Button>

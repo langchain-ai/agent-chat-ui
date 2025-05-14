@@ -71,32 +71,32 @@ https://agent-chat-ui-xxxxxxxxxxxx-de.a.run.app
 ```yaml
 steps:
   # 構建 Docker 映像
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/agent-chat-ui', '.']
-  
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["build", "-t", "gcr.io/$PROJECT_ID/agent-chat-ui", "."]
+
   # 推送映像到 Container Registry
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/agent-chat-ui']
-  
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["push", "gcr.io/$PROJECT_ID/agent-chat-ui"]
+
   # 部署到 Cloud Run
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
     entrypoint: gcloud
     args:
-      - 'run'
-      - 'deploy'
-      - 'agent-chat-ui'
-      - '--image'
-      - 'gcr.io/$PROJECT_ID/agent-chat-ui'
-      - '--platform'
-      - 'managed'
-      - '--region'
-      - 'asia-east1'
-      - '--allow-unauthenticated'
-      - '--set-env-vars'
-      - 'NEXT_PUBLIC_API_URL=https://your-langgraph-api.run.app,NEXT_PUBLIC_ASSISTANT_ID=agent,GSTUDIO_API=https://your-gstudio-api.run.app'
+      - "run"
+      - "deploy"
+      - "agent-chat-ui"
+      - "--image"
+      - "gcr.io/$PROJECT_ID/agent-chat-ui"
+      - "--platform"
+      - "managed"
+      - "--region"
+      - "asia-east1"
+      - "--allow-unauthenticated"
+      - "--set-env-vars"
+      - "NEXT_PUBLIC_API_URL=https://your-langgraph-api.run.app,NEXT_PUBLIC_ASSISTANT_ID=agent,GSTUDIO_API=https://your-gstudio-api.run.app"
 
 images:
-  - 'gcr.io/$PROJECT_ID/agent-chat-ui'
+  - "gcr.io/$PROJECT_ID/agent-chat-ui"
 ```
 
 然後使用以下命令觸發構建：
