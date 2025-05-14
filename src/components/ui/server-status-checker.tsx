@@ -32,7 +32,7 @@ export function ServerStatusChecker() {
   const checkInterval = 3 * 60 * 1000;
   const retryInterval = 5 * 1000;
   const [statuses, setStatuses] = useState<Record<string, ServerStatus>>({});
-  const [showStatusWindow, setShowStatusWindow] = useState(false);
+  const [showStatusWindow, setShowStatusWindow] = useState(true);
 
   // 檢查伺服器狀態
   const checkServerStatus = async (url: string) => {
@@ -116,8 +116,11 @@ export function ServerStatusChecker() {
   useEffect(() => {
     // 立即進行第一次檢查
     if (!hasRunRef.current) {
-      checkAllServers();
-      showSuccess();
+      checkAllServers().then((allOnline) => {
+        if (allOnline) {
+          showSuccess();
+        }
+      });
       hasRunRef.current = true;
     }
 
