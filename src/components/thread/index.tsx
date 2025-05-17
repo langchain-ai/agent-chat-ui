@@ -42,6 +42,7 @@ import {
   ArtifactTitle,
   useArtifactContext,
 } from "./artifact";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -94,10 +95,12 @@ function OpenGitHubRepo() {
             target="_blank"
             className="flex items-center justify-center"
           >
-            <GitHubSVG
-              width="24"
-              height="24"
-            />
+            <span className="dark:invert">
+              <GitHubSVG
+                width="24"
+                height="24"
+              />
+            </span>
           </a>
         </TooltipTrigger>
         <TooltipContent side="left">
@@ -237,7 +240,7 @@ export function Thread() {
     <div className="flex h-screen w-full overflow-hidden">
       <div className="relative hidden lg:flex">
         <motion.div
-          className="absolute z-20 h-full overflow-hidden border-r bg-white"
+          className="absolute z-20 h-full overflow-hidden border-r bg-white dark:bg-neutral-800"
           style={{ width: 300 }}
           animate={
             isLargeScreen
@@ -291,7 +294,7 @@ export function Thread() {
               <div>
                 {(!chatHistoryOpen || !isLargeScreen) && (
                   <Button
-                    className="hover:bg-gray-100"
+                    className="hover:bg-accent"
                     variant="ghost"
                     onClick={() => setChatHistoryOpen((p) => !p)}
                   >
@@ -303,8 +306,9 @@ export function Thread() {
                   </Button>
                 )}
               </div>
-              <div className="absolute top-2 right-4 flex items-center">
+              <div className="absolute top-2 right-4 flex items-center gap-2">
                 <OpenGitHubRepo />
+                <ThemeToggle />
               </div>
             </div>
           )}
@@ -314,7 +318,7 @@ export function Thread() {
                 <div className="absolute left-0 z-10">
                   {(!chatHistoryOpen || !isLargeScreen) && (
                     <Button
-                      className="hover:bg-gray-100"
+                      className="hover:bg-accent"
                       variant="ghost"
                       onClick={() => setChatHistoryOpen((p) => !p)}
                     >
@@ -411,7 +415,7 @@ export function Thread() {
                 </>
               }
               footer={
-                <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-white">
+                <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-background">
                   {!chatStarted && (
                     <div className="flex items-center gap-3">
                       <LangGraphLogoSVG className="h-8 flex-shrink-0" />
@@ -458,7 +462,7 @@ export function Thread() {
                             />
                             <Label
                               htmlFor="render-tool-calls"
-                              className="text-sm text-gray-600"
+                              className="text-sm text-muted-foreground"
                             >
                               Hide Tool Calls
                             </Label>

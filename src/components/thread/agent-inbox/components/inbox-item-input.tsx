@@ -107,9 +107,9 @@ function ResponseComponent({
   };
 
   return (
-    <div className="flex w-full flex-col items-start gap-4 rounded-xl border-[1px] border-gray-300 p-6">
+    <div className="flex w-full flex-col items-start gap-4 rounded-xl border-[1px] border-gray-300 p-6 dark:border-gray-700">
       <div className="flex w-full items-center justify-between">
-        <p className="text-base font-semibold text-black">
+        <p className="text-base font-semibold text-black dark:text-white">
           Respond to assistant
         </p>
         <ResetButton
@@ -140,6 +140,7 @@ function ResponseComponent({
           variant="brand"
           disabled={streaming}
           onClick={handleSubmit}
+          className="dark:text-black"
         >
           Send Response
         </Button>
@@ -161,7 +162,7 @@ function AcceptComponent({
   ) => Promise<void>;
 }) {
   return (
-    <div className="flex w-full flex-col items-start gap-4 rounded-lg border-[1px] border-gray-300 p-6">
+    <div className="flex w-full flex-col items-start gap-4 rounded-lg border-[1px] border-gray-300 p-6 dark:border-gray-700">
       {actionRequestArgs && Object.keys(actionRequestArgs).length > 0 && (
         <ArgsRenderer args={actionRequestArgs} />
       )}
@@ -169,7 +170,7 @@ function AcceptComponent({
         variant="brand"
         disabled={streaming}
         onClick={handleSubmit}
-        className="w-full"
+        className="w-full dark:text-white"
       >
         Accept
       </Button>
@@ -258,9 +259,9 @@ function EditAndOrAcceptComponent({
   };
 
   return (
-    <div className="flex w-full flex-col items-start gap-4 rounded-lg border-[1px] border-gray-300 p-6">
+    <div className="flex w-full flex-col items-start gap-4 rounded-lg border-[1px] border-gray-300 p-6 dark:border-gray-700">
       <div className="flex w-full items-center justify-between">
-        <p className="text-base font-semibold text-black">{header}</p>
+        <p className="text-base font-semibold text-black dark:text-white">{header}</p>
         <ResetButton handleReset={handleReset} />
       </div>
 

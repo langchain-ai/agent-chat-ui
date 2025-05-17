@@ -55,7 +55,7 @@ function MessagesRenderer({ messages }: { messages: BaseMessage[] }) {
             key={msg.id ?? `message-${idx}`}
             className="ml-2 flex w-full flex-col gap-[2px]"
           >
-            <p className="font-medium text-gray-700">{messageTypeLabel}:</p>
+            <p className="font-medium text-gray-700 dark:text-gray-300">{messageTypeLabel}:</p>
             {content && <MarkdownText>{content}</MarkdownText>}
             {"tool_calls" in msg && msg.tool_calls ? (
               <div className="flex w-full flex-col items-start gap-1">
@@ -154,7 +154,7 @@ function HasContentsEllipsis({ onClick }: { onClick?: () => void }) {
       onClick={onClick}
       className={cn(
         "rounded-md p-[2px] font-mono text-[10px] leading-3",
-        "bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-800",
+        "bg-gray-50 dark:bg-neutral-800 text-gray-600 dark:text-gray-300 hover:bg-accent dark:hover:bg-accent hover:text-gray-800 dark:hover:text-gray-200",
         "cursor-pointer transition-colors ease-in-out",
         "inline-block -translate-y-[2px]",
       )}
@@ -192,13 +192,13 @@ export function StateViewObject(props: StateViewProps) {
       >
         <div
           onClick={() => setExpanded((prev) => !prev)}
-          className="flex h-5 w-5 cursor-pointer items-center justify-center rounded-md text-gray-500 transition-colors ease-in-out hover:bg-gray-100 hover:text-black"
+          className="flex h-5 w-5 cursor-pointer items-center justify-center rounded-md text-gray-500 transition-colors ease-in-out hover:bg-accent hover:text-black"
         >
           <ChevronRight className="h-4 w-4" />
         </div>
       </motion.div>
       <div className="flex w-full flex-col items-start justify-start gap-1">
-        <p className="font-normal text-black">
+        <p className="font-normal text-black dark:text-white">
           {prettifyText(props.keyName)}{" "}
           {!expanded && (
             <HasContentsEllipsis onClick={() => setExpanded((prev) => !prev)} />
