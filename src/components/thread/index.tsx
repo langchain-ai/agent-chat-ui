@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
 import { useState, FormEvent } from "react";
+import { useSession } from "next-auth/react";
 import { Button } from "../ui/button";
 import { Checkpoint, Message } from "@langchain/langgraph-sdk";
 import { AssistantMessage, AssistantMessageLoading } from "./messages/ai";
@@ -12,7 +13,8 @@ import {
   DO_NOT_RENDER_ID_PREFIX,
   ensureToolCallsHaveResponses,
 } from "@/lib/ensure-tool-responses";
-import { LangGraphLogoSVG } from "../icons/langgraph";
+import { FacetAILogoSVG, FacetAITextLogoSVG } from "@/components/icons/facetai";
+import { ChatHeader } from "@/components/chat-header";
 import { TooltipIconButton } from "./tooltip-icon-button";
 import {
   ArrowDown,
@@ -22,7 +24,6 @@ import {
   SquarePen,
   XIcon,
   Plus,
-  CircleX,
 } from "lucide-react";
 import { useQueryState, parseAsBoolean } from "nuqs";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
@@ -31,13 +32,6 @@ import { toast } from "sonner";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { Label } from "../ui/label";
 import { Switch } from "../ui/switch";
-import { GitHubSVG } from "../icons/github";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "../ui/tooltip";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { ContentBlocksPreview } from "./ContentBlocksPreview";
 import {
@@ -88,31 +82,9 @@ function ScrollToBottom(props: { className?: string }) {
   );
 }
 
-function OpenGitHubRepo() {
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <a
-            href="https://github.com/langchain-ai/agent-chat-ui"
-            target="_blank"
-            className="flex items-center justify-center"
-          >
-            <GitHubSVG
-              width="24"
-              height="24"
-            />
-          </a>
-        </TooltipTrigger>
-        <TooltipContent side="left">
-          <p>Open GitHub repo</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
-}
 
 export function Thread() {
+  const { data: session } = useSession();
   const [artifactContext, setArtifactContext] = useArtifactContext();
   const [artifactOpen, closeArtifact] = useArtifactOpen();
 
@@ -132,7 +104,6 @@ export function Thread() {
     handleFileUpload,
     dropRef,
     removeBlock,
-    resetBlocks,
     dragOver,
     handlePaste,
   } = useFileUpload();
@@ -215,10 +186,14 @@ export function Thread() {
     const context =
       Object.keys(artifactContext).length > 0 ? artifactContext : undefined;
 
+    // Get user ID for metadata
+    const userId = (session?.user as any)?.id;
+
     stream.submit(
       { messages: [...toolMessages, newHumanMessage], context },
       {
         streamMode: ["values"],
+        config: userId ? { configurable: { user_id: userId } } : undefined,
         optimisticValues: (prev) => ({
           ...prev,
           context,
@@ -241,9 +216,14 @@ export function Thread() {
     // Do this so the loading state is correct
     prevMessageLength.current = prevMessageLength.current - 1;
     setFirstTokenReceived(false);
+    
+    // Get user ID for metadata
+    const userId = (session?.user as any)?.id;
+    
     stream.submit(undefined, {
       checkpoint: parentCheckpoint,
       streamMode: ["values"],
+      config: userId ? { configurable: { user_id: userId } } : undefined,
     });
   };
 
@@ -253,7 +233,12 @@ export function Thread() {
   );
 
   return (
-    <div className="flex h-screen w-full overflow-hidden">
+    <div className="flex h-screen w-full flex-col overflow-hidden">
+      <ChatHeader 
+        onToggleSidebar={() => setChatHistoryOpen(!chatHistoryOpen)}
+        showSidebarToggle={true}
+      />
+      <div className="flex flex-1 overflow-hidden">
       <div className="relative hidden lg:flex">
         <motion.div
           className="absolute z-20 h-full overflow-hidden border-r bg-white"
@@ -322,9 +307,6 @@ export function Thread() {
                   </Button>
                 )}
               </div>
-              <div className="absolute top-2 right-4 flex items-center">
-                <OpenGitHubRepo />
-              </div>
             </div>
           )}
           {chatStarted && (
@@ -346,31 +328,28 @@ export function Thread() {
                   )}
                 </div>
                 <motion.button
-                  className="flex cursor-pointer items-center gap-2"
                   onClick={() => setThreadId(null)}
-                  animate={{
-                    marginLeft: !chatHistoryOpen ? 48 : 0,
+                  className="flex items-center gap-2 rounded-md border px-3 py-2 transition-all hover:border-primary"
+                  whileHover={{
+                    scale: 1.05,
+                    transition: { type: "spring", stiffness: 400, damping: 10 },
                   }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 300,
-                    damping: 30,
+                  whileTap={{
+                    scale: 0.95,
+                    transition: { type: "spring", stiffness: 400, damping: 30 },
                   }}
                 >
-                  <LangGraphLogoSVG
+                  <FacetAILogoSVG
                     width={32}
                     height={32}
                   />
-                  <span className="text-xl font-semibold tracking-tight">
-                    Agent Chat
+                  <span className="text-sm text-muted-foreground">
+                    FacetAI Chat
                   </span>
                 </motion.button>
               </div>
 
               <div className="flex items-center gap-4">
-                <div className="flex items-center">
-                  <OpenGitHubRepo />
-                </div>
                 <TooltipIconButton
                   size="lg"
                   className="p-4"
@@ -430,13 +409,10 @@ export function Thread() {
                 </>
               }
               footer={
-                <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-white">
+                <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-background">
                   {!chatStarted && (
                     <div className="flex items-center gap-3">
-                      <LangGraphLogoSVG className="h-8 flex-shrink-0" />
-                      <h1 className="text-2xl font-semibold tracking-tight">
-                        Agent Chat
-                      </h1>
+                      <FacetAITextLogoSVG width={160} height={32} variant="violet-black" className="h-8 flex-shrink-0" />
                     </div>
                   )}
 
@@ -556,6 +532,7 @@ export function Thread() {
             <ArtifactContent className="relative flex-grow" />
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

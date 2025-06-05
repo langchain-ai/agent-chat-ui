@@ -1,7 +1,7 @@
 import type { Base64ContentBlock } from "@langchain/core/messages";
 import { toast } from "sonner";
 
-// Returns a Promise of a typed multimodal block for images or PDFs
+// Returns a Promise of a typed multimodal block for images, videos, or PDFs
 export async function fileToContentBlock(
   file: File,
 ): Promise<Base64ContentBlock> {
@@ -11,7 +11,14 @@ export async function fileToContentBlock(
     "image/gif",
     "image/webp",
   ];
-  const supportedFileTypes = [...supportedImageTypes, "application/pdf"];
+  const supportedVideoTypes = [
+    "video/mp4",
+    "video/webm",
+    "video/mov",
+    "video/quicktime",
+    "video/avi",
+  ];
+  const supportedFileTypes = [...supportedImageTypes, ...supportedVideoTypes, "application/pdf"];
 
   if (!supportedFileTypes.includes(file.type)) {
     toast.error(
@@ -29,6 +36,16 @@ export async function fileToContentBlock(
       mime_type: file.type,
       data,
       metadata: { name: file.name },
+    };
+  }
+
+  if (supportedVideoTypes.includes(file.type)) {
+    return {
+      type: "file",
+      source_type: "base64",
+      mime_type: file.type,
+      data,
+      metadata: { filename: file.name, type: "video" },
     };
   }
 

@@ -17,7 +17,7 @@ import {
 import { useQueryState } from "nuqs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { LangGraphLogoSVG } from "@/components/icons/langgraph";
+import { FacetAILogoSVG } from "@/components/icons/facetai";
 import { Label } from "@/components/ui/label";
 import { ArrowRight } from "lucide-react";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -51,17 +51,32 @@ async function checkGraphStatus(
   apiKey: string | null,
 ): Promise<boolean> {
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+    
+    const headers: Record<string, string> = {};
+    
+    if (apiKey) {
+      headers["X-Api-Key"] = apiKey;
+    }
+    
     const res = await fetch(`${apiUrl}/info`, {
-      ...(apiKey && {
-        headers: {
-          "X-Api-Key": apiKey,
-        },
-      }),
+      signal: controller.signal,
+      headers: Object.keys(headers).length > 0 ? headers : undefined,
     });
 
+    clearTimeout(timeoutId);
     return res.ok;
   } catch (e) {
-    console.error(e);
+    if (e instanceof Error) {
+      if (e.name === 'AbortError') {
+        console.error('Graph status check timed out after 10 seconds');
+      } else {
+        console.error('Graph status check failed:', e.message);
+      }
+    } else {
+      console.error('Graph status check failed:', e);
+    }
     return false;
   }
 }
@@ -79,6 +94,7 @@ const StreamSession = ({
 }) => {
   const [threadId, setThreadId] = useQueryState("threadId");
   const { getThreads, setThreads } = useThreads();
+  
   const streamValue = useTypedStream({
     apiUrl,
     apiKey: apiKey ?? undefined,
@@ -99,15 +115,15 @@ const StreamSession = ({
       sleep().then(() => getThreads().then(setThreads).catch(console.error));
     },
   });
-
+  
   useEffect(() => {
     checkGraphStatus(apiUrl, apiKey).then((ok) => {
       if (!ok) {
-        toast.error("Failed to connect to LangGraph server", {
+        toast.error("Failed to connect to FacetAI server", {
           description: () => (
             <p>
               Please ensure your graph is running at <code>{apiUrl}</code> and
-              your API key is correctly set (if connecting to a deployed graph).
+              your API key is correctly set.
             </p>
           ),
           duration: 10000,
@@ -164,16 +180,16 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
   if (!finalApiUrl || !finalAssistantId) {
     return (
       <div className="flex min-h-screen w-full items-center justify-center p-4">
-        <div className="animate-in fade-in-0 zoom-in-95 bg-background flex max-w-3xl flex-col rounded-lg border shadow-lg">
+        <div className="animate-in fade-in-0 zoom-in-95 bg-card flex max-w-3xl flex-col rounded-xl border shadow-xl">
           <div className="mt-14 flex flex-col gap-2 border-b p-6">
             <div className="flex flex-col items-start gap-2">
-              <LangGraphLogoSVG className="h-7" />
+              <FacetAILogoSVG width={28} height={28} variant="violet" className="h-7 w-7" />
               <h1 className="text-xl font-semibold tracking-tight">
-                Agent Chat
+                FacetAI Chat
               </h1>
             </div>
             <p className="text-muted-foreground">
-              Welcome to Agent Chat! Before you get started, you need to enter
+              Welcome to FacetAI Chat! Before you get started, you need to enter
               the URL of the deployment and the assistant / graph ID.
             </p>
           </div>
@@ -251,6 +267,7 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
               <Button
                 type="submit"
                 size="lg"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 Continue
                 <ArrowRight className="size-5" />

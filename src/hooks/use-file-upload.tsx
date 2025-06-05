@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, ChangeEvent } from "react";
+import { useState, useRef, useEffect, ChangeEvent, useCallback } from "react";
 import { toast } from "sonner";
 import type { Base64ContentBlock } from "@langchain/core/messages";
 import { fileToContentBlock } from "@/lib/multimodal-utils";
@@ -9,6 +9,11 @@ export const SUPPORTED_FILE_TYPES = [
   "image/gif",
   "image/webp",
   "application/pdf",
+  "video/mp4",
+  "video/webm",
+  "video/mov",
+  "video/quicktime",
+  "video/avi",
 ];
 
 interface UseFileUploadOptions {
@@ -44,14 +49,11 @@ export function useFileUpload({
     return false;
   };
 
-  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-    const fileArray = Array.from(files);
-    const validFiles = fileArray.filter((file) =>
+  const processFiles = useCallback(async (files: File[]) => {
+    const validFiles = files.filter((file) =>
       SUPPORTED_FILE_TYPES.includes(file.type),
     );
-    const invalidFiles = fileArray.filter(
+    const invalidFiles = files.filter(
       (file) => !SUPPORTED_FILE_TYPES.includes(file.type),
     );
     const duplicateFiles = validFiles.filter((file) =>
@@ -63,7 +65,7 @@ export function useFileUpload({
 
     if (invalidFiles.length > 0) {
       toast.error(
-        "You have uploaded invalid file type. Please upload a JPEG, PNG, GIF, WEBP image or a PDF.",
+        "Invalid file type detected. Please upload a JPEG, PNG, GIF, WEBP image, MP4/WEBM/MOV/AVI video, or a PDF.",
       );
     }
     if (duplicateFiles.length > 0) {
@@ -72,10 +74,17 @@ export function useFileUpload({
       );
     }
 
-    const newBlocks = uniqueFiles.length
-      ? await Promise.all(uniqueFiles.map(fileToContentBlock))
-      : [];
-    setContentBlocks((prev) => [...prev, ...newBlocks]);
+    if (uniqueFiles.length > 0) {
+      const newBlocks = await Promise.all(uniqueFiles.map(fileToContentBlock));
+      setContentBlocks((prev) => [...prev, ...newBlocks]);
+    }
+  }, [contentBlocks]);
+
+  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    
+    await processFiles(Array.from(files));
     e.target.value = "";
   };
 
@@ -107,35 +116,7 @@ export function useFileUpload({
 
       if (!e.dataTransfer) return;
 
-      const files = Array.from(e.dataTransfer.files);
-      const validFiles = files.filter((file) =>
-        SUPPORTED_FILE_TYPES.includes(file.type),
-      );
-      const invalidFiles = files.filter(
-        (file) => !SUPPORTED_FILE_TYPES.includes(file.type),
-      );
-      const duplicateFiles = validFiles.filter((file) =>
-        isDuplicate(file, contentBlocks),
-      );
-      const uniqueFiles = validFiles.filter(
-        (file) => !isDuplicate(file, contentBlocks),
-      );
-
-      if (invalidFiles.length > 0) {
-        toast.error(
-          "You have uploaded invalid file type. Please upload a JPEG, PNG, GIF, WEBP image or a PDF.",
-        );
-      }
-      if (duplicateFiles.length > 0) {
-        toast.error(
-          `Duplicate file(s) detected: ${duplicateFiles.map((f) => f.name).join(", ")}. Each file can only be uploaded once per message.`,
-        );
-      }
-
-      const newBlocks = uniqueFiles.length
-        ? await Promise.all(uniqueFiles.map(fileToContentBlock))
-        : [];
-      setContentBlocks((prev) => [...prev, ...newBlocks]);
+      await processFiles(Array.from(e.dataTransfer.files));
     };
     const handleWindowDragEnd = (e: DragEvent) => {
       dragCounter.current = 0;
@@ -185,7 +166,7 @@ export function useFileUpload({
       window.removeEventListener("dragover", handleWindowDragOver);
       dragCounter.current = 0;
     };
-  }, [contentBlocks]);
+  }, [processFiles]);
 
   const removeBlock = (idx: number) => {
     setContentBlocks((prev) => prev.filter((_, i) => i !== idx));
@@ -202,6 +183,7 @@ export function useFileUpload({
   ) => {
     const items = e.clipboardData.items;
     if (!items) return;
+    
     const files: File[] = [];
     for (let i = 0; i < items.length; i += 1) {
       const item = items[i];
@@ -210,51 +192,11 @@ export function useFileUpload({
         if (file) files.push(file);
       }
     }
-    if (files.length === 0) {
-      return;
-    }
+    
+    if (files.length === 0) return;
+    
     e.preventDefault();
-    const validFiles = files.filter((file) =>
-      SUPPORTED_FILE_TYPES.includes(file.type),
-    );
-    const invalidFiles = files.filter(
-      (file) => !SUPPORTED_FILE_TYPES.includes(file.type),
-    );
-    const isDuplicate = (file: File) => {
-      if (file.type === "application/pdf") {
-        return contentBlocks.some(
-          (b) =>
-            b.type === "file" &&
-            b.mime_type === "application/pdf" &&
-            b.metadata?.filename === file.name,
-        );
-      }
-      if (SUPPORTED_FILE_TYPES.includes(file.type)) {
-        return contentBlocks.some(
-          (b) =>
-            b.type === "image" &&
-            b.metadata?.name === file.name &&
-            b.mime_type === file.type,
-        );
-      }
-      return false;
-    };
-    const duplicateFiles = validFiles.filter(isDuplicate);
-    const uniqueFiles = validFiles.filter((file) => !isDuplicate(file));
-    if (invalidFiles.length > 0) {
-      toast.error(
-        "You have pasted an invalid file type. Please paste a JPEG, PNG, GIF, WEBP image or a PDF.",
-      );
-    }
-    if (duplicateFiles.length > 0) {
-      toast.error(
-        `Duplicate file(s) detected: ${duplicateFiles.map((f) => f.name).join(", ")}. Each file can only be uploaded once per message.`,
-      );
-    }
-    if (uniqueFiles.length > 0) {
-      const newBlocks = await Promise.all(uniqueFiles.map(fileToContentBlock));
-      setContentBlocks((prev) => [...prev, ...newBlocks]);
-    }
+    await processFiles(files);
   };
 
   return {

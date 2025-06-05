@@ -1,5 +1,5 @@
 import React from "react";
-import { File, Image as ImageIcon, X as XIcon } from "lucide-react";
+import { File, X as XIcon, Play } from "lucide-react";
 import type { Base64ContentBlock } from "@langchain/core/messages";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -44,6 +44,52 @@ export const MultimodalPreview: React.FC<MultimodalPreviewProps> = ({
             className="absolute top-1 right-1 z-10 rounded-full bg-gray-500 text-white hover:bg-gray-700"
             onClick={onRemove}
             aria-label="Remove image"
+          >
+            <XIcon className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  // Video block
+  if (
+    block.type === "file" &&
+    block.source_type === "base64" &&
+    typeof block.mime_type === "string" &&
+    block.mime_type.startsWith("video/")
+  ) {
+    const filename =
+      block.metadata?.filename || block.metadata?.name || "Video file";
+    const videoUrl = `data:${block.mime_type};base64,${block.data}`;
+    
+    return (
+      <div className={cn("relative inline-block", className)}>
+        <div className={cn(
+          "relative rounded-md overflow-hidden bg-black",
+          size === "sm" ? "h-10 w-16" : size === "md" ? "h-16 w-24" : "h-24 w-32"
+        )}>
+          <video
+            src={videoUrl}
+            className="h-full w-full object-cover"
+            muted
+            playsInline
+          />
+          <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+            <Play className="h-4 w-4 text-white" fill="white" />
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-1">
+            <span className="text-xs text-white truncate block">
+              {String(filename)}
+            </span>
+          </div>
+        </div>
+        {removable && (
+          <button
+            type="button"
+            className="absolute top-1 right-1 z-10 rounded-full bg-gray-500 text-white hover:bg-gray-700"
+            onClick={onRemove}
+            aria-label="Remove video"
           >
             <XIcon className="h-4 w-4" />
           </button>

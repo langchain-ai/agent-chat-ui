@@ -2,6 +2,7 @@ import { validate } from "uuid";
 import { getApiKey } from "@/lib/api-key";
 import { Thread } from "@langchain/langgraph-sdk";
 import { useQueryState } from "nuqs";
+import { useSession } from "next-auth/react";
 import {
   createContext,
   useContext,
@@ -25,12 +26,13 @@ const ThreadContext = createContext<ThreadContextType | undefined>(undefined);
 
 function getThreadSearchMetadata(
   assistantId: string,
-): { graph_id: string } | { assistant_id: string } {
-  if (validate(assistantId)) {
-    return { assistant_id: assistantId };
-  } else {
-    return { graph_id: assistantId };
-  }
+  userId?: string,
+): { graph_id: string; user_id?: string } | { assistant_id: string; user_id?: string } {
+  const baseMetadata = validate(assistantId) 
+    ? { assistant_id: assistantId } 
+    : { graph_id: assistantId };
+  
+  return userId ? { ...baseMetadata, user_id: userId } : baseMetadata;
 }
 
 export function ThreadProvider({ children }: { children: ReactNode }) {
@@ -38,20 +40,24 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
   const [assistantId] = useQueryState("assistantId");
   const [threads, setThreads] = useState<Thread[]>([]);
   const [threadsLoading, setThreadsLoading] = useState(false);
+  const { data: session } = useSession();
+
+  // Extract userId to fix dependency array warning
+  const userId = (session?.user as any)?.id;
 
   const getThreads = useCallback(async (): Promise<Thread[]> => {
     if (!apiUrl || !assistantId) return [];
-    const client = createClient(apiUrl, getApiKey() ?? undefined);
+    const client = createClient(apiUrl, getApiKey() ?? undefined, userId);
 
     const threads = await client.threads.search({
       metadata: {
-        ...getThreadSearchMetadata(assistantId),
+        ...getThreadSearchMetadata(assistantId, userId),
       },
       limit: 100,
     });
 
     return threads;
-  }, [apiUrl, assistantId]);
+  }, [apiUrl, assistantId, userId]);
 
   const value = {
     getThreads,

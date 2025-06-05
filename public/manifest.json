@@ -1,0 +1,21 @@
+{
+  "name": "FacetAI Chat",
+  "short_name": "FacetAI",
+  "description": "Intelligent chat interface by FacetAI",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09021B",
+  "theme_color": "#BB4EFF",
+  "icons": [
+    {
+      "src": "/Logo/PNG/violet-icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/Logo/PNG/violet-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

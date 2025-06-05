@@ -1,18 +1,20 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Inter } from "next/font/google";
+import { Lexend } from "next/font/google";
 import React from "react";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { AuthProvider } from "@/providers/Auth";
 
-const inter = Inter({
+const lexend = Lexend({
   subsets: ["latin"],
   preload: true,
   display: "swap",
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
-  title: "Agent Chat",
-  description: "Agent Chat UX by LangChain",
+  title: "FacetAI Chat",
+  description: "Intelligent chat interface by FacetAI",
 };
 
 export default function RootLayout({
@@ -22,8 +24,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        <NuqsAdapter>{children}</NuqsAdapter>
+      <body className={lexend.className}>
+        <AuthProvider>
+          <NuqsAdapter>{children}</NuqsAdapter>
+        </AuthProvider>
       </body>
     </html>
   );
