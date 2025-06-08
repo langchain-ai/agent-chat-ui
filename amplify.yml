@@ -9,13 +9,11 @@ frontend:
       commands:
         - pnpm run build
   artifacts:
-    baseDirectory: .
+    baseDirectory: .next
     files:
       - '**/*'
-      - '.next/**/*'
-      - 'public/**/*'
-      - 'package.json'
   cache:
     paths:
       - node_modules/**/*
       - .next/cache/**/*
+      - .pnpm-store/**/*
