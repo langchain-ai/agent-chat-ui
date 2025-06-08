@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useThreads } from "@/providers/Thread";
 import { Thread } from "@langchain/langgraph-sdk";
 import { useEffect } from "react";
+import { useSession } from "next-auth/react";
 
 import { getContentString } from "../utils";
 import { useQueryState, parseAsBoolean } from "nuqs";
@@ -26,6 +27,9 @@ function ThreadList({
 
   return (
     <div className="flex h-full w-full flex-col items-start justify-start gap-2 overflow-y-scroll [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent">
+      {threads.length === 0 && (
+        <div className="p-4 text-sm text-gray-500">No conversations found</div>
+      )}
       {threads.map((t) => {
         let itemText = t.thread_id;
         if (
@@ -77,6 +81,7 @@ function ThreadHistoryLoading() {
 
 export default function ThreadHistory() {
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
+  const { data: session, status } = useSession();
   const [chatHistoryOpen, setChatHistoryOpen] = useQueryState(
     "chatHistoryOpen",
     parseAsBoolean.withDefault(false),
@@ -87,12 +92,26 @@ export default function ThreadHistory() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (status === "loading") return;
+    if (status === "unauthenticated") return;
+
     setThreadsLoading(true);
     getThreads()
       .then(setThreads)
       .catch(console.error)
       .finally(() => setThreadsLoading(false));
-  }, [getThreads, setThreads, setThreadsLoading]);
+  }, [getThreads, setThreads, setThreadsLoading, session, status]);
+
+  // Refresh threads when sidebar opens
+  useEffect(() => {
+    if (chatHistoryOpen && status === "authenticated") {
+      setThreadsLoading(true);
+      getThreads()
+        .then(setThreads)
+        .catch(console.error)
+        .finally(() => setThreadsLoading(false));
+    }
+  }, [chatHistoryOpen, status, getThreads, setThreads, setThreadsLoading]);
 
   return (
     <>

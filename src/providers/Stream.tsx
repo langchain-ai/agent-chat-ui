@@ -24,6 +24,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { getApiKey } from "@/lib/api-key";
 import { useThreads } from "./Thread";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
 
 export type StateType = { messages: Message[]; ui?: UIMessage[] };
 
@@ -53,13 +54,13 @@ async function checkGraphStatus(
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
-    
+
     const headers: Record<string, string> = {};
-    
+
     if (apiKey) {
       headers["X-Api-Key"] = apiKey;
     }
-    
+
     const res = await fetch(`${apiUrl}/info`, {
       signal: controller.signal,
       headers: Object.keys(headers).length > 0 ? headers : undefined,
@@ -69,13 +70,13 @@ async function checkGraphStatus(
     return res.ok;
   } catch (e) {
     if (e instanceof Error) {
-      if (e.name === 'AbortError') {
-        console.error('Graph status check timed out after 10 seconds');
+      if (e.name === "AbortError") {
+        console.error("Graph status check timed out after 10 seconds");
       } else {
-        console.error('Graph status check failed:', e.message);
+        console.error("Graph status check failed:", e.message);
       }
     } else {
-      console.error('Graph status check failed:', e);
+      console.error("Graph status check failed:", e);
     }
     return false;
   }
@@ -94,7 +95,9 @@ const StreamSession = ({
 }) => {
   const [threadId, setThreadId] = useQueryState("threadId");
   const { getThreads, setThreads } = useThreads();
-  
+  const { data: session } = useSession();
+  const userId = (session?.user as any)?.id;
+
   const streamValue = useTypedStream({
     apiUrl,
     apiKey: apiKey ?? undefined,
@@ -108,14 +111,34 @@ const StreamSession = ({
         });
       }
     },
-    onThreadId: (id) => {
+    onThreadId: async (id) => {
       setThreadId(id);
+
+      // If we have a userId and this is a new thread, update its metadata
+      if (userId && id) {
+        try {
+          const { createClient } = await import("./client");
+          const { validate } = await import("uuid");
+
+          const client = createClient(apiUrl, apiKey || undefined, userId);
+
+          const metadata = validate(assistantId)
+            ? { assistant_id: assistantId, user_id: userId }
+            : { graph_id: assistantId, user_id: userId };
+
+          // Update the thread with user metadata
+          await client.threads.update(id, { metadata });
+        } catch (error) {
+          console.error("Failed to update thread metadata:", error);
+        }
+      }
+
       // Refetch threads list when thread ID changes.
       // Wait for some seconds before fetching so we're able to get the new thread that was created.
       sleep().then(() => getThreads().then(setThreads).catch(console.error));
     },
   });
-  
+
   useEffect(() => {
     checkGraphStatus(apiUrl, apiKey).then((ok) => {
       if (!ok) {
@@ -183,7 +206,12 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
         <div className="animate-in fade-in-0 zoom-in-95 bg-card flex max-w-3xl flex-col rounded-xl border shadow-xl">
           <div className="mt-14 flex flex-col gap-2 border-b p-6">
             <div className="flex flex-col items-start gap-2">
-              <FacetAILogoSVG width={28} height={28} variant="violet" className="h-7 w-7" />
+              <FacetAILogoSVG
+                width={28}
+                height={28}
+                variant="violet"
+                className="h-7 w-7"
+              />
               <h1 className="text-xl font-semibold tracking-tight">
                 FacetAI Chat
               </h1>

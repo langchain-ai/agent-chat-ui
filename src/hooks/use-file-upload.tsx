@@ -1,20 +1,10 @@
 import { useState, useRef, useEffect, ChangeEvent, useCallback } from "react";
 import { toast } from "sonner";
 import type { Base64ContentBlock } from "@langchain/core/messages";
-import { fileToContentBlock } from "@/lib/multimodal-utils";
-
-export const SUPPORTED_FILE_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/gif",
-  "image/webp",
-  "application/pdf",
-  "video/mp4",
-  "video/webm",
-  "video/mov",
-  "video/quicktime",
-  "video/avi",
-];
+import {
+  fileToContentBlock,
+  SUPPORTED_IMAGE_TYPES,
+} from "@/lib/multimodal-utils";
 
 interface UseFileUploadOptions {
   initialBlocks?: Base64ContentBlock[];
@@ -30,15 +20,7 @@ export function useFileUpload({
   const dragCounter = useRef(0);
 
   const isDuplicate = (file: File, blocks: Base64ContentBlock[]) => {
-    if (file.type === "application/pdf") {
-      return blocks.some(
-        (b) =>
-          b.type === "file" &&
-          b.mime_type === "application/pdf" &&
-          b.metadata?.filename === file.name,
-      );
-    }
-    if (SUPPORTED_FILE_TYPES.includes(file.type)) {
+    if (SUPPORTED_IMAGE_TYPES.includes(file.type)) {
       return blocks.some(
         (b) =>
           b.type === "image" &&
@@ -49,41 +31,46 @@ export function useFileUpload({
     return false;
   };
 
-  const processFiles = useCallback(async (files: File[]) => {
-    const validFiles = files.filter((file) =>
-      SUPPORTED_FILE_TYPES.includes(file.type),
-    );
-    const invalidFiles = files.filter(
-      (file) => !SUPPORTED_FILE_TYPES.includes(file.type),
-    );
-    const duplicateFiles = validFiles.filter((file) =>
-      isDuplicate(file, contentBlocks),
-    );
-    const uniqueFiles = validFiles.filter(
-      (file) => !isDuplicate(file, contentBlocks),
-    );
-
-    if (invalidFiles.length > 0) {
-      toast.error(
-        "Invalid file type detected. Please upload a JPEG, PNG, GIF, WEBP image, MP4/WEBM/MOV/AVI video, or a PDF.",
+  const processFiles = useCallback(
+    async (files: File[]) => {
+      const validFiles = files.filter((file) =>
+        SUPPORTED_IMAGE_TYPES.includes(file.type),
       );
-    }
-    if (duplicateFiles.length > 0) {
-      toast.error(
-        `Duplicate file(s) detected: ${duplicateFiles.map((f) => f.name).join(", ")}. Each file can only be uploaded once per message.`,
+      const invalidFiles = files.filter(
+        (file) => !SUPPORTED_IMAGE_TYPES.includes(file.type),
       );
-    }
+      const duplicateFiles = validFiles.filter((file) =>
+        isDuplicate(file, contentBlocks),
+      );
+      const uniqueFiles = validFiles.filter(
+        (file) => !isDuplicate(file, contentBlocks),
+      );
 
-    if (uniqueFiles.length > 0) {
-      const newBlocks = await Promise.all(uniqueFiles.map(fileToContentBlock));
-      setContentBlocks((prev) => [...prev, ...newBlocks]);
-    }
-  }, [contentBlocks]);
+      if (invalidFiles.length > 0) {
+        toast.error(
+          "Invalid file type detected. Please upload a JPEG, PNG, GIF, or WEBP image.",
+        );
+      }
+      if (duplicateFiles.length > 0) {
+        toast.error(
+          `Duplicate image(s) detected: ${duplicateFiles.map((f) => f.name).join(", ")}. Each image can only be uploaded once per message.`,
+        );
+      }
+
+      if (uniqueFiles.length > 0) {
+        const newBlocks = await Promise.all(
+          uniqueFiles.map(fileToContentBlock),
+        );
+        setContentBlocks((prev) => [...prev, ...newBlocks]);
+      }
+    },
+    [contentBlocks],
+  );
 
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    
+
     await processFiles(Array.from(files));
     e.target.value = "";
   };
@@ -183,7 +170,7 @@ export function useFileUpload({
   ) => {
     const items = e.clipboardData.items;
     if (!items) return;
-    
+
     const files: File[] = [];
     for (let i = 0; i < items.length; i += 1) {
       const item = items[i];
@@ -192,9 +179,9 @@ export function useFileUpload({
         if (file) files.push(file);
       }
     }
-    
+
     if (files.length === 0) return;
-    
+
     e.preventDefault();
     await processFiles(files);
   };

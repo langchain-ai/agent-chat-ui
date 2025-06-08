@@ -58,11 +58,11 @@ export default function SignIn() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
+    <div className="from-background via-background to-primary/5 flex min-h-screen items-center justify-center bg-gradient-to-br p-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-4 text-center">
           <div className="mx-auto">
-            <FacetAILogoSVG className="h-12 w-12 text-primary" />
+            <FacetAILogoSVG className="text-primary h-12 w-12" />
           </div>
           <CardTitle className="text-2xl font-semibold">
             Sign in to FacetAI
@@ -72,7 +72,10 @@ export default function SignIn() {
           </p>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-4"
+          >
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -106,8 +109,8 @@ export default function SignIn() {
               {isLoading ? "Signing in..." : "Sign in"}
             </Button>
           </form>
-          
-          <div className="mt-6 text-center text-sm text-muted-foreground">
+
+          <div className="text-muted-foreground mt-6 text-center text-sm">
             Secure authentication powered by Amazon Cognito
           </div>
         </CardContent>

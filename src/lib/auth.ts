@@ -1,8 +1,8 @@
 import CredentialsProvider from "next-auth/providers/credentials";
-import { 
-  CognitoIdentityProviderClient, 
+import {
+  CognitoIdentityProviderClient,
   InitiateAuthCommand,
-  GetUserCommand 
+  GetUserCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
 import crypto from "crypto";
 
@@ -50,7 +50,7 @@ export const authOptions = {
           });
 
           const authResponse = await cognitoClient.send(authCommand);
-          
+
           if (!authResponse.AuthenticationResult?.AccessToken) {
             return null;
           }
@@ -61,21 +61,18 @@ export const authOptions = {
           });
 
           const userResponse = await cognitoClient.send(getUserCommand);
-          
+
           const userAttributes = userResponse.UserAttributes || [];
-          const sub = userAttributes.find(attr => attr.Name === "sub")?.Value;
-          const email = userAttributes.find(attr => attr.Name === "email")?.Value;
-          const name = userAttributes.find(attr => attr.Name === "name")?.Value || 
-                      userAttributes.find(attr => attr.Name === "given_name")?.Value ||
-                      userAttributes.find(attr => attr.Name === "family_name")?.Value;
+          const sub = userAttributes.find((attr) => attr.Name === "sub")?.Value;
+          const email = userAttributes.find(
+            (attr) => attr.Name === "email",
+          )?.Value;
+          const name =
+            userAttributes.find((attr) => attr.Name === "name")?.Value ||
+            userAttributes.find((attr) => attr.Name === "given_name")?.Value ||
+            userAttributes.find((attr) => attr.Name === "family_name")?.Value;
 
-          console.log("Cognito user attributes:", userAttributes);
-          console.log("Extracted sub (UUID):", sub);
-          console.log("Username from Cognito:", userResponse.Username);
-
-          // Ensure we always have a UUID from Cognito sub attribute
           if (!sub) {
-            console.error("Cognito sub attribute not found in user attributes:", userAttributes);
             throw new Error("Unable to retrieve user UUID from Cognito");
           }
 
@@ -85,8 +82,6 @@ export const authOptions = {
             name: name || email || credentials.email,
             accessToken: authResponse.AuthenticationResult.AccessToken,
           };
-
-          console.log("Final user object being returned:", user);
 
           return user;
         } catch (error) {

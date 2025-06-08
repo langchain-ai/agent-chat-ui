@@ -15,6 +15,56 @@ import { cn } from "@/lib/utils";
 
 import "katex/dist/katex.min.css";
 
+// Helper function to detect if a URL/value is an image
+function isImageUrl(text: string): boolean {
+  // Check for data URLs
+  if (text.startsWith("data:image/")) return true;
+
+  // Check for common image extensions
+  const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"];
+  return imageExtensions.some((ext) => text.toLowerCase().includes(ext));
+}
+
+// Component to render inline images with error handling
+function InlineImageMarkdown({ src, alt }: { src: string; alt?: string }) {
+  const [imageError, setImageError] = useState(false);
+
+  if (imageError) {
+    return (
+      <div className="my-4 max-w-md rounded-lg border border-gray-200 bg-gray-100 p-4">
+        <p className="text-sm text-gray-600">Failed to load image</p>
+        <p className="mt-1 text-xs break-all text-gray-400">{src}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="my-4">
+      <img
+        src={src}
+        alt={alt || "Generated image"}
+        className="max-h-96 max-w-full rounded-lg border border-gray-200 shadow-sm"
+        onError={() => setImageError(true)}
+        loading="lazy"
+      />
+    </div>
+  );
+}
+
+// Preprocessor to convert image URLs/base64 to markdown image syntax
+function preprocessImageContent(content: string): string {
+  // Pattern to match standalone image URLs or base64 data
+  const imageUrlPattern =
+    /(^|\n)(https?:\/\/[^\s]+(?:\.(?:jpg|jpeg|png|gif|webp|svg))[^\s]*|data:image\/[^;]+;base64,[^)\s]+)(\n|$)/gi;
+
+  return content.replace(imageUrlPattern, (match, prefix, imageUrl, suffix) => {
+    if (isImageUrl(imageUrl)) {
+      return `${prefix}![Generated Image](${imageUrl})${suffix}`;
+    }
+    return match;
+  });
+}
+
 interface CodeHeaderProps {
   language?: string;
   code: string;
@@ -193,6 +243,15 @@ const defaultComponents: any = {
       {...props}
     />
   ),
+  img: ({ src, alt, ...props }: { src?: string; alt?: string }) => {
+    if (!src) return null;
+    return (
+      <InlineImageMarkdown
+        src={src}
+        alt={alt}
+      />
+    );
+  },
   pre: ({ className, ...props }: { className?: string }) => (
     <pre
       className={cn(
@@ -244,6 +303,8 @@ const defaultComponents: any = {
 };
 
 const MarkdownTextImpl: FC<{ children: string }> = ({ children }) => {
+  const processedContent = preprocessImageContent(children);
+
   return (
     <div className="markdown-content">
       <ReactMarkdown
@@ -251,7 +312,7 @@ const MarkdownTextImpl: FC<{ children: string }> = ({ children }) => {
         rehypePlugins={[rehypeKatex]}
         components={defaultComponents}
       >
-        {children}
+        {processedContent}
       </ReactMarkdown>
     </div>
   );

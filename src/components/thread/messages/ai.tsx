@@ -6,14 +6,104 @@ import { BranchSwitcher, CommandBar } from "./shared";
 import { MarkdownText } from "../markdown-text";
 import { LoadExternalComponent } from "@langchain/langgraph-sdk/react-ui";
 import { cn } from "@/lib/utils";
-import { ToolCalls, ToolResult } from "./tool-calls";
+import { ToolExecutionAnimation } from "./tool-calls";
 import { MessageContentComplex } from "@langchain/core/messages";
 import { Fragment } from "react/jsx-runtime";
 import { isAgentInboxInterruptSchema } from "@/lib/agent-inbox-interrupt";
 import { ThreadView } from "../agent-inbox";
-import { useQueryState, parseAsBoolean } from "nuqs";
 import { GenericInterruptView } from "./generic-interrupt";
 import { useArtifact } from "../artifact";
+
+// BrokerState interface to match the provided structure
+interface BrokerState {
+  messages?: any[];
+  image_prompt?: string;
+  image_url?: string;
+  base64_image?: string;
+  video_url?: string;
+  prompt?: string;
+  interaction_count?: number;
+  is_complete?: boolean;
+  validation_score?: number;
+  features?: Record<string, any>;
+}
+
+function BrokerStateMedia({ values }: { values: any }) {
+  const brokerState = values as BrokerState;
+
+  if (!brokerState) return null;
+
+  const imageUrl = brokerState.image_url;
+  const base64Image = brokerState.base64_image;
+  const videoUrl = brokerState.video_url;
+
+  return (
+    <div className="mt-2 flex flex-col gap-2">
+      {/* Render image from URL */}
+      {imageUrl && (
+        <div className="max-w-md">
+          <img
+            src={imageUrl}
+            alt={brokerState.image_prompt || "Generated image"}
+            className="w-full rounded-lg border border-gray-200 shadow-sm"
+            loading="lazy"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = "none";
+            }}
+          />
+          {brokerState.image_prompt && (
+            <p className="mt-1 text-sm text-gray-600 italic">
+              {brokerState.image_prompt}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Render base64 image */}
+      {base64Image && !imageUrl && (
+        <div className="max-w-md">
+          <img
+            src={
+              base64Image.startsWith("data:")
+                ? base64Image
+                : `data:image/png;base64,${base64Image}`
+            }
+            alt={brokerState.image_prompt || "Generated image"}
+            className="w-full rounded-lg border border-gray-200 shadow-sm"
+            loading="lazy"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = "none";
+            }}
+          />
+          {brokerState.image_prompt && (
+            <p className="mt-1 text-sm text-gray-600 italic">
+              {brokerState.image_prompt}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Render video */}
+      {videoUrl && (
+        <div className="max-w-md">
+          <video
+            src={videoUrl}
+            controls
+            className="w-full rounded-lg border border-gray-200 shadow-sm"
+            onError={(e) => {
+              const target = e.target as HTMLVideoElement;
+              target.style.display = "none";
+            }}
+          >
+            Your browser does not support the video tag.
+          </video>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function CustomComponent({
   message,
@@ -104,10 +194,6 @@ export function AssistantMessage({
 }) {
   const content = message?.content ?? [];
   const contentString = getContentString(content);
-  const [hideToolCalls] = useQueryState(
-    "hideToolCalls",
-    parseAsBoolean.withDefault(false),
-  );
 
   const thread = useStreamContext();
   const isLastMessage =
@@ -128,24 +214,14 @@ export function AssistantMessage({
     "tool_calls" in message &&
     message.tool_calls &&
     message.tool_calls.length > 0;
-  const toolCallsHaveContents =
-    hasToolCalls &&
-    message.tool_calls?.some(
-      (tc) => tc.args && Object.keys(tc.args).length > 0,
-    );
   const hasAnthropicToolCalls = !!anthropicStreamedToolCalls?.length;
   const isToolResult = message?.type === "tool";
-
-  if (isToolResult && hideToolCalls) {
-    return null;
-  }
 
   return (
     <div className="group mr-auto flex items-start gap-2">
       <div className="flex flex-col gap-2">
         {isToolResult ? (
           <>
-            <ToolResult message={message} />
             <Interrupt
               interruptValue={threadInterrupt?.value}
               isLastMessage={isLastMessage}
@@ -160,19 +236,28 @@ export function AssistantMessage({
               </div>
             )}
 
-            {!hideToolCalls && (
-              <>
-                {(hasToolCalls && toolCallsHaveContents && (
-                  <ToolCalls toolCalls={message.tool_calls} />
-                )) ||
-                  (hasAnthropicToolCalls && (
-                    <ToolCalls toolCalls={anthropicStreamedToolCalls} />
-                  )) ||
-                  (hasToolCalls && (
-                    <ToolCalls toolCalls={message.tool_calls} />
-                  ))}
-              </>
-            )}
+            {/* Show tool execution animation for executing tools */}
+            {isLoading &&
+              isLastMessage &&
+              (hasToolCalls || hasAnthropicToolCalls) && (
+                <div className="space-y-2">
+                  {hasToolCalls &&
+                    message.tool_calls?.map((tc, idx) => (
+                      <ToolExecutionAnimation
+                        key={`tool-${idx}`}
+                        toolName={tc.name}
+                      />
+                    ))}
+                  {hasAnthropicToolCalls &&
+                    !hasToolCalls &&
+                    anthropicStreamedToolCalls?.map((tc, idx) => (
+                      <ToolExecutionAnimation
+                        key={`anthropic-${idx}`}
+                        toolName={tc.name}
+                      />
+                    ))}
+                </div>
+              )}
 
             {message && (
               <CustomComponent
@@ -180,6 +265,9 @@ export function AssistantMessage({
                 thread={thread}
               />
             )}
+
+            {/* Render BrokerState media content only for the last message */}
+            {isLastMessage && <BrokerStateMedia values={thread.values} />}
             <Interrupt
               interruptValue={threadInterrupt?.value}
               isLastMessage={isLastMessage}

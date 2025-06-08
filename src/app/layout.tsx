@@ -4,6 +4,7 @@ import { Lexend } from "next/font/google";
 import React from "react";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { AuthProvider } from "@/providers/Auth";
+import { ThemeProvider } from "@/providers/Theme";
 
 const lexend = Lexend({
   subsets: ["latin"],
@@ -23,11 +24,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html
+      lang="en"
+      suppressHydrationWarning
+    >
       <body className={lexend.className}>
-        <AuthProvider>
-          <NuqsAdapter>{children}</NuqsAdapter>
-        </AuthProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>
+            <NuqsAdapter>{children}</NuqsAdapter>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

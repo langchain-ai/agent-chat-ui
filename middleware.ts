@@ -13,12 +13,12 @@ export default withAuth(
         if (req.nextUrl.pathname.startsWith("/auth/")) {
           return true;
         }
-        
+
         // For all other pages, require authentication
         return !!token;
       },
     },
-  }
+  },
 );
 
 export const config = {

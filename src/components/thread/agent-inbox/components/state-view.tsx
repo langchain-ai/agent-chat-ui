@@ -8,6 +8,7 @@ import {
 } from "../utils";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { isImageValue } from "../../image-renderer";
 import { BaseMessage } from "@langchain/core/messages";
 import { ToolCall } from "@langchain/core/messages/tool";
 import { ToolCallTable } from "./tool-call-table";
@@ -176,12 +177,20 @@ interface StateViewProps {
 
 export function StateViewObject(props: StateViewProps) {
   const [expanded, setExpanded] = useState(false);
+  const isImage = isImageValue(props.keyName, props.value);
 
   useEffect(() => {
     if (props.expanded != null) {
       setExpanded(props.expanded);
     }
   }, [props.expanded]);
+
+  // For images, we want to show them inline and expanded by default
+  useEffect(() => {
+    if (isImage) {
+      setExpanded(true);
+    }
+  }, [isImage]);
 
   return (
     <div className="relative flex flex-row items-start justify-start gap-2 text-sm">
@@ -217,10 +226,17 @@ export function StateViewObject(props: StateViewProps) {
           style={{ overflow: "hidden" }}
           className="relative w-full"
         >
-          <StateViewRecursive
-            expanded={props.expanded}
-            value={props.value}
-          />
+          {isImage && typeof props.value === "string" ? (
+            <InlineImage
+              src={props.value}
+              alt={`Image: ${props.keyName}`}
+            />
+          ) : (
+            <StateViewRecursive
+              expanded={props.expanded}
+              value={props.value}
+            />
+          )}
         </motion.div>
       </div>
     </div>

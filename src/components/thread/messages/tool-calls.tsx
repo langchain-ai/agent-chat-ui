@@ -1,16 +1,64 @@
 import { AIMessage, ToolMessage } from "@langchain/langgraph-sdk";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 
 function isComplexValue(value: any): boolean {
   return Array.isArray(value) || (typeof value === "object" && value !== null);
 }
 
+// Concepts to cycle through during tool execution
+const TOOL_CONCEPTS = [
+  "Thinking",
+  "Planning",
+  "Designing",
+  "Finding inspiration",
+  "Analyzing",
+  "Processing",
+  "Creating",
+  "Optimizing",
+];
+
+export function ToolExecutionAnimation({ toolName }: { toolName: string }) {
+  const [conceptIndex, setConceptIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setConceptIndex((prev) => (prev + 1) % TOOL_CONCEPTS.length);
+    }, 1500); // Change concept every 1.5 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3">
+      <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+      <div className="flex items-center gap-2">
+        <span className="font-medium text-blue-900">{toolName}</span>
+        <span className="text-blue-700">•</span>
+        <AnimatePresence mode="wait">
+          <motion.span
+            key={conceptIndex}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3 }}
+            className="text-blue-700 italic"
+          >
+            {TOOL_CONCEPTS[conceptIndex]}...
+          </motion.span>
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
 export function ToolCalls({
   toolCalls,
+  isExecuting = false,
 }: {
   toolCalls: AIMessage["tool_calls"];
+  isExecuting?: boolean;
 }) {
   if (!toolCalls || toolCalls.length === 0) return null;
 
@@ -19,6 +67,17 @@ export function ToolCalls({
       {toolCalls.map((tc, idx) => {
         const args = tc.args as Record<string, any>;
         const hasArgs = Object.keys(args).length > 0;
+        const toolIsExecuting = isExecuting && !hasArgs; // Show animation if executing and no results yet
+
+        if (toolIsExecuting) {
+          return (
+            <ToolExecutionAnimation
+              key={idx}
+              toolName={tc.name}
+            />
+          );
+        }
+
         return (
           <div
             key={idx}

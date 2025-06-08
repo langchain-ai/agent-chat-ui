@@ -1,5 +1,5 @@
 import React from "react";
-import { File, X as XIcon, Play } from "lucide-react";
+import { File, X as XIcon } from "lucide-react";
 import type { Base64ContentBlock } from "@langchain/core/messages";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -18,7 +18,7 @@ export const MultimodalPreview: React.FC<MultimodalPreviewProps> = ({
   className,
   size = "md",
 }) => {
-  // Image block
+  // Image block - following LangGraph best practices
   if (
     block.type === "image" &&
     block.source_type === "base64" &&
@@ -29,11 +29,18 @@ export const MultimodalPreview: React.FC<MultimodalPreviewProps> = ({
     let imgClass: string = "rounded-md object-cover h-16 w-16 text-lg";
     if (size === "sm") imgClass = "rounded-md object-cover h-10 w-10 text-base";
     if (size === "lg") imgClass = "rounded-md object-cover h-24 w-24 text-xl";
+
+    // Enhanced metadata display for debugging
+    const imageName = block.metadata?.name || "uploaded image";
+    const imageSize = block.metadata?.size
+      ? `(${(block.metadata.size / 1024).toFixed(1)}KB)`
+      : "";
+
     return (
       <div className={cn("relative inline-block", className)}>
         <Image
           src={url}
-          alt={String(block.metadata?.name || "uploaded image")}
+          alt={`${imageName} ${imageSize}`}
           className={imgClass}
           width={size === "sm" ? 16 : size === "md" ? 32 : 48}
           height={size === "sm" ? 16 : size === "md" ? 32 : 48}
@@ -43,7 +50,7 @@ export const MultimodalPreview: React.FC<MultimodalPreviewProps> = ({
             type="button"
             className="absolute top-1 right-1 z-10 rounded-full bg-gray-500 text-white hover:bg-gray-700"
             onClick={onRemove}
-            aria-label="Remove image"
+            aria-label={`Remove ${imageName}`}
           >
             <XIcon className="h-4 w-4" />
           </button>
@@ -52,111 +59,24 @@ export const MultimodalPreview: React.FC<MultimodalPreviewProps> = ({
     );
   }
 
-  // Video block
-  if (
-    block.type === "file" &&
-    block.source_type === "base64" &&
-    typeof block.mime_type === "string" &&
-    block.mime_type.startsWith("video/")
-  ) {
-    const filename =
-      block.metadata?.filename || block.metadata?.name || "Video file";
-    const videoUrl = `data:${block.mime_type};base64,${block.data}`;
-    
-    return (
-      <div className={cn("relative inline-block", className)}>
-        <div className={cn(
-          "relative rounded-md overflow-hidden bg-black",
-          size === "sm" ? "h-10 w-16" : size === "md" ? "h-16 w-24" : "h-24 w-32"
-        )}>
-          <video
-            src={videoUrl}
-            className="h-full w-full object-cover"
-            muted
-            playsInline
-          />
-          <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-            <Play className="h-4 w-4 text-white" fill="white" />
-          </div>
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-1">
-            <span className="text-xs text-white truncate block">
-              {String(filename)}
-            </span>
-          </div>
-        </div>
-        {removable && (
-          <button
-            type="button"
-            className="absolute top-1 right-1 z-10 rounded-full bg-gray-500 text-white hover:bg-gray-700"
-            onClick={onRemove}
-            aria-label="Remove video"
-          >
-            <XIcon className="h-4 w-4" />
-          </button>
-        )}
-      </div>
-    );
-  }
-
-  // PDF block
-  if (
-    block.type === "file" &&
-    block.source_type === "base64" &&
-    block.mime_type === "application/pdf"
-  ) {
-    const filename =
-      block.metadata?.filename || block.metadata?.name || "PDF file";
-    return (
-      <div
-        className={cn(
-          "relative flex items-start gap-2 rounded-md border bg-gray-100 px-3 py-2",
-          className,
-        )}
-      >
-        <div className="flex flex-shrink-0 flex-col items-start justify-start">
-          <File
-            className={cn(
-              "text-teal-700",
-              size === "sm" ? "h-5 w-5" : "h-7 w-7",
-            )}
-          />
-        </div>
-        <span
-          className={cn("min-w-0 flex-1 text-sm break-all text-gray-800")}
-          style={{ wordBreak: "break-all", whiteSpace: "pre-wrap" }}
-        >
-          {String(filename)}
-        </span>
-        {removable && (
-          <button
-            type="button"
-            className="ml-2 self-start rounded-full bg-gray-200 p-1 text-teal-700 hover:bg-gray-300"
-            onClick={onRemove}
-            aria-label="Remove PDF"
-          >
-            <XIcon className="h-4 w-4" />
-          </button>
-        )}
-      </div>
-    );
-  }
-
-  // Fallback for unknown types
+  // Fallback for non-image types (should not occur with new implementation)
   return (
     <div
       className={cn(
-        "flex items-center gap-2 rounded-md border bg-gray-100 px-3 py-2 text-gray-500",
+        "flex items-center gap-2 rounded-md border bg-red-50 px-3 py-2 text-red-500",
         className,
       )}
     >
       <File className="h-5 w-5 flex-shrink-0" />
-      <span className="truncate text-xs">Unsupported file type</span>
+      <span className="truncate text-xs">
+        Image type only - unsupported content
+      </span>
       {removable && (
         <button
           type="button"
-          className="ml-2 rounded-full bg-gray-200 p-1 text-gray-500 hover:bg-gray-300"
+          className="ml-2 rounded-full bg-red-200 p-1 text-red-500 hover:bg-red-300"
           onClick={onRemove}
-          aria-label="Remove file"
+          aria-label="Remove unsupported content"
         >
           <XIcon className="h-4 w-4" />
         </button>

@@ -1,4 +1,3 @@
-import { validate } from "uuid";
 import { getApiKey } from "@/lib/api-key";
 import { Thread } from "@langchain/langgraph-sdk";
 import { useQueryState } from "nuqs";
@@ -24,20 +23,20 @@ interface ThreadContextType {
 
 const ThreadContext = createContext<ThreadContextType | undefined>(undefined);
 
-function getThreadSearchMetadata(
-  assistantId: string,
-  userId?: string,
-): { graph_id: string; user_id?: string } | { assistant_id: string; user_id?: string } {
-  const baseMetadata = validate(assistantId) 
-    ? { assistant_id: assistantId } 
-    : { graph_id: assistantId };
-  
-  return userId ? { ...baseMetadata, user_id: userId } : baseMetadata;
-}
-
 export function ThreadProvider({ children }: { children: ReactNode }) {
-  const [apiUrl] = useQueryState("apiUrl");
-  const [assistantId] = useQueryState("assistantId");
+  // Get environment variables
+  const envApiUrl: string | undefined = process.env.NEXT_PUBLIC_API_URL;
+  const envAssistantId: string | undefined =
+    process.env.NEXT_PUBLIC_ASSISTANT_ID;
+
+  // Use URL params with env var fallbacks
+  const [apiUrl] = useQueryState("apiUrl", {
+    defaultValue: envApiUrl || "",
+  });
+  const [assistantId] = useQueryState("assistantId", {
+    defaultValue: envAssistantId || "",
+  });
+
   const [threads, setThreads] = useState<Thread[]>([]);
   const [threadsLoading, setThreadsLoading] = useState(false);
   const { data: session } = useSession();
@@ -46,17 +45,24 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
   const userId = (session?.user as any)?.id;
 
   const getThreads = useCallback(async (): Promise<Thread[]> => {
-    if (!apiUrl || !assistantId) return [];
+    if (!apiUrl || !assistantId || !userId) return [];
+
     const client = createClient(apiUrl, getApiKey() ?? undefined, userId);
 
-    const threads = await client.threads.search({
-      metadata: {
-        ...getThreadSearchMetadata(assistantId, userId),
-      },
-      limit: 100,
-    });
+    try {
+      const threads = await client.threads.search({
+        metadata: { user_id: userId },
+        limit: 20,
+        offset: 0,
+        sortBy: "updated_at",
+        sortOrder: "desc",
+      });
 
-    return threads;
+      return threads;
+    } catch (error) {
+      console.error("Error fetching threads:", error);
+      return [];
+    }
   }, [apiUrl, assistantId, userId]);
 
   const value = {
