@@ -20,7 +20,7 @@ export function useFileUpload({
   const dragCounter = useRef(0);
 
   const isDuplicate = (file: File, blocks: Base64ContentBlock[]) => {
-    if (SUPPORTED_IMAGE_TYPES.includes(file.type)) {
+    if (SUPPORTED_IMAGE_TYPES.includes(file.type as any)) {
       return blocks.some(
         (b) =>
           b.type === "image" &&
@@ -34,10 +34,10 @@ export function useFileUpload({
   const processFiles = useCallback(
     async (files: File[]) => {
       const validFiles = files.filter((file) =>
-        SUPPORTED_IMAGE_TYPES.includes(file.type),
+        SUPPORTED_IMAGE_TYPES.includes(file.type as any),
       );
       const invalidFiles = files.filter(
-        (file) => !SUPPORTED_IMAGE_TYPES.includes(file.type),
+        (file) => !SUPPORTED_IMAGE_TYPES.includes(file.type as any),
       );
       const duplicateFiles = validFiles.filter((file) =>
         isDuplicate(file, contentBlocks),

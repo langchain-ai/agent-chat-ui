@@ -8,7 +8,7 @@ import {
 } from "../utils";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { isImageValue } from "../../image-renderer";
+import { isImageValue, ImageRenderer } from "../../image-renderer";
 import { BaseMessage } from "@langchain/core/messages";
 import { ToolCall } from "@langchain/core/messages/tool";
 import { ToolCallTable } from "./tool-call-table";
@@ -227,7 +227,7 @@ export function StateViewObject(props: StateViewProps) {
           className="relative w-full"
         >
           {isImage && typeof props.value === "string" ? (
-            <InlineImage
+            <ImageRenderer
               src={props.value}
               alt={`Image: ${props.keyName}`}
             />
