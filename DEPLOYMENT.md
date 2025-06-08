@@ -33,7 +33,7 @@ In Amplify Console → **Environment variables**, add your production values:
 
 ```bash
 NEXTAUTH_SECRET="your-secure-random-string-for-production"
-NEXTAUTH_URL="https://chat.facetai.com"
+NEXTAUTH_URL="https://your-amplify-domain.amplifyapp.com"
 COGNITO_CLIENT_ID="your-production-cognito-client-id"
 COGNITO_CLIENT_SECRET="your-production-cognito-client-secret"
 COGNITO_ISSUER="https://cognito-idp.region.amazonaws.com/user-pool-id"
@@ -43,7 +43,10 @@ NEXT_PUBLIC_API_URL="/api"
 LANGSMITH_API_KEY="your-production-langsmith-api-key"
 ```
 
-**Important**: Use your actual production credentials, not the placeholder values above!
+**Important**: 
+- Use your actual production credentials, not the placeholder values above!
+- Set `NEXTAUTH_URL` to your actual Amplify domain (e.g., `https://dev.dnmyvw9kxlasy.amplifyapp.com`)
+- For custom domain deployment, update this to `https://chat.facetai.com` after domain setup
 
 ## Step 4: Custom Domain
 
