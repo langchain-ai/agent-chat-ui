@@ -32,9 +32,10 @@ export const MultimodalPreview: React.FC<MultimodalPreviewProps> = ({
 
     // Enhanced metadata display for debugging
     const imageName = block.metadata?.name || "uploaded image";
-    const imageSize = block.metadata?.size && typeof block.metadata.size === 'number'
-      ? `(${(block.metadata.size / 1024).toFixed(1)}KB)`
-      : "";
+    const imageSize =
+      block.metadata?.size && typeof block.metadata.size === "number"
+        ? `(${(block.metadata.size / 1024).toFixed(1)}KB)`
+        : "";
 
     return (
       <div className={cn("relative inline-block", className)}>
