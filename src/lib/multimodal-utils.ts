@@ -1,13 +1,16 @@
-import type { Base64ContentBlock } from "@langchain/core/messages";
+import type {
+  Base64ContentBlock,
+  BaseDataContentBlock,
+} from "@langchain/core/messages";
 import { toast } from "sonner";
 
 // Extended type to support OpenAI image_url format
-export type OpenAIImageBlock = {
+export interface OpenAIImageBlock extends BaseDataContentBlock {
   type: "image_url";
   image_url: {
     url: string;
   };
-};
+}
 
 export type ExtendedImageContentBlock = Base64ContentBlock | OpenAIImageBlock;
 

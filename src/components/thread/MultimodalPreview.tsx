@@ -18,32 +18,18 @@ export const MultimodalPreview: React.FC<MultimodalPreviewProps> = ({
   className,
   size = "md",
 }) => {
-  // Image URL block
-  if (block.type === "image_url") {
-    let imgClass: string = "rounded-md object-cover h-16 w-16 text-lg";
-    if (size === "sm") imgClass = "rounded-md object-cover h-10 w-10 text-base";
-    if (size === "lg") imgClass = "rounded-md object-cover h-24 w-24 text-xl";
-    return (
-      <div className={cn("relative inline-block", className)}>
-        <Image
-          src={block.image_url.url}
-          alt={"uploaded image"}
-          className={imgClass}
-          width={size === "sm" ? 16 : size === "md" ? 32 : 48}
-          height={size === "sm" ? 16 : size === "md" ? 32 : 48}
-        />
-      </div>
-    );
-  }
-
   // Image block
   if (
-    block.type === "image" &&
-    block.source_type === "base64" &&
-    typeof block.mime_type === "string" &&
-    block.mime_type.startsWith("image/")
+    block.type === "image_url" ||
+    (block.type === "image" &&
+      block.source_type === "base64" &&
+      typeof block.mime_type === "string" &&
+      block.mime_type.startsWith("image/"))
   ) {
-    const url = `data:${block.mime_type};base64,${block.data}`;
+    const url =
+      block.type === "image_url"
+        ? block.image_url.url
+        : `data:${block.mime_type};base64,${block.data}`;
     let imgClass: string = "rounded-md object-cover h-16 w-16 text-lg";
     if (size === "sm") imgClass = "rounded-md object-cover h-10 w-10 text-base";
     if (size === "lg") imgClass = "rounded-md object-cover h-24 w-24 text-xl";
