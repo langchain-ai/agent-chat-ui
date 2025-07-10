@@ -357,12 +357,12 @@ export function Thread() {
                     damping: 30,
                   }}
                 >
-                  <LangGraphLogoSVG
+                  {/* <LangGraphLogoSVG
                     width={32}
                     height={32}
-                  />
+                  /> */}
                   <span className="text-xl font-semibold tracking-tight">
-                    Agent Chat
+                    EchOS Chat
                   </span>
                 </motion.button>
               </div>
@@ -433,9 +433,8 @@ export function Thread() {
                 <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-white">
                   {!chatStarted && (
                     <div className="flex items-center gap-3">
-                      <LangGraphLogoSVG className="h-8 flex-shrink-0" />
                       <h1 className="text-2xl font-semibold tracking-tight">
-                        Agent Chat
+                        EchOS Chat
                       </h1>
                     </div>
                   )}
