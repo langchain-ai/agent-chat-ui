@@ -1,6 +1,24 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { componentMap, ComponentType } from "@/components/widgets";
+
+interface DynamicRendererProps {
+  type: string;
+  interrupt: Record<string, any>;
+}
+
+const DynamicRenderer: React.FC<DynamicRendererProps> = ({ type, interrupt }) => {
+  // Check if the type exists in componentMap
+  if (type in componentMap) {
+    const Component = componentMap[type as ComponentType];
+    return <Component interrupt={interrupt} />;
+  }
+
+  console.log('No widget found for type:', type);
+  return null;
+};
+
 
 function isComplexValue(value: any): boolean {
   return Array.isArray(value) || (typeof value === "object" && value !== null);
@@ -16,6 +34,20 @@ export function GenericInterruptView({
   const contentStr = JSON.stringify(interrupt, null, 2);
   const contentLines = contentStr.split("\n");
   const shouldTruncate = contentLines.length > 4 || contentStr.length > 500;
+
+  // Extract interrupt object and type
+  const interruptObj = Array.isArray(interrupt) ? interrupt[0] : interrupt;
+  const type = interruptObj.type || interruptObj.value?.type;
+  console.log('Interrupt type:', type);
+
+  // Try to render dynamic widget first
+  const dynamicWidget = type ? <DynamicRenderer type={type} interrupt={interruptObj} /> : null;
+
+  // If dynamic widget exists, render it instead of generic view
+  if (dynamicWidget) {
+    return dynamicWidget;
+  }
+
 
   // Function to truncate long string values
   const truncateValue = (value: any): any => {
