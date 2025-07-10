@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { useStreamContext } from "@/providers/Stream";
+import { LoadExternalComponent } from "@langchain/langgraph-sdk/react-ui";
+import { useArtifact } from "../artifact";
 
 function isComplexValue(value: any): boolean {
   return Array.isArray(value) || (typeof value === "object" && value !== null);
@@ -12,7 +15,36 @@ export function GenericInterruptView({
   interrupt: Record<string, any> | Record<string, any>[];
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const thread = useStreamContext();
+  const artifact = useArtifact();
 
+  // Support both array and object for interrupt
+  const interruptObj = Array.isArray(interrupt) ? interrupt[0] : interrupt;
+  // The backend puts the id in value.interrupt_id
+  const interruptId =
+    interruptObj?.interrupt_id || interruptObj?.value?.interrupt_id;
+
+  // Find custom UI widgets for this interrupt
+  const customComponents = thread.values.ui?.filter(
+    (ui) => ui.metadata?.interrupt_id === interruptId,
+  );
+
+  if (customComponents?.length) {
+    return (
+      <>
+        {customComponents.map((customComponent) => (
+          <LoadExternalComponent
+            key={customComponent.id}
+            stream={thread}
+            message={customComponent}
+            meta={{ ui: customComponent, artifact }}
+          />
+        ))}
+      </>
+    );
+  }
+
+  // Fallback: existing rendering logic
   const contentStr = JSON.stringify(interrupt, null, 2);
   const contentLines = contentStr.split("\n");
   const shouldTruncate = contentLines.length > 4 || contentStr.length > 500;
