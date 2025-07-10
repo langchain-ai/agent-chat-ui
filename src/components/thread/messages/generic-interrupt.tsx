@@ -18,6 +18,9 @@ export function GenericInterruptView({
   const thread = useStreamContext();
   const artifact = useArtifact();
 
+  console.log("----> interrupt", interrupt);
+  console.log("----> thread", thread.values);
+
   // Support both array and object for interrupt
   const interruptObj = Array.isArray(interrupt) ? interrupt[0] : interrupt;
   // The backend puts the id in value.interrupt_id
@@ -26,8 +29,10 @@ export function GenericInterruptView({
 
   // Find custom UI widgets for this interrupt
   const customComponents = thread.values.ui?.filter(
-    (ui) => ui.metadata?.interrupt_id === interruptId,
+    (ui) => ui.metadata?.id === interruptId,
   );
+
+  console.log("----> customComponents", customComponents);
 
   if (customComponents?.length) {
     return (
