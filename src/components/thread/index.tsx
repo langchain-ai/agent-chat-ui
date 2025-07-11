@@ -23,6 +23,7 @@ import {
   XIcon,
   Plus,
   CircleX,
+  Mic,
 } from "lucide-react";
 import { useQueryState, parseAsBoolean } from "nuqs";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
@@ -46,6 +47,7 @@ import {
   ArtifactTitle,
   useArtifactContext,
 } from "./artifact";
+import VoiceChat from "../voice-chat";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -126,6 +128,8 @@ export function Thread() {
     parseAsBoolean.withDefault(false),
   );
   const [input, setInput] = useState("");
+  const [voiceChatOpen, setVoiceChatOpen] = useState(false);
+  const [voiceModeActive, setVoiceModeActive] = useState(false);
   const {
     contentBlocks,
     setContentBlocks,
@@ -260,14 +264,22 @@ export function Thread() {
           style={{ width: 300 }}
           animate={
             isLargeScreen
-              ? { x: chatHistoryOpen ? 0 : -300 }
-              : { x: chatHistoryOpen ? 0 : -300 }
+              ? { 
+                  x: chatHistoryOpen ? 0 : -300,
+                  opacity: voiceModeActive ? 0.3 : 1,
+                  filter: voiceModeActive ? "blur(4px)" : "blur(0px)"
+                }
+              : { 
+                  x: chatHistoryOpen ? 0 : -300,
+                  opacity: voiceModeActive ? 0.3 : 1,
+                  filter: voiceModeActive ? "blur(4px)" : "blur(0px)"
+                }
           }
           initial={{ x: -300 }}
           transition={
             isLargeScreen
               ? { type: "spring", stiffness: 300, damping: 30 }
-              : { duration: 0 }
+              : { duration: 0.5, ease: "easeInOut" }
           }
         >
           <div
@@ -298,11 +310,14 @@ export function Thread() {
                 ? "calc(100% - 300px)"
                 : "100%"
               : "100%",
+            opacity: voiceModeActive ? 0.4 : 1,
+            y: voiceModeActive ? 8 : 0,
+            filter: voiceModeActive ? "blur(2px)" : "blur(0px)"
           }}
           transition={
             isLargeScreen
               ? { type: "spring", stiffness: 300, damping: 30 }
-              : { duration: 0 }
+              : { duration: 0.5, ease: "easeInOut" }
           }
         >
           {!chatStarted && (
@@ -512,6 +527,15 @@ export function Thread() {
                           accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
                           className="hidden"
                         />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() => setVoiceChatOpen(true)}
+                          className="flex items-center gap-2 text-gray-600 hover:text-purple-600"
+                        >
+                          <Mic className="size-5" />
+                          <span className="text-sm">Voice Chat</span>
+                        </Button>
                         {stream.isLoading ? (
                           <Button
                             key="stop"
@@ -556,6 +580,39 @@ export function Thread() {
           </div>
         </div>
       </div>
+      
+      {/* Voice Chat Modal */}
+      {voiceChatOpen && (
+        <VoiceChat 
+          onClose={() => setVoiceChatOpen(false)} 
+          onVoiceModeChange={setVoiceModeActive}
+          onTranscriptComplete={(transcript) => {
+            // Convert transcript entries to messages
+            const transcriptMessages: Message[] = transcript.map((entry) => ({
+              id: uuidv4(),
+              type: entry.speaker === 'user' ? 'human' : 'ai',
+              content: [{ 
+                type: 'text', 
+                text: `🎤 ${entry.text}` // Add voice indicator
+              }],
+            }));
+            
+            // Add all transcript messages at once
+            if (transcriptMessages.length > 0) {
+              stream.submit(
+                { messages: [...stream.messages, ...transcriptMessages] },
+                {
+                  streamMode: ["values"],
+                  optimisticValues: (prev) => ({
+                    ...prev,
+                    messages: [...(prev.messages ?? []), ...transcriptMessages],
+                  }),
+                }
+              );
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
