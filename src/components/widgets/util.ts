@@ -11,9 +11,10 @@ import { toast } from "sonner";
 export async function submitInterruptResponse(
   thread: any, // Replace with proper type from your stream context
   type: string,
-  args: Record<string, any>,
+  data: Record<string, any>,
 ): Promise<void> {
   try {
+
     await thread.submit(
       {},
       {
@@ -21,7 +22,7 @@ export async function submitInterruptResponse(
           resume: [
             {
               type,
-              args,
+              data,
             },
           ],
         },

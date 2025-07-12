@@ -4,21 +4,31 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { componentMap, ComponentType } from "@/components/widgets";
 
 interface DynamicRendererProps {
-  type: string;
+  interruptType: string;
   interrupt: Record<string, any>;
 }
 
-const DynamicRenderer: React.FC<DynamicRendererProps> = ({ type, interrupt }) => {
+const DynamicRenderer: React.FC<DynamicRendererProps> = ({
+  interruptType,
+  interrupt,
+}) => {
   // Check if the type exists in componentMap
-  if (type in componentMap) {
-    const Component = componentMap[type as ComponentType];
-    return <Component interrupt={interrupt} />;
+  if (
+    interruptType === "widget" &&
+    interrupt.value.widget.type in componentMap
+  ) {
+    const Component =
+      componentMap[interrupt.value.widget.type as ComponentType];
+    console.log("Widget args structure:", interrupt.value.widget.args);
+    // Pass the args object directly to the component
+    return <Component {...interrupt.value.widget.args} />;
   }
 
-  console.log('No widget found for type:', type);
+  console.log(
+    `No widget found for interruptType: ${interruptType} and interrupt: ${JSON.stringify(interrupt)}`,
+  );
   return null;
 };
-
 
 function isComplexValue(value: any): boolean {
   return Array.isArray(value) || (typeof value === "object" && value !== null);
@@ -37,17 +47,23 @@ export function GenericInterruptView({
 
   // Extract interrupt object and type
   const interruptObj = Array.isArray(interrupt) ? interrupt[0] : interrupt;
-  const type = interruptObj.type || interruptObj.value?.type;
-  console.log('Interrupt type:', type);
+  const interruptType = interruptObj.type || interruptObj.value?.type;
+  console.log(
+    `Interrupt type: ${interruptType}, interrupt: ${JSON.stringify(interrupt)}`,
+  );
 
   // Try to render dynamic widget first
-  const dynamicWidget = type ? <DynamicRenderer type={type} interrupt={interruptObj} /> : null;
+  const dynamicWidget = interruptType ? (
+    <DynamicRenderer
+      interruptType={interruptType}
+      interrupt={interruptObj}
+    />
+  ) : null;
 
   // If dynamic widget exists, render it instead of generic view
   if (dynamicWidget) {
     return dynamicWidget;
   }
-
 
   // Function to truncate long string values
   const truncateValue = (value: any): any => {
