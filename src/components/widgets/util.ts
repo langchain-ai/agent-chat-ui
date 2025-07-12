@@ -28,11 +28,6 @@ export async function submitInterruptResponse(
         },
       },
     );
-
-    toast("Success", {
-      description: "Submitted successfully.",
-      duration: 3000,
-    });
   } catch (error) {
     console.error("Error submitting response:", error);
     toast.error("Error", {

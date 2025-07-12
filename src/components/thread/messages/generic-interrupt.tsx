@@ -13,6 +13,8 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = ({
   interrupt,
 }) => {
   // Check if the type exists in componentMap
+  console.log("#######Interrupt type:", interruptType);
+  console.log("#######Interrupt:", interrupt);
   if (
     interruptType === "widget" &&
     interrupt.value.widget.type in componentMap
