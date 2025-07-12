@@ -1,9 +1,36 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { useStreamContext } from "@/providers/Stream";
-import { LoadExternalComponent } from "@langchain/langgraph-sdk/react-ui";
-import { useArtifact } from "../artifact";
+import { componentMap, ComponentType } from "@/components/widgets";
+
+interface DynamicRendererProps {
+  interruptType: string;
+  interrupt: Record<string, any>;
+}
+
+const DynamicRenderer: React.FC<DynamicRendererProps> = ({
+  interruptType,
+  interrupt,
+}) => {
+  // Check if the type exists in componentMap
+  console.log("#######Interrupt type:", interruptType);
+  console.log("#######Interrupt:", interrupt);
+  if (
+    interruptType === "widget" &&
+    interrupt.value.widget.type in componentMap
+  ) {
+    const Component =
+      componentMap[interrupt.value.widget.type as ComponentType];
+    console.log("Widget args structure:", interrupt.value.widget.args);
+    // Pass the args object directly to the component
+    return <Component {...interrupt.value.widget.args} />;
+  }
+
+  console.log(
+    `No widget found for interruptType: ${interruptType} and interrupt: ${JSON.stringify(interrupt)}`,
+  );
+  return null;
+};
 
 function isComplexValue(value: any): boolean {
   return Array.isArray(value) || (typeof value === "object" && value !== null);
@@ -15,44 +42,30 @@ export function GenericInterruptView({
   interrupt: Record<string, any> | Record<string, any>[];
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const thread = useStreamContext();
-  const artifact = useArtifact();
 
-  console.log("----> interrupt", interrupt);
-  console.log("----> thread", thread.values);
-
-  // Support both array and object for interrupt
-  const interruptObj = Array.isArray(interrupt) ? interrupt[0] : interrupt;
-  // The backend puts the id in value.interrupt_id
-  const interruptId =
-    interruptObj?.interrupt_id || interruptObj?.value?.interrupt_id;
-
-  // Find custom UI widgets for this interrupt
-  const customComponents = thread.values.ui?.filter(
-    (ui) => ui.metadata?.id === interruptId,
-  );
-
-  console.log("----> customComponents", customComponents);
-
-  if (customComponents?.length) {
-    return (
-      <>
-        {customComponents.map((customComponent) => (
-          <LoadExternalComponent
-            key={customComponent.id}
-            stream={thread}
-            message={customComponent}
-            meta={{ ui: customComponent, artifact }}
-          />
-        ))}
-      </>
-    );
-  }
-
-  // Fallback: existing rendering logic
   const contentStr = JSON.stringify(interrupt, null, 2);
   const contentLines = contentStr.split("\n");
   const shouldTruncate = contentLines.length > 4 || contentStr.length > 500;
+
+  // Extract interrupt object and type
+  const interruptObj = Array.isArray(interrupt) ? interrupt[0] : interrupt;
+  const interruptType = interruptObj.type || interruptObj.value?.type;
+  console.log(
+    `Interrupt type: ${interruptType}, interrupt: ${JSON.stringify(interrupt)}`,
+  );
+
+  // Try to render dynamic widget first
+  const dynamicWidget = interruptType ? (
+    <DynamicRenderer
+      interruptType={interruptType}
+      interrupt={interruptObj}
+    />
+  ) : null;
+
+  // If dynamic widget exists, render it instead of generic view
+  if (dynamicWidget) {
+    return dynamicWidget;
+  }
 
   // Function to truncate long string values
   const truncateValue = (value: any): any => {
