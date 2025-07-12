@@ -1,6 +1,6 @@
 import FlightOptionsWidget from "./flightOptions.widget";
 import FlightStatusWidget from "./flightStatus.wdiget";
-import SearchCriteriaWidget from "./SearchCriteria.widget";
+import SearchCriteriaWidget from "./searchCriteria.widget";
 import LoungeWidget from "./lounge.widget";
 import weatherWidget from "./weather.widget";
 
