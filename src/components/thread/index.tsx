@@ -529,21 +529,15 @@ export function Thread() {
                         />
                         <Button
                           type="button"
-                          variant="ghost"
                           onClick={() => setVoiceChatOpen(true)}
-                          className="flex items-center gap-2 text-gray-600 hover:text-purple-600"
+                          style={{ background: 'rgba(130, 125, 125,1)', borderRadius: '50%', width: 35, height: 35, minWidth: 35, minHeight: 35, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(85, 84, 84, 1)' }}
+                          className="p-0 border-0 shadow-none"
                         >
-                          <Mic className="size-5" />
-                          <span className="text-sm">Voice Chat</span>
-                        </Button>
-                        {stream.isLoading ? (
-                          <Button
-                            key="stop"
-                            onClick={() => stream.stop()}
-                            className="ml-auto"
-                          >
-                            <LoaderCircle className="h-4 w-4 animate-spin" />
-                            Cancel
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="10" y="4" width="3" height="22" rx="1" fill="#fff" /> {/* Central line */}
+                            <rect x="2" y="8" width="3" height="12" rx="1" fill="#fff" />  {/* Left shorter line */}
+                            <rect x="18" y="8" width="3" height="12" rx="1" fill="#fff" /> {/* Right shorter line */}
+                          </svg>
                           </Button>
                         ) : (
                           <Button
