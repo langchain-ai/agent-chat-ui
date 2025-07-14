@@ -14,7 +14,6 @@ export async function submitInterruptResponse(
   data: Record<string, any>,
 ): Promise<void> {
   try {
-
     await thread.submit(
       {},
       {
