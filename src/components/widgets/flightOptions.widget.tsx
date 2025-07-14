@@ -15,6 +15,12 @@ import {
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
 import { submitInterruptResponse } from "./util";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 interface FlightOption {
   flightId: string;
@@ -158,7 +164,7 @@ const FlightCard = ({
   const currency = flight.totalCurrency || "USD";
 
   return (
-    <div className="min-w-[280px] flex-shrink-0 snap-center rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md sm:min-w-[300px] sm:p-4">
+    <div className="w-full rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow-md">
       {/* Badge */}
       {badgeConfig && (
         <div
@@ -174,12 +180,12 @@ const FlightCard = ({
 
       {/* Airline and Flight Number */}
       <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Plane className="h-4 w-4 text-gray-600" />
-          <span className="font-medium text-gray-900">{getAirline()}</span>
-          <span className="text-sm text-gray-500">{getFlightNumber()}</span>
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <Plane className="h-4 w-4 text-gray-600 flex-shrink-0" />
+          <span className="font-medium text-gray-900 truncate">{getAirline()}</span>
+          <span className="text-sm text-gray-500 truncate">{getFlightNumber()}</span>
         </div>
-        <div className="text-right">
+        <div className="text-right flex-shrink-0">
           <div className="text-lg font-bold text-gray-900">
             ₹{price.toLocaleString()}
           </div>
@@ -189,7 +195,7 @@ const FlightCard = ({
 
       {/* Flight Route */}
       <div className="mb-3 flex items-center justify-between">
-        <div className="text-center">
+        <div className="text-center flex-1">
           <div className="text-xl font-bold text-gray-900">
             {departureInfo.time}
           </div>
@@ -212,7 +218,7 @@ const FlightCard = ({
           </div>
         </div>
 
-        <div className="text-center">
+        <div className="text-center flex-1">
           <div className="text-xl font-bold text-gray-900">
             {arrivalInfo.time}
           </div>
@@ -297,14 +303,9 @@ const FlightCard = ({
 const FlightOptionsWidget = (args: Record<string, any>) => {
   console.log("args", args);
   const thread = useStreamContext();
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedFlight, setSelectedFlight] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showAllFlights, setShowAllFlights] = useState(false);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [scrollLeft, setScrollLeft] = useState(0);
 
   const preferredFlightTuples = args.preferredFlightTuples || [];
   const allFlightTuples = args.allFlightTuples || [];
@@ -327,136 +328,96 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
   };
 
   const handleShowAllFlights = () => {
-    setShowAllFlights(!showAllFlights);
+    setShowAllFlights(true);
   };
 
-  // Touch/Mouse drag handlers
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    setStartX(e.pageX - (scrollContainerRef.current?.offsetLeft || 0));
-    setScrollLeft(scrollContainerRef.current?.scrollLeft || 0);
+  const handleCloseAllFlights = () => {
+    setShowAllFlights(false);
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !scrollContainerRef.current) return;
-    e.preventDefault();
-    const x = e.pageX - (scrollContainerRef.current.offsetLeft || 0);
-    const walk = (x - startX) * 2;
-    scrollContainerRef.current.scrollLeft = scrollLeft - walk;
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setIsDragging(true);
-    setStartX(
-      e.touches[0].pageX - (scrollContainerRef.current?.offsetLeft || 0),
-    );
-    setScrollLeft(scrollContainerRef.current?.scrollLeft || 0);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging || !scrollContainerRef.current) return;
-    const x = e.touches[0].pageX - (scrollContainerRef.current.offsetLeft || 0);
-    const walk = (x - startX) * 2;
-    scrollContainerRef.current.scrollLeft = scrollLeft - walk;
-  };
-
-  const handleTouchEnd = () => {
-    setIsDragging(false);
-  };
-
-  // Scroll indicators
-  const scrollToCard = (index: number) => {
-    if (scrollContainerRef.current) {
-      const cardWidth = 320; // Approximate card width + gap
-      scrollContainerRef.current.scrollTo({
-        left: index * cardWidth,
-        behavior: "smooth",
-      });
-    }
-  };
-
-  const currentFlights = showAllFlights
-    ? allFlightTuples
-    : preferredFlightTuples;
+  // Get initial flights for display (responsive: 1 on mobile, 2 on tablet, 3 on desktop)
+  // We'll show 3 initially and let CSS grid handle the responsive layout
+  const initialFlights = preferredFlightTuples.slice(0, 3);
+  const remainingFlightsCount = allFlightTuples.length - initialFlights.length;
 
   return (
-    <div
-      className="mx-auto mt-4 max-w-6xl rounded-2xl border border-gray-200 bg-gray-50 p-4 sm:mt-8 sm:p-6"
-      style={{ fontFamily: "Uber Move, Arial, Helvetica, sans-serif" }}
-    >
-      <div className="mb-4 sm:mb-6">
-        <h2 className="mb-2 text-lg font-semibold text-gray-900 sm:text-xl">
-          Available Flights
-        </h2>
-        <p className="text-sm text-gray-600">Swipe to see more options</p>
-      </div>
-
-      {/* Carousel Container */}
+    <>
       <div
-        ref={scrollContainerRef}
-        className="scrollbar-hide flex cursor-grab snap-x snap-mandatory gap-4 overflow-x-auto pb-4 active:cursor-grabbing"
-        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
+        className="mx-auto mt-4 max-w-6xl rounded-2xl border border-gray-200 bg-gray-50 p-4 sm:mt-8 sm:p-6 overflow-x-hidden"
+        style={{ fontFamily: "Uber Move, Arial, Helvetica, sans-serif" }}
       >
-        {currentFlights.map((flight: any, index: number) => (
-          <FlightCard
-            key={flight.flightId || `flight-${index}`}
-            flight={flight}
-            onSelect={handleSelectFlight}
-            isLoading={isLoading}
-          />
-        ))}
-      </div>
-
-      {/* Scroll Indicators */}
-      <div className="mt-4 mb-6 flex justify-center gap-2">
-        {currentFlights.map((_: any, index: number) => (
-          <button
-            key={index}
-            onClick={() => scrollToCard(index)}
-            className={cn(
-              "h-2 w-2 rounded-full transition-colors duration-200",
-              index === currentIndex ? "bg-gray-900" : "bg-gray-300",
-            )}
-          />
-        ))}
-      </div>
-
-      {/* Show All Flights Button */}
-      <div className="text-center">
-        <Button
-          onClick={handleShowAllFlights}
-          variant="outline"
-          className="border-gray-300 px-8 py-2 text-gray-700 transition-colors duration-200 hover:border-gray-400 hover:bg-gray-100"
-        >
-          {showAllFlights
-            ? `Show fewer flights...`
-            : `Show all flights (${allFlightTuples.length - preferredFlightTuples.length} more)`}
-        </Button>
-      </div>
-
-      {/* Selection Feedback */}
-      {selectedFlight && (
-        <div className="mt-4 rounded-lg border border-green-200 bg-green-50 p-3">
-          <p className="text-sm text-green-800">
-            Flight{" "}
-            {currentFlights.find((f: any) => f.flightId === selectedFlight)
-              ?.segments?.[0]?.flightNumber || "Unknown"}{" "}
-            selected!
-          </p>
+        <div className="mb-4 sm:mb-6">
+          <h2 className="mb-2 text-lg font-semibold text-gray-900 sm:text-xl">
+            Available Flights
+          </h2>
+          <p className="text-sm text-gray-600">Choose from the best options</p>
         </div>
-      )}
-    </div>
+
+        {/* Responsive Card Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          {initialFlights.map((flight: any, index: number) => (
+            <FlightCard
+              key={flight.flightId || `flight-${index}`}
+              flight={flight}
+              onSelect={handleSelectFlight}
+              isLoading={isLoading}
+            />
+          ))}
+        </div>
+
+        {/* Show All Flights Button */}
+        {remainingFlightsCount > 0 && (
+          <div className="text-center">
+            <Button
+              onClick={handleShowAllFlights}
+              variant="outline"
+              className="border-gray-300 px-8 py-2 text-gray-700 transition-colors duration-200 hover:border-gray-400 hover:bg-gray-100"
+            >
+              Show all flights ({remainingFlightsCount} more)
+            </Button>
+          </div>
+        )}
+
+        {/* Selection Feedback */}
+        {selectedFlight && (
+          <div className="mt-4 rounded-lg border border-green-200 bg-green-50 p-3">
+            <p className="text-sm text-green-800">
+              Flight{" "}
+              {allFlightTuples.find((f: any) => f.flightId === selectedFlight)
+                ?.segments?.[0]?.flightNumber || "Unknown"}{" "}
+              selected!
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom Sheet Modal for All Flights */}
+      <Sheet open={showAllFlights} onOpenChange={setShowAllFlights}>
+        <SheetContent
+          side="bottom"
+          className="h-[90vh] sm:h-[85vh] flex flex-col overflow-hidden"
+        >
+          <SheetHeader className="flex-shrink-0 pb-4">
+            <SheetTitle className="text-xl font-semibold">
+              All Available Flights ({allFlightTuples.length} flights)
+            </SheetTitle>
+          </SheetHeader>
+
+          <div className="flex-1 overflow-y-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-6">
+              {allFlightTuples.map((flight: any, index: number) => (
+                <FlightCard
+                  key={flight.flightId || `flight-${index}`}
+                  flight={flight}
+                  onSelect={handleSelectFlight}
+                  isLoading={isLoading}
+                />
+              ))}
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 };
 

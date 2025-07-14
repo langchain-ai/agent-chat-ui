@@ -151,15 +151,18 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
 
   return (
     <div
-      className="mx-auto mt-4 max-w-xl rounded-2xl border border-gray-200 bg-white p-4 font-sans shadow-lg sm:mt-10 sm:p-6"
-      style={{ fontFamily: "Uber Move, Arial, Helvetica, sans-serif" }}
+      className="mx-auto mt-2 w-full max-w-xl overflow-hidden rounded-2xl border border-gray-200 bg-white p-3 font-sans shadow-lg sm:mt-10 sm:p-6"
+      style={{
+        fontFamily: "Uber Move, Arial, Helvetica, sans-serif",
+        maxWidth: "min(100vw - 2rem, 36rem)"
+      }}
     >
       <form
-        className="space-y-4"
+        className="w-full space-y-3 overflow-hidden sm:space-y-4"
         onSubmit={handleSubmit}
       >
         {/* Trip Type - Lounge-style tabs */}
-        <div className="mb-4 flex gap-2">
+        <div className="mb-3 flex gap-2 sm:mb-4">
           <button
             type="button"
             onClick={() => setTripType("oneway")}
@@ -186,58 +189,107 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
           </button>
         </div>
 
-        {/* From/To with Switch Button */}
-        <div className="flex flex-col items-end gap-3 sm:flex-row sm:gap-4">
-          <div className="flex-1">
-            <Label
-              htmlFor="from"
-              className="mb-1 block text-sm font-medium text-gray-700"
-            >
-              From
-            </Label>
-            <AirportSearch
-              value={fromAirport}
-              onValueChange={setFromAirport}
-              placeholder="City or Airport"
-              excludeAirport={toAirport}
-            />
+        {/* From/To with Switch Button - Fixed Mobile Layout */}
+        <div className="space-y-2 sm:space-y-0">
+          {/* Mobile: Horizontal layout with swap button inline */}
+          <div className="flex items-end gap-1.5 sm:hidden">
+            <div className="min-w-0 flex-1">
+              <Label
+                htmlFor="from"
+                className="mb-1 block text-sm font-medium text-gray-700"
+              >
+                From
+              </Label>
+              <AirportSearch
+                value={fromAirport}
+                onValueChange={setFromAirport}
+                placeholder="City or Airport"
+                excludeAirport={toAirport}
+              />
+            </div>
+
+            {/* Swap Button - Inline on mobile */}
+            <div className="flex flex-shrink-0 items-center pb-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 flex-shrink-0 rounded-full border-gray-300 bg-white p-0 shadow-sm hover:bg-gray-50"
+                onClick={handleSwapAirports}
+              >
+                <ArrowUpDown className="h-3 w-3 rotate-90 text-gray-600" />
+              </Button>
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <Label
+                htmlFor="to"
+                className="mb-1 block text-sm font-medium text-gray-700"
+              >
+                To
+              </Label>
+              <AirportSearch
+                value={toAirport}
+                onValueChange={setToAirport}
+                placeholder="City or Airport"
+                excludeAirport={fromAirport}
+              />
+            </div>
           </div>
 
-          {/* Switch Button */}
-          <div className="flex justify-center sm:px-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-10 w-10 flex-shrink-0 rounded-full border-gray-300 p-0 hover:bg-gray-50"
-              onClick={handleSwapAirports}
-            >
-              <ArrowUpDown className="h-4 w-4 rotate-90 text-gray-600" />
-            </Button>
-          </div>
+          {/* Desktop: Grid layout with centered swap button */}
+          <div className="hidden sm:flex sm:items-end sm:gap-4">
+            <div className="flex-1">
+              <Label
+                htmlFor="from"
+                className="mb-1 block text-sm font-medium text-gray-700"
+              >
+                From
+              </Label>
+              <AirportSearch
+                value={fromAirport}
+                onValueChange={setFromAirport}
+                placeholder="City or Airport"
+                excludeAirport={toAirport}
+              />
+            </div>
 
-          <div className="flex-1">
-            <Label
-              htmlFor="to"
-              className="mb-1 block text-sm font-medium text-gray-700"
-            >
-              To
-            </Label>
-            <AirportSearch
-              value={toAirport}
-              onValueChange={setToAirport}
-              placeholder="City or Airport"
-              excludeAirport={fromAirport}
-            />
+            {/* Swap Button - Centered on desktop */}
+            <div className="flex justify-center px-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-10 w-10 flex-shrink-0 rounded-full border-gray-300 p-0 hover:bg-gray-50"
+                onClick={handleSwapAirports}
+              >
+                <ArrowUpDown className="h-4 w-4 rotate-90 text-gray-600" />
+              </Button>
+            </div>
+
+            <div className="flex-1">
+              <Label
+                htmlFor="to"
+                className="mb-1 block text-sm font-medium text-gray-700"
+              >
+                To
+              </Label>
+              <AirportSearch
+                value={toAirport}
+                onValueChange={setToAirport}
+                placeholder="City or Airport"
+                excludeAirport={fromAirport}
+              />
+            </div>
           </div>
         </div>
 
-        {/* Dates and Pax/Class - Conditional Layout */}
+        {/* Dates and Pax/Class - Improved Mobile Layout */}
         {tripType === "round" ? (
           <>
-            {/* Round Trip: Dates Row */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
-              <div className="flex-1">
+            {/* Round Trip: Dates Row - Better mobile spacing */}
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4">
+              <div>
                 <Label
                   htmlFor="departure"
                   className="mb-1 block text-sm font-medium text-gray-700"
@@ -250,7 +302,7 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
                   placeholder="Select departure date"
                 />
               </div>
-              <div className="flex-1">
+              <div>
                 <Label
                   htmlFor="return"
                   className="mb-1 block text-sm font-medium text-gray-700"
@@ -264,9 +316,9 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
                 />
               </div>
             </div>
-            {/* Round Trip: Pax and Class Row */}
-            <div className="flex gap-3 sm:gap-4">
-              <div className="w-24 sm:w-32">
+            {/* Round Trip: Pax and Class Row - Better mobile layout */}
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-4">
+              <div className="sm:w-32">
                 <Label
                   htmlFor="passengers"
                   className="mb-1 block text-sm font-medium text-gray-700"
@@ -292,7 +344,7 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex-1">
+              <div className="sm:flex-1">
                 <Label
                   htmlFor="class"
                   className="mb-1 block text-sm font-medium text-gray-700"
@@ -319,9 +371,10 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
             </div>
           </>
         ) : (
-          /* One Way: Departure date, passengers and class in same line */
-          <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
-            <div className="flex-1 sm:flex-[2]">
+          /* One Way: Better mobile layout with grouped fields */
+          <>
+            {/* Departure Date - Full width on mobile */}
+            <div>
               <Label
                 htmlFor="departure-oneway"
                 className="mb-1 block text-sm font-medium text-gray-700"
@@ -334,64 +387,67 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
                 placeholder="Select departure date"
               />
             </div>
-            <div className="w-full sm:w-24 sm:flex-shrink-0">
-              <Label
-                htmlFor="passengers-oneway"
-                className="mb-1 block text-sm font-medium text-gray-700"
-              >
-                Passengers
-              </Label>
-              <Select
-                value={pax.toString()}
-                onValueChange={(value) => setPax(Number(value))}
-              >
-                <SelectTrigger className="w-full text-sm focus:border-black focus:ring-black">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 9 }, (_, i) => i + 1).map((num) => (
-                    <SelectItem
-                      key={num}
-                      value={num.toString()}
-                    >
-                      {num}
+            {/* Passengers and Class - Side by side on mobile */}
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-4">
+              <div className="sm:w-32">
+                <Label
+                  htmlFor="passengers-oneway"
+                  className="mb-1 block text-sm font-medium text-gray-700"
+                >
+                  Passengers
+                </Label>
+                <Select
+                  value={pax.toString()}
+                  onValueChange={(value) => setPax(Number(value))}
+                >
+                  <SelectTrigger className="w-full text-sm focus:border-black focus:ring-black">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 9 }, (_, i) => i + 1).map((num) => (
+                      <SelectItem
+                        key={num}
+                        value={num.toString()}
+                      >
+                        {num}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="sm:flex-1">
+                <Label
+                  htmlFor="class-oneway"
+                  className="mb-1 block text-sm font-medium text-gray-700"
+                >
+                  Class
+                </Label>
+                <Select
+                  value={flightClass}
+                  onValueChange={setFlightClass}
+                >
+                  <SelectTrigger className="w-full text-sm focus:border-black focus:ring-black">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Economy">Economy</SelectItem>
+                    <SelectItem value="Premium Economy">
+                      Premium Economy
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                    <SelectItem value="Business">Business</SelectItem>
+                    <SelectItem value="First">First</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="flex-1">
-              <Label
-                htmlFor="class-oneway"
-                className="mb-1 block text-sm font-medium text-gray-700"
-              >
-                Class
-              </Label>
-              <Select
-                value={flightClass}
-                onValueChange={setFlightClass}
-              >
-                <SelectTrigger className="w-full text-sm focus:border-black focus:ring-black">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Economy">Economy</SelectItem>
-                  <SelectItem value="Premium Economy">
-                    Premium Economy
-                  </SelectItem>
-                  <SelectItem value="Business">Business</SelectItem>
-                  <SelectItem value="First">First</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          </>
         )}
 
-        <div className="flex justify-center">
+        <div className="flex justify-center pt-2">
           <Button
             type="submit"
             disabled={isLoading}
-            className="mt-4 min-h-[48px] w-auto bg-black px-8 py-3 text-base font-bold text-white hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-50 sm:mt-2 sm:min-h-[40px] sm:text-base"
+            className="mt-2 min-h-[44px] w-full bg-black px-6 py-3 text-sm font-bold text-white hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-50 sm:mt-4 sm:min-h-[48px] sm:w-auto sm:px-8 sm:text-base"
           >
             {isLoading ? "Searching..." : "Search Flights"}
           </Button>
