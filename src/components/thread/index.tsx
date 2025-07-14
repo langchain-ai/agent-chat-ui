@@ -24,6 +24,8 @@ import {
   Plus,
   CircleX,
   Mic,
+  Check,
+  X,
 } from "lucide-react";
 import { useQueryState, parseAsBoolean } from "nuqs";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
@@ -147,6 +149,7 @@ export function Thread() {
 
   // Dictation state
   const [isDictating, setIsDictating] = useState(false);
+  const [dictationTranscript, setDictationTranscript] = useState("");
   const recognitionRef = useRef<any>(null);
   const [showWaveform, setShowWaveform] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -286,10 +289,11 @@ export function Thread() {
     waveformBufferRef.current = [];
   }, []);
 
-  // Dictation handler using Web Speech API
+  // Dictation handler using Web Speech API (manual stop/cancel)
   const handleDictateClick = async () => {
     if (!isDictating) {
       setIsDictating(true);
+      setDictationTranscript("");
       if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
         toast.error('Speech recognition is not supported in this browser.');
         setIsDictating(false);
@@ -299,30 +303,56 @@ export function Thread() {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       const recognition = new SpeechRecognition();
       recognitionRef.current = recognition;
-      recognition.continuous = false;
-      recognition.interimResults = false;
+      recognition.continuous = true; // keep listening
+      recognition.interimResults = true; // accumulate transcript
       recognition.lang = 'en-US';
       recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInput((prev) => prev + (prev ? ' ' : '') + transcript);
+        let transcript = "";
+        for (let i = 0; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        setDictationTranscript(transcript);
       };
       recognition.onerror = (event: any) => {
         toast.error('Dictation error: ' + event.error);
-        setIsDictating(false);
-        stopWaveform();
       };
       recognition.onend = () => {
-        setIsDictating(false);
-        stopWaveform();
+        // Do not auto-stop; restart if still dictating
+        if (isDictating) {
+          recognition.start();
+        }
       };
       recognition.start();
     } else {
+      // Should not happen, but stop if already dictating
       setIsDictating(false);
       if (recognitionRef.current) {
         recognitionRef.current.stop();
       }
       stopWaveform();
+      setDictationTranscript("");
     }
+  };
+
+  // Stop dictation and insert transcript
+  const handleDictationStop = () => {
+    setIsDictating(false);
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+    stopWaveform();
+    setInput((prev) => prev + (prev ? ' ' : '') + dictationTranscript.trim());
+    setDictationTranscript("");
+  };
+
+  // Cancel dictation
+  const handleDictationCancel = () => {
+    setIsDictating(false);
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+    stopWaveform();
+    setDictationTranscript("");
   };
 
   const stream = useStreamContext();
@@ -647,122 +677,147 @@ export function Thread() {
                         : "border border-solid",
                     )}
                   >
-                    {showWaveform && (
-                      <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-                        <canvas
-                          ref={canvasRef}
-                          width={waveformLength * (barWidth + barSpacing)}
-                          height={32}
-                          style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 8, width: waveformLength * (barWidth + barSpacing), height: 32 }}
-                        />
-                      </div>
-                    )}
-                    <form
-                      onSubmit={handleSubmit}
-                      className="mx-auto grid max-w-3xl grid-rows-[1fr_auto] gap-2"
-                    >
-                      <ContentBlocksPreview
-                        blocks={contentBlocks}
-                        onRemove={removeBlock}
-                      />
-                      <textarea
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onPaste={handlePaste}
-                        onKeyDown={(e) => {
-                          if (
-                            e.key === "Enter" &&
-                            !e.shiftKey &&
-                            !e.metaKey &&
-                            !e.nativeEvent.isComposing
-                          ) {
-                            e.preventDefault();
-                            const el = e.target as HTMLElement | undefined;
-                            const form = el?.closest("form");
-                            form?.requestSubmit();
-                          }
-                        }}
-                        placeholder="Type your message..."
-                        className="field-sizing-content resize-none border-none bg-transparent p-3.5 pb-0 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none"
-                      />
-
-                      <div className="flex items-center gap-6 p-2 pt-4">
-                        <div>
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              id="render-tool-calls"
-                              checked={hideToolCalls ?? false}
-                              onCheckedChange={setHideToolCalls}
+                    {isDictating ? (
+                      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 16 }}>
+                        {showWaveform && (
+                          <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+                            <canvas
+                              ref={canvasRef}
+                              width={waveformLength * (barWidth + barSpacing)}
+                              height={32}
+                              style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 8, width: waveformLength * (barWidth + barSpacing), height: 32 }}
                             />
-                            <Label
-                              htmlFor="render-tool-calls"
-                              className="text-sm text-gray-600"
-                            >
-                              Hide Tool Calls
-                            </Label>
                           </div>
-                        </div>
-                        <Label
-                          htmlFor="file-input"
-                          className="flex cursor-pointer items-center gap-2"
-                        >
-                          <Plus className="size-5 text-gray-600" />
-                          <span className="text-sm text-gray-600">
-                            Upload PDF or Image
-                          </span>
-                        </Label>
-                        <input
-                          id="file-input"
-                          type="file"
-                          onChange={handleFileUpload}
-                          multiple
-                          accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
-                          className="hidden"
-                        />
-                        <Button
-                          type="button"
-                          onClick={() => setVoiceChatOpen(true)}
-                          style={{ background: 'rgba(130, 125, 125,1)', borderRadius: '50%', width: 35, height: 35, minWidth: 35, minHeight: 35, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(85, 84, 84, 1)' }}
-                          className="p-0 border-0 shadow-none"
-                        >
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <rect x="10" y="4" width="3" height="22" rx="1" fill="#fff" /> {/* Central line */}
-                            <rect x="2" y="8" width="3" height="12" rx="1" fill="#fff" />  {/* Left shorter line */}
-                            <rect x="18" y="8" width="3" height="12" rx="1" fill="#fff" /> {/* Right shorter line */}
-                          </svg>
-                        </Button>
-                        <Button
-                          type="button"
-                          aria-label="Dictate message"
-                          onClick={handleDictateClick}
-                          style={{ background: 'rgba(130,125,125,1)', borderRadius: '50%', width: 35, height: 35, minWidth: 35, minHeight: 35, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(85, 84, 84, 1)', border: isDictating ? '2px solid white' : undefined }}
-                          className="p-0 border-0 shadow-none"
-                        >
-                          <Mic className="w-5 h-5 text-white" />
-                        </Button>
-                        {stream.isLoading ? (
-                          <Button
-                            key="stop"
-                            onClick={() => stream.stop()}
-                            className="ml-auto"
-                          >
-                            <LoaderCircle className="h-4 w-4 animate-spin" />
-                            Cancel
-                          </Button>
-                        ) : (
-                          <Button
-                            type="submit"
-                            className="ml-auto shadow-md transition-all"
-                            disabled={
-                              isLoading ||
-                              (!input.trim() && contentBlocks.length === 0)
-                            }
-                          >
-                            Send
-                          </Button>
                         )}
+                        <div style={{ display: 'flex', flexDirection: 'row', gap: 24, marginTop: 8 }}>
+                          <button onClick={handleDictationCancel} aria-label="Cancel dictation" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                            <X size={28} color="#888" />
+                          </button>
+                          <button onClick={handleDictationStop} aria-label="Stop dictation" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                            <Check size={28} color="#888" />
+                          </button>
+                        </div>
                       </div>
-                    </form>
+                    ) : (
+                      <>
+                        {showWaveform && (
+                          <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+                            <canvas
+                              ref={canvasRef}
+                              width={waveformLength * (barWidth + barSpacing)}
+                              height={32}
+                              style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 8, width: waveformLength * (barWidth + barSpacing), height: 32 }}
+                            />
+                          </div>
+                        )}
+                        <form
+                          onSubmit={handleSubmit}
+                          className="mx-auto grid max-w-3xl grid-rows-[1fr_auto] gap-2"
+                        >
+                          <ContentBlocksPreview
+                            blocks={contentBlocks}
+                            onRemove={removeBlock}
+                          />
+                          <textarea
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onPaste={handlePaste}
+                            onKeyDown={(e) => {
+                              if (
+                                e.key === "Enter" &&
+                                !e.shiftKey &&
+                                !e.metaKey &&
+                                !e.nativeEvent.isComposing
+                              ) {
+                                e.preventDefault();
+                                const el = e.target as HTMLElement | undefined;
+                                const form = el?.closest("form");
+                                form?.requestSubmit();
+                              }
+                            }}
+                            placeholder="Type your message..."
+                            className="field-sizing-content resize-none border-none bg-transparent p-3.5 pb-0 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none"
+                          />
+
+                          <div className="flex items-center gap-6 p-2 pt-4">
+                            <div>
+                              <div className="flex items-center space-x-2">
+                                <Switch
+                                  id="render-tool-calls"
+                                  checked={hideToolCalls ?? false}
+                                  onCheckedChange={setHideToolCalls}
+                                />
+                                <Label
+                                  htmlFor="render-tool-calls"
+                                  className="text-sm text-gray-600"
+                                >
+                                  Hide Tool Calls
+                                </Label>
+                              </div>
+                            </div>
+                            <Label
+                              htmlFor="file-input"
+                              className="flex cursor-pointer items-center gap-2"
+                            >
+                              <Plus className="size-5 text-gray-600" />
+                              <span className="text-sm text-gray-600">
+                                Upload PDF or Image
+                              </span>
+                            </Label>
+                            <input
+                              id="file-input"
+                              type="file"
+                              onChange={handleFileUpload}
+                              multiple
+                              accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
+                              className="hidden"
+                            />
+                            <Button
+                              type="button"
+                              onClick={() => setVoiceChatOpen(true)}
+                              style={{ background: 'rgba(130, 125, 125,1)', borderRadius: '50%', width: 35, height: 35, minWidth: 35, minHeight: 35, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(85, 84, 84, 1)' }}
+                              className="p-0 border-0 shadow-none"
+                            >
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="10" y="4" width="3" height="22" rx="1" fill="#fff" /> {/* Central line */}
+                                <rect x="2" y="8" width="3" height="12" rx="1" fill="#fff" />  {/* Left shorter line */}
+                                <rect x="18" y="8" width="3" height="12" rx="1" fill="#fff" /> {/* Right shorter line */}
+                              </svg>
+                            </Button>
+                            <Button
+                              type="button"
+                              aria-label="Dictate message"
+                              onClick={handleDictateClick}
+                              style={{ background: 'rgba(130,125,125,1)', borderRadius: '50%', width: 35, height: 35, minWidth: 35, minHeight: 35, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(85, 84, 84, 1)', border: isDictating ? '2px solid white' : undefined }}
+                              className="p-0 border-0 shadow-none"
+                            >
+                              <Mic className="w-5 h-5 text-white" />
+                            </Button>
+                            {stream.isLoading ? (
+                              <Button
+                                key="stop"
+                                onClick={() => stream.stop()}
+                                className="ml-auto"
+                              >
+                                <LoaderCircle className="h-4 w-4 animate-spin" />
+                                Cancel
+                              </Button>
+                            ) : (
+                              <Button
+                                type="submit"
+                                className="ml-auto shadow-md transition-all"
+                                disabled={
+                                  isLoading ||
+                                  (!input.trim() && contentBlocks.length === 0)
+                                }
+                              >
+                                Send
+                              </Button>
+                            )}
+                          </div>
+                        </form>
+                      </>
+                    )}
                   </div>
                 </div>
               }
