@@ -113,6 +113,23 @@ function OpenGitHubRepo() {
   );
 }
 
+// Add this utility function to filter out tool call messages with empty content
+function isDisplayableMessage(m: Message) {
+  if (m.id?.startsWith(DO_NOT_RENDER_ID_PREFIX)) return false;
+  // Hide tool call messages with empty content
+  if (
+    m.type === "ai" &&
+    (!m.content ||
+      (Array.isArray(m.content) && m.content.length === 0) ||
+      m.content === "") &&
+    m.tool_calls &&
+    m.tool_calls.length > 0
+  ) {
+    return false;
+  }
+  return true;
+}
+
 export function Thread() {
   const [artifactContext, setArtifactContext] = useArtifactContext();
   const [artifactOpen, closeArtifact] = useArtifactOpen();
@@ -146,6 +163,13 @@ export function Thread() {
 
   // Add local state for display messages
   const [displayMessages, setDisplayMessages] = useState<Message[]>([]);
+
+  // Reset displayMessages, input, and contentBlocks when threadId changes
+  useEffect(() => {
+    setDisplayMessages([]);
+    setInput("");
+    setContentBlocks([]);
+  }, [threadId, setContentBlocks]);
 
   // Ensure only unique messages are rendered, updating or adding from backend, keeping old ones unless updated
   useEffect(() => {
@@ -403,15 +427,12 @@ export function Thread() {
                     height={32}
                   />
                   <span className="text-xl font-semibold tracking-tight">
-                    Agent Chat
+                    Flyo Chat
                   </span>
                 </motion.button>
               </div>
 
               <div className="flex items-center gap-4">
-                <div className="flex items-center">
-                  <OpenGitHubRepo />
-                </div>
                 <TooltipIconButton
                   size="lg"
                   className="p-4"
@@ -438,7 +459,7 @@ export function Thread() {
               content={
                 <>
                   {displayMessages
-                    .filter((m) => !m.id?.startsWith(DO_NOT_RENDER_ID_PREFIX))
+                    .filter(isDisplayableMessage)
                     .map((message, index) =>
                       message.type === "human"
                         ? (console.log(
@@ -495,7 +516,7 @@ export function Thread() {
                     <div className="flex items-center gap-3">
                       <LangGraphLogoSVG className="h-8 flex-shrink-0" />
                       <h1 className="text-2xl font-semibold tracking-tight">
-                        Agent Chat
+                        Flyo Chat
                       </h1>
                     </div>
                   )}
@@ -541,7 +562,7 @@ export function Thread() {
                       />
 
                       <div className="flex items-center gap-6 p-2 pt-4">
-                        <div>
+                        {/* <div>
                           <div className="flex items-center space-x-2">
                             <Switch
                               id="render-tool-calls"
@@ -555,14 +576,14 @@ export function Thread() {
                               Hide Tool Calls
                             </Label>
                           </div>
-                        </div>
+                        </div> */}
                         <Label
                           htmlFor="file-input"
                           className="flex cursor-pointer items-center gap-2"
                         >
                           <Plus className="size-5 text-gray-600" />
                           <span className="text-sm text-gray-600">
-                            Upload PDF or Image
+                            Upload PDF, Image, or Video
                           </span>
                         </Label>
                         <input

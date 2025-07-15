@@ -114,10 +114,6 @@ export function AssistantMessage({
 
   const thread = useStreamContext();
 
-  console.log(`$$$$$$$$$ AllMessages : ${JSON.stringify(thread.messages)}`);
-
-  console.log(`$$$$$$$$$ AllInterrupt : ${JSON.stringify(thread.interrupt)}`);
-
   console.log(`$$$$$$$$$ Message : ${JSON.stringify(message)}`);
 
   const isLastMessage =
