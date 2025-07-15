@@ -1,13 +1,6 @@
 // src/utils/submitInterruptResponse.ts
 
 import { toast } from "sonner";
-
-/**
- * Submit a response to resume an interrupt.
- * @param thread The stream context thread instance
- * @param type The type of the response, e.g. "response", "formData", etc.
- * @param args The data to send as arguments with the response.
- */
 export async function submitInterruptResponse(
   thread: any, // Replace with proper type from your stream context
   type: string,

@@ -1,19 +1,19 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/common/ui/button";
 import { Input } from "@/components/common/ui/input";
-import { Calendar as CalendarIcon, ArrowUpDown, Plus, Minus } from "lucide-react";
+import { Calendar as CalendarIcon, ArrowUpDown, Plus, Minus, ChevronDown } from "lucide-react";
 import { AirportSearch } from "@/components/common/ui/airportSearch";
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
-import { submitInterruptResponse } from "./util";
+import {submitInterruptResponse} from "./util";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/common/ui/popover";
+import { getUserLocation, LocationResult } from "@/lib/utils";
 
 // Simple DateInput component
 interface DateInputProps {
@@ -99,7 +99,45 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
     flightSearchCriteria.returnDate ? new Date(flightSearchCriteria.returnDate) : undefined,
   );
   const [isLoading, setIsLoading] = useState(false);
-  const [showTravellerSheet, setShowTravellerSheet] = useState(false);
+  const [showTravellerDropdown, setShowTravellerDropdown] = useState(false);
+  const [isReadOnly, setIsReadOnly] = useState(false);
+  const [submittedData, setSubmittedData] = useState<any>(null);
+
+  // Location-related state
+  const [locationResult, setLocationResult] = useState<LocationResult | null>(null);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+
+  // Request user location when component loads
+  useEffect(() => {
+    const requestLocation = async () => {
+      setIsGettingLocation(true);
+      try {
+        const result = await getUserLocation();
+        setLocationResult(result);
+
+        if (result.success) {
+          console.log("Location obtained successfully:", result.data);
+          // You can use the location data here if needed
+          // For example, to find nearby airports or set default location
+        } else {
+          console.log("Location request failed:", result.error);
+        }
+      } catch (error) {
+        console.error("Unexpected error getting location:", error);
+        setLocationResult({
+          success: false,
+          error: {
+            code: -1,
+            message: "Unexpected error occurred while getting location"
+          }
+        });
+      } finally {
+        setIsGettingLocation(false);
+      }
+    };
+
+    requestLocation();
+  }, []); // Empty dependency array means this runs once when component mounts
 
   // Wrapper functions for date state setters to match DateInput component interface
   const handleDepartureDateChange = (date: Date | undefined) => {
@@ -312,16 +350,143 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
             </div>
           )}
 
-          {/* Travellers & Class - Clickable to open bottom sheet */}
+          {/* Travellers & Class - Dropdown */}
           <div>
             <div className="text-sm text-gray-600 mb-1">Travellers & Class</div>
-            <button
-              type="button"
-              onClick={() => setShowTravellerSheet(true)}
-              className="font-bold text-lg text-black hover:text-gray-700 transition-colors text-left"
-            >
+            <div className="font-bold text-lg text-black mb-2">
               {formatTravellerText()}
-            </button>
+            </div>
+            <Popover open={showTravellerDropdown} onOpenChange={setShowTravellerDropdown}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={showTravellerDropdown}
+                  className="w-full justify-between focus:ring-black focus:border-black"
+                >
+                  <span>{formatTravellerText()}</span>
+                  <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[calc(100vw-2rem)] max-w-[400px] p-0">
+                <div className="p-4 space-y-6">
+                  {/* Select travellers */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4">Select travellers</h3>
+
+                    {/* Adults */}
+                    <div className="flex items-center justify-between py-3">
+                      <div>
+                        <div className="font-medium">Adult</div>
+                        <div className="text-sm text-gray-500">12+ Years</div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 w-8 rounded-full p-0"
+                          onClick={() => setAdults(Math.max(1, adults - 1))}
+                          disabled={adults <= 1}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-8 text-center font-medium">{adults}</span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 w-8 rounded-full p-0"
+                          onClick={() => setAdults(adults + 1)}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Children */}
+                    <div className="flex items-center justify-between py-3">
+                      <div>
+                        <div className="font-medium">Children</div>
+                        <div className="text-sm text-gray-500">2 - 12 yrs</div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 w-8 rounded-full p-0"
+                          onClick={() => setChildren(Math.max(0, children - 1))}
+                          disabled={children <= 0}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-8 text-center font-medium">{children}</span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 w-8 rounded-full p-0"
+                          onClick={() => setChildren(children + 1)}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Infants */}
+                    <div className="flex items-center justify-between py-3">
+                      <div>
+                        <div className="font-medium">Infant</div>
+                        <div className="text-sm text-gray-500">Below 2 yrs</div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 w-8 rounded-full p-0"
+                          onClick={() => setInfants(Math.max(0, infants - 1))}
+                          disabled={infants <= 0}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-8 text-center font-medium">{infants}</span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 w-8 rounded-full p-0"
+                          onClick={() => setInfants(infants + 1)}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Select class */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4">Select class</h3>
+                    <div className="space-y-3">
+                      {['Economy', 'Business', 'Premium Economy'].map((classOption) => (
+                        <label key={classOption} className="flex items-center gap-3 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="flightClass"
+                            value={classOption}
+                            checked={flightClass === classOption}
+                            onChange={(e) => setFlightClass(e.target.value)}
+                            className="w-4 h-4 text-black border-gray-300 focus:ring-black"
+                          />
+                          <span className="font-medium">{classOption}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Search Button */}
@@ -337,132 +502,7 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
         </form>
       </div>
 
-      {/* Bottom Sheet for Traveller & Class Selection */}
-      <Sheet open={showTravellerSheet} onOpenChange={setShowTravellerSheet}>
-        <SheetContent side="bottom" className="h-auto max-h-[80vh] overflow-y-auto px-4 sm:px-6">
-          <SheetHeader className="pb-4">
-            <SheetTitle className="text-left">Travellers & Class</SheetTitle>
-            <div className="text-left text-sm text-gray-600">{formatTravellerText()}</div>
-          </SheetHeader>
 
-          <div className="space-y-6 pb-6">
-            {/* Select travellers */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Select travellers</h3>
-
-              {/* Adults */}
-              <div className="flex items-center justify-between py-3">
-                <div>
-                  <div className="font-medium">Adult</div>
-                  <div className="text-sm text-gray-500">12+ Years</div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-8 w-8 rounded-full p-0"
-                    onClick={() => setAdults(Math.max(1, adults - 1))}
-                    disabled={adults <= 1}
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <span className="w-8 text-center font-medium">{adults}</span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-8 w-8 rounded-full p-0"
-                    onClick={() => setAdults(adults + 1)}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-
-              {/* Children */}
-              <div className="flex items-center justify-between py-3">
-                <div>
-                  <div className="font-medium">Children</div>
-                  <div className="text-sm text-gray-500">2 - 12 yrs</div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-8 w-8 rounded-full p-0"
-                    onClick={() => setChildren(Math.max(0, children - 1))}
-                    disabled={children <= 0}
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <span className="w-8 text-center font-medium">{children}</span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-8 w-8 rounded-full p-0"
-                    onClick={() => setChildren(children + 1)}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-
-              {/* Infants */}
-              <div className="flex items-center justify-between py-3">
-                <div>
-                  <div className="font-medium">Infant</div>
-                  <div className="text-sm text-gray-500">Below 2 yrs</div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-8 w-8 rounded-full p-0"
-                    onClick={() => setInfants(Math.max(0, infants - 1))}
-                    disabled={infants <= 0}
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <span className="w-8 text-center font-medium">{infants}</span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-8 w-8 rounded-full p-0"
-                    onClick={() => setInfants(infants + 1)}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* Select class */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Select class</h3>
-              <div className="space-y-3">
-                {['Economy', 'Business', 'Premium Economy'].map((classOption) => (
-                  <label key={classOption} className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="flightClass"
-                      value={classOption}
-                      checked={flightClass === classOption}
-                      onChange={(e) => setFlightClass(e.target.value)}
-                      className="w-4 h-4 text-black border-gray-300 focus:ring-black"
-                    />
-                    <span className="font-medium">{classOption}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
     </>
   );
 };
