@@ -78,6 +78,9 @@ function Interrupt({
   isLastMessage,
   hasNoAIOrToolMessages,
 }: InterruptProps) {
+  console.log(
+    `12345Interrupt: ${JSON.stringify(interruptValue)} \n isLastMessage: ${isLastMessage} \n hasNoAIOrToolMessages: ${hasNoAIOrToolMessages}`,
+  );
   return (
     <>
       {isAgentInboxInterruptSchema(interruptValue) &&
@@ -110,8 +113,16 @@ export function AssistantMessage({
   );
 
   const thread = useStreamContext();
+
+  console.log(`$$$$$$$$$ AllMessages : ${JSON.stringify(thread.messages)}`);
+
+  console.log(`$$$$$$$$$ AllInterrupt : ${JSON.stringify(thread.interrupt)}`);
+
+  console.log(`$$$$$$$$$ Message : ${JSON.stringify(message)}`);
+
   const isLastMessage =
-    thread.messages[thread.messages.length - 1].id === message?.id;
+    thread.messages.length > 0 &&
+    thread.messages[thread.messages.length - 1]?.id === message?.id;
   const hasNoAIOrToolMessages = !thread.messages.find(
     (m) => m.type === "ai" || m.type === "tool",
   );
@@ -180,11 +191,6 @@ export function AssistantMessage({
                 thread={thread}
               />
             )}
-            <Interrupt
-              interruptValue={threadInterrupt?.value}
-              isLastMessage={isLastMessage}
-              hasNoAIOrToolMessages={hasNoAIOrToolMessages}
-            />
             <div
               className={cn(
                 "mr-auto flex items-center gap-2 transition-opacity",

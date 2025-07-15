@@ -46,6 +46,7 @@ import {
   ArtifactTitle,
   useArtifactContext,
 } from "./artifact";
+import { GenericInterruptView } from "./messages/generic-interrupt";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -143,6 +144,46 @@ export function Thread() {
   const messages = stream.messages;
   const isLoading = stream.isLoading;
 
+  // Add local state for display messages
+  const [displayMessages, setDisplayMessages] = useState<Message[]>([]);
+
+  // Ensure only unique messages are rendered, updating or adding from backend, keeping old ones unless updated
+  useEffect(() => {
+    setDisplayMessages((prevMessages) => {
+      // Map of previous messages by id
+      const prevMap = new Map(prevMessages.map((m) => [m.id, m]));
+      // Map of new messages by id
+      const newMap = new Map(messages.map((m) => [m.id, m]));
+
+      // Start with previous messages
+      const mergedMap = new Map(prevMap);
+
+      // Add or update messages from the backend
+      for (const msg of messages) {
+        const prevMsg = prevMap.get(msg.id);
+        if (!prevMsg || JSON.stringify(prevMsg) !== JSON.stringify(msg)) {
+          mergedMap.set(msg.id, msg);
+        }
+      }
+
+      // Return as an array, preserving the order: first all previous, then any new ones from backend not in previous
+      const mergedArr = Array.from(mergedMap.values());
+
+      // Only update if changed
+      if (
+        mergedArr.length !== prevMessages.length ||
+        mergedArr.some(
+          (m, i) =>
+            m.id !== prevMessages[i]?.id ||
+            JSON.stringify(m) !== JSON.stringify(prevMessages[i]),
+        )
+      ) {
+        return mergedArr;
+      }
+      return prevMessages;
+    });
+  }, [messages]);
+
   const lastError = useRef<string | undefined>(undefined);
 
   const setThreadId = (id: string | null) => {
@@ -218,7 +259,7 @@ export function Thread() {
     stream.submit(
       { messages: [...toolMessages, newHumanMessage], context },
       {
-        streamMode: ["values"],
+        streamMode: ["messages"],
         optimisticValues: (prev) => ({
           ...prev,
           context,
@@ -243,7 +284,7 @@ export function Thread() {
     setFirstTokenReceived(false);
     stream.submit(undefined, {
       checkpoint: parentCheckpoint,
-      streamMode: ["values"],
+      streamMode: ["messages"],
     });
   };
 
@@ -396,36 +437,55 @@ export function Thread() {
               contentClassName="pt-8 pb-16  max-w-3xl mx-auto flex flex-col gap-4 w-full"
               content={
                 <>
-                  {messages
+                  {displayMessages
                     .filter((m) => !m.id?.startsWith(DO_NOT_RENDER_ID_PREFIX))
                     .map((message, index) =>
-                      message.type === "human" ? (
-                        <HumanMessage
-                          key={message.id || `${message.type}-${index}`}
-                          message={message}
-                          isLoading={isLoading}
-                        />
-                      ) : (
-                        <AssistantMessage
-                          key={message.id || `${message.type}-${index}`}
-                          message={message}
-                          isLoading={isLoading}
-                          handleRegenerate={handleRegenerate}
-                        />
-                      ),
+                      message.type === "human"
+                        ? (console.log(
+                            `$$$$$$$$$ 0 Assist : ${JSON.stringify(displayMessages)}`,
+                          ),
+                          (
+                            <HumanMessage
+                              key={message.id || `${message.type}-${index}`}
+                              message={message}
+                              isLoading={isLoading}
+                            />
+                          ))
+                        : (console.log(
+                            `$$$$$$$$$ 1 Assist : ${JSON.stringify(displayMessages)}`,
+                          ),
+                          (
+                            <AssistantMessage
+                              key={message.id || `${message.type}-${index}`}
+                              message={message}
+                              isLoading={isLoading}
+                              handleRegenerate={handleRegenerate}
+                            />
+                          )),
                     )}
                   {/* Special rendering case where there are no AI/tool messages, but there is an interrupt.
                     We need to render it outside of the messages list, since there are no messages to render */}
-                  {hasNoAIOrToolMessages && !!stream.interrupt && (
-                    <AssistantMessage
-                      key="interrupt-msg"
-                      message={undefined}
-                      isLoading={isLoading}
-                      handleRegenerate={handleRegenerate}
-                    />
-                  )}
+                  {hasNoAIOrToolMessages &&
+                    !!stream.interrupt &&
+                    (console.log(
+                      `$$$$$$$$$ 2 Assist : ${JSON.stringify(displayMessages)}`,
+                    ),
+                    (
+                      <AssistantMessage
+                        key="interrupt-msg"
+                        message={undefined}
+                        isLoading={isLoading}
+                        handleRegenerate={handleRegenerate}
+                      />
+                    ))}
                   {isLoading && !firstTokenReceived && (
                     <AssistantMessageLoading />
+                  )}
+                  {/* Always render the interrupt widget at the end if present */}
+                  {stream.interrupt && (
+                    <GenericInterruptView
+                      interrupt={stream.interrupt.value ?? {}}
+                    />
                   )}
                 </>
               }
