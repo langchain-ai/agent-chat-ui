@@ -13,15 +13,12 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = ({
   interrupt,
 }) => {
   // Check if the type exists in componentMap
-  console.log("#######Interrupt type:", interruptType);
-  console.log("#######Interrupt:", interrupt);
   if (
     interruptType === "widget" &&
     interrupt.value.widget.type in componentMap
   ) {
     const Component =
       componentMap[interrupt.value.widget.type as ComponentType];
-    console.log("Widget args structure:", interrupt.value.widget.args);
     // Pass the args object directly to the component
     return <Component {...interrupt.value.widget.args} />;
   }
@@ -50,9 +47,6 @@ export function GenericInterruptView({
   // Extract interrupt object and type
   const interruptObj = Array.isArray(interrupt) ? interrupt[0] : interrupt;
   const interruptType = interruptObj.type || interruptObj.value?.type;
-  console.log(
-    `Interrupt type: ${interruptType}, interrupt: ${JSON.stringify(interrupt)}`,
-  );
 
   // Try to render dynamic widget first
   const dynamicWidget = interruptType ? (
