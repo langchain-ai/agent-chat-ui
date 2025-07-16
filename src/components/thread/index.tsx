@@ -12,7 +12,7 @@ import {
   DO_NOT_RENDER_ID_PREFIX,
   ensureToolCallsHaveResponses,
 } from "@/lib/ensure-tool-responses";
-import { LangGraphLogoSVG } from "../icons/langgraph";
+import { FlyoLogoSVG } from "../icons/langgraph";
 import { TooltipIconButton } from "./tooltip-icon-button";
 import {
   ArrowDown,
@@ -113,6 +113,25 @@ function OpenGitHubRepo() {
   );
 }
 
+// Add this utility function to filter out tool call messages with empty content
+function isDisplayableMessage(m: Message) {
+  if (m.id?.startsWith(DO_NOT_RENDER_ID_PREFIX)) return false;
+  // Hide tool call messages with empty content
+  if (
+    (m.type === "ai" &&
+      (!m.content ||
+        (Array.isArray(m.content) && m.content.length === 0) ||
+        m.content === "") &&
+      m.tool_calls &&
+      m.tool_calls.length > 0) ||
+    m.type === "tool"
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
 export function Thread() {
   const [artifactContext, setArtifactContext] = useArtifactContext();
   const [artifactOpen, closeArtifact] = useArtifactOpen();
@@ -144,45 +163,20 @@ export function Thread() {
   const messages = stream.messages;
   const isLoading = stream.isLoading;
 
-  // Add local state for display messages
-  const [displayMessages, setDisplayMessages] = useState<Message[]>([]);
-
-  // Ensure only unique messages are rendered, updating or adding from backend, keeping old ones unless updated
+  // Track the last threadId to reset displayMessages on thread switch
+  const lastThreadId = useRef<string | null>(threadId);
   useEffect(() => {
-    setDisplayMessages((prevMessages) => {
-      // Map of previous messages by id
-      const prevMap = new Map(prevMessages.map((m) => [m.id, m]));
-      // Map of new messages by id
-      const newMap = new Map(messages.map((m) => [m.id, m]));
+    lastThreadId.current = threadId;
+  }, [threadId, messages]);
 
-      // Start with previous messages
-      const mergedMap = new Map(prevMap);
-
-      // Add or update messages from the backend
-      for (const msg of messages) {
-        const prevMsg = prevMap.get(msg.id);
-        if (!prevMsg || JSON.stringify(prevMsg) !== JSON.stringify(msg)) {
-          mergedMap.set(msg.id, msg);
-        }
-      }
-
-      // Return as an array, preserving the order: first all previous, then any new ones from backend not in previous
-      const mergedArr = Array.from(mergedMap.values());
-
-      // Only update if changed
-      if (
-        mergedArr.length !== prevMessages.length ||
-        mergedArr.some(
-          (m, i) =>
-            m.id !== prevMessages[i]?.id ||
-            JSON.stringify(m) !== JSON.stringify(prevMessages[i]),
-        )
-      ) {
-        return mergedArr;
-      }
-      return prevMessages;
-    });
-  }, [messages]);
+  // Optionally clear input and contentBlocks when threadId changes
+  useEffect(() => {
+    setInput("");
+    setContentBlocks([]);
+    if (threadId === null) {
+      // setDisplayMessages([]); // Remove this line
+    }
+  }, [threadId]);
 
   const lastError = useRef<string | undefined>(undefined);
 
@@ -363,9 +357,9 @@ export function Thread() {
                   </Button>
                 )}
               </div>
-              <div className="absolute top-2 right-4 flex items-center">
+              {/* <div className="absolute top-2 right-4 flex items-center">
                 <OpenGitHubRepo />
-              </div>
+              </div> */}
             </div>
           )}
           {chatStarted && (
@@ -398,20 +392,14 @@ export function Thread() {
                     damping: 30,
                   }}
                 >
-                  <LangGraphLogoSVG
-                    width={32}
-                    height={32}
+                  <FlyoLogoSVG
+                    width={70}
+                    height={70}
                   />
-                  <span className="text-xl font-semibold tracking-tight">
-                    Agent Chat
-                  </span>
                 </motion.button>
               </div>
 
               <div className="flex items-center gap-4">
-                <div className="flex items-center">
-                  <OpenGitHubRepo />
-                </div>
                 <TooltipIconButton
                   size="lg"
                   className="p-4"
@@ -437,12 +425,12 @@ export function Thread() {
               contentClassName="pt-8 pb-16  max-w-3xl mx-auto flex flex-col gap-4 w-full"
               content={
                 <>
-                  {displayMessages
-                    .filter((m) => !m.id?.startsWith(DO_NOT_RENDER_ID_PREFIX))
+                  {messages
+                    .filter(isDisplayableMessage)
                     .map((message, index) =>
                       message.type === "human"
                         ? (console.log(
-                            `$$$$$$$$$ 0 Assist : ${JSON.stringify(displayMessages)}`,
+                            `$$$$$$$$$ 0 Assist : ${JSON.stringify(messages)}`,
                           ),
                           (
                             <HumanMessage
@@ -452,7 +440,7 @@ export function Thread() {
                             />
                           ))
                         : (console.log(
-                            `$$$$$$$$$ 1 Assist : ${JSON.stringify(displayMessages)}`,
+                            `$$$$$$$$$ 1 Assist : ${JSON.stringify(messages)}`,
                           ),
                           (
                             <AssistantMessage
@@ -463,21 +451,15 @@ export function Thread() {
                             />
                           )),
                     )}
-                  {/* Special rendering case where there are no AI/tool messages, but there is an interrupt.
-                    We need to render it outside of the messages list, since there are no messages to render */}
-                  {hasNoAIOrToolMessages &&
-                    !!stream.interrupt &&
-                    (console.log(
-                      `$$$$$$$$$ 2 Assist : ${JSON.stringify(displayMessages)}`,
-                    ),
-                    (
-                      <AssistantMessage
-                        key="interrupt-msg"
-                        message={undefined}
-                        isLoading={isLoading}
-                        handleRegenerate={handleRegenerate}
-                      />
-                    ))}
+                  {/* Special rendering case where there are no AI/tool messages, but there is an interrupt. */}
+                  {hasNoAIOrToolMessages && !!stream.interrupt && (
+                    <AssistantMessage
+                      key="interrupt-msg"
+                      message={undefined}
+                      isLoading={isLoading}
+                      handleRegenerate={handleRegenerate}
+                    />
+                  )}
                   {isLoading && !firstTokenReceived && (
                     <AssistantMessageLoading />
                   )}
@@ -493,10 +475,10 @@ export function Thread() {
                 <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-white">
                   {!chatStarted && (
                     <div className="flex items-center gap-3">
-                      <LangGraphLogoSVG className="h-8 flex-shrink-0" />
-                      <h1 className="text-2xl font-semibold tracking-tight">
-                        Agent Chat
-                      </h1>
+                      <FlyoLogoSVG
+                        width={150}
+                        height={150}
+                      />
                     </div>
                   )}
 
@@ -541,7 +523,7 @@ export function Thread() {
                       />
 
                       <div className="flex items-center gap-6 p-2 pt-4">
-                        <div>
+                        {/* <div>
                           <div className="flex items-center space-x-2">
                             <Switch
                               id="render-tool-calls"
@@ -555,14 +537,14 @@ export function Thread() {
                               Hide Tool Calls
                             </Label>
                           </div>
-                        </div>
+                        </div> */}
                         <Label
                           htmlFor="file-input"
                           className="flex cursor-pointer items-center gap-2"
                         >
                           <Plus className="size-5 text-gray-600" />
                           <span className="text-sm text-gray-600">
-                            Upload PDF or Image
+                            Upload PDF, Image, or Video
                           </span>
                         </Label>
                         <input
