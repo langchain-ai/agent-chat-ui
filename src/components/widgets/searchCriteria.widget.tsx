@@ -1,21 +1,19 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/common/ui/button";
 import { Input } from "@/components/common/ui/input";
-import { Label } from "@/components/common/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/common/ui/select";
-import { Calendar as CalendarIcon, ArrowUpDown } from "lucide-react";
+import { Calendar as CalendarIcon, ArrowUpDown, Plus, Minus, ChevronDown } from "lucide-react";
 import { AirportSearch } from "@/components/common/ui/airportSearch";
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
-import { submitInterruptResponse } from "./util";
+import {submitInterruptResponse} from "./util";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/common/ui/popover";
+import { getUserLocation, LocationResult } from "@/lib/utils";
 
 // Simple DateInput component
 interface DateInputProps {
@@ -69,18 +67,17 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
 
   // Extract data from args
   const flightSearchCriteria = args.flightSearchCriteria || {};
-  const selectedTravellerIds = args.selectedTravellerIds || [];
-  const allTravellers = args.allTravellers || [];
 
   // Initialize state from args
   const [tripType, setTripType] = useState<"oneway" | "round">(
     flightSearchCriteria.isRoundTrip ? "round" : "oneway",
   );
-  const [pax, setPax] = useState(
-    (flightSearchCriteria.adults || 0) +
-      (flightSearchCriteria.children || 0) +
-      (flightSearchCriteria.infants || 0) || 1,
-  );
+
+  // Separate traveller counts
+  const [adults, setAdults] = useState(flightSearchCriteria.adults || 1);
+  const [children, setChildren] = useState(flightSearchCriteria.children || 0);
+  const [infants, setInfants] = useState(flightSearchCriteria.infants || 0);
+
   const [flightClass, setFlightClass] = useState(
     flightSearchCriteria.class
       ? flightSearchCriteria.class.charAt(0).toUpperCase() +
@@ -102,6 +99,45 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
     flightSearchCriteria.returnDate ? new Date(flightSearchCriteria.returnDate) : undefined,
   );
   const [isLoading, setIsLoading] = useState(false);
+  const [showTravellerDropdown, setShowTravellerDropdown] = useState(false);
+  const [isReadOnly, setIsReadOnly] = useState(false);
+  const [submittedData, setSubmittedData] = useState<any>(null);
+
+  // Location-related state
+  const [locationResult, setLocationResult] = useState<LocationResult | null>(null);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+
+  // Request user location when component loads
+  useEffect(() => {
+    const requestLocation = async () => {
+      setIsGettingLocation(true);
+      try {
+        const result = await getUserLocation();
+        setLocationResult(result);
+
+        if (result.success) {
+          console.log("Location obtained successfully:", result.data);
+          // You can use the location data here if needed
+          // For example, to find nearby airports or set default location
+        } else {
+          console.log("Location request failed:", result.error);
+        }
+      } catch (error) {
+        console.error("Unexpected error getting location:", error);
+        setLocationResult({
+          success: false,
+          error: {
+            code: -1,
+            message: "Unexpected error occurred while getting location"
+          }
+        });
+      } finally {
+        setIsGettingLocation(false);
+      }
+    };
+
+    requestLocation();
+  }, []); // Empty dependency array means this runs once when component mounts
 
   // Wrapper functions for date state setters to match DateInput component interface
   const handleDepartureDateChange = (date: Date | undefined) => {
@@ -124,9 +160,9 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
 
     const responseData = {
       flightSearchCriteria: {
-        adults: pax,
-        children: 0,
-        infants: 0,
+        adults,
+        children,
+        infants,
         class: flightClass.toLowerCase(),
         departureDate: departureDate?.toISOString().split("T")[0],
         returnDate: returnDate?.toISOString().split("T")[0],
@@ -149,255 +185,325 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
     }
   };
 
+  // Helper functions for traveller counts
+  const getTotalTravellers = () => adults + children + infants;
+
+  const formatTravellerText = () => {
+    const total = getTotalTravellers();
+    if (total === 1 && adults === 1) {
+      return `1 Adult, ${flightClass}`;
+    }
+
+    const parts = [];
+    if (adults > 0) parts.push(`${adults} Adult${adults > 1 ? 's' : ''}`);
+    if (children > 0) parts.push(`${children} Child${children > 1 ? 'ren' : ''}`);
+    if (infants > 0) parts.push(`${infants} Infant${infants > 1 ? 's' : ''}`);
+
+    return `${parts.join(', ')}, ${flightClass}`;
+  };
+
+  const formatDateDisplay = (date: Date | undefined) => {
+    if (!date) return '';
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short'
+    };
+    return date.toLocaleDateString('en-US', options);
+  };
+
+  const getSelectedAirportInfo = (airportCode: string) => {
+    // This should match the POPULAR_AIRPORTS from AirportSearch
+    const airports = [
+      { code: "BLR", city: "Bangalore" },
+      { code: "DEL", city: "New Delhi" },
+      { code: "BOM", city: "Mumbai" },
+      { code: "MAA", city: "Chennai" },
+      { code: "CCU", city: "Kolkata" },
+      { code: "HYD", city: "Hyderabad" },
+      { code: "COK", city: "Kochi" },
+      { code: "AMD", city: "Ahmedabad" },
+      { code: "PNQ", city: "Pune" },
+      { code: "GOI", city: "Goa" },
+      { code: "DXB", city: "Dubai" },
+      { code: "SIN", city: "Singapore" },
+      { code: "LHR", city: "London" },
+      { code: "JFK", city: "New York" },
+      { code: "LAX", city: "Los Angeles" },
+    ];
+
+    return airports.find(airport => airport.code === airportCode);
+  };
+
   return (
-    <div
-      className="mx-auto mt-4 max-w-xl rounded-2xl border border-gray-200 bg-white p-4 font-sans shadow-lg sm:mt-10 sm:p-6"
-      style={{ fontFamily: "Uber Move, Arial, Helvetica, sans-serif" }}
-    >
-      <form
-        className="space-y-4"
-        onSubmit={handleSubmit}
+    <>
+      <div
+        className="mx-auto mt-2 w-full max-w-xl rounded-2xl border border-gray-200 bg-white p-3 font-sans shadow-lg sm:mt-10 sm:p-6"
+        style={{
+          fontFamily: "Uber Move, Arial, Helvetica, sans-serif",
+          maxWidth: "min(100vw - 1rem, 36rem)"
+        }}
       >
-        {/* Trip Type - Lounge-style tabs */}
-        <div className="mb-4 flex gap-2">
-          <button
-            type="button"
-            onClick={() => setTripType("oneway")}
-            className={cn(
-              "rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-200 sm:px-4 sm:py-2 sm:text-sm",
-              tripType === "oneway"
-                ? "border-gray-900 bg-gray-900 text-white"
-                : "border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:text-gray-900",
-            )}
-          >
-            One Way
-          </button>
-          <button
-            type="button"
-            onClick={() => setTripType("round")}
-            className={cn(
-              "rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-200 sm:px-4 sm:py-2 sm:text-sm",
-              tripType === "round"
-                ? "border-gray-900 bg-gray-900 text-white"
-                : "border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:text-gray-900",
-            )}
-          >
-            Round Trip
-          </button>
-        </div>
-
-        {/* From/To with Switch Button */}
-        <div className="flex flex-col items-end gap-3 sm:flex-row sm:gap-4">
-          <div className="flex-1">
-            <Label
-              htmlFor="from"
-              className="mb-1 block text-sm font-medium text-gray-700"
-            >
-              From
-            </Label>
-            <AirportSearch
-              value={fromAirport}
-              onValueChange={setFromAirport}
-              placeholder="City or Airport"
-              excludeAirport={toAirport}
-            />
-          </div>
-
-          {/* Switch Button */}
-          <div className="flex justify-center sm:px-2">
-            <Button
+        <form
+          className="w-full space-y-4"
+          onSubmit={handleSubmit}
+        >
+          {/* Trip Type - Horizontal tabs */}
+          <div className="flex gap-2">
+            <button
               type="button"
-              variant="outline"
-              size="sm"
-              className="h-10 w-10 flex-shrink-0 rounded-full border-gray-300 p-0 hover:bg-gray-50"
-              onClick={handleSwapAirports}
+              onClick={() => setTripType("oneway")}
+              className={cn(
+                "rounded-full border px-4 py-2 text-sm font-medium transition-all duration-200",
+                tripType === "oneway"
+                  ? "border-black bg-black text-white"
+                  : "border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:text-gray-900",
+              )}
             >
-              <ArrowUpDown className="h-4 w-4 rotate-90 text-gray-600" />
-            </Button>
+              One way
+            </button>
+            <button
+              type="button"
+              onClick={() => setTripType("round")}
+              className={cn(
+                "rounded-full border px-4 py-2 text-sm font-medium transition-all duration-200",
+                tripType === "round"
+                  ? "border-black bg-black text-white"
+                  : "border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:text-gray-900",
+              )}
+            >
+              Round trip
+            </button>
           </div>
 
-          <div className="flex-1">
-            <Label
-              htmlFor="to"
-              className="mb-1 block text-sm font-medium text-gray-700"
-            >
-              To
-            </Label>
-            <AirportSearch
-              value={toAirport}
-              onValueChange={setToAirport}
-              placeholder="City or Airport"
-              excludeAirport={fromAirport}
+          {/* Flight Details - From/To with city names and IATA codes */}
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="text-sm text-gray-600 mb-1">From - {getSelectedAirportInfo(fromAirport)?.code || 'DEL'}</div>
+              <div className="font-bold text-base sm:text-lg text-black truncate">
+                {getSelectedAirportInfo(fromAirport)?.city || 'New Delhi'}
+              </div>
+              <div className="mt-2">
+                <AirportSearch
+                  value={fromAirport}
+                  onValueChange={setFromAirport}
+                  placeholder="City or Airport"
+                  excludeAirport={toAirport}
+                />
+              </div>
+            </div>
+
+            {/* Swap Button - Centered */}
+            <div className="flex justify-center flex-shrink-0">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-10 w-10 rounded-full border-gray-300 bg-white p-0 hover:bg-gray-50 hover:border-gray-400"
+                onClick={handleSwapAirports}
+              >
+                <ArrowUpDown className="h-4 w-4 rotate-90 text-gray-600" />
+              </Button>
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <div className="text-sm text-gray-600 mb-1 text-right">To - {getSelectedAirportInfo(toAirport)?.code || 'BOM'}</div>
+              <div className="font-bold text-base sm:text-lg text-black text-right truncate">
+                {getSelectedAirportInfo(toAirport)?.city || 'Mumbai'}
+              </div>
+              <div className="mt-2">
+                <AirportSearch
+                  value={toAirport}
+                  onValueChange={setToAirport}
+                  placeholder="City or Airport"
+                  excludeAirport={fromAirport}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Departure Date */}
+          <div>
+            <div className="text-sm text-gray-600 mb-1">Departure</div>
+            <div className="font-bold text-lg text-black mb-2">
+              {formatDateDisplay(departureDate) || 'Tue, 15 Jul'}
+            </div>
+            <DateInput
+              date={departureDate}
+              onDateChange={handleDepartureDateChange}
+              placeholder="Select departure date"
             />
           </div>
-        </div>
 
-        {/* Dates and Pax/Class - Conditional Layout */}
-        {tripType === "round" ? (
-          <>
-            {/* Round Trip: Dates Row */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
-              <div className="flex-1">
-                <Label
-                  htmlFor="departure"
-                  className="mb-1 block text-sm font-medium text-gray-700"
-                >
-                  Departure
-                </Label>
-                <DateInput
-                  date={departureDate}
-                  onDateChange={handleDepartureDateChange}
-                  placeholder="Select departure date"
-                />
+          {/* Return Date - Only show for round trip */}
+          {tripType === "round" && (
+            <div>
+              <div className="text-sm text-gray-600 mb-1">Return</div>
+              <div className="font-bold text-lg text-black mb-2">
+                {returnDate ? formatDateDisplay(returnDate) : ''}
               </div>
-              <div className="flex-1">
-                <Label
-                  htmlFor="return"
-                  className="mb-1 block text-sm font-medium text-gray-700"
-                >
-                  Return
-                </Label>
-                <DateInput
-                  date={returnDate}
-                  onDateChange={handleReturnDateChange}
-                  placeholder="Select return date"
-                />
-              </div>
-            </div>
-            {/* Round Trip: Pax and Class Row */}
-            <div className="flex gap-3 sm:gap-4">
-              <div className="w-24 sm:w-32">
-                <Label
-                  htmlFor="passengers"
-                  className="mb-1 block text-sm font-medium text-gray-700"
-                >
-                  Passengers
-                </Label>
-                <Select
-                  value={pax.toString()}
-                  onValueChange={(value) => setPax(Number(value))}
-                >
-                  <SelectTrigger className="w-full text-sm focus:border-black focus:ring-black">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.from({ length: 9 }, (_, i) => i + 1).map((num) => (
-                      <SelectItem
-                        key={num}
-                        value={num.toString()}
-                      >
-                        {num}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex-1">
-                <Label
-                  htmlFor="class"
-                  className="mb-1 block text-sm font-medium text-gray-700"
-                >
-                  Class
-                </Label>
-                <Select
-                  value={flightClass}
-                  onValueChange={setFlightClass}
-                >
-                  <SelectTrigger className="w-full text-sm focus:border-black focus:ring-black">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Economy">Economy</SelectItem>
-                    <SelectItem value="Premium Economy">
-                      Premium Economy
-                    </SelectItem>
-                    <SelectItem value="Business">Business</SelectItem>
-                    <SelectItem value="First">First</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </>
-        ) : (
-          /* One Way: Departure date, passengers and class in same line */
-          <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
-            <div className="flex-1 sm:flex-[2]">
-              <Label
-                htmlFor="departure-oneway"
-                className="mb-1 block text-sm font-medium text-gray-700"
-              >
-                Departure
-              </Label>
               <DateInput
-                date={departureDate}
-                onDateChange={handleDepartureDateChange}
-                placeholder="Select departure date"
+                date={returnDate}
+                onDateChange={handleReturnDateChange}
+                placeholder="Select return date"
               />
             </div>
-            <div className="w-full sm:w-24 sm:flex-shrink-0">
-              <Label
-                htmlFor="passengers-oneway"
-                className="mb-1 block text-sm font-medium text-gray-700"
-              >
-                Passengers
-              </Label>
-              <Select
-                value={pax.toString()}
-                onValueChange={(value) => setPax(Number(value))}
-              >
-                <SelectTrigger className="w-full text-sm focus:border-black focus:ring-black">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 9 }, (_, i) => i + 1).map((num) => (
-                    <SelectItem
-                      key={num}
-                      value={num.toString()}
-                    >
-                      {num}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex-1">
-              <Label
-                htmlFor="class-oneway"
-                className="mb-1 block text-sm font-medium text-gray-700"
-              >
-                Class
-              </Label>
-              <Select
-                value={flightClass}
-                onValueChange={setFlightClass}
-              >
-                <SelectTrigger className="w-full text-sm focus:border-black focus:ring-black">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Economy">Economy</SelectItem>
-                  <SelectItem value="Premium Economy">
-                    Premium Economy
-                  </SelectItem>
-                  <SelectItem value="Business">Business</SelectItem>
-                  <SelectItem value="First">First</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        )}
+          )}
 
-        <div className="flex justify-center">
-          <Button
-            type="submit"
-            disabled={isLoading}
-            className="mt-4 min-h-[48px] w-auto bg-black px-8 py-3 text-base font-bold text-white hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-50 sm:mt-2 sm:min-h-[40px] sm:text-base"
-          >
-            {isLoading ? "Searching..." : "Search Flights"}
-          </Button>
-        </div>
-      </form>
-    </div>
+          {/* Travellers & Class - Dropdown */}
+          <div>
+            <div className="text-sm text-gray-600 mb-1">Travellers & Class</div>
+            <div className="font-bold text-lg text-black mb-2">
+              {formatTravellerText()}
+            </div>
+            <Popover open={showTravellerDropdown} onOpenChange={setShowTravellerDropdown}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={showTravellerDropdown}
+                  className="w-full justify-between focus:ring-black focus:border-black"
+                >
+                  <span>{formatTravellerText()}</span>
+                  <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[calc(100vw-2rem)] max-w-[400px] p-0">
+                <div className="p-4 space-y-6">
+                  {/* Select travellers */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4">Select travellers</h3>
+
+                    {/* Adults */}
+                    <div className="flex items-center justify-between py-3">
+                      <div>
+                        <div className="font-medium">Adult</div>
+                        <div className="text-sm text-gray-500">12+ Years</div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 w-8 rounded-full p-0"
+                          onClick={() => setAdults(Math.max(1, adults - 1))}
+                          disabled={adults <= 1}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-8 text-center font-medium">{adults}</span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 w-8 rounded-full p-0"
+                          onClick={() => setAdults(adults + 1)}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Children */}
+                    <div className="flex items-center justify-between py-3">
+                      <div>
+                        <div className="font-medium">Children</div>
+                        <div className="text-sm text-gray-500">2 - 12 yrs</div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 w-8 rounded-full p-0"
+                          onClick={() => setChildren(Math.max(0, children - 1))}
+                          disabled={children <= 0}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-8 text-center font-medium">{children}</span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 w-8 rounded-full p-0"
+                          onClick={() => setChildren(children + 1)}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Infants */}
+                    <div className="flex items-center justify-between py-3">
+                      <div>
+                        <div className="font-medium">Infant</div>
+                        <div className="text-sm text-gray-500">Below 2 yrs</div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 w-8 rounded-full p-0"
+                          onClick={() => setInfants(Math.max(0, infants - 1))}
+                          disabled={infants <= 0}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-8 text-center font-medium">{infants}</span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 w-8 rounded-full p-0"
+                          onClick={() => setInfants(infants + 1)}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Select class */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4">Select class</h3>
+                    <div className="space-y-3">
+                      {['Economy', 'Business', 'Premium Economy'].map((classOption) => (
+                        <label key={classOption} className="flex items-center gap-3 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="flightClass"
+                            value={classOption}
+                            checked={flightClass === classOption}
+                            onChange={(e) => setFlightClass(e.target.value)}
+                            className="w-4 h-4 text-black border-gray-300 focus:ring-black"
+                          />
+                          <span className="font-medium">{classOption}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Search Button */}
+          <div className="pt-4">
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-black hover:bg-gray-800 text-white font-semibold py-3 rounded-lg text-base"
+            >
+              {isLoading ? "Searching..." : "Search flights"}
+            </Button>
+          </div>
+        </form>
+      </div>
+
+
+    </>
   );
 };
 

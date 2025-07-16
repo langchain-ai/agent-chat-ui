@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Check, ChevronDown, MapPin } from "lucide-react"
+import { Check, ChevronDown, MapPin, Loader2 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/common/ui/button"
@@ -11,12 +11,18 @@ import {
   PopoverTrigger,
 } from "@/components/common/ui/popover"
 import { Input } from "@/components/common/ui/input"
+import { searchAirports } from "@/services/airportService"
 
 interface Airport {
   code: string
   name: string
   city: string
   country: string
+}
+
+interface ApiAirport {
+  k: string // Airport code
+  v: string // Full airport description
 }
 
 const POPULAR_AIRPORTS: Airport[] = [
@@ -54,28 +60,103 @@ export function AirportSearch({
 }: AirportSearchProps) {
   const [open, setOpen] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState("")
+  const [apiResults, setApiResults] = React.useState<ApiAirport[]>([])
+  const [isLoading, setIsLoading] = React.useState(false)
 
-  const filteredAirports = React.useMemo(() => {
-    let airports = POPULAR_AIRPORTS
-    
-    // Exclude the specified airport
-    if (excludeAirport) {
-      airports = airports.filter(airport => airport.code !== excludeAirport)
+  // Debounced API call when user types
+  React.useEffect(() => {
+    if (!searchQuery || searchQuery.trim().length === 0) {
+      setApiResults([])
+      setIsLoading(false)
+      return
     }
-    
-    // Filter by search query
-    if (searchQuery) {
-      airports = airports.filter(airport =>
-        airport.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        airport.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        airport.city.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    }
-    
-    return airports
-  }, [searchQuery, excludeAirport])
 
-  const selectedAirport = POPULAR_AIRPORTS.find(airport => airport.code === value)
+    const timeoutId = setTimeout(async () => {
+      setIsLoading(true)
+      try {
+        const results = await searchAirports(searchQuery)
+        setApiResults(results)
+      } catch (error) {
+        console.error('Failed to search airports:', error)
+        setApiResults([])
+      } finally {
+        setIsLoading(false)
+      }
+    }, 300) // 300ms debounce
+
+    return () => clearTimeout(timeoutId)
+  }, [searchQuery])
+
+  const displayAirports = React.useMemo(() => {
+    // If no search query, show popular airports
+    if (!searchQuery || searchQuery.trim().length === 0) {
+      let airports = POPULAR_AIRPORTS
+
+      // Exclude the specified airport
+      if (excludeAirport) {
+        airports = airports.filter(airport => airport.code !== excludeAirport)
+      }
+
+      return airports.map(airport => ({
+        code: airport.code,
+        displayName: `${airport.code} - ${airport.city}`,
+        description: airport.name,
+        isPopular: true
+      }))
+    }
+
+    // If searching, show API results
+    return apiResults
+      .filter(result => excludeAirport ? result.k !== excludeAirport : true)
+      .map(result => {
+        // Parse the API response format: "City, Country - Airport Name (CODE)"
+        const parts = result.v.split(' - ')
+        const cityCountry = parts[0] || result.v
+        const airportInfo = parts[1] || ''
+
+        return {
+          code: result.k,
+          displayName: `${result.k} - ${cityCountry}`,
+          description: airportInfo || result.v,
+          isPopular: false
+        }
+      })
+  }, [searchQuery, excludeAirport, apiResults])
+
+  const selectedAirport = React.useMemo(() => {
+    if (!value) return null
+
+    // First check popular airports
+    const popularAirport = POPULAR_AIRPORTS.find(airport => airport.code === value)
+    if (popularAirport) {
+      return {
+        code: popularAirport.code,
+        displayName: `${popularAirport.code} - ${popularAirport.city}`,
+        description: popularAirport.name
+      }
+    }
+
+    // Then check API results
+    const apiAirport = apiResults.find(result => result.k === value)
+    if (apiAirport) {
+      const parts = apiAirport.v.split(' - ')
+      const cityCountry = parts[0] || apiAirport.v
+      const airportInfo = parts[1] || ''
+
+      return {
+        code: apiAirport.k,
+        displayName: `${apiAirport.k} - ${cityCountry}`,
+        description: airportInfo || apiAirport.v
+      }
+    }
+
+    // Fallback - just show the code
+    return {
+      code: value,
+      displayName: value,
+      description: value
+    }
+  }, [value, apiResults])
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -89,18 +170,18 @@ export function AirportSearch({
             className
           )}
         >
-          <div className="flex items-center">
-            <MapPin className="mr-2 h-4 w-4 text-gray-500" />
+          <div className="flex items-center min-w-0 flex-1">
+            <MapPin className="mr-2 h-4 w-4 text-gray-500 flex-shrink-0" />
             {selectedAirport ? (
-              <span>{selectedAirport.code} - {selectedAirport.city}</span>
+              <span className="truncate">{selectedAirport.displayName}</span>
             ) : (
-              <span className="text-muted-foreground">{placeholder}</span>
+              <span className="text-muted-foreground truncate">{placeholder}</span>
             )}
           </div>
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[400px] p-0">
+      <PopoverContent className="w-[calc(100vw-2rem)] max-w-[400px] p-0">
         <div className="p-2">
           <Input
             placeholder="Search airports..."
@@ -110,9 +191,14 @@ export function AirportSearch({
           />
         </div>
         <div className="max-h-60 overflow-auto">
-          {filteredAirports.length === 0 ? (
+          {isLoading ? (
+            <div className="p-4 text-sm text-muted-foreground text-center flex items-center justify-center">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Searching airports...
+            </div>
+          ) : displayAirports.length === 0 ? (
             <div className="p-4 text-sm text-muted-foreground text-center">
-              No airports found.
+              {searchQuery ? "No airports found." : "No airports available."}
             </div>
           ) : (
             <div className="p-1">
@@ -121,7 +207,12 @@ export function AirportSearch({
                   Popular Airports
                 </div>
               )}
-              {filteredAirports.map((airport) => (
+              {searchQuery && displayAirports.length > 0 && (
+                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                  Search Results
+                </div>
+              )}
+              {displayAirports.map((airport) => (
                 <div
                   key={airport.code}
                   className={cn(
@@ -132,15 +223,16 @@ export function AirportSearch({
                     onValueChange?.(airport.code)
                     setOpen(false)
                     setSearchQuery("")
+                    setApiResults([])
                   }}
                 >
                   <MapPin className="mr-2 h-4 w-4" />
                   <div className="flex flex-col">
                     <div className="font-medium">
-                      {airport.code} - {airport.city}
+                      {airport.displayName}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {airport.name}
+                      {airport.description}
                     </div>
                   </div>
                   {value === airport.code && (

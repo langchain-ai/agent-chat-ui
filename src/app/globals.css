@@ -148,4 +148,32 @@
   .shadow-inner-left {
     box-shadow: inset 9px 0 6px -1px rgb(0 0 0 / 0.02);
   }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Ensure no horizontal overflow on all screen sizes */
+  .flight-carousel-container {
+    max-width: 100vw;
+    overflow-x: hidden;
+    box-sizing: border-box;
+  }
+
+  /* Prevent any element from causing horizontal scroll */
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+    box-sizing: border-box;
+  }
+
+  /* Ensure all elements respect box-sizing */
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
 }
