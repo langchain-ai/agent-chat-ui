@@ -97,7 +97,7 @@ export default function ThreadHistory() {
   return (
     <>
       <div className="shadow-inner-right hidden h-screen w-[300px] shrink-0 flex-col items-start justify-start gap-6 border-r-[1px] border-slate-300 lg:flex">
-        <div className="flex w-full items-center justify-between px-4 pt-1.5">
+        <div className="flex w-full items-center justify-between px-4 pt-6">
           <Button
             className="hover:bg-gray-100"
             variant="ghost"
@@ -109,9 +109,7 @@ export default function ThreadHistory() {
               <PanelRightClose className="size-5" />
             )}
           </Button>
-          <h1 className="text-xl font-semibold tracking-tight">
-            Chat History
-          </h1>
+          <h1 className="text-xl font-semibold tracking-tight">Chat History</h1>
         </div>
         {threadsLoading ? (
           <ThreadHistoryLoading />
