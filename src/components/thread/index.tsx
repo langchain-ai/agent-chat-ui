@@ -12,7 +12,7 @@ import {
   DO_NOT_RENDER_ID_PREFIX,
   ensureToolCallsHaveResponses,
 } from "@/lib/ensure-tool-responses";
-import { LangGraphLogoSVG } from "../icons/langgraph";
+import { FlyoLogoSVG } from "../icons/langgraph";
 import { TooltipIconButton } from "./tooltip-icon-button";
 import {
   ArrowDown,
@@ -164,49 +164,21 @@ export function Thread() {
   // Add local state for display messages
   const [displayMessages, setDisplayMessages] = useState<Message[]>([]);
 
-  // Reset displayMessages, input, and contentBlocks when threadId changes
+  // Track the last threadId to reset displayMessages on thread switch
+  const lastThreadId = useRef<string | null>(threadId);
   useEffect(() => {
-    setDisplayMessages([]);
+    setDisplayMessages(messages);
+    lastThreadId.current = threadId;
+  }, [threadId, messages]);
+
+  // Optionally clear input and contentBlocks when threadId changes
+  useEffect(() => {
     setInput("");
     setContentBlocks([]);
+    if (threadId === null) {
+      setDisplayMessages([]); // Clear chat area for new thread
+    }
   }, [threadId, setContentBlocks]);
-
-  // Ensure only unique messages are rendered, updating or adding from backend, keeping old ones unless updated
-  useEffect(() => {
-    setDisplayMessages((prevMessages) => {
-      // Map of previous messages by id
-      const prevMap = new Map(prevMessages.map((m) => [m.id, m]));
-      // Map of new messages by id
-      const newMap = new Map(messages.map((m) => [m.id, m]));
-
-      // Start with previous messages
-      const mergedMap = new Map(prevMap);
-
-      // Add or update messages from the backend
-      for (const msg of messages) {
-        const prevMsg = prevMap.get(msg.id);
-        if (!prevMsg || JSON.stringify(prevMsg) !== JSON.stringify(msg)) {
-          mergedMap.set(msg.id, msg);
-        }
-      }
-
-      // Return as an array, preserving the order: first all previous, then any new ones from backend not in previous
-      const mergedArr = Array.from(mergedMap.values());
-
-      // Only update if changed
-      if (
-        mergedArr.length !== prevMessages.length ||
-        mergedArr.some(
-          (m, i) =>
-            m.id !== prevMessages[i]?.id ||
-            JSON.stringify(m) !== JSON.stringify(prevMessages[i]),
-        )
-      ) {
-        return mergedArr;
-      }
-      return prevMessages;
-    });
-  }, [messages]);
 
   const lastError = useRef<string | undefined>(undefined);
 
@@ -387,9 +359,9 @@ export function Thread() {
                   </Button>
                 )}
               </div>
-              <div className="absolute top-2 right-4 flex items-center">
+              {/* <div className="absolute top-2 right-4 flex items-center">
                 <OpenGitHubRepo />
-              </div>
+              </div> */}
             </div>
           )}
           {chatStarted && (
@@ -422,13 +394,10 @@ export function Thread() {
                     damping: 30,
                   }}
                 >
-                  <LangGraphLogoSVG
-                    width={32}
-                    height={32}
+                  <FlyoLogoSVG
+                    width={70}
+                    height={70}
                   />
-                  <span className="text-xl font-semibold tracking-tight">
-                    Flyo Chat
-                  </span>
                 </motion.button>
               </div>
 
@@ -514,10 +483,10 @@ export function Thread() {
                 <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-white">
                   {!chatStarted && (
                     <div className="flex items-center gap-3">
-                      <LangGraphLogoSVG className="h-8 flex-shrink-0" />
-                      <h1 className="text-2xl font-semibold tracking-tight">
-                        Flyo Chat
-                      </h1>
+                      <FlyoLogoSVG
+                        width={150}
+                        height={150}
+                      />
                     </div>
                   )}
 
