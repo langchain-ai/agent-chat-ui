@@ -87,11 +87,12 @@ function Interrupt({
         (isLastMessage || hasNoAIOrToolMessages) && (
           <ThreadView interrupt={interruptValue} />
         )}
-      {interruptValue &&
+      {/* Todo: @Shubham removed this to avoid duplicate rendering of Interrupt */}
+      {/* {interruptValue &&
       !isAgentInboxInterruptSchema(interruptValue) &&
       isLastMessage ? (
         <GenericInterruptView interrupt={interruptValue} />
-      ) : null}
+      ) : null} */}
     </>
   );
 }

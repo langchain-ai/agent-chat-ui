@@ -118,15 +118,17 @@ function isDisplayableMessage(m: Message) {
   if (m.id?.startsWith(DO_NOT_RENDER_ID_PREFIX)) return false;
   // Hide tool call messages with empty content
   if (
-    m.type === "ai" &&
-    (!m.content ||
-      (Array.isArray(m.content) && m.content.length === 0) ||
-      m.content === "") &&
-    m.tool_calls &&
-    m.tool_calls.length > 0
+    (m.type === "ai" &&
+      (!m.content ||
+        (Array.isArray(m.content) && m.content.length === 0) ||
+        m.content === "") &&
+      m.tool_calls &&
+      m.tool_calls.length > 0) ||
+    m.type === "tool"
   ) {
     return false;
   }
+
   return true;
 }
 
@@ -161,13 +163,9 @@ export function Thread() {
   const messages = stream.messages;
   const isLoading = stream.isLoading;
 
-  // Add local state for display messages
-  const [displayMessages, setDisplayMessages] = useState<Message[]>([]);
-
   // Track the last threadId to reset displayMessages on thread switch
   const lastThreadId = useRef<string | null>(threadId);
   useEffect(() => {
-    setDisplayMessages(messages);
     lastThreadId.current = threadId;
   }, [threadId, messages]);
 
@@ -176,7 +174,7 @@ export function Thread() {
     setInput("");
     setContentBlocks([]);
     if (threadId === null) {
-      setDisplayMessages([]); // Clear chat area for new thread
+      // setDisplayMessages([]); // Remove this line
     }
   }, [threadId]);
 
@@ -427,12 +425,12 @@ export function Thread() {
               contentClassName="pt-8 pb-16  max-w-3xl mx-auto flex flex-col gap-4 w-full"
               content={
                 <>
-                  {displayMessages
+                  {messages
                     .filter(isDisplayableMessage)
                     .map((message, index) =>
                       message.type === "human"
                         ? (console.log(
-                            `$$$$$$$$$ 0 Assist : ${JSON.stringify(displayMessages)}`,
+                            `$$$$$$$$$ 0 Assist : ${JSON.stringify(messages)}`,
                           ),
                           (
                             <HumanMessage
@@ -442,7 +440,7 @@ export function Thread() {
                             />
                           ))
                         : (console.log(
-                            `$$$$$$$$$ 1 Assist : ${JSON.stringify(displayMessages)}`,
+                            `$$$$$$$$$ 1 Assist : ${JSON.stringify(messages)}`,
                           ),
                           (
                             <AssistantMessage
@@ -453,21 +451,15 @@ export function Thread() {
                             />
                           )),
                     )}
-                  {/* Special rendering case where there are no AI/tool messages, but there is an interrupt.
-                    We need to render it outside of the messages list, since there are no messages to render */}
-                  {hasNoAIOrToolMessages &&
-                    !!stream.interrupt &&
-                    (console.log(
-                      `$$$$$$$$$ 2 Assist : ${JSON.stringify(displayMessages)}`,
-                    ),
-                    (
-                      <AssistantMessage
-                        key="interrupt-msg"
-                        message={undefined}
-                        isLoading={isLoading}
-                        handleRegenerate={handleRegenerate}
-                      />
-                    ))}
+                  {/* Special rendering case where there are no AI/tool messages, but there is an interrupt. */}
+                  {hasNoAIOrToolMessages && !!stream.interrupt && (
+                    <AssistantMessage
+                      key="interrupt-msg"
+                      message={undefined}
+                      isLoading={isLoading}
+                      handleRegenerate={handleRegenerate}
+                    />
+                  )}
                   {isLoading && !firstTokenReceived && (
                     <AssistantMessageLoading />
                   )}
