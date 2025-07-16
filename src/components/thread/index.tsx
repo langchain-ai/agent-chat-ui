@@ -178,7 +178,7 @@ export function Thread() {
     if (threadId === null) {
       setDisplayMessages([]); // Clear chat area for new thread
     }
-  }, [threadId, setContentBlocks]);
+  }, [threadId]);
 
   const lastError = useRef<string | undefined>(undefined);
 
