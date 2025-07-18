@@ -1,9 +1,3 @@
-export interface GroundingFile {
-  id: string;
-  name: string;
-  content: string;
-}
-
 export interface RagResult {
   id: string;
   title: string;
@@ -11,12 +5,9 @@ export interface RagResult {
   source?: string;
 }
 
-export interface ToolResult {
-  sources: Array<{
-    chunk_id: string;
-    title: string;
-    chunk: string;
-  }>;
+export interface LangGraphTool {
+  thread_id: string;
+  response: string;
 }
 
 // WebSocket message types

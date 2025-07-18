@@ -22,7 +22,6 @@ import {
   SquarePen,
   XIcon,
   Plus,
-  CircleX,
   Mic,
   Check,
   X,
@@ -468,6 +467,31 @@ export function Thread() {
     (m) => m.type === "ai" || m.type === "tool",
   );
 
+  // Add a callback to post a message from VoiceChat to the main chat UI, with type
+  const postVoiceChatMessage = (text: string, type: 'human' | 'ai') => {
+    if (!text.trim() || isLoading) return;
+    const newMessage: Message = {
+      id: uuidv4(),
+      type,
+      content: [
+        { type: "text", text },
+      ],
+    };
+    // Prevent duplicate keys: only add if id is not already present
+    const existingIds = new Set((stream.messages ?? []).map(m => m.id));
+    if (existingIds.has(newMessage.id)) return;
+    stream.submit(
+      { messages: [...stream.messages, newMessage] },
+      {
+        streamMode: ["values"],
+        optimisticValues: (prev) => ({
+          ...prev,
+          messages: [...(prev.messages ?? []), newMessage],
+        }),
+      },
+    );
+  };
+
   return (
     <div className="flex h-screen w-full overflow-hidden">
       <div className="relative hidden lg:flex">
@@ -476,16 +500,16 @@ export function Thread() {
           style={{ width: 300 }}
           animate={
             isLargeScreen
-              ? { 
-                  x: chatHistoryOpen ? 0 : -300,
-                  opacity: voiceModeActive ? 0.3 : 1,
-                  filter: voiceModeActive ? "blur(4px)" : "blur(0px)"
-                }
-              : { 
-                  x: chatHistoryOpen ? 0 : -300,
-                  opacity: voiceModeActive ? 0.3 : 1,
-                  filter: voiceModeActive ? "blur(4px)" : "blur(0px)"
-                }
+              ? {
+                x: chatHistoryOpen ? 0 : -300,
+                opacity: voiceModeActive ? 0.3 : 1,
+                filter: voiceModeActive ? "blur(4px)" : "blur(0px)"
+              }
+              : {
+                x: chatHistoryOpen ? 0 : -300,
+                opacity: voiceModeActive ? 0.3 : 1,
+                filter: voiceModeActive ? "blur(4px)" : "blur(0px)"
+              }
           }
           initial={{ x: -300 }}
           transition={
@@ -839,23 +863,23 @@ export function Thread() {
           </div>
         </div>
       </div>
-      
+
       {/* Voice Chat Modal */}
       {voiceChatOpen && (
-        <VoiceChat 
-          onClose={() => setVoiceChatOpen(false)} 
+        <VoiceChat
+          onClose={() => setVoiceChatOpen(false)}
           onVoiceModeChange={setVoiceModeActive}
           onTranscriptComplete={(transcript) => {
             // Convert transcript entries to messages
             const transcriptMessages: Message[] = transcript.map((entry) => ({
               id: uuidv4(),
               type: entry.speaker === 'user' ? 'human' : 'ai',
-              content: [{ 
-                type: 'text', 
+              content: [{
+                type: 'text',
                 text: `🎤 ${entry.text}` // Add voice indicator
               }],
             }));
-            
+
             // Add all transcript messages at once
             if (transcriptMessages.length > 0) {
               stream.submit(
@@ -870,6 +894,7 @@ export function Thread() {
               );
             }
           }}
+          postVoiceChatMessage={postVoiceChatMessage}
         />
       )}
     </div>

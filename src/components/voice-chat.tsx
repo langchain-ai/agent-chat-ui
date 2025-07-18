@@ -1,16 +1,14 @@
 import { useState, useRef, useEffect } from "react";
-import { Mic, MicOff, X, VolumeX, Volume2 } from "lucide-react";
+import { Mic, MicOff, X, Volume2 } from "lucide-react";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { GroundingFiles } from "@/components/ui/grounding-files";
-import GroundingFileView from "@/components/ui/grounding-file-view";
 import RagResults from "@/components/ui/rag-results";
+import LangGraphToolResults from "@/components/ui/langgraph-tool-results";
 import RagResultView from "@/components/ui/rag-result-view";
-import StatusMessage from "@/components/ui/status-message";
+import LangGraphToolView from "@/components/ui/langgraph-tool-view";
 import useRealTime from "@/hooks/useRealtime";
 import useAudioRecorder from "@/hooks/useAudioRecorder";
 import useAudioPlayer from "@/hooks/useAudioPlayer";
-import { GroundingFile, ToolResult, RagResult } from "@/types/voice";
+import { RagResult, LangGraphTool } from "@/types/voice";
 
 interface ConversationEntry {
   speaker: 'user' | 'assistant';
@@ -23,17 +21,17 @@ interface VoiceChatProps {
   onClose: () => void;
   onVoiceModeChange: (active: boolean) => void;
   onTranscriptComplete: (transcript: ConversationEntry[]) => void;
+  postVoiceChatMessage: (text: string, type: 'human' | 'ai') => void;
 }
 
-export default function VoiceChat({ onClose, onVoiceModeChange, onTranscriptComplete }: VoiceChatProps) {
+export default function VoiceChat({ onClose, onVoiceModeChange, onTranscriptComplete, postVoiceChatMessage }: VoiceChatProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState("Disconnected");
-  const [groundingFiles, setGroundingFiles] = useState<GroundingFile[]>([]);
-  const [selectedFile, setSelectedFile] = useState<GroundingFile | null>(null);
-  const [ragMessages, setRagMessages] = useState<string[]>([]);
   const [ragResults, setRagResults] = useState<RagResult[]>([]);
   const [selectedRag, setSelectedRag] = useState<RagResult | null>(null);
+  const [langgraphTool, setLannggraphTool] = useState<LangGraphTool[]>([]);
+  const [selectedLanggraph, setSelectedLannggraph] = useState<LangGraphTool | null>(null);
   const [isClient, setIsClient] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [conversationTranscript, setConversationTranscript] = useState<ConversationEntry[]>([]);
@@ -43,7 +41,7 @@ export default function VoiceChat({ onClose, onVoiceModeChange, onTranscriptComp
     setIsClient(true);
     // Automatically start voice mode when component mounts
     onVoiceModeChange(true);
-    
+
     return () => {
       // Clean up when component unmounts
       onVoiceModeChange(false);
@@ -52,18 +50,22 @@ export default function VoiceChat({ onClose, onVoiceModeChange, onTranscriptComp
 
   // Initialize audio hooks only on client side
   const { reset: resetAudioPlayer, play: playAudio, stop: stopAudioPlayer } = useAudioPlayer();
-  
+
   // Use ref to store addUserAudio function to avoid dependency issues
   const addUserAudioRef = useRef<((audioData: string) => void) | null>(null);
-  
+
+  // Guard: track last posted transcript and response
+  const lastPostedTranscript = useRef<string | null>(null);
+  const lastPostedLangGraphResponse = useRef<string | null>(null);
+
   // Define audio callback functions
   const handleAudioRecorded = (audioData: string) => {
     if (addUserAudioRef.current) {
       addUserAudioRef.current(audioData);
     }
   };
-  
-  const { start: startAudioRecording, stop: stopAudioRecording } = useAudioRecorder({ 
+
+  const { start: startAudioRecording, stop: stopAudioRecording } = useAudioRecorder({
     onAudioRecorded: handleAudioRecorded
   });
 
@@ -89,57 +91,72 @@ export default function VoiceChat({ onClose, onVoiceModeChange, onTranscriptComp
       setConnectionStatus(`Error: ${message.error?.message || "Unknown error"}`);
     },
     onReceivedResponseAudioDelta: message => {
-      isRecording && playAudio(message.delta);
+      if (isRecording) playAudio(message.delta);
     },
     onReceivedInputAudioBufferSpeechStarted: () => {
       stopAudioPlayer();
     },
     onReceivedInputAudioTranscriptionCompleted: (message) => {
-      // User speech transcription from Azure OpenAI
-      console.log("User transcript:", message.transcript);
-      if (message.transcript && message.transcript.trim()) {
-        setConversationTranscript(prev => [...prev, {
-          speaker: 'user',
-          text: message.transcript,
-          timestamp: new Date(),
-          type: 'voice'
-        }]);
+      if (
+        message.transcript &&
+        message.transcript.trim() &&
+        message.transcript !== lastPostedTranscript.current
+      ) {
+        postVoiceChatMessage(message.transcript, 'human');
+        lastPostedTranscript.current = message.transcript;
       }
     },
     onReceivedResponseAudioTranscriptDelta: (message) => {
-      // Assistant response transcription
-      console.log("Assistant transcript delta:", message.delta);
-      if (message.delta && message.delta.trim()) {
-        setConversationTranscript(prev => {
-          const lastEntry = prev[prev.length - 1];
-          if (lastEntry?.speaker === 'assistant') {
-            // Update existing assistant message
-            return [...prev.slice(0, -1), {
-              ...lastEntry,
-              text: lastEntry.text + message.delta
-            }];
-          } else {
-            // New assistant message
-            return [...prev, {
-              speaker: 'assistant',
-              text: message.delta,
-              timestamp: new Date(),
-              type: 'voice'
-            }];
-          }
-        });
-      }
+      // // Assistant response transcription
+      // console.log("Assistant transcript delta:", message.delta);
+      // if (message.delta && message.delta.trim()) {
+      //   setConversationTranscript(prev => {
+      //     const lastEntry = prev[prev.length - 1];
+      //     if (lastEntry?.speaker === 'assistant') {
+      //       // Update existing assistant message
+      //       return [...prev.slice(0, -1), {
+      //         ...lastEntry,
+      //         text: lastEntry.text + message.delta
+      //       }];
+      //     } else {
+      //       // New assistant message
+      //       return [...prev, {
+      //         speaker: 'assistant',
+      //         text: message.delta,
+      //         timestamp: new Date(),
+      //         type: 'voice'
+      //       }];
+      //     }
+      //   });
+      // }
     },
     onReceivedExtensionMiddleTierToolResponse: message => {
-      if (message.tool_name === "report_grounding") {
-        const result: ToolResult = JSON.parse(message.tool_result);
-        const files: GroundingFile[] = result.sources.map(x => {
-          return { id: x.chunk_id, name: x.title, content: x.chunk };
-        });
-        setGroundingFiles(prev => [...prev, ...files]);
-      } else if (message.tool_name === "report_rag") {
+      if (message.tool_name === "report_rag") {
         const res: RagResult = JSON.parse(message.tool_result);
         setRagResults(prev => [...prev, res]);
+      } else if (message.tool_name === "langgraph") {
+        const res: LangGraphTool = JSON.parse(message.tool_result);
+        setLannggraphTool(prev => [...prev, res]);
+        // Extract the latest message from the response array and post it to the main chat UI
+        if (res && Array.isArray(res.response) && res.response.length > 0) {
+          const last = res.response[res.response.length - 1];
+          // Try to extract text from the last message
+          let text = "";
+          if (typeof last === "string") {
+            text = last;
+          } else if (last && typeof last === "object" && last.content) {
+            if (typeof last.content === "string") {
+              text = last.content;
+            } else if (Array.isArray(last.content)) {
+              // If content is an array, join text fields
+              text = last.content.map((c: any) => c.text).filter(Boolean).join(" ");
+            }
+          }
+          if (text.trim() && text !== lastPostedLangGraphResponse.current) {
+            postVoiceChatMessage(text, 'ai');
+            lastPostedLangGraphResponse.current = text;
+          }
+        }
       }
     }
   });
@@ -160,7 +177,7 @@ export default function VoiceChat({ onClose, onVoiceModeChange, onTranscriptComp
         setConnectionStatus("Backend2 server not running on port 8765");
       }
     };
-    
+
     checkBackendStatus();
   }, []);
 
@@ -186,7 +203,7 @@ export default function VoiceChat({ onClose, onVoiceModeChange, onTranscriptComp
           console.error("Failed to auto-start recording:", error);
         }
       };
-      
+
       // Start immediately when connected
       autoStart();
     }
@@ -228,13 +245,13 @@ export default function VoiceChat({ onClose, onVoiceModeChange, onTranscriptComp
       inputAudioBufferClear();
       setIsRecording(false);
     }
-    
+
     // Send transcript to parent chat component
-    if (conversationTranscript.length > 0) {
-      console.log("Sending transcript to chat:", conversationTranscript);
-      onTranscriptComplete(conversationTranscript);
-    }
-    
+    // if (conversationTranscript.length > 0) {
+    //   console.log("Sending transcript to chat:", conversationTranscript);
+    //   onTranscriptComplete(conversationTranscript);
+    // }
+
     onVoiceModeChange(false);
     onClose();
   };
@@ -263,7 +280,7 @@ export default function VoiceChat({ onClose, onVoiceModeChange, onTranscriptComp
   }
 
   return (
-    <motion.div 
+    <motion.div
       className="fixed inset-0 z-50 bg-black bg-opacity-50 backdrop-blur-sm"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -278,15 +295,14 @@ export default function VoiceChat({ onClose, onVoiceModeChange, onTranscriptComp
           <motion.button
             onClick={isRecording ? onToggleListening : undefined}
             disabled={!isRecording}
-            className={`mx-auto mb-8 flex h-48 w-48 items-center justify-center rounded-full transition-all ${
-              isMuted
-                ? "bg-gray-500 shadow-lg shadow-gray-500/30 cursor-not-allowed"
-                : isRecording 
-                ? "bg-red-500 shadow-lg shadow-red-500/30 hover:bg-red-600 cursor-pointer" 
-                : isConnected 
-                ? "bg-purple-500 shadow-lg shadow-purple-500/30"
-                : "bg-gray-400"
-            }`}
+            className={`mx-auto mb-8 flex h-48 w-48 items-center justify-center rounded-full transition-all ${isMuted
+              ? "bg-gray-500 shadow-lg shadow-gray-500/30 cursor-not-allowed"
+              : isRecording
+                ? "bg-red-500 shadow-lg shadow-red-500/30 hover:bg-red-600 cursor-pointer"
+                : isConnected
+                  ? "bg-purple-500 shadow-lg shadow-purple-500/30"
+                  : "bg-gray-400"
+              }`}
             animate={isRecording && !isMuted ? {
               scale: [1, 1.05, 1],
               boxShadow: [
@@ -318,13 +334,13 @@ export default function VoiceChat({ onClose, onVoiceModeChange, onTranscriptComp
               {isMuted ? "Muted" : isRecording ? "Listening..." : isConnected ? "Ready" : "Connecting..."}
             </h2>
             <p className="text-xl text-white/80">
-              {isMuted 
+              {isMuted
                 ? "Microphone is muted"
-                : isRecording 
-                ? "Voice mode active" 
-                : isConnected 
-                ? "Voice mode active"
-                : "Waiting for backend connection"
+                : isRecording
+                  ? "Voice mode active"
+                  : isConnected
+                    ? "Voice mode active"
+                    : "Waiting for backend connection"
               }
             </p>
           </motion.div>
@@ -338,17 +354,16 @@ export default function VoiceChat({ onClose, onVoiceModeChange, onTranscriptComp
           >
             <button
               onClick={handleMuteToggle}
-              className={`rounded-full p-3 text-white transition-colors ${
-                isMuted 
-                  ? "bg-red-500/20 hover:bg-red-500/30" 
-                  : "bg-white/20 hover:bg-white/30"
-              }`}
+              className={`rounded-full p-3 text-white transition-colors ${isMuted
+                ? "bg-red-500/20 hover:bg-red-500/30"
+                : "bg-white/20 hover:bg-white/30"
+                }`}
               aria-label={isMuted ? "Unmute microphone" : "Mute microphone"}
               title={isMuted ? "Unmute microphone" : "Mute microphone"}
             >
               {isMuted ? <MicOff className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
             </button>
-            
+
             <button
               onClick={handleClose}
               className="rounded-full bg-white/20 p-3 text-white hover:bg-white/30 transition-colors"
@@ -376,25 +391,20 @@ export default function VoiceChat({ onClose, onVoiceModeChange, onTranscriptComp
         </div>
       </div>
 
-      {/* Grounding files and RAG results at the bottom */}
-      {(groundingFiles.length > 0 || ragResults.length > 0) && (
+      {(langgraphTool.length > 0 || ragResults.length > 0) && (
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           className="absolute bottom-6 left-6 right-6 max-h-32 overflow-y-auto rounded-lg bg-white/10 p-4 backdrop-blur-md"
         >
-          <GroundingFiles files={groundingFiles} onSelected={setSelectedFile} />
           <RagResults results={ragResults} onSelected={setSelectedRag} />
-          
-          {ragMessages.map((m, i) => (
-            <p key={i} className="mt-2 text-sm text-white/80">{m}</p>
-          ))}
+          <LangGraphToolResults results={langgraphTool} onSelected={setSelectedLannggraph} />
         </motion.div>
       )}
 
       {/* Modals */}
-      <GroundingFileView groundingFile={selectedFile} onClosed={() => setSelectedFile(null)} />
       <RagResultView result={selectedRag} onClosed={() => setSelectedRag(null)} />
+      <LangGraphToolView result={selectedLanggraph} onClosed={() => setSelectedLannggraph(null)} />
     </motion.div>
   );
 }
