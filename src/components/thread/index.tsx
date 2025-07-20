@@ -502,13 +502,13 @@ export function Thread() {
             isLargeScreen
               ? {
                 x: chatHistoryOpen ? 0 : -300,
-                opacity: voiceModeActive ? 0.3 : 1,
-                filter: voiceModeActive ? "blur(4px)" : "blur(0px)"
+                opacity: 1,
+                filter: "blur(0px)"
               }
               : {
                 x: chatHistoryOpen ? 0 : -300,
-                opacity: voiceModeActive ? 0.3 : 1,
-                filter: voiceModeActive ? "blur(4px)" : "blur(0px)"
+                opacity: 1,
+                filter: "blur(0px)"
               }
           }
           initial={{ x: -300 }}
@@ -546,9 +546,10 @@ export function Thread() {
                 ? "calc(100% - 300px)"
                 : "100%"
               : "100%",
-            opacity: voiceModeActive ? 0.4 : 1,
+            // Remove blur and opacity reduction when voiceModeActive is true
+            opacity: 1,
             y: voiceModeActive ? 8 : 0,
-            filter: voiceModeActive ? "blur(2px)" : "blur(0px)"
+            filter: "blur(0px)"
           }}
           transition={
             isLargeScreen

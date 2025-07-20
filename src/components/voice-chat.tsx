@@ -281,7 +281,7 @@ export default function VoiceChat({ onClose, onVoiceModeChange, onTranscriptComp
 
   return (
     <motion.div
-      className="fixed inset-0 z-50 bg-black bg-opacity-50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 bg-transparent"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -298,16 +298,17 @@ export default function VoiceChat({ onClose, onVoiceModeChange, onTranscriptComp
             className={`mx-auto mb-8 flex h-48 w-48 items-center justify-center rounded-full transition-all ${isMuted
               ? "bg-gray-500 shadow-lg shadow-gray-500/30 cursor-not-allowed"
               : isRecording
-                ? "bg-red-500 shadow-lg shadow-red-500/30 hover:bg-red-600 cursor-pointer"
+                ? "bg-gray-500 shadow-lg shadow-gray-500/30 hover:bg-gray-600 cursor-pointer"
                 : isConnected
-                  ? "bg-purple-500 shadow-lg shadow-purple-500/30"
+                  ? "bg-gray-500 shadow-lg shadow-gray-500/30"
                   : "bg-gray-400"
               }`}
+            style={{ opacity: 0.5 }}
             animate={isRecording && !isMuted ? {
               scale: [1, 1.05, 1],
               boxShadow: [
-                "0 0 0 0 rgba(239, 68, 68, 0.4)",
-                "0 0 0 20px rgba(239, 68, 68, 0)",
+                "0 0 0 0 rgb(80, 77, 77)",
+                "0 0 0 20px rgba(69, 63, 63, 0.58)",
                 "0 0 0 0 rgba(239, 68, 68, 0)"
               ]
             } : {}}
@@ -320,20 +321,20 @@ export default function VoiceChat({ onClose, onVoiceModeChange, onTranscriptComp
             whileTap={isRecording && !isMuted ? { scale: 0.98 } : {}}
             title={isMuted ? "Microphone muted" : isRecording ? "Click to stop recording" : ""}
           >
-            {isMuted ? <MicOff className="h-20 w-20 text-white" /> : <Mic className="h-20 w-20 text-white" />}
+            {isMuted ? <MicOff className="h-20 w-20 text-gray" /> : <Mic className="h-20 w-20 text-gray" />}
           </motion.button>
 
           {/* Status text */}
-          <motion.div
+          {/* <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
             className="space-y-2"
           >
-            <h2 className="text-4xl font-bold text-white">
+            <h2 className="text-4xl font-bold text-gray">
               {isMuted ? "Muted" : isRecording ? "Listening..." : isConnected ? "Ready" : "Connecting..."}
             </h2>
-            <p className="text-xl text-white/80">
+            <p className="text-xl text-gray/80">
               {isMuted
                 ? "Microphone is muted"
                 : isRecording
@@ -343,7 +344,7 @@ export default function VoiceChat({ onClose, onVoiceModeChange, onTranscriptComp
                     : "Waiting for backend connection"
               }
             </p>
-          </motion.div>
+          </motion.div> */}
 
           {/* Controls below microphone */}
           <motion.div
@@ -354,9 +355,9 @@ export default function VoiceChat({ onClose, onVoiceModeChange, onTranscriptComp
           >
             <button
               onClick={handleMuteToggle}
-              className={`rounded-full p-3 text-white transition-colors ${isMuted
+              className={`rounded-full p-3 text-grey transition-colors ${isMuted
                 ? "bg-red-500/20 hover:bg-red-500/30"
-                : "bg-white/20 hover:bg-white/30"
+                : "bg-gray/20 hover:bg-gray/30"
                 }`}
               aria-label={isMuted ? "Unmute microphone" : "Mute microphone"}
               title={isMuted ? "Unmute microphone" : "Mute microphone"}
@@ -366,7 +367,7 @@ export default function VoiceChat({ onClose, onVoiceModeChange, onTranscriptComp
 
             <button
               onClick={handleClose}
-              className="rounded-full bg-white/20 p-3 text-white hover:bg-white/30 transition-colors"
+              className="rounded-full bg-gray/20 p-3 text-gray hover:bg-gray/30 transition-colors"
               aria-label="Close voice chat"
               title="Close voice chat"
             >
@@ -380,10 +381,10 @@ export default function VoiceChat({ onClose, onVoiceModeChange, onTranscriptComp
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
-              className="mt-8 rounded-lg bg-white/10 p-6 text-center backdrop-blur-md"
+              className="mt-8 rounded-lg bg-gray/10 p-6 text-center"
             >
-              <p className="text-white/90 mb-2">Make sure backend2 is running:</p>
-              <code className="bg-black/20 px-3 py-1 rounded text-white/80 text-sm">
+              <p className="text-gray/90 mb-2">Make sure backend2 is running:</p>
+              <code className="bg-gray/20 px-3 py-1 rounded text-gray/80 text-sm">
                 cd backend2 && python app.py
               </code>
             </motion.div>
@@ -395,7 +396,7 @@ export default function VoiceChat({ onClose, onVoiceModeChange, onTranscriptComp
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
-          className="absolute bottom-6 left-6 right-6 max-h-32 overflow-y-auto rounded-lg bg-white/10 p-4 backdrop-blur-md"
+          className="absolute bottom-6 left-6 right-6 max-h-32 overflow-y-auto rounded-lg bg-gray/10 p-4"
         >
           <RagResults results={ragResults} onSelected={setSelectedRag} />
           <LangGraphToolResults results={langgraphTool} onSelected={setSelectedLannggraph} />
