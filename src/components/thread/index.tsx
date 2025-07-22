@@ -1,3 +1,4 @@
+// src/components/thread/index.tsx
 import { v4 as uuidv4 } from "uuid";
 import { ReactNode, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
@@ -5,6 +6,8 @@ import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
 import { useState, FormEvent } from "react";
 import { Button } from "../ui/button";
+import { VoiceButton } from "../ui/voice-button";
+import { useVoiceRecording } from "@/hooks/use-voice-recording";
 import { Checkpoint, Message } from "@langchain/langgraph-sdk";
 import { AssistantMessage, AssistantMessageLoading } from "./messages/ai";
 import { HumanMessage } from "./messages/human";
@@ -144,6 +147,28 @@ export function Thread() {
   const isLoading = stream.isLoading;
 
   const lastError = useRef<string | undefined>(undefined);
+
+  // Voice recording functionality
+  const voiceRecording = useVoiceRecording({
+    onTranscriptionComplete: (text: string) => {
+      // Append transcription to existing input, or replace if input is empty
+      setInput(prev => {
+        const trimmedPrev = prev.trim();
+        if (trimmedPrev.length === 0) {
+          return text;
+        }
+        // Add a space between existing text and new transcription
+        return trimmedPrev + " " + text;
+      });
+    },
+    onError: (error: string) => {
+      toast.error("Voice recording error", {
+        description: error,
+        richColors: true,
+        closeButton: true,
+      });
+    },
+  });
 
   const setThreadId = (id: string | null) => {
     _setThreadId(id);
@@ -513,6 +538,15 @@ export function Thread() {
                           accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
                           className="hidden"
                         />
+                        
+                        {/* Voice Recording Button */}
+                        <VoiceButton
+                          isRecording={voiceRecording.isRecording}
+                          isTranscribing={voiceRecording.isTranscribing}
+                          onToggleRecording={voiceRecording.toggleRecording}
+                          disabled={isLoading}
+                        />
+
                         {stream.isLoading ? (
                           <Button
                             key="stop"
@@ -528,7 +562,9 @@ export function Thread() {
                             className="ml-auto shadow-md transition-all"
                             disabled={
                               isLoading ||
-                              (!input.trim() && contentBlocks.length === 0)
+                              (!input.trim() && contentBlocks.length === 0) ||
+                              voiceRecording.isRecording ||
+                              voiceRecording.isTranscribing
                             }
                           >
                             Send

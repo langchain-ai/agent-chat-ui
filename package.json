@@ -35,6 +35,7 @@
     "esbuild": "^0.25.0",
     "esbuild-plugin-tailwindcss": "^2.0.1",
     "framer-motion": "^12.4.9",
+    "groq-sdk": "^0.27.0",
     "katex": "^0.16.21",
     "langgraph-nextjs-api-passthrough": "^0.0.4",
     "lodash": "^4.17.21",
