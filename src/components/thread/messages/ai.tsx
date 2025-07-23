@@ -216,11 +216,20 @@ export function AssistantMessage({
 
 export function AssistantMessageLoading() {
   return (
-    <div className="mr-auto flex items-start gap-2">
-      <div className="bg-muted flex h-8 items-center gap-1 rounded-2xl px-4 py-2">
-        <div className="bg-foreground/50 h-1.5 w-1.5 animate-[pulse_1.5s_ease-in-out_infinite] rounded-full"></div>
-        <div className="bg-foreground/50 h-1.5 w-1.5 animate-[pulse_1.5s_ease-in-out_0.5s_infinite] rounded-full"></div>
-        <div className="bg-foreground/50 h-1.5 w-1.5 animate-[pulse_1.5s_ease-in-out_1s_infinite] rounded-full"></div>
+    <div className="mr-auto flex items-start gap-3 py-2">
+      {/* Loader Bubble */}
+      <div className="relative flex flex-col items-start">
+        <div className="bg-muted animate-pulse-bubble flex min-w-[80px] items-center rounded-2xl px-5 py-3 shadow">
+          {/* <span className="sr-only">Agent is thinking...</span> */}
+          <div className="flex gap-1">
+            <span className="bg-foreground/60 h-2 w-2 animate-bounce rounded-full [animation-delay:0s]"></span>
+            <span className="bg-foreground/60 h-2 w-2 animate-bounce rounded-full [animation-delay:0.2s]"></span>
+            <span className="bg-foreground/60 h-2 w-2 animate-bounce rounded-full [animation-delay:0.4s]"></span>
+          </div>
+        </div>
+        {/* <span className="mt-2 ml-2 text-xs text-gray-400">
+          Agent is thinking...
+        </span> */}
       </div>
     </div>
   );

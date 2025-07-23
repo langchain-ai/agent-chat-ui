@@ -460,9 +460,7 @@ export function Thread() {
                       handleRegenerate={handleRegenerate}
                     />
                   )}
-                  {isLoading && !firstTokenReceived && (
-                    <AssistantMessageLoading />
-                  )}
+                  {isLoading && <AssistantMessageLoading />}
                   {/* Always render the interrupt widget at the end if present */}
                   {stream.interrupt && (
                     <GenericInterruptView
