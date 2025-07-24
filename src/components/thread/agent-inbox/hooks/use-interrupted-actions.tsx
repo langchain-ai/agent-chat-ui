@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { HumanInterrupt, HumanResponse } from "@langchain/langgraph/prebuilt";
 import { END } from "@langchain/langgraph/web";
 import { useStreamContext } from "@/providers/Stream";
+import { getJwtToken, GetUserId } from "@/services/authService";
 
 interface UseInterruptedActionsInput {
   interrupt: HumanInterrupt;
@@ -82,8 +83,18 @@ export default function useInterruptedActions({
 
   const resumeRun = (response: HumanResponse[]): boolean => {
     try {
+      // Get user ID from JWT token
+      const jwtToken = getJwtToken();
+      const userId = jwtToken ? GetUserId(jwtToken) : null;
+
+      // Include userId in the submission data
+      const submissionData: any = {};
+      if (userId) {
+        submissionData.userId = userId;
+      }
+
       thread.submit(
-        {},
+        submissionData,
         {
           command: {
             resume: response,

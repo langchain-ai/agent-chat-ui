@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { BranchSwitcher, CommandBar } from "./shared";
 import { MultimodalPreview } from "@/components/thread/MultimodalPreview";
 import { isBase64ContentBlock } from "@/lib/multimodal-utils";
+import { getJwtToken, GetUserId } from "@/services/authService";
 
 function EditableContent({
   value,
@@ -52,9 +53,20 @@ export function HumanMessage({
   const handleSubmitEdit = () => {
     setIsEditing(false);
 
+    // Get user ID from JWT token
+    const jwtToken = getJwtToken();
+    const userId = jwtToken ? GetUserId(jwtToken) : null;
+
     const newMessage: Message = { type: "human", content: value };
+
+    // Include userId in the submission
+    const submissionData: any = { messages: [newMessage] };
+    if (userId) {
+      submissionData.userId = userId;
+    }
+
     thread.submit(
-      { messages: [newMessage] },
+      submissionData,
       {
         checkpoint: parentCheckpoint,
         streamMode: ["updates"],

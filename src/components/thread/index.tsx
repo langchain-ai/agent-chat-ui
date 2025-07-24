@@ -46,6 +46,8 @@ import {
   ArtifactTitle,
   useArtifactContext,
 } from "./artifact";
+import { LogoutButton } from "@/components/auth";
+import { getJwtToken, GetUserId } from "@/services/authService";
 import { GenericInterruptView } from "./messages/generic-interrupt";
 
 function StickyToBottomContent(props: {
@@ -236,6 +238,10 @@ export function Thread() {
       return;
     setFirstTokenReceived(false);
 
+    // Get user ID from JWT token
+    const jwtToken = getJwtToken();
+    const userId = jwtToken ? GetUserId(jwtToken) : null;
+
     const newHumanMessage: Message = {
       id: uuidv4(),
       type: "human",
@@ -250,8 +256,18 @@ export function Thread() {
     const context =
       Object.keys(artifactContext).length > 0 ? artifactContext : undefined;
 
+    // Include userId in the submission
+    const submissionData: any = {
+      messages: [...toolMessages, newHumanMessage],
+      context
+    };
+
+    if (userId) {
+      submissionData.userId = userId;
+    }
+
     stream.submit(
-      { messages: [...toolMessages, newHumanMessage], context },
+      submissionData,
       {
         streamMode: ["updates"],
         optimisticValues: (prev) => ({
@@ -357,9 +373,13 @@ export function Thread() {
                   </Button>
                 )}
               </div>
-              {/* <div className="absolute top-2 right-4 flex items-center">
-                <OpenGitHubRepo />
-              </div> */}
+              <div className="flex items-center gap-4">
+                <LogoutButton
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-600 hover:text-gray-900"
+                />
+              </div>
             </div>
           )}
           {chatStarted && (
@@ -409,6 +429,11 @@ export function Thread() {
                 >
                   <SquarePen className="size-5" />
                 </TooltipIconButton>
+                <LogoutButton
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-600 hover:text-gray-900"
+                />
               </div>
 
               <div className="from-background to-background/0 absolute inset-x-0 top-full h-5 bg-gradient-to-b" />
