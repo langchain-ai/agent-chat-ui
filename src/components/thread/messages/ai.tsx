@@ -24,8 +24,15 @@ function CustomComponent({
 }) {
   const artifact = useArtifact();
   const { values } = useStreamContext();
+  console.log(
+    `12345CustomValues: ${JSON.stringify(values.ui)}}`,
+  );
   const customComponents = values.ui?.filter(
     (ui) => ui.metadata?.message_id === message.id,
+  );
+
+  console.log(
+    `12345CustomComponent: ${JSON.stringify(customComponents)} \n message: ${JSON.stringify(message)}`,
   );
 
   if (!customComponents?.length) return null;
@@ -78,17 +85,21 @@ function Interrupt({
   isLastMessage,
   hasNoAIOrToolMessages,
 }: InterruptProps) {
+  console.log(
+    `12345Interrupt: ${JSON.stringify(interruptValue)} \n isLastMessage: ${isLastMessage} \n hasNoAIOrToolMessages: ${hasNoAIOrToolMessages}`,
+  );
   return (
     <>
       {isAgentInboxInterruptSchema(interruptValue) &&
         (isLastMessage || hasNoAIOrToolMessages) && (
           <ThreadView interrupt={interruptValue} />
         )}
-      {interruptValue &&
+      {/* Todo: @Shubham removed this to avoid duplicate rendering of Interrupt */}
+      {/* {interruptValue &&
       !isAgentInboxInterruptSchema(interruptValue) &&
       isLastMessage ? (
         <GenericInterruptView interrupt={interruptValue} />
-      ) : null}
+      ) : null} */}
     </>
   );
 }
@@ -110,8 +121,12 @@ export function AssistantMessage({
   );
 
   const thread = useStreamContext();
+
+  console.log(`$$$$$$$$$ Message : ${JSON.stringify(message)}`);
+
   const isLastMessage =
-    thread.messages[thread.messages.length - 1].id === message?.id;
+    thread.messages.length > 0 &&
+    thread.messages[thread.messages.length - 1]?.id === message?.id;
   const hasNoAIOrToolMessages = !thread.messages.find(
     (m) => m.type === "ai" || m.type === "tool",
   );
@@ -180,11 +195,6 @@ export function AssistantMessage({
                 thread={thread}
               />
             )}
-            <Interrupt
-              interruptValue={threadInterrupt?.value}
-              isLastMessage={isLastMessage}
-              hasNoAIOrToolMessages={hasNoAIOrToolMessages}
-            />
             <div
               className={cn(
                 "mr-auto flex items-center gap-2 transition-opacity",
