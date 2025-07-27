@@ -26,60 +26,187 @@ import {
 
 interface FlightOption {
   flightId: string;
-  airline?: string;
-  flightNumber?: string;
-  departure: {
-    time: string;
-    airport: string;
-    city: string;
-  };
-  arrival: {
-    time: string;
-    airport: string;
-    city: string;
-  };
-  duration: string;
+  totalEmission: number;
+  totalEmissionUnit: string;
+  currency: string;
   totalAmount: number;
-  totalCurrency: string;
-  stops: number;
-  badge?: "recommended" | "cheapest" | "fastest";
-  whyChoose?: string[];
-  cancellable?: boolean;
-  pros?: string[];
-  cons?: string[];
-  rankingScore?: number;
-  segments?: {
-    departureDate: string;
-    arrivalDate: string;
-    departure: { airportIata: string; city: string };
-    arrival: { airportIata: string; city: string };
-    flightNumber: string;
-    airlineIata: string;
-  }[];
+  duration: string;
+  departure: FlightEndpoint;
+  arrival: FlightEndpoint;
+  segments: FlightSegment[];
+  offerRules: FlightOfferRules;
+  rankingScore: number;
+  pros: string[];
+  cons: string[];
+  tags: string[];
 }
 
-const getBadgeConfig = (badge: string) => {
-  switch (badge) {
-    case "recommended":
-      return {
-        icon: Star,
-        text: "Recommended",
-        color: "bg-blue-100 text-blue-800 border-blue-200",
-      };
-    case "cheapest":
-      return {
-        icon: DollarSign,
-        text: "Cheapest",
-        color: "bg-green-100 text-green-800 border-green-200",
-      };
-    case "fastest":
-      return {
-        icon: Zap,
-        text: "Fastest",
-        color: "bg-orange-100 text-orange-800 border-orange-200",
-      };
-    default:
-      return null;
+interface FlightEndpoint {
+  date: string;
+  airportIata: string;
+  airportName: string;
+  cityCode: string;
+  countryCode: string;
+}
+
+interface FlightSegment {
+  id: string;
+  airlineIata: string;
+  flightNumber: string;
+  aircraftType: string;
+  airlineName: string;
+  duration: string;
+  departure: FlightEndpoint;
+  arrival: FlightEndpoint;
+}
+
+interface FlightOfferRules {
+  isRefundable: boolean
+}
+
+const getCurrencySymbol = (currencyCode: string): string => {
+  const currencyMap: Record<string, string> = {
+    'USD': '$',
+    'EUR': '€',
+    'GBP': '£',
+    'INR': '₹',
+    'JPY': '¥',
+    'CAD': 'C$',
+    'AUD': 'A$',
+    'CHF': 'CHF',
+    'CNY': '¥',
+    'SEK': 'kr',
+    'NOK': 'kr',
+    'MXN': '$',
+    'NZD': 'NZ$',
+    'SGD': 'S$',
+    'HKD': 'HK$',
+    'ZAR': 'R',
+    'THB': '฿',
+    'AED': 'د.إ',
+    'SAR': '﷼',
+    'KRW': '₩',
+    'BRL': 'R$',
+    'RUB': '₽',
+    'TRY': '₺',
+    'PLN': 'zł',
+    'CZK': 'Kč',
+    'HUF': 'Ft',
+    'ILS': '₪',
+    'CLP': '$',
+    'COP': '$',
+    'PEN': 'S/',
+    'ARS': '$',
+    'UYU': '$U',
+    'BOB': 'Bs',
+    'PYG': '₲',
+    'VES': 'Bs.S',
+    'DKK': 'kr',
+    'ISK': 'kr',
+    'RON': 'lei',
+    'BGN': 'лв',
+    'HRK': 'kn',
+    'RSD': 'дин',
+    'UAH': '₴',
+    'BYN': 'Br',
+    'MDL': 'L',
+    'GEL': '₾',
+    'AMD': '֏',
+    'AZN': '₼',
+    'KZT': '₸',
+    'UZS': 'soʻm',
+    'KGS': 'с',
+    'TJS': 'ЅМ',
+    'TMT': 'T',
+    'MNT': '₮',
+    'LAK': '₭',
+    'KHR': '៛',
+    'MMK': 'K',
+    'VND': '₫',
+    'IDR': 'Rp',
+    'MYR': 'RM',
+    'PHP': '₱',
+    'TWD': 'NT$',
+    'PKR': '₨',
+    'LKR': '₨',
+    'BDT': '৳',
+    'NPR': '₨',
+    'BTN': 'Nu.',
+    'MVR': '.ރ',
+    'AFN': '؋',
+    'IRR': '﷼',
+    'IQD': 'ع.د',
+    'JOD': 'د.ا',
+    'KWD': 'د.ك',
+    'LBP': 'ل.ل',
+    'OMR': 'ر.ع.',
+    'QAR': 'ر.ق',
+    'SYP': '£',
+    'YER': '﷼',
+    'BHD': '.د.ب',
+    'EGP': '£',
+    'LYD': 'ل.د',
+    'MAD': 'د.م.',
+    'TND': 'د.ت',
+    'DZD': 'د.ج',
+    'AOA': 'Kz',
+    'BWP': 'P',
+    'BIF': 'Fr',
+    'XOF': 'Fr',
+    'XAF': 'Fr',
+    'KMF': 'Fr',
+    'DJF': 'Fr',
+    'ERN': 'Nfk',
+    'ETB': 'Br',
+    'GMD': 'D',
+    'GHS': '₵',
+    'GNF': 'Fr',
+    'KES': 'Sh',
+    'LSL': 'L',
+    'LRD': '$',
+    'MGA': 'Ar',
+    'MWK': 'MK',
+    'MUR': '₨',
+    'MZN': 'MT',
+    'NAD': '$',
+    'NGN': '₦',
+    'RWF': 'Fr',
+    'SCR': '₨',
+    'SLL': 'Le',
+    'SOS': 'Sh',
+    'STN': 'Db',
+    'SZL': 'L',
+    'TZS': 'Sh',
+    'UGX': 'Sh',
+    'XPF': 'Fr',
+    'ZMW': 'ZK',
+    'ZWL': '$',
+  };
+
+  return currencyMap[currencyCode.toUpperCase()] || currencyCode;
+};
+
+const getBadgeConfig = (tags: string[]) => {
+  if (tags.includes("recommended")) {
+    return {
+      icon: Star,
+      text: "Recommended",
+      color: "bg-blue-100 text-blue-800 border-blue-200",
+    };
+  }
+  if (tags.includes("cheapest")) {
+    return {
+      icon: DollarSign,
+      text: "Cheapest",
+      color: "bg-green-100 text-green-800 border-green-200",
+    };
+  }
+  if (tags.includes("fastest")) {
+    return {
+      icon: Zap,
+      text: "Fastest",
+      color: "bg-orange-100 text-orange-800 border-orange-200",
+    };
   }
 };
 
@@ -92,10 +219,10 @@ const FlightCard = ({
   onSelect: (flightId: string) => void;
   isLoading?: boolean;
 }) => {
-  const badgeConfig = flight.badge ? getBadgeConfig(flight.badge) : null;
+  const badgeConfig = flight.tags && flight.tags.length > 0 ? getBadgeConfig(flight.tags) : null;
   const [isWhyChooseExpanded, setIsWhyChooseExpanded] = useState(false);
 
-  // Format time from ISO string
+  //Todo: @Khalid, this is very critical and hacky, please verify the actual flight timings with what we are showing.
   const formatTime = (isoString: string) => {
     return new Date(isoString).toLocaleTimeString("en-US", {
       hour: "2-digit",
@@ -116,54 +243,41 @@ const FlightCard = ({
   };
 
   // Get airline from segments
-  const getAirline = () => {
+  const getAirlineIataFromFlightOption = (flight: FlightOption) => {
     if (flight.segments && flight.segments.length > 0) {
-      return flight.segments[0].airlineIata || "Unknown";
+      return flight.segments
+          .map((segment) => segment.airlineIata)
+          .join(", ") || "Unknown";
     }
-    return flight.airline || "Unknown";
+    return "Unknown";
+  };
+
+  const getAirlineIataFromSegment = (segment: FlightSegment) => {
+    return segment.airlineIata || "Unknown";
   };
 
   // Get flight number from segments
-  const getFlightNumber = () => {
+  const getFlightNumberFromFlightOption = (flight: FlightOption) => {
     if (flight.segments && flight.segments.length > 0) {
-      return flight.segments[0].flightNumber || "Unknown";
+      return flight.segments
+          .map(segment => segment.flightNumber)
+          .join(", ") || "Unknown";
     }
-    return flight.flightNumber || "Unknown";
+    return "Unknown";
   };
 
-  // Get departure info
-  const getDepartureInfo = () => {
-    if (flight.segments && flight.segments.length > 0) {
-      const segment = flight.segments[0];
-      return {
-        time: formatTime(segment.departureDate),
-        airport: segment.departure.airportIata,
-        city: segment.departure.city,
-      };
-    }
-    return flight.departure;
+  const getFlightNumberFromSegment = (segment: FlightSegment) => {
+    return segment.flightNumber || "Unknown";
   };
 
-  // Get arrival info
-  const getArrivalInfo = () => {
-    if (flight.segments && flight.segments.length > 0) {
-      const segment = flight.segments[0];
-      return {
-        time: formatTime(segment.arrivalDate),
-        airport: segment.arrival.airportIata,
-        city: segment.arrival.city,
-      };
-    }
-    return flight.arrival;
-  };
-
-  const departureInfo = getDepartureInfo();
-  const arrivalInfo = getArrivalInfo();
+  const departureInfo = flight.departure;
+  const arrivalInfo = flight.arrival;
   const duration = flight.duration
     ? formatDuration(flight.duration)
     : "Unknown";
   const price = flight.totalAmount || 0;
-  const currency = flight.totalCurrency || "USD";
+  const currency = flight.currency || "USD";
+  const currencySymbol = getCurrencySymbol(currency);
 
   return (
     <div className="w-full rounded-lg border border-gray-200 bg-white p-3 sm:p-4 shadow-sm transition-shadow duration-200 hover:shadow-md overflow-hidden">
@@ -181,28 +295,20 @@ const FlightCard = ({
       )}
 
       {/* Airline and Flight Number */}
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1">
-          <Plane className="h-4 w-4 text-gray-600 flex-shrink-0" />
-          <span className="font-medium text-gray-900 truncate text-sm sm:text-base">{getAirline()}</span>
-          <span className="text-xs sm:text-sm text-gray-500 truncate">{getFlightNumber()}</span>
-        </div>
-        <div className="text-right flex-shrink-0">
-          <div className="text-base sm:text-lg font-bold text-gray-900">
-            ₹{price.toLocaleString()}
-          </div>
-          <div className="text-xs text-gray-500">per person</div>
-        </div>
+      <div className="mb-3 flex items-center gap-1 sm:gap-2 min-w-0">
+        <Plane className="h-4 w-4 text-gray-600 flex-shrink-0" />
+        <span className="font-medium text-gray-900 truncate text-sm sm:text-base">{getAirlineIataFromFlightOption(flight)}</span>
+        <span className="text-xs sm:text-sm text-gray-500 truncate">{getFlightNumberFromFlightOption(flight)}</span>
       </div>
 
       {/* Flight Route */}
       <div className="mb-3 flex items-center justify-between overflow-hidden">
         <div className="text-center flex-1 min-w-0 max-w-[30%]">
           <div className="text-lg sm:text-xl font-bold text-gray-900 truncate">
-            {departureInfo.time}
+            {formatTime(departureInfo.date)}
           </div>
-          <div className="text-xs sm:text-sm text-gray-600 truncate">{departureInfo.airport}</div>
-          <div className="text-xs text-gray-500 truncate">{departureInfo.city}</div>
+          <div className="text-xs sm:text-sm text-gray-600 truncate">{departureInfo.airportIata}</div>
+          <div className="text-xs text-gray-500 truncate">{departureInfo.countryCode}</div>
         </div>
 
         <div className="mx-1 sm:mx-2 flex-1 text-center min-w-0 max-w-[40%]">
@@ -214,18 +320,18 @@ const FlightCard = ({
             <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-300"></div>
           </div>
           <div className="mt-1 text-xs text-gray-500 truncate">
-            {flight.stops === 0
+            {flight.segments.length == 1
               ? "Non-stop"
-              : `${flight.stops} stop${flight.stops > 1 ? "s" : ""}`}
+              : `${flight.segments.length - 1} stop${flight.segments.length - 1 > 1 ? "s" : ""}`}
           </div>
         </div>
 
         <div className="text-center flex-1 min-w-0 max-w-[30%]">
           <div className="text-lg sm:text-xl font-bold text-gray-900 truncate">
-            {arrivalInfo.time}
+            {formatTime(arrivalInfo.date)}
           </div>
-          <div className="text-xs sm:text-sm text-gray-600 truncate">{arrivalInfo.airport}</div>
-          <div className="text-xs text-gray-500 truncate">{arrivalInfo.city}</div>
+          <div className="text-xs sm:text-sm text-gray-600 truncate">{arrivalInfo.airportIata}</div>
+          <div className="text-xs text-gray-500 truncate">{arrivalInfo.countryCode}</div>
         </div>
       </div>
 
@@ -234,7 +340,7 @@ const FlightCard = ({
         <div
           className={cn(
             "inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium",
-            flight.cancellable
+            flight.offerRules?.isRefundable
               ? "border border-green-200 bg-green-100 text-green-800"
               : "border border-red-200 bg-red-100 text-red-800",
           )}
@@ -242,10 +348,10 @@ const FlightCard = ({
           <span
             className={cn(
               "h-1.5 w-1.5 rounded-full",
-              flight.cancellable ? "bg-green-500" : "bg-red-500",
+              flight.offerRules?.isRefundable ? "bg-green-500" : "bg-red-500",
             )}
           />
-          {flight.cancellable ? "Free Cancellation" : "Non-Refundable"}
+          {flight.offerRules?.isRefundable ? "Free Cancellation" : "Non-Refundable"}
         </div>
       </div>
 
@@ -295,7 +401,7 @@ const FlightCard = ({
       >
         <span className="flex items-center justify-center gap-2">
           <span>{isLoading ? "Selecting..." : "Select Flight"}</span>
-          <span className="font-bold">₹{price.toLocaleString()}</span>
+          <span className="font-bold">{currencySymbol}{price.toLocaleString()}</span>
         </span>
       </Button>
     </div>
