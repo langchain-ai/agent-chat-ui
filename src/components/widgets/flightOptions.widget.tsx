@@ -553,13 +553,28 @@ const ResponsiveCarousel = ({
 
   const shouldShowNavigation = flights.length > Math.floor(cardsPerView);
 
-  // If no flights, show empty state
+  // If no flights, show empty state with horizontal scroll on mobile
   if (flights.length === 0) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {[...Array(3)].map((_, index) => (
-          <EmptyFlightCard key={index} isLoading={false} />
-        ))}
+      <div className="relative w-full overflow-hidden">
+        <div
+          className="flex overflow-x-auto scrollbar-hide gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-4"
+          style={{
+            scrollSnapType: 'x mandatory',
+          }}
+        >
+          {[...Array(3)].map((_, index) => (
+            <div
+              key={index}
+              className="flex-shrink-0 w-[280px] sm:w-auto"
+              style={{
+                scrollSnapAlign: 'start',
+              }}
+            >
+              <EmptyFlightCard isLoading={false} />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -742,6 +757,23 @@ const DirectFlightDisplay = ({
     });
   }
 
+  // Use ResponsiveCarousel for mobile horizontal scrolling
+  const flightsToShow = displaySlots
+    .filter(slot => slot.type === 'flight')
+    .map(slot => (slot as { type: 'flight'; flight: FlightOption; key: string }).flight);
+
+  // If we have flights, use the carousel, otherwise show the grid for empty states
+  if (flightsToShow.length > 0) {
+    return (
+      <ResponsiveCarousel
+        flights={flightsToShow}
+        onSelect={onSelect}
+        isLoading={isLoading}
+      />
+    );
+  }
+
+  // Fallback to grid for empty states
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {displaySlots.map((slot) => (
@@ -756,6 +788,215 @@ const DirectFlightDisplay = ({
           <EmptyFlightCard key={slot.key} isLoading={false} />
         )
       ))}
+    </div>
+  );
+};
+
+// Flight List Item Component for Bottom Sheet
+const FlightListItem = ({
+  flight,
+  onSelect,
+  isLoading,
+}: {
+  flight: FlightOption;
+  onSelect: (flightId: string) => void;
+  isLoading?: boolean;
+}) => {
+  const formatTime = (isoString: string) => {
+    return new Date(isoString).toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+  };
+
+  const formatDuration = (duration: string) => {
+    const match = duration.match(/PT(\d+)H(\d+)?M?/);
+    if (match) {
+      const hours = match[1];
+      const minutes = match[2] || "0";
+      return `${hours}h ${minutes}m`;
+    }
+    return duration;
+  };
+
+  const getAirlineInfo = (flight: FlightOption) => {
+    if (flight.segments && flight.segments.length > 0) {
+      const airline = flight.segments[0].airlineName || flight.segments[0].airlineIata || "Unknown";
+
+      // If multiple flights, show individual flight numbers
+      if (flight.segments.length > 1) {
+        const flightNumbers = flight.segments.map(s => s.flightNumber).join(", ");
+        return {
+          airline,
+          flightNumber: flightNumbers,
+          isMultiFlight: true
+        };
+      } else {
+        return {
+          airline,
+          flightNumber: flight.segments[0].flightNumber,
+          isMultiFlight: false
+        };
+      }
+    }
+    return { airline: "Unknown", flightNumber: "Unknown", isMultiFlight: false };
+  };
+
+  const departureInfo = flight.departure;
+  const arrivalInfo = flight.arrival;
+  const duration = flight.duration ? formatDuration(flight.duration) : "Unknown";
+  const price = flight.totalAmount || 0;
+  const currency = flight.currency || "USD";
+  const currencySymbol = getCurrencySymbol(currency);
+  const { airline, flightNumber, isMultiFlight } = getAirlineInfo(flight);
+
+  return (
+    <div
+      className="border-b border-gray-200 bg-white py-3 px-3 sm:px-4 hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
+      onClick={() => onSelect(flight.flightId)}
+    >
+      {/* Mobile Layout */}
+      <div className="block sm:hidden">
+        {/* Main Flight Row */}
+        <div className="flex items-center justify-between">
+          {/* Left: Airline Info */}
+          <div className="flex items-center gap-3">
+            {/* Airline Icon */}
+            <div className="flex-shrink-0">
+              <div className="w-6 h-6 bg-orange-500 rounded flex items-center justify-center">
+                <span className="text-white font-bold text-xs">
+                  {airline.charAt(0)}
+                </span>
+              </div>
+            </div>
+
+            {/* Airline Details */}
+            <div className="min-w-0">
+              <div className="text-xs font-medium text-gray-900 truncate">
+                {airline.length > 12 ? airline.substring(0, 12) + '...' : airline}
+              </div>
+              <div className="text-xs text-gray-500 truncate">
+                {isMultiFlight ? (
+                  <div className="space-y-0.5">
+                    {flight.segments.map((segment, index) => (
+                      <div key={segment.id} className="text-xs">
+                        {segment.flightNumber}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  flightNumber
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Center: Times and Duration */}
+          <div className="flex items-center gap-4 flex-1 justify-center">
+            {/* Departure */}
+            <div className="text-center">
+              <div className="text-sm text-gray-900" style={{ fontSize: '14px' }}>
+                {formatTime(departureInfo.date)}
+              </div>
+            </div>
+
+            {/* Duration & Stops */}
+            <div className="text-center min-w-0">
+              <div className="text-xs text-gray-700" style={{ fontSize: '12px' }}>
+                {duration}
+              </div>
+              <div className="text-xs text-gray-500 whitespace-nowrap" style={{ fontSize: '10px' }}>
+                {flight.segments.length === 1
+                  ? "Non-stop"
+                  : `${flight.segments.length - 1} stop${flight.segments.length - 1 > 1 ? "s" : ""}`}
+              </div>
+            </div>
+
+            {/* Arrival */}
+            <div className="text-center">
+              <div className="text-sm text-gray-900" style={{ fontSize: '14px' }}>
+                {formatTime(arrivalInfo.date)}
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Price */}
+          <div className="text-right flex-shrink-0">
+            <div className="text-base font-bold text-gray-900">
+              {currencySymbol}{price.toLocaleString()}
+            </div>
+          </div>
+        </div>
+
+
+      </div>
+
+      {/* Desktop Layout */}
+      <div className="hidden sm:flex items-center justify-between">
+        {/* Left: Airline Info */}
+        <div className="flex flex-col min-w-0" style={{ width: '180px' }}>
+          <div className="flex items-center gap-2">
+            <Plane className="h-4 w-4 text-orange-500 flex-shrink-0" />
+            <span className="font-medium text-gray-900 text-sm truncate">{airline}</span>
+          </div>
+          <div className="text-xs text-gray-500 truncate">
+            {isMultiFlight ? (
+              <div className="space-y-0.5">
+                {flight.segments.map((segment, index) => (
+                  <div key={segment.id} className="text-xs">
+                    {segment.flightNumber}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              flightNumber
+            )}
+          </div>
+        </div>
+
+        {/* Center-Left: Departure Time */}
+        <div className="text-center" style={{ width: '80px' }}>
+          <div className="text-lg font-bold text-gray-900">
+            {formatTime(departureInfo.date)}
+          </div>
+          <div className="text-xs text-gray-500">{departureInfo.airportIata}</div>
+        </div>
+
+        {/* Center: Duration & Stops */}
+        <div className="text-center flex-1 max-w-[120px]">
+          <div className="text-sm font-medium text-gray-700">
+            {duration}
+          </div>
+          <div className="relative my-1">
+            <div className="border-t border-gray-300 w-full"></div>
+            <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-300"></div>
+          </div>
+          <div className="text-xs text-gray-500">
+            {flight.segments.length === 1
+              ? "Non-stop"
+              : `${flight.segments.length - 1} stop${flight.segments.length - 1 > 1 ? "s" : ""}`}
+          </div>
+        </div>
+
+        {/* Center-Right: Arrival Time */}
+        <div className="text-center" style={{ width: '80px' }}>
+          <div className="text-lg font-bold text-gray-900">
+            {formatTime(arrivalInfo.date)}
+          </div>
+          <div className="text-xs text-gray-500">{arrivalInfo.airportIata}</div>
+        </div>
+
+        {/* Right: Price */}
+        <div className="text-right" style={{ width: '100px' }}>
+          <div className="text-lg font-bold text-gray-900">
+            {currencySymbol}{price.toLocaleString()}
+          </div>
+          {flight.offerRules?.isRefundable && (
+            <div className="text-xs text-green-600">Free Cancellation</div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
@@ -866,10 +1107,25 @@ const FlightTabs = ({
                 isLoading={isLoading}
               />
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[...Array(3)].map((_, index) => (
-                  <EmptyFlightCard key={index} isLoading={false} />
-                ))}
+              <div className="relative w-full overflow-hidden">
+                <div
+                  className="flex overflow-x-auto scrollbar-hide gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-4"
+                  style={{
+                    scrollSnapType: 'x mandatory',
+                  }}
+                >
+                  {[...Array(3)].map((_, index) => (
+                    <div
+                      key={index}
+                      className="flex-shrink-0 w-[280px] sm:w-auto"
+                      style={{
+                        scrollSnapAlign: 'start',
+                      }}
+                    >
+                      <EmptyFlightCard isLoading={false} />
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </>
@@ -887,6 +1143,7 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
   const [selectedFlight, setSelectedFlight] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showAllFlights, setShowAllFlights] = useState(false);
+  const [bottomSheetFilter, setBottomSheetFilter] = useState<'cheapest' | 'fastest' | 'recommended'>('cheapest');
 
   const allFlightTuples = args.flightOffers || [];
 
@@ -916,6 +1173,37 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
   const handleShowAllFlights = () => {
     setShowAllFlights(true);
   };
+
+  // Sort flights based on the selected filter
+  const getSortedFlights = (flights: FlightOption[], sortBy: 'cheapest' | 'fastest' | 'recommended') => {
+    const flightsCopy = [...flights];
+
+    switch (sortBy) {
+      case 'cheapest':
+        return flightsCopy.sort((a, b) => (a.totalAmount || 0) - (b.totalAmount || 0));
+      case 'fastest':
+        // Sort by duration (convert ISO duration to minutes for comparison)
+        return flightsCopy.sort((a, b) => {
+          const getDurationMinutes = (duration: string) => {
+            const match = duration.match(/PT(\d+)H(\d+)?M?/);
+            if (match) {
+              const hours = parseInt(match[1]) || 0;
+              const minutes = parseInt(match[2]) || 0;
+              return hours * 60 + minutes;
+            }
+            return 0;
+          };
+          return getDurationMinutes(a.duration || '') - getDurationMinutes(b.duration || '');
+        });
+      case 'recommended':
+        // Sort by ranking score (higher is better)
+        return flightsCopy.sort((a, b) => (b.rankingScore || 0) - (a.rankingScore || 0));
+      default:
+        return flightsCopy;
+    }
+  };
+
+  const sortedFlights = getSortedFlights(allFlightTuples, bottomSheetFilter);
 
   // Check if we have any flights with the mandatory tags
   const hasRecommended = allFlightTuples.some((flight: any) => flight.tags?.includes('recommended'));
@@ -951,10 +1239,25 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
             />
           ) : (
             // Show loading state when no flights are available
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[...Array(3)].map((_, index) => (
-                <EmptyFlightCard key={index} isLoading={false} />
-              ))}
+            <div className="relative w-full overflow-hidden">
+              <div
+                className="flex overflow-x-auto scrollbar-hide gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-4"
+                style={{
+                  scrollSnapType: 'x mandatory',
+                }}
+              >
+                {[...Array(3)].map((_, index) => (
+                  <div
+                    key={index}
+                    className="flex-shrink-0 w-[280px] sm:w-auto"
+                    style={{
+                      scrollSnapAlign: 'start',
+                    }}
+                  >
+                    <EmptyFlightCard isLoading={false} />
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -991,16 +1294,47 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
           side="bottom"
           className="h-[90vh] sm:h-[85vh] flex flex-col overflow-hidden"
         >
-          <SheetHeader className="flex-shrink-0 pb-4">
+          <SheetHeader className="flex-shrink-0 pb-4 border-b border-gray-200">
             <SheetTitle className="text-xl font-semibold">
               All Available Flights ({allFlightTuples.length} flights)
             </SheetTitle>
           </SheetHeader>
 
+          {/* Filter Tabs */}
+          <div className="flex-shrink-0 border-b border-gray-200">
+            <div className="flex">
+              {[
+                { id: 'cheapest' as const, label: 'Cheapest', icon: DollarSign },
+                { id: 'fastest' as const, label: 'Fastest', icon: Zap },
+                { id: 'recommended' as const, label: 'Recommended', icon: Star },
+              ].map((tab) => {
+                const Icon = tab.icon;
+                const isActive = bottomSheetFilter === tab.id;
+
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setBottomSheetFilter(tab.id)}
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium border-b-2 transition-colors duration-200",
+                      isActive
+                        ? "text-blue-600 border-blue-600 bg-blue-50"
+                        : "text-gray-500 border-transparent hover:text-gray-700 hover:bg-gray-50"
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Flight List */}
           <div className="flex-1 overflow-y-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-6 px-4 sm:px-0">
-              {allFlightTuples.map((flight: any, index: number) => (
-                <FlightCard
+            <div className="divide-y divide-gray-200">
+              {sortedFlights.map((flight: any, index: number) => (
+                <FlightListItem
                   key={flight.flightId || `flight-${index}`}
                   flight={flight}
                   onSelect={handleSelectFlight}

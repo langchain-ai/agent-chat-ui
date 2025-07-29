@@ -2,16 +2,38 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { componentMap, ComponentType } from "@/components/widgets";
+import { DebugPanel } from "@/components/debug/DebugPanel";
+
+// Debug utility function
+const debugLog = (message: string, data?: any) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.group(`🐛 GenericInterrupt Debug: ${message}`);
+    if (data !== undefined) {
+      console.log(data);
+    }
+    console.trace();
+    console.groupEnd();
+  }
+};
 
 interface DynamicRendererProps {
   interruptType: string;
   interrupt: Record<string, any>;
 }
 
+console.log("DynamicRendererProps interface defined - checking props:", { interruptType: "will be logged in component", interrupt: "will be logged in component" });
+
 const DynamicRenderer: React.FC<DynamicRendererProps> = ({
   interruptType,
   interrupt,
 }) => {
+  console.log("🔄 STREAMING DATA - DynamicRenderer received:", {
+    interruptType,
+    interrupt,
+    timestamp: new Date().toISOString()
+  });
+  debugLog("DynamicRenderer called", { interruptType, interrupt });
+
   // Check if the type exists in componentMap
   if (
     interruptType === "widget" &&
@@ -19,10 +41,15 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = ({
   ) {
     const Component =
       componentMap[interrupt.value.widget.type as ComponentType];
+    debugLog("Widget component found", {
+      componentType: interrupt.value.widget.type,
+      args: interrupt.value.widget.args
+    });
     // Pass the args object directly to the component
     return <Component {...interrupt.value.widget.args} />;
   }
 
+  debugLog("No widget found", { interruptType, interrupt });
   console.log(
     `No widget found for interruptType: ${interruptType} and interrupt: ${JSON.stringify(interrupt)}`,
   );
@@ -38,6 +65,13 @@ export function GenericInterruptView({
 }: {
   interrupt: Record<string, any> | Record<string, any>[];
 }) {
+  console.log("🔄 STREAMING DATA - GenericInterruptView received:", {
+    interrupt,
+    isArray: Array.isArray(interrupt),
+    timestamp: new Date().toISOString()
+  });
+  debugLog("GenericInterruptView rendered", { interrupt });
+
   const [isExpanded, setIsExpanded] = useState(false);
 
   const contentStr = JSON.stringify(interrupt, null, 2);
@@ -47,6 +81,13 @@ export function GenericInterruptView({
   // Extract interrupt object and type
   const interruptObj = Array.isArray(interrupt) ? interrupt[0] : interrupt;
   const interruptType = interruptObj.type || interruptObj.value?.type;
+
+  debugLog("Interrupt processing", {
+    interruptObj,
+    interruptType,
+    shouldTruncate,
+    contentLines: contentLines.length
+  });
 
   // Try to render dynamic widget first
   const dynamicWidget = interruptType ? (
@@ -99,12 +140,17 @@ export function GenericInterruptView({
   const displayEntries = processEntries();
 
   return (
-    <div className="overflow-hidden rounded-lg border border-gray-200">
-      <div className="border-b border-gray-200 bg-gray-50 px-4 py-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-medium text-gray-900">Human Interrupt</h3>
+    <>
+      <DebugPanel
+        data={{ interrupt, interruptType, shouldTruncate, isExpanded }}
+        label="Generic Interrupt Debug"
+      />
+      <div className="overflow-hidden rounded-lg border border-gray-200">
+        <div className="border-b border-gray-200 bg-gray-50 px-4 py-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="font-medium text-gray-900">Human Interrupt</h3>
+          </div>
         </div>
-      </div>
       <motion.div
         className="min-w-full bg-gray-100"
         initial={false}
@@ -169,5 +215,6 @@ export function GenericInterruptView({
         )}
       </motion.div>
     </div>
+    </>
   );
 }

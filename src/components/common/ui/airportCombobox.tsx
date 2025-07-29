@@ -1,16 +1,23 @@
 "use client"
 
 import * as React from "react"
-// Removed icon imports
+import { Check, ChevronsUpDown } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/common/ui/button"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/common/ui/popover"
-import { Input } from "@/components/common/ui/input"
 import { searchAirports } from "@/services/airportService"
 
 interface Airport {
@@ -43,7 +50,7 @@ const POPULAR_AIRPORTS: Airport[] = [
   { code: "LAX", name: "Los Angeles International Airport", city: "Los Angeles", country: "USA" },
 ]
 
-interface AirportSearchProps {
+interface AirportComboboxProps {
   value?: string
   onValueChange?: (value: string) => void
   placeholder?: string
@@ -51,17 +58,32 @@ interface AirportSearchProps {
   className?: string
 }
 
-export function AirportSearch({
+export function AirportCombobox({
   value,
   onValueChange,
-  placeholder = "City or Airport",
+  placeholder = "Select airport...",
   excludeAirport,
   className
-}: AirportSearchProps) {
+}: AirportComboboxProps) {
   const [open, setOpen] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState("")
   const [apiResults, setApiResults] = React.useState<ApiAirport[]>([])
   const [isLoading, setIsLoading] = React.useState(false)
+  const [triggerWidth, setTriggerWidth] = React.useState<number>(0)
+  const triggerRef = React.useRef<HTMLButtonElement>(null)
+
+  // Update trigger width when component mounts or window resizes
+  React.useEffect(() => {
+    const updateWidth = () => {
+      if (triggerRef.current) {
+        setTriggerWidth(triggerRef.current.offsetWidth)
+      }
+    }
+
+    updateWidth()
+    window.addEventListener('resize', updateWidth)
+    return () => window.removeEventListener('resize', updateWidth)
+  }, [])
 
   // Debounced API call when user types
   React.useEffect(() => {
@@ -98,8 +120,8 @@ export function AirportSearch({
       }
 
       return airports.map(airport => ({
-        code: airport.code,
-        displayName: `${airport.code} - ${airport.city}`,
+        value: airport.code,
+        label: `${airport.code} - ${airport.city}`,
         description: airport.name,
         isPopular: true
       }))
@@ -115,8 +137,8 @@ export function AirportSearch({
         const airportInfo = parts[1] || ''
 
         return {
-          code: result.k,
-          displayName: `${result.k} - ${cityCountry}`,
+          value: result.k,
+          label: `${result.k} - ${cityCountry}`,
           description: airportInfo || result.v,
           isPopular: false
         }
@@ -129,11 +151,7 @@ export function AirportSearch({
     // First check popular airports
     const popularAirport = POPULAR_AIRPORTS.find(airport => airport.code === value)
     if (popularAirport) {
-      return {
-        code: popularAirport.code,
-        displayName: `${popularAirport.code} - ${popularAirport.city}`,
-        description: popularAirport.name
-      }
+      return `${popularAirport.code} - ${popularAirport.city}`
     }
 
     // Then check API results
@@ -141,105 +159,100 @@ export function AirportSearch({
     if (apiAirport) {
       const parts = apiAirport.v.split(' - ')
       const cityCountry = parts[0] || apiAirport.v
-      const airportInfo = parts[1] || ''
-
-      return {
-        code: apiAirport.k,
-        displayName: `${apiAirport.k} - ${cityCountry}`,
-        description: airportInfo || apiAirport.v
-      }
+      return `${apiAirport.k} - ${cityCountry}`
     }
 
     // Fallback - just show the code
-    return {
-      code: value,
-      displayName: value,
-      description: value
-    }
+    return value
   }, [value, apiResults])
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          ref={triggerRef}
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn(
-            "w-full justify-between focus:ring-black focus:border-black",
-            className
-          )}
+          className={cn("w-full justify-between focus:ring-black focus:border-black", className)}
         >
-          <div className="flex items-center min-w-0 flex-1">
-            {selectedAirport ? (
-              <span className="truncate">{selectedAirport.displayName}</span>
-            ) : (
-              <span className="text-muted-foreground truncate">{placeholder}</span>
-            )}
-          </div>
-          <span className="ml-2 text-gray-400">▼</span>
+          <span className="truncate">
+            {selectedAirport || placeholder}
+          </span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[300px] sm:w-[350px] md:w-[400px] p-0">
-        <div className="p-2">
-          <Input
-            placeholder="Search airports..."
+      <PopoverContent
+        className="max-h-[300px] p-0"
+        style={{ width: triggerWidth > 0 ? `${triggerWidth}px` : 'auto' }}
+      >
+        <Command>
+          <CommandInput 
+            placeholder="Search airports..." 
+            className="h-9"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="mb-2"
+            onValueChange={setSearchQuery}
           />
-        </div>
-        <div className="max-h-60 overflow-auto">
-          {isLoading ? (
-            <div className="p-4 text-sm text-muted-foreground text-center">
-              Searching airports...
-            </div>
-          ) : displayAirports.length === 0 ? (
-            <div className="p-4 text-sm text-muted-foreground text-center">
-              {searchQuery ? "No airports found." : "No airports available."}
-            </div>
-          ) : (
-            <div className="p-1">
-              {!searchQuery && (
-                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                  Popular Airports
-                </div>
-              )}
-              {searchQuery && displayAirports.length > 0 && (
-                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                  Search Results
-                </div>
-              )}
-              {displayAirports.map((airport) => (
-                <div
-                  key={airport.code}
-                  className={cn(
-                    "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
-                    value === airport.code && "bg-accent text-accent-foreground"
-                  )}
-                  onClick={() => {
-                    onValueChange?.(airport.code)
-                    setOpen(false)
-                    setSearchQuery("")
-                    setApiResults([])
-                  }}
-                >
-                  <div className="flex flex-col">
-                    <div className="font-medium">
-                      {airport.displayName}
+          <CommandList>
+            <CommandEmpty>
+              {isLoading ? "Searching airports..." : "No airports found."}
+            </CommandEmpty>
+            {!searchQuery && displayAirports.length > 0 && (
+              <CommandGroup heading="Popular Airports">
+                {displayAirports.map((airport) => (
+                  <CommandItem
+                    key={airport.value}
+                    value={airport.value}
+                    onSelect={(currentValue) => {
+                      onValueChange?.(currentValue === value ? "" : currentValue)
+                      setOpen(false)
+                      setSearchQuery("")
+                      setApiResults([])
+                    }}
+                  >
+                    <div className="flex flex-col">
+                      <div className="font-medium">{airport.label}</div>
+                      <div className="text-xs text-muted-foreground">{airport.description}</div>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      {airport.description}
+                    <Check
+                      className={cn(
+                        "ml-auto h-4 w-4",
+                        value === airport.value ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+            {searchQuery && displayAirports.length > 0 && (
+              <CommandGroup heading="Search Results">
+                {displayAirports.map((airport) => (
+                  <CommandItem
+                    key={airport.value}
+                    value={airport.value}
+                    onSelect={(currentValue) => {
+                      onValueChange?.(currentValue === value ? "" : currentValue)
+                      setOpen(false)
+                      setSearchQuery("")
+                      setApiResults([])
+                    }}
+                  >
+                    <div className="flex flex-col">
+                      <div className="font-medium">{airport.label}</div>
+                      <div className="text-xs text-muted-foreground">{airport.description}</div>
                     </div>
-                  </div>
-                  {value === airport.code && (
-                    <span className="ml-auto text-green-600">✓</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+                    <Check
+                      className={cn(
+                        "ml-auto h-4 w-4",
+                        value === airport.value ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+          </CommandList>
+        </Command>
       </PopoverContent>
     </Popover>
   )

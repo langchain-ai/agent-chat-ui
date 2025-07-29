@@ -2,9 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/common/ui/button";
-import { Input } from "@/components/common/ui/input";
-import { Calendar as CalendarIcon, ArrowUpDown, Plus, Minus, ChevronDown } from "lucide-react";
-import { AirportSearch } from "@/components/common/ui/airportSearch";
+import { Plus, Minus, CalendarIcon } from "lucide-react";
+import { AirportCombobox } from "@/components/common/ui/airportCombobox";
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
 import {submitInterruptResponse} from "./util";
@@ -13,9 +12,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/common/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { getUserLocation, LocationResult } from "@/lib/utils";
 
-// Simple DateInput component
+// DateInput component using shadcn Calendar
 interface DateInputProps {
   date?: Date;
   onDateChange?: (date: Date | undefined) => void;
@@ -29,36 +29,50 @@ const DateInput = ({
   placeholder,
   className,
 }: DateInputProps) => {
-  const formatDateForInput = (date: Date | undefined) => {
-    if (!date) return "";
-    return date.toISOString().split("T")[0];
+  const [isOpen, setIsOpen] = useState(false);
+
+  const formatDateDisplay = (date: Date | undefined) => {
+    if (!date) return placeholder || "Select date";
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    };
+    return date.toLocaleDateString('en-US', options);
   };
 
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    if (value) {
-      onDateChange?.(new Date(value));
-    } else {
-      onDateChange?.(undefined);
-    }
-  };
-
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   return (
-    <div className="relative">
-      <CalendarIcon className="pointer-events-none absolute top-1/2 left-3 z-10 h-4 w-4 -translate-y-1/2 transform text-gray-500" />
-      <Input
-        type="date"
-        value={formatDateForInput(date)}
-        onChange={handleDateChange}
-        min={today}
-        className={cn(
-          "w-full cursor-pointer pl-10 focus:border-black focus:ring-black",
-          className,
-        )}
-      />
-    </div>
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn(
+            "w-full justify-start text-left font-normal focus:border-black focus:ring-black",
+            !date && "text-muted-foreground",
+            className
+          )}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {formatDateDisplay(date)}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={(selectedDate: Date | undefined) => {
+            onDateChange?.(selectedDate);
+            setIsOpen(false);
+          }}
+          disabled={(date: Date) => date < today}
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
   );
 };
 
@@ -100,8 +114,6 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
   );
   const [isLoading, setIsLoading] = useState(false);
   const [showTravellerDropdown, setShowTravellerDropdown] = useState(false);
-  const [isReadOnly, setIsReadOnly] = useState(false);
-  const [submittedData, setSubmittedData] = useState<any>(null);
 
   // Location-related state
   const [locationResult, setLocationResult] = useState<LocationResult | null>(null);
@@ -137,7 +149,7 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
     };
 
     requestLocation();
-  }, []); // Empty dependency array means this runs once when component mounts
+  }, [setLocationResult, setIsGettingLocation]); // Dependencies to avoid warnings
 
   // Wrapper functions for date state setters to match DateInput component interface
   const handleDepartureDateChange = (date: Date | undefined) => {
@@ -148,11 +160,7 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
     setReturnDate(date);
   };
 
-  const handleSwapAirports = () => {
-    const temp = fromAirport;
-    setFromAirport(toAirport);
-    setToAirport(temp);
-  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -202,50 +210,18 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
     return `${parts.join(', ')}, ${flightClass}`;
   };
 
-  const formatDateDisplay = (date: Date | undefined) => {
-    if (!date) return '';
-    const options: Intl.DateTimeFormatOptions = {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short'
-    };
-    return date.toLocaleDateString('en-US', options);
-  };
 
-  const getSelectedAirportInfo = (airportCode: string) => {
-    // This should match the POPULAR_AIRPORTS from AirportSearch
-    const airports = [
-      { code: "BLR", city: "Bangalore" },
-      { code: "DEL", city: "New Delhi" },
-      { code: "BOM", city: "Mumbai" },
-      { code: "MAA", city: "Chennai" },
-      { code: "CCU", city: "Kolkata" },
-      { code: "HYD", city: "Hyderabad" },
-      { code: "COK", city: "Kochi" },
-      { code: "AMD", city: "Ahmedabad" },
-      { code: "PNQ", city: "Pune" },
-      { code: "GOI", city: "Goa" },
-      { code: "DXB", city: "Dubai" },
-      { code: "SIN", city: "Singapore" },
-      { code: "LHR", city: "London" },
-      { code: "JFK", city: "New York" },
-      { code: "LAX", city: "Los Angeles" },
-    ];
-
-    return airports.find(airport => airport.code === airportCode);
-  };
 
   return (
     <>
       <div
-        className="mx-auto mt-2 w-full max-w-xl rounded-2xl border border-gray-200 bg-white p-3 font-sans shadow-lg sm:mt-10 sm:p-6"
+        className="mx-auto mt-2 w-full max-w-xs md:max-w-sm lg:max-w-md xl:max-w-lg rounded-2xl border border-gray-200 bg-white p-3 font-sans shadow-lg sm:mt-10 sm:p-6"
         style={{
-          fontFamily: "Uber Move, Arial, Helvetica, sans-serif",
-          maxWidth: "min(100vw - 1rem, 36rem)"
+          fontFamily: "Uber Move, Arial, Helvetica, sans-serif"
         }}
       >
         <form
-          className="w-full space-y-4"
+          className="w-full space-y-4 sm:space-y-4"
           onSubmit={handleSubmit}
         >
           {/* Trip Type - Horizontal tabs */}
@@ -276,86 +252,52 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
             </button>
           </div>
 
-          {/* Flight Details - From/To with city names and IATA codes */}
-          <div className="flex items-center gap-2 sm:gap-4">
-            <div className="flex-1 min-w-0">
-              <div className="text-sm text-gray-600 mb-1">From - {getSelectedAirportInfo(fromAirport)?.code || 'DEL'}</div>
-              <div className="font-bold text-base sm:text-lg text-black truncate">
-                {getSelectedAirportInfo(fromAirport)?.city || 'New Delhi'}
-              </div>
-              <div className="mt-2">
-                <AirportSearch
-                  value={fromAirport}
-                  onValueChange={setFromAirport}
-                  placeholder="City or Airport"
-                  excludeAirport={toAirport}
-                />
-              </div>
-            </div>
-
-            {/* Swap Button - Centered */}
-            <div className="flex justify-center flex-shrink-0">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-10 w-10 rounded-full border-gray-300 bg-white p-0 hover:bg-gray-50 hover:border-gray-400"
-                onClick={handleSwapAirports}
-              >
-                <ArrowUpDown className="h-4 w-4 rotate-90 text-gray-600" />
-              </Button>
-            </div>
-
-            <div className="flex-1 min-w-0">
-              <div className="text-sm text-gray-600 mb-1 text-right">To - {getSelectedAirportInfo(toAirport)?.code || 'BOM'}</div>
-              <div className="font-bold text-base sm:text-lg text-black text-right truncate">
-                {getSelectedAirportInfo(toAirport)?.city || 'Mumbai'}
-              </div>
-              <div className="mt-2">
-                <AirportSearch
-                  value={toAirport}
-                  onValueChange={setToAirport}
-                  placeholder="City or Airport"
-                  excludeAirport={fromAirport}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Departure Date */}
-          <div>
-            <div className="text-sm text-gray-600 mb-1">Departure</div>
-            <div className="font-bold text-lg text-black mb-2">
-              {formatDateDisplay(departureDate) || 'Tue, 15 Jul'}
-            </div>
-            <DateInput
-              date={departureDate}
-              onDateChange={handleDepartureDateChange}
-              placeholder="Select departure date"
-            />
-          </div>
-
-          {/* Return Date - Only show for round trip */}
-          {tripType === "round" && (
-            <div>
-              <div className="text-sm text-gray-600 mb-1">Return</div>
-              <div className="font-bold text-lg text-black mb-2">
-                {returnDate ? formatDateDisplay(returnDate) : ''}
-              </div>
-              <DateInput
-                date={returnDate}
-                onDateChange={handleReturnDateChange}
-                placeholder="Select return date"
+          {/* Flight Details - From/To */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
+            <div className="flex-1">
+              <AirportCombobox
+                value={fromAirport}
+                onValueChange={setFromAirport}
+                placeholder="From - City or Airport"
+                excludeAirport={toAirport}
               />
             </div>
-          )}
+
+            <div className="flex-1">
+              <AirportCombobox
+                value={toAirport}
+                onValueChange={setToAirport}
+                placeholder="To - City or Airport"
+                excludeAirport={fromAirport}
+              />
+            </div>
+          </div>
+
+          {/* Date Inputs */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
+            {/* Departure Date */}
+            <div className="flex-1">
+              <DateInput
+                date={departureDate}
+                onDateChange={handleDepartureDateChange}
+                placeholder="Select departure date"
+              />
+            </div>
+
+            {/* Return Date - Only show for round trip */}
+            {tripType === "round" && (
+              <div className="flex-1">
+                <DateInput
+                  date={returnDate}
+                  onDateChange={handleReturnDateChange}
+                  placeholder="Select return date"
+                />
+              </div>
+            )}
+          </div>
 
           {/* Travellers & Class - Dropdown */}
           <div>
-            <div className="text-sm text-gray-600 mb-1">Travellers & Class</div>
-            <div className="font-bold text-lg text-black mb-2">
-              {formatTravellerText()}
-            </div>
             <Popover open={showTravellerDropdown} onOpenChange={setShowTravellerDropdown}>
               <PopoverTrigger asChild>
                 <Button
@@ -365,10 +307,10 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
                   className="w-full justify-between focus:ring-black focus:border-black"
                 >
                   <span>{formatTravellerText()}</span>
-                  <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  <span className="ml-2 text-gray-400">▼</span>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[calc(100vw-2rem)] max-w-[400px] p-0">
+              <PopoverContent className="w-[320px] sm:w-[380px] md:w-[420px] p-0">
                 <div className="p-4 space-y-6">
                   {/* Select travellers */}
                   <div>
