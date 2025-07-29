@@ -27,7 +27,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface FlightOption {
-  flightId: string;
+  flightOfferId: string;
   totalEmission: number;
   totalEmissionUnit: string;
   currency: string;
@@ -222,7 +222,7 @@ const FlightCard = ({
   isLoading,
 }: {
   flight: FlightOption;
-  onSelect: (flightId: string) => void;
+  onSelect: (flightOfferId: string) => void;
   isLoading?: boolean;
 }) => {
   const badgeConfigs = flight.tags && flight.tags.length > 0 ? getBadgeConfigs(flight.tags) : [];
@@ -406,7 +406,7 @@ const FlightCard = ({
 
       {/* Select Button with Price */}
       <Button
-        onClick={() => onSelect(flight.flightId)}
+        onClick={() => onSelect(flight.flightOfferId)}
         disabled={isLoading}
         className="w-full bg-black py-3 text-white transition-colors duration-200 hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-50"
       >
@@ -482,7 +482,7 @@ const ResponsiveCarousel = ({
   isLoading,
 }: {
   flights: FlightOption[];
-  onSelect: (flightId: string) => void;
+  onSelect: (flightOfferId: string) => void;
   isLoading: boolean;
 }) => {
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -633,7 +633,7 @@ const ResponsiveCarousel = ({
 
           return (
             <div
-              key={flight.flightId || `flight-${index}`}
+              key={flight.flightOfferId || `flight-${index}`}
               className="flex-shrink-0"
               style={{
                 width: `${Math.max(cardWidth, 20)}%`, // Ensure minimum width and use percentage
@@ -662,7 +662,7 @@ const DirectFlightDisplay = ({
   isLoading,
 }: {
   flights: FlightOption[];
-  onSelect: (flightId: string) => void;
+  onSelect: (flightOfferId: string) => void;
   isLoading: boolean;
 }) => {
   // Get one flight for each mandatory tag
@@ -676,21 +676,21 @@ const DirectFlightDisplay = ({
   const addedFlightIds = new Set();
 
   // Priority 1: Recommended flight
-  if (recommendedFlight && !addedFlightIds.has(recommendedFlight.flightId)) {
+  if (recommendedFlight && !addedFlightIds.has(recommendedFlight.flightOfferId)) {
     taggedFlights.push(recommendedFlight);
-    addedFlightIds.add(recommendedFlight.flightId);
+    addedFlightIds.add(recommendedFlight.flightOfferId);
   }
 
   // Priority 2: Cheapest flight (only if not already added)
-  if (cheapestFlight && !addedFlightIds.has(cheapestFlight.flightId)) {
+  if (cheapestFlight && !addedFlightIds.has(cheapestFlight.flightOfferId)) {
     taggedFlights.push(cheapestFlight);
-    addedFlightIds.add(cheapestFlight.flightId);
+    addedFlightIds.add(cheapestFlight.flightOfferId);
   }
 
   // Priority 3: Fastest flight (only if not already added)
-  if (fastestFlight && !addedFlightIds.has(fastestFlight.flightId)) {
+  if (fastestFlight && !addedFlightIds.has(fastestFlight.flightOfferId)) {
     taggedFlights.push(fastestFlight);
-    addedFlightIds.add(fastestFlight.flightId);
+    addedFlightIds.add(fastestFlight.flightOfferId);
   }
 
   console.log("DirectFlightDisplay - Tagged flights found:", taggedFlights.length);
@@ -710,7 +710,7 @@ const DirectFlightDisplay = ({
     displaySlots.push({
       type: 'flight',
       flight: recommendedFlight,
-      key: `recommended-${recommendedFlight.flightId}`
+      key: `recommended-${recommendedFlight.flightOfferId}`
     });
   } else {
     displaySlots.push({
@@ -720,11 +720,11 @@ const DirectFlightDisplay = ({
   }
 
   // Slot 2: Cheapest (only if different from recommended)
-  if (cheapestFlight && (!recommendedFlight || cheapestFlight.flightId !== recommendedFlight.flightId)) {
+  if (cheapestFlight && (!recommendedFlight || cheapestFlight.flightOfferId !== recommendedFlight.flightOfferId)) {
     displaySlots.push({
       type: 'flight',
       flight: cheapestFlight,
-      key: `cheapest-${cheapestFlight.flightId}`
+      key: `cheapest-${cheapestFlight.flightOfferId}`
     });
   } else if (!cheapestFlight) {
     displaySlots.push({
@@ -735,12 +735,12 @@ const DirectFlightDisplay = ({
 
   // Slot 3: Fastest (only if different from recommended and cheapest)
   if (fastestFlight &&
-      (!recommendedFlight || fastestFlight.flightId !== recommendedFlight.flightId) &&
-      (!cheapestFlight || fastestFlight.flightId !== cheapestFlight.flightId)) {
+      (!recommendedFlight || fastestFlight.flightOfferId !== recommendedFlight.flightOfferId) &&
+      (!cheapestFlight || fastestFlight.flightOfferId !== cheapestFlight.flightOfferId)) {
     displaySlots.push({
       type: 'flight',
       flight: fastestFlight,
-      key: `fastest-${fastestFlight.flightId}`
+      key: `fastest-${fastestFlight.flightOfferId}`
     });
   } else if (!fastestFlight) {
     displaySlots.push({
@@ -799,7 +799,7 @@ const FlightListItem = ({
   isLoading,
 }: {
   flight: FlightOption;
-  onSelect: (flightId: string) => void;
+  onSelect: (flightOfferId: string) => void;
   isLoading?: boolean;
 }) => {
   const formatTime = (isoString: string) => {
@@ -854,7 +854,7 @@ const FlightListItem = ({
   return (
     <div
       className="border-b border-gray-200 bg-white py-3 px-3 sm:px-4 hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
-      onClick={() => onSelect(flight.flightId)}
+      onClick={() => onSelect(flight.flightOfferId)}
     >
       {/* Mobile Layout */}
       <div className="block sm:hidden">
@@ -1008,7 +1008,7 @@ const FlightTabs = ({
   isLoading,
 }: {
   flights: FlightOption[];
-  onSelect: (flightId: string) => void;
+  onSelect: (flightOfferId: string) => void;
   isLoading: boolean;
 }) => {
   const [activeTab, setActiveTab] = useState<'recommended' | 'cheapest' | 'fastest'>('recommended');
@@ -1150,15 +1150,15 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
   // Debug: Log flight tags
   if (allFlightTuples.length > 0) {
     console.log("Sample flight tags:", allFlightTuples[0]?.tags);
-    console.log("All flight tags:", allFlightTuples.map((f: any) => ({ id: f.flightId, tags: f.tags })));
+    console.log("All flight tags:", allFlightTuples.map((f: any) => ({ id: f.flightOfferId, tags: f.tags })));
   }
 
-  const handleSelectFlight = async (flightId: string) => {
-    setSelectedFlight(flightId);
+  const handleSelectFlight = async (flightOfferId: string) => {
+    setSelectedFlight(flightOfferId);
     setIsLoading(true);
 
     const responseData = {
-      selectedFlightId: flightId,
+      selectedFlightId: flightOfferId,
     };
 
     try {
@@ -1280,7 +1280,7 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
           <div className="mt-4 rounded-lg border border-green-200 bg-green-50 p-3">
             <p className="text-sm text-green-800">
               Flight{" "}
-              {allFlightTuples.find((f: any) => f.flightId === selectedFlight)
+              {allFlightTuples.find((f: any) => f.flightOfferId === selectedFlight)
                 ?.segments?.[0]?.flightNumber || "Unknown"}{" "}
               selected!
             </p>
@@ -1335,7 +1335,7 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
             <div className="divide-y divide-gray-200">
               {sortedFlights.map((flight: any, index: number) => (
                 <FlightListItem
-                  key={flight.flightId || `flight-${index}`}
+                  key={flight.flightOfferId || `flight-${index}`}
                   flight={flight}
                   onSelect={handleSelectFlight}
                   isLoading={isLoading}
