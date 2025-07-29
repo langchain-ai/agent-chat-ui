@@ -13,6 +13,7 @@ import {
   ChevronUp,
   ChevronLeft,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
@@ -23,6 +24,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface FlightOption {
   flightId: string;
@@ -186,28 +188,32 @@ const getCurrencySymbol = (currencyCode: string): string => {
   return currencyMap[currencyCode.toUpperCase()] || currencyCode;
 };
 
-const getBadgeConfig = (tags: string[]) => {
+const getBadgeConfigs = (tags: string[]) => {
+  const badges = [];
+
   if (tags.includes("recommended")) {
-    return {
+    badges.push({
       icon: Star,
       text: "Recommended",
       color: "bg-blue-100 text-blue-800 border-blue-200",
-    };
+    });
   }
   if (tags.includes("cheapest")) {
-    return {
+    badges.push({
       icon: DollarSign,
       text: "Cheapest",
       color: "bg-green-100 text-green-800 border-green-200",
-    };
+    });
   }
   if (tags.includes("fastest")) {
-    return {
+    badges.push({
       icon: Zap,
       text: "Fastest",
       color: "bg-orange-100 text-orange-800 border-orange-200",
-    };
+    });
   }
+
+  return badges;
 };
 
 const FlightCard = ({
@@ -219,7 +225,7 @@ const FlightCard = ({
   onSelect: (flightId: string) => void;
   isLoading?: boolean;
 }) => {
-  const badgeConfig = flight.tags && flight.tags.length > 0 ? getBadgeConfig(flight.tags) : null;
+  const badgeConfigs = flight.tags && flight.tags.length > 0 ? getBadgeConfigs(flight.tags) : [];
   const [isWhyChooseExpanded, setIsWhyChooseExpanded] = useState(false);
 
   //Todo: @Khalid, this is very critical and hacky, please verify the actual flight timings with what we are showing.
@@ -281,16 +287,21 @@ const FlightCard = ({
 
   return (
     <div className="w-full rounded-lg border border-gray-200 bg-white p-3 sm:p-4 shadow-sm transition-shadow duration-200 hover:shadow-md overflow-hidden">
-      {/* Badge */}
-      {badgeConfig && (
-        <div
-          className={cn(
-            "mb-3 inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium max-w-full",
-            badgeConfig.color,
-          )}
-        >
-          <badgeConfig.icon className="h-3 w-3 flex-shrink-0" />
-          <span className="truncate">{badgeConfig.text}</span>
+      {/* Badges */}
+      {badgeConfigs.length > 0 && (
+        <div className="mb-3 flex flex-wrap gap-2">
+          {badgeConfigs.map((badgeConfig, index) => (
+            <div
+              key={index}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium",
+                badgeConfig.color,
+              )}
+            >
+              <badgeConfig.icon className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">{badgeConfig.text}</span>
+            </div>
+          ))}
         </div>
       )}
 
@@ -408,6 +419,62 @@ const FlightCard = ({
   );
 };
 
+// Loading/Empty Flight Card Component
+const EmptyFlightCard = ({ isLoading = true }: { isLoading?: boolean }) => {
+  return (
+    <div className="w-full rounded-lg border border-gray-200 bg-white p-3 sm:p-4 shadow-sm overflow-hidden">
+      {isLoading ? (
+        <>
+          {/* Loading Badge */}
+          <div className="mb-3">
+            <Skeleton className="h-6 w-24 rounded-full" />
+          </div>
+
+          {/* Loading Airline and Flight Number */}
+          <div className="mb-3 flex items-center gap-2">
+            <Skeleton className="h-4 w-4 rounded" />
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-16" />
+          </div>
+
+          {/* Loading Flight Route */}
+          <div className="mb-3 flex items-center justify-between">
+            <div className="text-center flex-1">
+              <Skeleton className="h-6 w-16 mx-auto mb-1" />
+              <Skeleton className="h-3 w-12 mx-auto mb-1" />
+              <Skeleton className="h-3 w-8 mx-auto" />
+            </div>
+            <div className="mx-2 flex-1 text-center">
+              <Skeleton className="h-3 w-12 mx-auto mb-1" />
+              <Skeleton className="h-px w-full mb-1" />
+              <Skeleton className="h-3 w-16 mx-auto" />
+            </div>
+            <div className="text-center flex-1">
+              <Skeleton className="h-6 w-16 mx-auto mb-1" />
+              <Skeleton className="h-3 w-12 mx-auto mb-1" />
+              <Skeleton className="h-3 w-8 mx-auto" />
+            </div>
+          </div>
+
+          {/* Loading Cancellation Info */}
+          <div className="mb-3">
+            <Skeleton className="h-6 w-32 rounded-full" />
+          </div>
+
+          {/* Loading Button */}
+          <Skeleton className="h-12 w-full rounded" />
+        </>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-400 mb-3" />
+          <p className="text-sm text-gray-500 mb-1">Searching for flights...</p>
+          <p className="text-xs text-gray-400">This may take a few moments</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Responsive Carousel Component
 const ResponsiveCarousel = ({
   flights,
@@ -486,6 +553,17 @@ const ResponsiveCarousel = ({
 
   const shouldShowNavigation = flights.length > Math.floor(cardsPerView);
 
+  // If no flights, show empty state
+  if (flights.length === 0) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[...Array(3)].map((_, index) => (
+          <EmptyFlightCard key={index} isLoading={false} />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full overflow-hidden">
       {/* Navigation Buttons - Only show on larger screens and positioned inside container */}
@@ -562,15 +640,261 @@ const ResponsiveCarousel = ({
   );
 };
 
+// Direct Flight Display Component - Shows only the 3 tagged flights
+const DirectFlightDisplay = ({
+  flights,
+  onSelect,
+  isLoading,
+}: {
+  flights: FlightOption[];
+  onSelect: (flightId: string) => void;
+  isLoading: boolean;
+}) => {
+  // Get one flight for each mandatory tag
+  const recommendedFlight = flights.find(flight => flight.tags?.includes('recommended'));
+  const cheapestFlight = flights.find(flight => flight.tags?.includes('cheapest'));
+  const fastestFlight = flights.find(flight => flight.tags?.includes('fastest'));
+
+  // Create array of unique flights in priority order: recommended > cheapest > fastest
+  // Avoid duplicates if same flight has multiple tags
+  const taggedFlights = [];
+  const addedFlightIds = new Set();
+
+  // Priority 1: Recommended flight
+  if (recommendedFlight && !addedFlightIds.has(recommendedFlight.flightId)) {
+    taggedFlights.push(recommendedFlight);
+    addedFlightIds.add(recommendedFlight.flightId);
+  }
+
+  // Priority 2: Cheapest flight (only if not already added)
+  if (cheapestFlight && !addedFlightIds.has(cheapestFlight.flightId)) {
+    taggedFlights.push(cheapestFlight);
+    addedFlightIds.add(cheapestFlight.flightId);
+  }
+
+  // Priority 3: Fastest flight (only if not already added)
+  if (fastestFlight && !addedFlightIds.has(fastestFlight.flightId)) {
+    taggedFlights.push(fastestFlight);
+    addedFlightIds.add(fastestFlight.flightId);
+  }
+
+  console.log("DirectFlightDisplay - Tagged flights found:", taggedFlights.length);
+  console.log("DirectFlightDisplay - Recommended:", !!recommendedFlight);
+  console.log("DirectFlightDisplay - Cheapest:", !!cheapestFlight);
+  console.log("DirectFlightDisplay - Fastest:", !!fastestFlight);
+
+  // Create display array with exactly 3 slots in order: recommended, cheapest, fastest
+  type DisplaySlot =
+    | { type: 'flight'; flight: FlightOption; key: string }
+    | { type: 'empty'; key: string };
+
+  const displaySlots: DisplaySlot[] = [];
+
+  // Slot 1: Recommended
+  if (recommendedFlight) {
+    displaySlots.push({
+      type: 'flight',
+      flight: recommendedFlight,
+      key: `recommended-${recommendedFlight.flightId}`
+    });
+  } else {
+    displaySlots.push({
+      type: 'empty',
+      key: 'empty-recommended'
+    });
+  }
+
+  // Slot 2: Cheapest (only if different from recommended)
+  if (cheapestFlight && (!recommendedFlight || cheapestFlight.flightId !== recommendedFlight.flightId)) {
+    displaySlots.push({
+      type: 'flight',
+      flight: cheapestFlight,
+      key: `cheapest-${cheapestFlight.flightId}`
+    });
+  } else if (!cheapestFlight) {
+    displaySlots.push({
+      type: 'empty',
+      key: 'empty-cheapest'
+    });
+  }
+
+  // Slot 3: Fastest (only if different from recommended and cheapest)
+  if (fastestFlight &&
+      (!recommendedFlight || fastestFlight.flightId !== recommendedFlight.flightId) &&
+      (!cheapestFlight || fastestFlight.flightId !== cheapestFlight.flightId)) {
+    displaySlots.push({
+      type: 'flight',
+      flight: fastestFlight,
+      key: `fastest-${fastestFlight.flightId}`
+    });
+  } else if (!fastestFlight) {
+    displaySlots.push({
+      type: 'empty',
+      key: 'empty-fastest'
+    });
+  }
+
+  // Ensure we always have exactly 3 slots
+  while (displaySlots.length < 3) {
+    displaySlots.push({
+      type: 'empty',
+      key: `empty-${displaySlots.length}`
+    });
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {displaySlots.map((slot) => (
+        slot.type === 'flight' ? (
+          <FlightCard
+            key={slot.key}
+            flight={slot.flight}
+            onSelect={onSelect}
+            isLoading={isLoading}
+          />
+        ) : (
+          <EmptyFlightCard key={slot.key} isLoading={false} />
+        )
+      ))}
+    </div>
+  );
+};
+
+// Tab Component
+const FlightTabs = ({
+  flights,
+  onSelect,
+  isLoading,
+}: {
+  flights: FlightOption[];
+  onSelect: (flightId: string) => void;
+  isLoading: boolean;
+}) => {
+  const [activeTab, setActiveTab] = useState<'recommended' | 'cheapest' | 'fastest'>('recommended');
+
+  // Organize flights by tags
+  const recommendedFlights = flights.filter(flight => flight.tags?.includes('recommended'));
+  const cheapestFlights = flights.filter(flight => flight.tags?.includes('cheapest'));
+  const fastestFlights = flights.filter(flight => flight.tags?.includes('fastest'));
+
+  // Debug logging
+  console.log("FlightTabs - Total flights:", flights.length);
+  console.log("FlightTabs - Recommended flights:", recommendedFlights.length);
+  console.log("FlightTabs - Cheapest flights:", cheapestFlights.length);
+  console.log("FlightTabs - Fastest flights:", fastestFlights.length);
+
+  // Fallback: If no flights have the expected tags, distribute them across tabs
+  let fallbackRecommended = recommendedFlights;
+  let fallbackCheapest = cheapestFlights;
+  let fallbackFastest = fastestFlights;
+
+  if (recommendedFlights.length === 0 && cheapestFlights.length === 0 && fastestFlights.length === 0 && flights.length > 0) {
+    console.log("No flights with expected tags found, using fallback distribution");
+    // Distribute flights across tabs as fallback
+    const flightsPerTab = Math.ceil(flights.length / 3);
+    fallbackRecommended = flights.slice(0, flightsPerTab);
+    fallbackCheapest = flights.slice(flightsPerTab, flightsPerTab * 2);
+    fallbackFastest = flights.slice(flightsPerTab * 2);
+  }
+
+  const tabs = [
+    {
+      id: 'recommended' as const,
+      label: 'Recommended',
+      icon: Star,
+      flights: fallbackRecommended,
+      color: 'text-blue-600 border-blue-600',
+      bgColor: 'bg-blue-50',
+    },
+    {
+      id: 'cheapest' as const,
+      label: 'Cheapest',
+      icon: DollarSign,
+      flights: fallbackCheapest,
+      color: 'text-green-600 border-green-600',
+      bgColor: 'bg-green-50',
+    },
+    {
+      id: 'fastest' as const,
+      label: 'Fastest',
+      icon: Zap,
+      flights: fallbackFastest,
+      color: 'text-orange-600 border-orange-600',
+      bgColor: 'bg-orange-50',
+    },
+  ];
+
+  const activeTabData = tabs.find(tab => tab.id === activeTab);
+
+  return (
+    <div className="w-full">
+      {/* Tab Headers */}
+      <div className="flex border-b border-gray-200 mb-6">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium border-b-2 transition-colors duration-200",
+                isActive
+                  ? `${tab.color} ${tab.bgColor}`
+                  : "text-gray-500 border-transparent hover:text-gray-700 hover:bg-gray-50"
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              <span>{tab.label}</span>
+              <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full min-w-[20px]">
+                {tab.flights.length}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Tab Content */}
+      <div className="min-h-[400px]">
+        {activeTabData && (
+          <>
+            {activeTabData.flights.length > 0 ? (
+              <ResponsiveCarousel
+                flights={activeTabData.flights}
+                onSelect={onSelect}
+                isLoading={isLoading}
+              />
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[...Array(3)].map((_, index) => (
+                  <EmptyFlightCard key={index} isLoading={false} />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const FlightOptionsWidget = (args: Record<string, any>) => {
-  console.log("args", args);
+  console.log("FlightOptionsWidget args:", args);
+  console.log("flightOffers:", args.flightOffers);
+
   const thread = useStreamContext();
   const [selectedFlight, setSelectedFlight] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showAllFlights, setShowAllFlights] = useState(false);
 
-  const preferredFlightTuples = args.preferredFlightTuples || [];
-  const allFlightTuples = args.allFlightTuples || [];
+  const allFlightTuples = args.flightOffers || [];
+
+  // Debug: Log flight tags
+  if (allFlightTuples.length > 0) {
+    console.log("Sample flight tags:", allFlightTuples[0]?.tags);
+    console.log("All flight tags:", allFlightTuples.map((f: any) => ({ id: f.flightId, tags: f.tags })));
+  }
 
   const handleSelectFlight = async (flightId: string) => {
     setSelectedFlight(flightId);
@@ -593,9 +917,13 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
     setShowAllFlights(true);
   };
 
-  // Get initial flights for display
-  const initialFlights = preferredFlightTuples.slice(0, 6); // Show more for carousel
-  const remainingFlightsCount = allFlightTuples.length - initialFlights.length;
+  // Check if we have any flights with the mandatory tags
+  const hasRecommended = allFlightTuples.some((flight: any) => flight.tags?.includes('recommended'));
+  const hasCheapest = allFlightTuples.some((flight: any) => flight.tags?.includes('cheapest'));
+  const hasFastest = allFlightTuples.some((flight: any) => flight.tags?.includes('fastest'));
+
+  // Show loading state if no mandatory tags are present (unless no flights at all)
+  const shouldShowLoading = allFlightTuples.length > 0 && (!hasRecommended || !hasCheapest || !hasFastest);
 
   return (
     <>
@@ -613,24 +941,33 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
           <p className="text-sm text-gray-600">Choose from the best options</p>
         </div>
 
-        {/* Responsive Carousel */}
+        {/* Direct Flight Display - Only 3 Tagged Flights */}
         <div className="mb-6 overflow-hidden">
-          <ResponsiveCarousel
-            flights={initialFlights}
-            onSelect={handleSelectFlight}
-            isLoading={isLoading}
-          />
+          {allFlightTuples.length > 0 ? (
+            <DirectFlightDisplay
+              flights={allFlightTuples}
+              onSelect={handleSelectFlight}
+              isLoading={isLoading}
+            />
+          ) : (
+            // Show loading state when no flights are available
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[...Array(3)].map((_, index) => (
+                <EmptyFlightCard key={index} isLoading={false} />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Show All Flights Button */}
-        {remainingFlightsCount > 0 && (
+        {allFlightTuples.length > 6 && (
           <div className="text-center">
             <Button
               onClick={handleShowAllFlights}
               variant="outline"
               className="border-gray-300 px-8 py-2 text-gray-700 transition-colors duration-200 hover:border-gray-400 hover:bg-gray-100"
             >
-              Show all flights ({remainingFlightsCount} more)
+              Show all flights ({allFlightTuples.length} total)
             </Button>
           </div>
         )}
