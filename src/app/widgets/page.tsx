@@ -38,12 +38,12 @@ const mockSearchCriteriaData = {
 // Mock flight data - Updated to match FlightOptionsWidget interface
 const mockFlights = [
   {
-    flightId: "AI101-DEL-BOM-20240720",
+    flightOfferId: "AI101-DEL-BOM-20240720",
     totalEmission: 145,
     totalEmissionUnit: "kg CO2",
     currency: "INR",
     totalAmount: 8500,
-    duration: "PT2H5M",
+    duration: "PT3H25M",
     departure: {
       date: "2024-07-20T10:30:00Z",
       airportIata: "DEL",
@@ -52,7 +52,7 @@ const mockFlights = [
       countryCode: "IN",
     },
     arrival: {
-      date: "2024-07-20T12:35:00Z",
+      date: "2024-07-20T13:55:00Z",
       airportIata: "BOM",
       airportName: "Chhatrapati Shivaji Maharaj International Airport",
       cityCode: "BOM",
@@ -96,7 +96,7 @@ const mockFlights = [
     tags: ["recommended"],
   },
   {
-    flightId: "6E202-DEL-BOM-20240720",
+    flightOfferId: "6E202-DEL-BOM-20240720",
     totalEmission: 138,
     totalEmissionUnit: "kg CO2",
     currency: "INR",
@@ -149,12 +149,12 @@ const mockFlights = [
     tags: ["cheapest"],
   },
   {
-    flightId: "UK955-DEL-BOM-20240720",
+    flightOfferId: "UK955-DEL-BOM-20240720",
     totalEmission: 142,
     totalEmissionUnit: "kg CO2",
     currency: "INR",
     totalAmount: 9200,
-    duration: "PT2H5M",
+    duration: "PT4H35M",
     departure: {
       date: "2024-07-20T18:45:00Z",
       airportIata: "DEL",
@@ -163,7 +163,7 @@ const mockFlights = [
       countryCode: "IN",
     },
     arrival: {
-      date: "2024-07-20T20:50:00Z",
+      date: "2024-07-20T23:20:00Z",
       airportIata: "BOM",
       airportName: "Chhatrapati Shivaji Maharaj International Airport",
       cityCode: "BOM",
@@ -208,7 +208,7 @@ const mockFlights = [
   },
   // Additional flights for more comprehensive showcase
   {
-    flightId: "SG8182-DEL-BOM-20240720",
+    flightOfferId: "SG8182-DEL-BOM-20240720",
     totalEmission: 155,
     totalEmissionUnit: "kg CO2",
     currency: "INR",
@@ -283,12 +283,12 @@ const mockFlights = [
     tags: [],
   },
   {
-    flightId: "G8394-DEL-BOM-20240720",
+    flightOfferId: "G8394-DEL-BOM-20240720",
     totalEmission: 148,
     totalEmissionUnit: "kg CO2",
     currency: "INR",
     totalAmount: 8200,
-    duration: "PT2H15M",
+    duration: "PT5H15M",
     departure: {
       date: "2024-07-20T16:30:00Z",
       airportIata: "DEL",
@@ -297,7 +297,7 @@ const mockFlights = [
       countryCode: "IN",
     },
     arrival: {
-      date: "2024-07-20T18:45:00Z",
+      date: "2024-07-20T21:45:00Z",
       airportIata: "BOM",
       airportName: "Chhatrapati Shivaji Maharaj International Airport",
       cityCode: "BOM",
@@ -336,7 +336,7 @@ const mockFlights = [
     tags: [],
   },
   {
-    flightId: "AI127-DEL-BOM-20240720",
+    flightOfferId: "AI127-DEL-BOM-20240720",
     totalEmission: 140,
     totalEmissionUnit: "kg CO2",
     currency: "INR",
@@ -395,7 +395,7 @@ const mockFlights = [
   },
   // Additional flights to make 10 total
   {
-    flightId: "6E456-DEL-BOM-20240720",
+    flightOfferId: "6E456-DEL-BOM-20240720",
     totalEmission: 135,
     totalEmissionUnit: "kg CO2",
     currency: "INR",
@@ -448,7 +448,7 @@ const mockFlights = [
     tags: ["cheapest"],
   },
   {
-    flightId: "UK789-DEL-BOM-20240720",
+    flightOfferId: "UK789-DEL-BOM-20240720",
     totalEmission: 141,
     totalEmissionUnit: "kg CO2",
     currency: "INR",
@@ -506,7 +506,7 @@ const mockFlights = [
     tags: ["fastest"],
   },
   {
-    flightId: "AI234-DEL-BOM-20240720",
+    flightOfferId: "AI234-DEL-BOM-20240720",
     totalEmission: 147,
     totalEmissionUnit: "kg CO2",
     currency: "INR",
@@ -564,7 +564,7 @@ const mockFlights = [
     tags: ["recommended"],
   },
   {
-    flightId: "G8567-DEL-BOM-20240720",
+    flightOfferId: "G8567-DEL-BOM-20240720",
     totalEmission: 152,
     totalEmissionUnit: "kg CO2",
     currency: "INR",

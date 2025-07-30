@@ -3,14 +3,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/common/ui/button";
 import {
-  Plane,
   Clock,
   Star,
   DollarSign,
   Zap,
-  Info,
-  ChevronDown,
-  ChevronUp,
   ChevronLeft,
   ChevronRight,
   Loader2,
@@ -193,23 +189,23 @@ const getBadgeConfigs = (tags: string[]) => {
 
   if (tags.includes("recommended")) {
     badges.push({
-      icon: Star,
+      emoji: "⭐",
       text: "Recommended",
-      color: "bg-blue-100 text-blue-800 border-blue-200",
+      color: "bg-white text-gray-800 border-gray-200",
     });
   }
   if (tags.includes("cheapest")) {
     badges.push({
-      icon: DollarSign,
+      emoji: "💰",
       text: "Cheapest",
-      color: "bg-green-100 text-green-800 border-green-200",
+      color: "bg-white text-gray-800 border-gray-200",
     });
   }
   if (tags.includes("fastest")) {
     badges.push({
-      icon: Zap,
+      emoji: "⚡",
       text: "Fastest",
-      color: "bg-orange-100 text-orange-800 border-orange-200",
+      color: "bg-white text-gray-800 border-gray-200",
     });
   }
 
@@ -226,7 +222,39 @@ const FlightCard = ({
   isLoading?: boolean;
 }) => {
   const badgeConfigs = flight.tags && flight.tags.length > 0 ? getBadgeConfigs(flight.tags) : [];
-  const [isWhyChooseExpanded, setIsWhyChooseExpanded] = useState(false);
+
+  // Generate personalized flight highlights
+  const getFlightHighlights = (flight: FlightOption) => {
+    const highlights = [];
+
+    // Add tag-based highlights
+    if (flight.tags?.includes('recommended')) {
+      highlights.push("Your usual flight, travelled 12 times");
+    }
+    if (flight.tags?.includes('cheapest')) {
+      highlights.push("Cheapest option with short layover");
+    }
+    if (flight.tags?.includes('fastest')) {
+      highlights.push("Fastest route to your destination");
+    }
+
+    // Add additional contextual highlights
+    if (flight.segments.length === 1) {
+      highlights.push("Direct flight - no hassle with connections");
+    } else if (flight.segments.length === 2) {
+      highlights.push("Single layover - good balance of time and price");
+    }
+
+    // Add cancellation policy information
+    if (flight.offerRules?.isRefundable) {
+      highlights.push("Flexible booking with free cancellation");
+    } else {
+      highlights.push("Non-refundable - lock in this great price");
+    }
+
+    // Return max 3 highlights
+    return highlights.slice(0, 3);
+  };
 
   //Todo: @Khalid, this is very critical and hacky, please verify the actual flight timings with what we are showing.
   const formatTime = (isoString: string) => {
@@ -248,19 +276,24 @@ const FlightCard = ({
     return duration;
   };
 
-  // Get airline from segments
-  const getAirlineIataFromFlightOption = (flight: FlightOption) => {
+  // Helper function to truncate airline name to 10 characters
+  const truncateAirlineName = (name: string) => {
+    if (name.length > 10) {
+      return name.substring(0, 10) + "...";
+    }
+    return name;
+  };
+
+  // Get airline name from segments (truncated to 10 characters)
+  const getAirlineNameFromFlightOption = (flight: FlightOption) => {
     if (flight.segments && flight.segments.length > 0) {
-      return flight.segments
-          .map((segment) => segment.airlineIata)
-          .join(", ") || "Unknown";
+      const airlineName = flight.segments[0].airlineName || flight.segments[0].airlineIata || "Unknown";
+      return truncateAirlineName(airlineName);
     }
     return "Unknown";
   };
 
-  const getAirlineIataFromSegment = (segment: FlightSegment) => {
-    return segment.airlineIata || "Unknown";
-  };
+
 
   // Get flight number from segments
   const getFlightNumberFromFlightOption = (flight: FlightOption) => {
@@ -272,9 +305,7 @@ const FlightCard = ({
     return "Unknown";
   };
 
-  const getFlightNumberFromSegment = (segment: FlightSegment) => {
-    return segment.flightNumber || "Unknown";
-  };
+
 
   const departureInfo = flight.departure;
   const arrivalInfo = flight.arrival;
@@ -286,11 +317,14 @@ const FlightCard = ({
   const currencySymbol = getCurrencySymbol(currency);
 
   return (
-    <div className="w-full rounded-lg border border-gray-200 bg-white p-3 sm:p-4 shadow-sm transition-shadow duration-200 hover:shadow-md overflow-hidden">
-      {/* Badges */}
-      {badgeConfigs.length > 0 && (
-        <div className="mb-3 flex flex-wrap gap-2">
-          {badgeConfigs.map((badgeConfig, index) => (
+    <div className="w-full h-full rounded-lg border border-gray-200 bg-white p-3 sm:p-4 shadow-sm transition-shadow duration-200 hover:shadow-md overflow-hidden flex flex-col">
+      {/* Content Area */}
+      <div className="flex flex-col">
+        {/* Top Row: Badges on left, Flight Info on right */}
+      <div className="mb-3 flex items-start justify-between gap-2">
+        {/* Badges */}
+        <div className="flex flex-wrap gap-2 flex-1">
+          {badgeConfigs.length > 0 && badgeConfigs.map((badgeConfig, index) => (
             <div
               key={index}
               className={cn(
@@ -298,28 +332,37 @@ const FlightCard = ({
                 badgeConfig.color,
               )}
             >
-              <badgeConfig.icon className="h-3 w-3 flex-shrink-0" />
+              <span className="text-sm">{badgeConfig.emoji}</span>
               <span className="truncate">{badgeConfig.text}</span>
             </div>
           ))}
         </div>
-      )}
 
-      {/* Airline and Flight Number */}
-      <div className="mb-3 flex items-center gap-1 sm:gap-2 min-w-0">
-        <Plane className="h-4 w-4 text-gray-600 flex-shrink-0" />
-        <span className="font-medium text-gray-900 truncate text-sm sm:text-base">{getAirlineIataFromFlightOption(flight)}</span>
-        <span className="text-xs sm:text-sm text-gray-500 truncate">{getFlightNumberFromFlightOption(flight)}</span>
+        {/* Airline and Flight Number - Top Right */}
+        <div className="flex flex-col items-end text-right min-w-0 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            {/* Circular Airline Logo Placeholder */}
+            <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+              <div className="w-4 h-4 rounded-full bg-gray-400"></div>
+            </div>
+            <span className="font-medium text-gray-900 text-xs sm:text-sm truncate">
+              {getAirlineNameFromFlightOption(flight)}
+            </span>
+          </div>
+          {/* Flight numbers - always show comma-separated */}
+          <div className="text-xs text-gray-500 truncate mt-0.5">
+            {getFlightNumberFromFlightOption(flight)}
+          </div>
+        </div>
       </div>
 
       {/* Flight Route */}
       <div className="mb-3 flex items-center justify-between overflow-hidden">
-        <div className="text-center flex-1 min-w-0 max-w-[30%]">
-          <div className="text-lg sm:text-xl font-bold text-gray-900 truncate">
+        <div className="text-left flex-1 min-w-0 max-w-[30%]">
+          <div className="font-bold text-gray-900 truncate" style={{ fontSize: '14px' }}>
             {formatTime(departureInfo.date)}
           </div>
           <div className="text-xs sm:text-sm text-gray-600 truncate">{departureInfo.airportIata}</div>
-          <div className="text-xs text-gray-500 truncate">{departureInfo.countryCode}</div>
         </div>
 
         <div className="mx-1 sm:mx-2 flex-1 text-center min-w-0 max-w-[40%]">
@@ -328,7 +371,27 @@ const FlightCard = ({
             <span className="text-xs text-gray-500 truncate">{duration}</span>
           </div>
           <div className="relative border-t border-gray-300 mx-2">
-            <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-300"></div>
+            {/* Stop dots based on number of stops */}
+            {flight.segments.length === 2 && (
+              // One stop - light orange dot
+              <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 transform rounded-full bg-orange-300"></div>
+            )}
+            {flight.segments.length === 3 && (
+              // Two stops - light red dots
+              <>
+                <div className="absolute -top-1 left-1/3 h-2 w-2 -translate-x-1/2 transform rounded-full bg-red-300"></div>
+                <div className="absolute -top-1 left-2/3 h-2 w-2 -translate-x-1/2 transform rounded-full bg-red-300"></div>
+              </>
+            )}
+            {flight.segments.length > 3 && (
+              // More than two stops - multiple light red dots
+              <>
+                <div className="absolute -top-1 left-1/4 h-2 w-2 -translate-x-1/2 transform rounded-full bg-red-300"></div>
+                <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 transform rounded-full bg-red-300"></div>
+                <div className="absolute -top-1 left-3/4 h-2 w-2 -translate-x-1/2 transform rounded-full bg-red-300"></div>
+              </>
+            )}
+            {/* Non-stop flights don't show any dots */}
           </div>
           <div className="mt-1 text-xs text-gray-500 truncate">
             {flight.segments.length == 1
@@ -337,81 +400,71 @@ const FlightCard = ({
           </div>
         </div>
 
-        <div className="text-center flex-1 min-w-0 max-w-[30%]">
-          <div className="text-lg sm:text-xl font-bold text-gray-900 truncate">
+        <div className="text-right flex-1 min-w-0 max-w-[30%]">
+          <div className="font-bold text-gray-900 truncate" style={{ fontSize: '14px' }}>
             {formatTime(arrivalInfo.date)}
           </div>
           <div className="text-xs sm:text-sm text-gray-600 truncate">{arrivalInfo.airportIata}</div>
-          <div className="text-xs text-gray-500 truncate">{arrivalInfo.countryCode}</div>
         </div>
       </div>
+      {/* Flight Highlights with Moving Gradient Border */}
+      {(() => {
+        const highlights = getFlightHighlights(flight);
+        return highlights.length > 0 && (
+          <div>
+            <div
+              className="relative rounded-lg animate-gradient-border"
+              style={{
+                background: 'linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab)',
+                backgroundSize: '400% 400%',
+                padding: '1px', // Match button border thickness
+              }}
+            >
+              {/* Inner content with white background */}
+              <div className="bg-white rounded-lg p-2">
+                <ul className="space-y-1">
+                  {highlights.map((highlight, index) => (
+                    <li
+                      key={index}
+                      className="flex items-start gap-2 text-sm text-gray-800 font-medium"
+                    >
+                      <span className="mt-1 text-gray-600">•</span>
+                      <span>{highlight}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
 
-      {/* Cancellation Info */}
-      <div className="mb-3 flex items-center gap-2">
-        <div
-          className={cn(
-            "inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium",
-            flight.offerRules?.isRefundable
-              ? "border border-green-200 bg-green-100 text-green-800"
-              : "border border-red-200 bg-red-100 text-red-800",
-          )}
-        >
-          <span
-            className={cn(
-              "h-1.5 w-1.5 rounded-full",
-              flight.offerRules?.isRefundable ? "bg-green-500" : "bg-red-500",
-            )}
-          />
-          {flight.offerRules?.isRefundable ? "Free Cancellation" : "Non-Refundable"}
-        </div>
+            {/* Add the CSS animation styles */}
+            <style dangerouslySetInnerHTML={{
+              __html: `
+                @keyframes gradientShift {
+                  0% { background-position: 0% 50%; }
+                  50% { background-position: 100% 50%; }
+                  100% { background-position: 0% 50%; }
+                }
+                .animate-gradient-border {
+                  animation: gradientShift 15s ease infinite;
+                }
+              `
+            }} />
+          </div>
+        );
+      })()}
       </div>
 
-      {/* Why Choose This - Expandable for all flights with reasons */}
-      {flight.pros && flight.pros.length > 0 && (
-        <div className="mb-4">
-          <button
-            onClick={() => setIsWhyChooseExpanded(!isWhyChooseExpanded)}
-            className="flex w-full items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3 transition-colors duration-200 hover:bg-gray-100"
-          >
-            <div className="flex items-center gap-2">
-              <Info className="h-4 w-4 text-gray-600" />
-              <span className="text-sm font-medium text-gray-900">
-                Why choose this?
-              </span>
-            </div>
-            {isWhyChooseExpanded ? (
-              <ChevronUp className="h-4 w-4 text-gray-600" />
-            ) : (
-              <ChevronDown className="h-4 w-4 text-gray-600" />
-            )}
-          </button>
+      {/* Minimal spacer for button alignment */}
+      <div className="flex-grow min-h-[8px]"></div>
 
-          {isWhyChooseExpanded && (
-            <div className="mt-2 rounded-lg border border-blue-100 bg-blue-50 p-3">
-              <ul className="space-y-2">
-                {flight.pros.map((reason, index) => (
-                  <li
-                    key={index}
-                    className="flex items-start gap-2 text-sm text-blue-800"
-                  >
-                    <span className="mt-1 text-xs text-blue-400">•</span>
-                    <span>{reason}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Select Button with Price */}
+      {/* Select Button with Price - Pinned to bottom */}
       <Button
         onClick={() => onSelect(flight.flightOfferId)}
         disabled={isLoading}
-        className="w-full bg-black py-3 text-white transition-colors duration-200 hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-50"
+        className="w-full bg-white border border-gray-300 py-3 text-gray-900 transition-colors duration-200 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 mt-1"
       >
         <span className="flex items-center justify-center gap-2">
-          <span>{isLoading ? "Selecting..." : "Select Flight"}</span>
+          <span className="font-normal">{isLoading ? "Selecting..." : "Select Flight"}</span>
           <span className="font-bold">{currencySymbol}{price.toLocaleString()}</span>
         </span>
       </Button>
@@ -422,50 +475,53 @@ const FlightCard = ({
 // Loading/Empty Flight Card Component
 const EmptyFlightCard = ({ isLoading = true }: { isLoading?: boolean }) => {
   return (
-    <div className="w-full rounded-lg border border-gray-200 bg-white p-3 sm:p-4 shadow-sm overflow-hidden">
+    <div className="w-full h-full rounded-lg border border-gray-200 bg-white p-3 sm:p-4 shadow-sm overflow-hidden flex flex-col">
       {isLoading ? (
         <>
-          {/* Loading Badge */}
-          <div className="mb-3">
-            <Skeleton className="h-6 w-24 rounded-full" />
-          </div>
-
-          {/* Loading Airline and Flight Number */}
-          <div className="mb-3 flex items-center gap-2">
-            <Skeleton className="h-4 w-4 rounded" />
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-4 w-16" />
-          </div>
-
-          {/* Loading Flight Route */}
-          <div className="mb-3 flex items-center justify-between">
-            <div className="text-center flex-1">
-              <Skeleton className="h-6 w-16 mx-auto mb-1" />
-              <Skeleton className="h-3 w-12 mx-auto mb-1" />
-              <Skeleton className="h-3 w-8 mx-auto" />
+          {/* Content Area - Flexible */}
+          <div className="flex-grow flex flex-col">
+            {/* Loading Badge */}
+            <div className="mb-3">
+              <Skeleton className="h-6 w-24 rounded-full" />
             </div>
-            <div className="mx-2 flex-1 text-center">
-              <Skeleton className="h-3 w-12 mx-auto mb-1" />
-              <Skeleton className="h-px w-full mb-1" />
-              <Skeleton className="h-3 w-16 mx-auto" />
+
+            {/* Loading Airline and Flight Number */}
+            <div className="mb-3 flex items-center gap-2">
+              <Skeleton className="h-4 w-4 rounded" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-16" />
             </div>
-            <div className="text-center flex-1">
-              <Skeleton className="h-6 w-16 mx-auto mb-1" />
-              <Skeleton className="h-3 w-12 mx-auto mb-1" />
-              <Skeleton className="h-3 w-8 mx-auto" />
+
+            {/* Loading Flight Route */}
+            <div className="mb-3 flex items-center justify-between">
+              <div className="text-center flex-1">
+                <Skeleton className="h-6 w-16 mx-auto mb-1" />
+                <Skeleton className="h-3 w-12 mx-auto mb-1" />
+                <Skeleton className="h-3 w-8 mx-auto" />
+              </div>
+              <div className="mx-2 flex-1 text-center">
+                <Skeleton className="h-3 w-12 mx-auto mb-1" />
+                <Skeleton className="h-px w-full mb-1" />
+                <Skeleton className="h-3 w-16 mx-auto" />
+              </div>
+              <div className="text-center flex-1">
+                <Skeleton className="h-6 w-16 mx-auto mb-1" />
+                <Skeleton className="h-3 w-12 mx-auto mb-1" />
+                <Skeleton className="h-3 w-8 mx-auto" />
+              </div>
+            </div>
+
+            {/* Loading Cancellation Info */}
+            <div className="mb-3">
+              <Skeleton className="h-6 w-32 rounded-full" />
             </div>
           </div>
 
-          {/* Loading Cancellation Info */}
-          <div className="mb-3">
-            <Skeleton className="h-6 w-32 rounded-full" />
-          </div>
-
-          {/* Loading Button */}
+          {/* Loading Button - Pinned to bottom */}
           <Skeleton className="h-12 w-full rounded" />
         </>
       ) : (
-        <div className="flex flex-col items-center justify-center py-8 text-center">
+        <div className="flex-grow flex flex-col items-center justify-center py-8 text-center">
           <Loader2 className="h-8 w-8 animate-spin text-gray-400 mb-3" />
           <p className="text-sm text-gray-500 mb-1">Searching for flights...</p>
           <p className="text-xs text-gray-400">This may take a few moments</p>
@@ -640,6 +696,7 @@ const ResponsiveCarousel = ({
                 scrollSnapAlign: 'start',
                 minWidth: '280px', // Minimum card width for readability
                 maxWidth: cardsPerView === 1 ? '100%' : `${cardWidth}%`,
+                minHeight: '420px', // Ensure consistent card height
               }}
             >
               <FlightCard
@@ -822,7 +879,9 @@ const FlightListItem = ({
 
   const getAirlineInfo = (flight: FlightOption) => {
     if (flight.segments && flight.segments.length > 0) {
-      const airline = flight.segments[0].airlineName || flight.segments[0].airlineIata || "Unknown";
+      const airlineName = flight.segments[0].airlineName || flight.segments[0].airlineIata || "Unknown";
+      // Truncate airline name to 10 characters
+      const airline = airlineName.length > 10 ? airlineName.substring(0, 10) + "..." : airlineName;
 
       // If multiple flights, show individual flight numbers
       if (flight.segments.length > 1) {
@@ -849,7 +908,7 @@ const FlightListItem = ({
   const price = flight.totalAmount || 0;
   const currency = flight.currency || "USD";
   const currencySymbol = getCurrencySymbol(currency);
-  const { airline, flightNumber, isMultiFlight } = getAirlineInfo(flight);
+  const { airline, flightNumber } = getAirlineInfo(flight);
 
   return (
     <div
@@ -862,12 +921,10 @@ const FlightListItem = ({
         <div className="flex items-center justify-between">
           {/* Left: Airline Info */}
           <div className="flex items-center gap-3">
-            {/* Airline Icon */}
+            {/* Airline Logo Placeholder */}
             <div className="flex-shrink-0">
-              <div className="w-6 h-6 bg-orange-500 rounded flex items-center justify-center">
-                <span className="text-white font-bold text-xs">
-                  {airline.charAt(0)}
-                </span>
+              <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center">
+                <div className="w-4 h-4 rounded-full bg-gray-400"></div>
               </div>
             </div>
 
@@ -877,17 +934,7 @@ const FlightListItem = ({
                 {airline.length > 12 ? airline.substring(0, 12) + '...' : airline}
               </div>
               <div className="text-xs text-gray-500 truncate">
-                {isMultiFlight ? (
-                  <div className="space-y-0.5">
-                    {flight.segments.map((segment, index) => (
-                      <div key={segment.id} className="text-xs">
-                        {segment.flightNumber}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  flightNumber
-                )}
+                {flightNumber}
               </div>
             </div>
           </div>
@@ -937,21 +984,14 @@ const FlightListItem = ({
         {/* Left: Airline Info */}
         <div className="flex flex-col min-w-0" style={{ width: '180px' }}>
           <div className="flex items-center gap-2">
-            <Plane className="h-4 w-4 text-orange-500 flex-shrink-0" />
+            {/* Circular Airline Logo Placeholder */}
+            <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+              <div className="w-3 h-3 rounded-full bg-gray-400"></div>
+            </div>
             <span className="font-medium text-gray-900 text-sm truncate">{airline}</span>
           </div>
           <div className="text-xs text-gray-500 truncate">
-            {isMultiFlight ? (
-              <div className="space-y-0.5">
-                {flight.segments.map((segment, index) => (
-                  <div key={segment.id} className="text-xs">
-                    {segment.flightNumber}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              flightNumber
-            )}
+            {flightNumber}
           </div>
         </div>
 
@@ -970,7 +1010,9 @@ const FlightListItem = ({
           </div>
           <div className="relative my-1">
             <div className="border-t border-gray-300 w-full"></div>
-            <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-300"></div>
+            {flight.segments.length > 1 && (
+              <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-300"></div>
+            )}
           </div>
           <div className="text-xs text-gray-500">
             {flight.segments.length === 1
