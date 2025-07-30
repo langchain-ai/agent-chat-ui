@@ -11,7 +11,7 @@ export const componentMap = {
   FlightStatusWidget, /// simple widget needs to send from server
   LoungeWidget, ///  simple widget needs to send from server
   weatherWidget, ///  simple widget needs to send from server
-  ReviewWidget, /// Flight booking review widget
+  TravelerDetailsWidget: ReviewWidget, /// Flight booking review widget
 } as const;
 
 export type ComponentType = keyof typeof componentMap;

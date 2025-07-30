@@ -3,6 +3,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { componentMap, ComponentType } from "@/components/widgets";
 import { DebugPanel } from "@/components/debug/DebugPanel";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 // Debug utility function
 const debugLog = (message: string, data?: any) => {
@@ -21,6 +27,33 @@ interface DynamicRendererProps {
   interrupt: Record<string, any>;
 }
 
+// Wrapper component for TravelerDetailsWidget with bottom sheet
+const TravelerDetailsBottomSheet: React.FC<{ apiData: any; args: any }> = ({ apiData, args }) => {
+  const [isOpen, setIsOpen] = useState(true);
+
+  // Get the actual ReviewWidget component
+  const ReviewWidget = componentMap.TravelerDetailsWidget;
+
+  return (
+    <Sheet open={isOpen} onOpenChange={setIsOpen}>
+      <SheetContent
+        side="bottom"
+        className="h-[90vh] sm:h-[85vh] flex flex-col overflow-hidden p-0"
+      >
+        <SheetHeader className="flex-shrink-0 px-6 py-4 border-b border-gray-200">
+          <SheetTitle className="text-xl font-semibold">
+            Review Your Booking
+          </SheetTitle>
+        </SheetHeader>
+
+        <div className="flex-1 overflow-auto">
+          <ReviewWidget apiData={apiData} {...args} isInBottomSheet={true} />
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+};
+
 console.log("DynamicRendererProps interface defined - checking props:", { interruptType: "will be logged in component", interrupt: "will be logged in component" });
 
 const DynamicRenderer: React.FC<DynamicRendererProps> = ({
@@ -34,6 +67,14 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = ({
   });
   debugLog("DynamicRenderer called", { interruptType, interrupt });
 
+  // Additional debugging for widget type checking
+  console.log("🔍 Widget type check:", {
+    interruptType,
+    widgetType: interrupt.value?.widget?.type,
+    availableWidgets: Object.keys(componentMap),
+    isWidgetTypeInMap: interrupt.value?.widget?.type in componentMap
+  });
+
   // Check if the type exists in componentMap
   if (
     interruptType === "widget" &&
@@ -45,7 +86,13 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = ({
       componentType: interrupt.value.widget.type,
       args: interrupt.value.widget.args
     });
-    // Pass the args object directly to the component
+
+    // For TravelerDetailsWidget, render in bottom sheet
+    if (interrupt.value.widget.type === "TravelerDetailsWidget") {
+      return <TravelerDetailsBottomSheet apiData={interrupt} args={interrupt.value.widget.args} />;
+    }
+
+    // For other widgets, pass the args object directly to the component
     return <Component {...interrupt.value.widget.args} />;
   }
 
