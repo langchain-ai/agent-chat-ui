@@ -23,7 +23,7 @@ export default function NotFound() {
         <div className="mt-4 text-center">
           <h1 className="text-lg font-medium text-gray-900">Page Not Found</h1>
           <p className="mt-2 text-sm text-gray-600">
-            Sorry, we couldn't find the page you're looking for.
+            Sorry, we couldn&apos;t find the page you&apos;re looking for.
           </p>
         </div>
         <div className="mt-6 space-y-3">

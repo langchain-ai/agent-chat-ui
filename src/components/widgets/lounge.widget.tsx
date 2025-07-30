@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
+import Image from 'next/image';
 import { Button } from '@/components/common/ui/button';
 import { MapPin, Check, CreditCard } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -65,10 +66,11 @@ const LoungCard = ({ lounge }: { lounge: Lounge }) => {
     >
       {/* Lounge Image */}
       <div className="relative h-36 sm:h-40 overflow-hidden">
-        <img
+        <Image
           src={lounge.image}
           alt={lounge.name}
-          className="w-full h-full object-cover"
+          fill
+          className="object-cover"
           onError={(e) => {
             // Fallback to a gradient background if image fails to load
             const target = e.target as HTMLImageElement;

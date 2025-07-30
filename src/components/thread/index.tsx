@@ -178,7 +178,7 @@ export function Thread() {
     if (threadId === null) {
       // setDisplayMessages([]); // Remove this line
     }
-  }, [threadId]);
+  }, [threadId, setContentBlocks]);
 
   const lastError = useRef<string | undefined>(undefined);
 

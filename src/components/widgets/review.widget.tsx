@@ -551,7 +551,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
 
                 <div className="border-t pt-3 mt-4">
                   <p className="text-xs text-gray-600">
-                    We'll use this information to send you booking confirmations and updates.
+                    We&apos;ll use this information to send you booking confirmations and updates.
                   </p>
                 </div>
               </div>
@@ -615,7 +615,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                       <SelectContent>
                         <SelectItem value="Passport">Passport</SelectItem>
                         <SelectItem value="National ID">National ID</SelectItem>
-                        <SelectItem value="Driver's License">Driver's License</SelectItem>
+                        <SelectItem value="Driver&apos;s License">Driver&apos;s License</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
