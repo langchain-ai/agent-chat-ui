@@ -43,3 +43,30 @@
 .markdown-content tr:nth-child(even) {
   background-color: #f9f9f9;
 }
+
+/* Image styling for better aesthetics and size control */
+.markdown-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin: 1rem auto;
+  display: block;
+  max-height: 20rem; /* 320px - reasonable max height */
+  object-fit: contain;
+}
+
+/* Responsive image sizing for smaller screens */
+@media (max-width: 768px) {
+  .markdown-content img {
+    max-height: 16rem; /* 256px on tablets */
+    margin: 0.75rem auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .markdown-content img {
+    max-height: 12rem; /* 192px on mobile */
+    margin: 0.5rem auto;
+  }
+}
