@@ -34,6 +34,11 @@ const TravelerDetailsBottomSheet: React.FC<{ apiData: any; args: any }> = ({ api
   // Get the actual ReviewWidget component
   const ReviewWidget = componentMap.TravelerDetailsWidget;
 
+  // Function to close the bottom sheet
+  const handleClose = () => {
+    setIsOpen(false);
+  };
+
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetContent
@@ -47,7 +52,12 @@ const TravelerDetailsBottomSheet: React.FC<{ apiData: any; args: any }> = ({ api
         </SheetHeader>
 
         <div className="flex-1 overflow-auto">
-          <ReviewWidget apiData={apiData} {...args} isInBottomSheet={true} />
+          <ReviewWidget
+            apiData={apiData}
+            {...args}
+            isInBottomSheet={true}
+            onClose={handleClose}
+          />
         </div>
       </SheetContent>
     </Sheet>

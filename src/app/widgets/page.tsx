@@ -649,6 +649,19 @@ const StandaloneFlightOptionsWidget = () => {
   );
 };
 
+// Wrapper component for ReviewWidget
+const StandaloneReviewWidget = () => {
+  return (
+    <ThreadProvider>
+      <StreamProvider>
+        <div className="w-full">
+          <ReviewWidget />
+        </div>
+      </StreamProvider>
+    </ThreadProvider>
+  );
+};
+
 export default function WidgetsPage(): React.ReactNode {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -775,7 +788,7 @@ export default function WidgetsPage(): React.ReactNode {
               </p>
             </div>
             <div className="w-full">
-              <ReviewWidget />
+              <StandaloneReviewWidget />
             </div>
           </section>
         </div>

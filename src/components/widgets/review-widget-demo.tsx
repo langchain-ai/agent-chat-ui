@@ -240,6 +240,7 @@ const ReviewWidgetDemo: React.FC = () => {
                 apiData={exampleApiData}
                 onSubmit={handleSubmit}
                 isInBottomSheet={true}
+                onClose={() => setShowBottomSheet(false)}
               />
             </div>
           </SheetContent>

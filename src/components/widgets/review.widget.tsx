@@ -12,8 +12,22 @@ import {
   SelectValue,
 } from "@/components/common/ui/select";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/common/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
   ArrowRight,
-  Calendar,
+  Calendar as CalendarIcon,
   Clock,
   ChevronDown,
   ChevronUp,
@@ -21,10 +35,204 @@ import {
   MapPin,
   Shield,
   AlertTriangle,
+  Check,
+  ChevronsUpDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { submitInterruptResponse } from "./util";
 import { useStreamContext } from "@/providers/Stream";
+
+// DateInput component using shadcn Calendar (same as searchCriteria.widget.tsx)
+interface DateInputProps {
+  date?: Date;
+  onDateChange?: (date: Date | undefined) => void;
+  placeholder?: string;
+  className?: string;
+  disablePast?: boolean;
+  disableFuture?: boolean;
+}
+
+const DateInput = ({
+  date,
+  onDateChange,
+  placeholder,
+  className,
+  disablePast = false,
+  disableFuture = false,
+}: DateInputProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const formatDateDisplay = (date: Date | undefined) => {
+    if (!date) return placeholder || "Select date";
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    };
+    return date.toLocaleDateString('en-US', options);
+  };
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const getDisabledDates = (date: Date) => {
+    if (disablePast && date < today) return true;
+    if (disableFuture && date > today) return true;
+    return false;
+  };
+
+  return (
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn(
+            "w-full justify-start text-left font-normal focus:border-black focus:ring-black",
+            !date && "text-muted-foreground",
+            className
+          )}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {formatDateDisplay(date)}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={(selectedDate: Date | undefined) => {
+            onDateChange?.(selectedDate);
+            setIsOpen(false);
+          }}
+          disabled={getDisabledDates}
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
+  );
+};
+
+// CountryCombobox component (similar pattern to AirportCombobox)
+interface Country {
+  code: string;
+  name: string;
+}
+
+const POPULAR_COUNTRIES: Country[] = [
+  { code: "US", name: "United States" },
+  { code: "IN", name: "India" },
+  { code: "GB", name: "United Kingdom" },
+  { code: "CA", name: "Canada" },
+  { code: "AU", name: "Australia" },
+  { code: "DE", name: "Germany" },
+  { code: "FR", name: "France" },
+  { code: "JP", name: "Japan" },
+  { code: "CN", name: "China" },
+  { code: "BR", name: "Brazil" },
+  { code: "MX", name: "Mexico" },
+  { code: "IT", name: "Italy" },
+  { code: "ES", name: "Spain" },
+  { code: "NL", name: "Netherlands" },
+  { code: "SG", name: "Singapore" },
+  { code: "AE", name: "United Arab Emirates" },
+];
+
+interface CountryComboboxProps {
+  value?: string;
+  onValueChange?: (value: string) => void;
+  placeholder?: string;
+  className?: string;
+}
+
+const CountryCombobox = ({
+  value,
+  onValueChange,
+  placeholder = "Select country...",
+  className
+}: CountryComboboxProps) => {
+  const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const selectedCountry = React.useMemo(() => {
+    if (!value) return null;
+    const country = POPULAR_COUNTRIES.find(c => c.name === value || c.code === value);
+    return country ? country.name : value;
+  }, [value]);
+
+  const displayCountries = React.useMemo(() => {
+    let countries = POPULAR_COUNTRIES;
+
+    if (searchQuery && searchQuery.trim().length > 0) {
+      const query = searchQuery.toLowerCase();
+      countries = countries.filter(country =>
+        country.name.toLowerCase().includes(query) ||
+        country.code.toLowerCase().includes(query)
+      );
+    }
+
+    return countries.map(country => ({
+      value: country.name,
+      label: country.name,
+      code: country.code
+    }));
+  }, [searchQuery]);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className={cn("w-full justify-between focus:ring-black focus:border-black", className)}
+        >
+          <span className="truncate">
+            {selectedCountry || placeholder}
+          </span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="max-h-[300px] p-0">
+        <Command>
+          <CommandInput
+            placeholder="Search countries..."
+            className="h-9"
+            value={searchQuery}
+            onValueChange={setSearchQuery}
+          />
+          <CommandList>
+            <CommandEmpty>No countries found.</CommandEmpty>
+            <CommandGroup>
+              {displayCountries.map((country) => (
+                <CommandItem
+                  key={country.value}
+                  value={country.value}
+                  onSelect={(currentValue) => {
+                    onValueChange?.(currentValue === value ? "" : currentValue);
+                    setOpen(false);
+                    setSearchQuery("");
+                  }}
+                >
+                  <div className="flex flex-col">
+                    <div className="font-medium">{country.label}</div>
+                    <div className="text-xs text-muted-foreground">{country.code}</div>
+                  </div>
+                  <Check
+                    className={cn(
+                      "ml-auto h-4 w-4",
+                      value === country.value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 // TypeScript Interfaces for API Response
 interface ApiPhone {
@@ -221,6 +429,8 @@ interface ReviewWidgetProps {
   apiData?: ApiResponse;
   // Bottom sheet mode
   isInBottomSheet?: boolean;
+  // Function to close the bottom sheet
+  onClose?: () => void;
 }
 
 // Utility functions to transform API data
@@ -467,6 +677,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
   onSubmit,
   apiData,
   isInBottomSheet = false,
+  onClose,
 }) => {
   // Get thread context for interrupt responses
   const stream = useStreamContext();
@@ -525,6 +736,20 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
   // Determine if seat component should be shown (only if seatAllocation is provided)
   const showSeatComponent = !!seatAllocation;
 
+  // Hook to detect desktop screen size
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  React.useEffect(() => {
+    const checkScreenSize = () => {
+      setIsDesktop(window.innerWidth >= 1024); // lg breakpoint
+    };
+
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
   // Component state
   const [isFlightExpanded, setIsFlightExpanded] = useState(false);
   const [isContactExpanded, setIsContactExpanded] = useState(false);
@@ -532,6 +757,13 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
   const [isPaymentExpanded, setIsPaymentExpanded] = useState(false);
   const [isSeatSelected, setIsSeatSelected] = useState(finalSeatAllocation?.isSelected || false);
   const [isSavedPassengersExpanded, setIsSavedPassengersExpanded] = useState(false);
+
+  // Update payment expanded state when screen size changes to desktop
+  React.useEffect(() => {
+    if (isDesktop && !isPaymentExpanded) {
+      setIsPaymentExpanded(true);
+    }
+  }, [isDesktop, isPaymentExpanded]);
 
   // Form state - initialize with transformed/provided data
   const [passenger, setPassenger] = useState(finalPassengerDetails);
@@ -744,8 +976,720 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
 
 
 
-        {/* Component sections */}
-        <div className="space-y-3">
+        {/* Desktop Two-Column Layout */}
+        <div className="hidden lg:grid lg:grid-cols-2 lg:gap-6">
+          {/* Left Column - Flight Info and Forms */}
+          <div className="space-y-3">
+            {/* Flight Details */}
+            <div className="bg-white rounded-lg shadow p-4">
+              <div
+                className="cursor-pointer"
+                onClick={() => setIsFlightExpanded(!isFlightExpanded)}
+              >
+                {/* Compact View */}
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-6">
+                      <div className="flex items-center space-x-3">
+                        <div className="text-center">
+                          <div className="text-sm font-bold">{finalFlightDetails.departure.code}</div>
+                          <div className="text-sm font-bold">{finalFlightDetails.departure.time}</div>
+                        </div>
+                        <ArrowRight className="h-3 w-3 text-gray-400" />
+                        <div className="text-center">
+                          <div className="text-sm font-bold">{finalFlightDetails.arrival.code}</div>
+                          <div className="text-sm font-bold">{finalFlightDetails.arrival.time}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-3 text-xs text-gray-600">
+                        <div className="flex items-center space-x-1">
+                          <span className="text-xs">{finalFlightDetails.airline.flightNumber}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <span className="text-xs">{finalFlightDetails.airline.cabinClass}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <span className="text-xs">Duration: {finalFlightDetails.duration}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Chevron Icon */}
+                  <div className="ml-4">
+                    {isFlightExpanded ? (
+                      <ChevronUp className="h-5 w-5 text-gray-400" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5 text-gray-400" />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Expanded View */}
+              {isFlightExpanded && (
+                <div className="border-t pt-4 mt-3">
+                  {/* Airline Info */}
+                  <div className="flex items-center space-x-3 mb-3">
+                    <div className="h-6 w-6 bg-blue-100 rounded-full flex items-center justify-center">
+                      <Plane className="h-3 w-3 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium text-xs">{finalFlightDetails.airline.name}</span>
+                      </div>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <span className="text-xs text-gray-600">
+                          Aircraft: {finalFlightDetails.airline.aircraftType || 'Not specified'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Route Details */}
+                  <div className="grid grid-cols-3 gap-3 items-center">
+                    {/* Departure */}
+                    <div className="text-left">
+                      <div className="text-xs text-gray-600 mb-1">Departure</div>
+                      <div className="text-sm font-bold">{finalFlightDetails.departure.time}</div>
+                      <div className="text-xs text-gray-900">{finalFlightDetails.departure.city}</div>
+                      <div className="text-xs text-gray-600">{finalFlightDetails.departure.date}</div>
+                    </div>
+
+                    {/* Duration Indicator */}
+                    <div className="flex flex-col items-center">
+                      <div className="text-xs text-gray-600 mb-1">{finalFlightDetails.duration}</div>
+                      <div className="flex items-center w-full">
+                        <div className="w-16 h-px bg-gray-300"></div>
+                        <ArrowRight className="h-3 w-3 text-gray-400 mx-1" />
+                      </div>
+                      <div className="text-xs text-gray-600 mt-1">Non-stop</div>
+                    </div>
+
+                    {/* Arrival */}
+                    <div className="text-right">
+                      <div className="text-xs text-gray-600 mb-1">Arrival</div>
+                      <div className="text-sm font-bold">{finalFlightDetails.arrival.time}</div>
+                      <div className="text-xs text-gray-900">{finalFlightDetails.arrival.city}</div>
+                      <div className="text-xs text-gray-600">{finalFlightDetails.arrival.date}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Passenger Details */}
+            <div className="bg-white rounded-lg shadow p-4">
+              <h2 className="text-lg font-semibold mb-4">Passenger Details</h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {/* First Name */}
+                <div>
+                  <Label htmlFor="firstName" className="text-xs font-medium text-gray-700 mb-0.5">
+                    First Name *
+                  </Label>
+                  <Input
+                    id="firstName"
+                    type="text"
+                    value={passenger.firstName}
+                    onChange={(e) => {
+                      setPassenger({ ...passenger, firstName: e.target.value });
+                      validateField(e.target.value, 'firstName');
+                    }}
+                    className={cn(
+                      "w-full border rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                      validationErrors.firstName ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                    )}
+                    placeholder="Enter first name"
+                  />
+                  {validationErrors.firstName && (
+                    <p className="text-red-500 text-xs mt-1">First name is required</p>
+                  )}
+                </div>
+
+                {/* Last Name */}
+                <div>
+                  <Label htmlFor="lastName" className="text-xs font-medium text-gray-700 mb-0.5">
+                    Last Name *
+                  </Label>
+                  <Input
+                    id="lastName"
+                    type="text"
+                    value={passenger.lastName}
+                    onChange={(e) => {
+                      setPassenger({ ...passenger, lastName: e.target.value });
+                      validateField(e.target.value, 'lastName');
+                    }}
+                    className={cn(
+                      "w-full border rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                      validationErrors.lastName ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                    )}
+                    placeholder="Enter last name"
+                  />
+                  {validationErrors.lastName && (
+                    <p className="text-red-500 text-xs mt-1">Last name is required</p>
+                  )}
+                </div>
+
+                {/* Gender */}
+                <div>
+                  <Label htmlFor="gender" className="text-xs font-medium text-gray-700 mb-0.5">
+                    Gender *
+                  </Label>
+                  <Select
+                    value={passenger.gender}
+                    onValueChange={(value) => {
+                      setPassenger({ ...passenger, gender: value });
+                      validateField(value, 'gender');
+                    }}
+                  >
+                    <SelectTrigger className={cn(
+                      "h-9",
+                      validationErrors.gender ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                    )}>
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Male">Male</SelectItem>
+                      <SelectItem value="Female">Female</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {validationErrors.gender && (
+                    <p className="text-red-500 text-xs mt-1">Gender is required</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer Note */}
+              <div className="border-t pt-3 mt-4">
+                <p className="text-xs text-gray-600">
+                  Please ensure all details match your travel documents exactly.
+                </p>
+              </div>
+
+              {/* Saved Passengers Button */}
+              <div className="mt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsSavedPassengersExpanded(!isSavedPassengersExpanded)}
+                  className="w-full flex items-center justify-between text-sm"
+                >
+                  <span>Saved Passengers</span>
+                  {isSavedPassengersExpanded ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </Button>
+
+                {/* Saved Passengers List */}
+                {isSavedPassengersExpanded && (
+                  <div className="mt-3 border rounded-lg bg-gray-50">
+                    <div className="p-3">
+                      <div className="text-xs font-medium text-gray-700 mb-2">
+                        Select a saved passenger:
+                      </div>
+                      <div className="space-y-2">
+                        {savedPassengers.map((savedPassenger) => (
+                          <button
+                            key={savedPassenger.id}
+                            onClick={() => handleSelectSavedPassenger(savedPassenger)}
+                            className="w-full text-left p-3 bg-white border rounded-md hover:bg-blue-50 hover:border-blue-200 transition-colors duration-200"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="font-medium text-sm">
+                                  {savedPassenger.firstName} {savedPassenger.lastName}
+                                </div>
+                                <div className="text-xs text-gray-600">
+                                  {savedPassenger.gender} • {savedPassenger.dateOfBirth ? `Born ${savedPassenger.dateOfBirth}` : 'No DOB'}
+                                </div>
+                              </div>
+                              <ArrowRight className="h-4 w-4 text-gray-400" />
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Contact Information */}
+            <div className="bg-white rounded-lg shadow p-4">
+              <div
+                className="cursor-pointer"
+                onClick={() => setIsContactExpanded(!isContactExpanded)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <h2 className="text-lg font-semibold">Contact Information</h2>
+                    {!isContactExpanded && (
+                      <div className="text-sm text-gray-600 mt-1">
+                        {contact.phone} • {contact.email}
+                      </div>
+                    )}
+                  </div>
+                  <div className="ml-4">
+                    {isContactExpanded ? (
+                      <ChevronUp className="h-5 w-5 text-gray-400" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5 text-gray-400" />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {isContactExpanded && (
+                <div className="border-t pt-4 mt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {/* Phone Number */}
+                    <div>
+                      <Label htmlFor="phone" className="text-xs font-medium text-gray-700 mb-0.5">
+                        Phone Number *
+                      </Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        value={contact.phone}
+                        onChange={(e) => {
+                          setContact({ ...contact, phone: e.target.value });
+                          validateField(e.target.value, 'phone');
+                        }}
+                        className={cn(
+                          "w-full border rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                          validationErrors.phone ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                        )}
+                        placeholder="+1 (555) 123-4567"
+                      />
+                      {validationErrors.phone && (
+                        <p className="text-red-500 text-xs mt-1">Phone number is required</p>
+                      )}
+                    </div>
+
+                    {/* Email Address */}
+                    <div>
+                      <Label htmlFor="email" className="text-xs font-medium text-gray-700 mb-0.5">
+                        Email Address *
+                      </Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={contact.email}
+                        onChange={(e) => {
+                          setContact({ ...contact, email: e.target.value });
+                          validateEmail(e.target.value);
+                        }}
+                        className={cn(
+                          "w-full border rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                          validationErrors.email ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                        )}
+                        placeholder="your.email@example.com"
+                      />
+                      {validationErrors.email && (
+                        <p className="text-red-500 text-xs mt-1">Valid email address is required</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-3 mt-4">
+                    <p className="text-xs text-gray-600">
+                      We&apos;ll use this information to send you booking confirmations and updates.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Travel Documents - Only show if travelerRequirements is not null */}
+            {showTravelDocuments && (
+              <div className="bg-white rounded-lg shadow p-4">
+              <div
+                className="cursor-pointer"
+                onClick={() => setIsTravelDocsExpanded(!isTravelDocsExpanded)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <h2 className="text-lg font-semibold">Travel Documents</h2>
+                    {!isTravelDocsExpanded && document && document.type && document.number && (
+                      <div className="text-sm text-gray-600 mt-1">
+                        {document.type} • {document.number} • Expires {document.expiryDate}
+                      </div>
+                    )}
+                  </div>
+                  <div className="ml-4">
+                    {isTravelDocsExpanded ? (
+                      <ChevronUp className="h-5 w-5 text-gray-400" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5 text-gray-400" />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {isTravelDocsExpanded && (
+                <div className="border-t pt-4 mt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {/* Date of Birth */}
+                    <div>
+                      <Label htmlFor="dateOfBirth" className="text-xs font-medium text-gray-700 mb-0.5">
+                        Date of Birth *
+                      </Label>
+                      <DateInput
+                        date={passenger.dateOfBirth ? new Date(passenger.dateOfBirth) : undefined}
+                        onDateChange={(date) => {
+                          const dateString = date ? date.toISOString().split('T')[0] : '';
+                          setPassenger({ ...passenger, dateOfBirth: dateString });
+                          validateField(dateString, 'dateOfBirth');
+                        }}
+                        placeholder="Select date of birth"
+                        disableFuture={true}
+                        className={cn(
+                          validationErrors.dateOfBirth ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                        )}
+                      />
+                      {validationErrors.dateOfBirth && (
+                        <p className="text-red-500 text-xs mt-1">Date of birth is required</p>
+                      )}
+                    </div>
+
+                    {/* Document Type */}
+                    <div>
+                      <Label htmlFor="documentType" className="text-xs font-medium text-gray-700 mb-0.5">
+                        Document Type *
+                      </Label>
+                      <Select
+                        value={document?.type || ''}
+                        onValueChange={(value) => {
+                          setDocument({ ...(document || {}), type: value } as any);
+                          validateField(value, 'documentType');
+                        }}
+                      >
+                        <SelectTrigger className={cn(
+                          "h-9",
+                          validationErrors.documentType ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                        )}>
+                          <SelectValue placeholder="Select document type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Passport">Passport</SelectItem>
+                          <SelectItem value="National ID">National ID</SelectItem>
+                          <SelectItem value="Driver&apos;s License">Driver&apos;s License</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {validationErrors.documentType && (
+                        <p className="text-red-500 text-xs mt-1">Document type is required</p>
+                      )}
+                    </div>
+
+                    {/* Document Number */}
+                    <div className="relative">
+                      <Label htmlFor="documentNumber" className="text-xs font-medium text-gray-700 mb-0.5">
+                        {document?.type || 'Document'} Number *
+                      </Label>
+                      <Input
+                        id="documentNumber"
+                        type="text"
+                        value={document?.number || ''}
+                        onChange={(e) => {
+                          setDocument({ ...(document || {}), number: e.target.value } as any);
+                          validateField(e.target.value, 'documentNumber');
+                        }}
+                        className={cn(
+                          "w-full border rounded-md px-2 py-1.5 text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                          validationErrors.documentNumber ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                        )}
+                        placeholder="Enter document number"
+                      />
+                      {validationErrors.documentNumber && (
+                        <p className="text-red-500 text-xs mt-1">Document number is required</p>
+                      )}
+                    </div>
+
+                    {/* Issuing Country */}
+                    <div>
+                      <Label htmlFor="issuingCountry" className="text-xs font-medium text-gray-700 mb-0.5">
+                        Issuing Country *
+                      </Label>
+                      <CountryCombobox
+                        value={document?.issuingCountry || ''}
+                        onValueChange={(value) => {
+                          setDocument({ ...(document || {}), issuingCountry: value } as any);
+                          validateField(value, 'issuingCountry');
+                        }}
+                        placeholder="Select issuing country"
+                        className={cn(
+                          validationErrors.issuingCountry ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                        )}
+                      />
+                      {validationErrors.issuingCountry && (
+                        <p className="text-red-500 text-xs mt-1">Issuing country is required</p>
+                      )}
+                    </div>
+
+                    {/* Nationality */}
+                    <div>
+                      <Label htmlFor="nationality" className="text-xs font-medium text-gray-700 mb-0.5">
+                        Nationality *
+                      </Label>
+                      <CountryCombobox
+                        value={document?.nationality || ''}
+                        onValueChange={(value) => {
+                          setDocument({ ...(document || {}), nationality: value } as any);
+                          validateField(value, 'nationality');
+                        }}
+                        placeholder="Select nationality"
+                        className={cn(
+                          validationErrors.nationality ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                        )}
+                      />
+                      {validationErrors.nationality && (
+                        <p className="text-red-500 text-xs mt-1">Nationality is required</p>
+                      )}
+                    </div>
+
+                    {/* Expiry Date */}
+                    <div className="relative">
+                      <Label htmlFor="expiryDate" className="text-xs font-medium text-gray-700 mb-0.5">
+                        Expiry Date *
+                      </Label>
+                      <DateInput
+                        date={document?.expiryDate ? new Date(document.expiryDate) : undefined}
+                        onDateChange={(date) => {
+                          const dateString = date ? date.toISOString().split('T')[0] : '';
+                          setDocument({ ...(document || {}), expiryDate: dateString } as any);
+                          validateField(dateString, 'expiryDate');
+                        }}
+                        placeholder="Select expiry date"
+                        disablePast={true}
+                        className={cn(
+                          validationErrors.expiryDate ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                        )}
+                      />
+                      {validationErrors.expiryDate && (
+                        <p className="text-red-500 text-xs mt-1">Expiry date is required</p>
+                      )}
+                      {/* Expiry Warning */}
+                      {(() => {
+                        if (!document?.expiryDate) return null;
+                        const expiryDate = new Date(document.expiryDate);
+                        const today = new Date();
+                        const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 3600 * 24));
+
+                        if (daysUntilExpiry < 180 && daysUntilExpiry > 0) {
+                          return (
+                            <div className="mt-2">
+                              <div className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full flex items-center space-x-1">
+                                <AlertTriangle className="h-3 w-3" />
+                                <span>Expires soon</span>
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Verification Status */}
+                  <div className="border-t pt-4 mt-4">
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center space-x-2">
+                      <Shield className="h-4 w-4 text-green-600" />
+                      <span className="text-sm text-green-700 font-medium">Document verified</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              </div>
+            )}
+          </div>
+
+          {/* Right Column - Payment Info and Actions */}
+          <div className="space-y-3 lg:sticky lg:top-4 lg:self-start">
+            {/* Seat Allocation - Only show if seat data is available */}
+            {showSeatComponent && finalSeatAllocation && (
+              <div className="bg-white rounded-lg shadow p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-2">
+                    <h2 className="text-lg font-semibold">Seat Allocation</h2>
+                    {isSeatSelected && (
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                        {finalSeatAllocation.seatNumber}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Toggle Switch */}
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-600">Select seat</span>
+                    <button
+                      onClick={() => setIsSeatSelected(!isSeatSelected)}
+                      className={cn(
+                        "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2",
+                        isSeatSelected ? "bg-green-600" : "bg-gray-300"
+                      )}
+                      role="switch"
+                      aria-checked={isSeatSelected}
+                      aria-label="Toggle seat selection"
+                    >
+                      <span
+                        className={cn(
+                          "inline-block h-4 w-4 transform rounded-full transition-transform duration-200 shadow-sm border border-gray-200",
+                          isSeatSelected
+                            ? "translate-x-6 bg-white"
+                            : "translate-x-1 bg-white"
+                        )}
+                      />
+                    </button>
+                  </div>
+                </div>
+                {/* Seat Card */}
+                <div
+                  className={cn(
+                    "border rounded-lg p-4 transition-colors duration-200",
+                    isSeatSelected
+                      ? "border-green-200 bg-green-50"
+                      : "border-gray-200 bg-gray-50"
+                  )}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <MapPin className="h-4 w-4 text-gray-600" />
+                        <span className="font-medium text-sm">
+                          {isSeatSelected ? `Seat ${finalSeatAllocation.seatNumber}` : "No seat selected"}
+                        </span>
+                      </div>
+                      {isSeatSelected && (
+                        <p className="text-xs text-gray-600">{finalSeatAllocation.location}</p>
+                      )}
+                    </div>
+
+                    <div className="text-right">
+                      <div className="text-lg font-semibold">
+                        {isSeatSelected ? `${finalPaymentSummary.currency === 'INR' ? '₹' : '$'}${finalSeatAllocation.price.toFixed(2)}` : `${finalPaymentSummary.currency === 'INR' ? '₹' : '$'}0.00`}
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        {isSeatSelected ? "Seat fee" : "No fee"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {!isSeatSelected && (
+                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-700">
+                      💡 Select a seat to ensure you get your preferred location on the aircraft.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Payment Summary */}
+            <div className="bg-white rounded-lg shadow p-4">
+              <div
+                className="cursor-pointer"
+                onClick={() => setIsPaymentExpanded(!isPaymentExpanded)}
+              >
+                <div className="bg-gray-50 rounded-lg p-3 flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold">Payment Summary</h2>
+                    <div className="text-sm font-bold text-gray-900">
+                      Total: {finalPaymentSummary.currency === 'INR' ? '₹' : '$'}{calculateTotal().toFixed(2)} {finalPaymentSummary.currency}
+                    </div>
+                  </div>
+                  <div>
+                    {isPaymentExpanded ? (
+                      <ChevronUp className="h-5 w-5 text-gray-400" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5 text-gray-400" />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {isPaymentExpanded && (
+                <div className="border-t pt-4 mt-4 space-y-2">
+                  {/* Base Fare */}
+                  <div className="flex justify-between">
+                    <span className="text-xs text-gray-600">Base fare</span>
+                    <span className="text-xs font-medium">{finalPaymentSummary.currency === 'INR' ? '₹' : '$'}{finalPaymentSummary.baseFare.toFixed(2)}</span>
+                  </div>
+
+                  {/* Taxes */}
+                  <div className="flex justify-between">
+                    <span className="text-xs text-gray-600">Taxes & fees</span>
+                    <span className="text-xs font-medium">{finalPaymentSummary.currency === 'INR' ? '₹' : '$'}{finalPaymentSummary.taxes.toFixed(2)}</span>
+                  </div>
+
+                  {/* Service Fees */}
+                  <div className="flex justify-between">
+                    <span className="text-xs text-gray-600">Service fees</span>
+                    <span className="text-xs font-medium">{finalPaymentSummary.currency === 'INR' ? '₹' : '$'}{finalPaymentSummary.fees.toFixed(2)}</span>
+                  </div>
+
+                  {/* Seat Selection - Only show if seat component is enabled */}
+                  {showSeatComponent && finalSeatAllocation && (
+                    <div className="flex justify-between">
+                      <span className="text-xs text-gray-600">Seat selection</span>
+                      <span className="text-xs font-medium">
+                        {finalPaymentSummary.currency === 'INR' ? '₹' : '$'}{isSeatSelected ? finalSeatAllocation.price.toFixed(2) : "0.00"}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Discount */}
+                  {finalPaymentSummary.discount > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-xs text-gray-600">Discount</span>
+                      <span className="text-xs font-medium text-green-600">
+                        -{finalPaymentSummary.currency === 'INR' ? '₹' : '$'}{finalPaymentSummary.discount.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Total */}
+                  <div className="border-t pt-2 mt-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm font-semibold">Total</span>
+                      <span className="text-sm font-bold">
+                        {finalPaymentSummary.currency === 'INR' ? '₹' : '$'}{calculateTotal().toFixed(2)} {finalPaymentSummary.currency}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Desktop Action Buttons */}
+            <div className="flex flex-col space-y-3">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={onClose}
+              >
+                Back
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={!isFormValid}
+                className={cn(
+                  "w-full py-3 text-base",
+                  isFormValid
+                    ? "bg-blue-600 hover:bg-blue-700"
+                    : "bg-gray-400 cursor-not-allowed"
+                )}
+              >
+                Confirm Booking
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile/Tablet Single Column Layout */}
+        <div className="lg:hidden space-y-3">
           {/* Flight Details */}
           <div className="bg-white rounded-lg shadow p-4">
             <div
@@ -874,11 +1818,11 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {/* First Name */}
               <div>
-                <Label htmlFor="firstName" className="text-xs font-medium text-gray-700 mb-0.5">
+                <Label htmlFor="firstName-mobile" className="text-xs font-medium text-gray-700 mb-0.5">
                   First Name *
                 </Label>
                 <Input
-                  id="firstName"
+                  id="firstName-mobile"
                   type="text"
                   value={passenger.firstName}
                   onChange={(e) => {
@@ -898,11 +1842,11 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
 
               {/* Last Name */}
               <div>
-                <Label htmlFor="lastName" className="text-xs font-medium text-gray-700 mb-0.5">
+                <Label htmlFor="lastName-mobile" className="text-xs font-medium text-gray-700 mb-0.5">
                   Last Name *
                 </Label>
                 <Input
-                  id="lastName"
+                  id="lastName-mobile"
                   type="text"
                   value={passenger.lastName}
                   onChange={(e) => {
@@ -922,7 +1866,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
 
               {/* Gender */}
               <div>
-                <Label htmlFor="gender" className="text-xs font-medium text-gray-700 mb-0.5">
+                <Label htmlFor="gender-mobile" className="text-xs font-medium text-gray-700 mb-0.5">
                   Gender *
                 </Label>
                 <Select
@@ -1035,11 +1979,11 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {/* Phone Number */}
                   <div>
-                    <Label htmlFor="phone" className="text-xs font-medium text-gray-700 mb-0.5">
+                    <Label htmlFor="phone-mobile" className="text-xs font-medium text-gray-700 mb-0.5">
                       Phone Number *
                     </Label>
                     <Input
-                      id="phone"
+                      id="phone-mobile"
                       type="tel"
                       value={contact.phone}
                       onChange={(e) => {
@@ -1059,11 +2003,11 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
 
                   {/* Email Address */}
                   <div>
-                    <Label htmlFor="email" className="text-xs font-medium text-gray-700 mb-0.5">
+                    <Label htmlFor="email-mobile" className="text-xs font-medium text-gray-700 mb-0.5">
                       Email Address *
                     </Label>
                     <Input
-                      id="email"
+                      id="email-mobile"
                       type="email"
                       value={contact.email}
                       onChange={(e) => {
@@ -1122,19 +2066,19 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {/* Date of Birth */}
                   <div>
-                    <Label htmlFor="dateOfBirth" className="text-xs font-medium text-gray-700 mb-0.5">
+                    <Label htmlFor="dateOfBirth-mobile" className="text-xs font-medium text-gray-700 mb-0.5">
                       Date of Birth *
                     </Label>
-                    <Input
-                      id="dateOfBirth"
-                      type="date"
-                      value={passenger.dateOfBirth}
-                      onChange={(e) => {
-                        setPassenger({ ...passenger, dateOfBirth: e.target.value });
-                        validateField(e.target.value, 'dateOfBirth');
+                    <DateInput
+                      date={passenger.dateOfBirth ? new Date(passenger.dateOfBirth) : undefined}
+                      onDateChange={(date) => {
+                        const dateString = date ? date.toISOString().split('T')[0] : '';
+                        setPassenger({ ...passenger, dateOfBirth: dateString });
+                        validateField(dateString, 'dateOfBirth');
                       }}
+                      placeholder="Select date of birth"
+                      disableFuture={true}
                       className={cn(
-                        "w-full border rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
                         validationErrors.dateOfBirth ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
                       )}
                     />
@@ -1145,7 +2089,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
 
                   {/* Document Type */}
                   <div>
-                    <Label htmlFor="documentType" className="text-xs font-medium text-gray-700 mb-0.5">
+                    <Label htmlFor="documentType-mobile" className="text-xs font-medium text-gray-700 mb-0.5">
                       Document Type *
                     </Label>
                     <Select
@@ -1170,120 +2114,6 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                     {validationErrors.documentType && (
                       <p className="text-red-500 text-xs mt-1">Document type is required</p>
                     )}
-                  </div>
-
-                  {/* Document Number */}
-                  <div className="relative">
-                    <Label htmlFor="documentNumber" className="text-xs font-medium text-gray-700 mb-0.5">
-                      {document?.type || 'Document'} Number *
-                    </Label>
-                    <Input
-                      id="documentNumber"
-                      type="text"
-                      value={document?.number || ''}
-                      onChange={(e) => {
-                        setDocument({ ...(document || {}), number: e.target.value } as any);
-                        validateField(e.target.value, 'documentNumber');
-                      }}
-                      className={cn(
-                        "w-full border rounded-md px-2 py-1.5 text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-                        validationErrors.documentNumber ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
-                      )}
-                      placeholder="Enter document number"
-                    />
-                    {validationErrors.documentNumber && (
-                      <p className="text-red-500 text-xs mt-1">Document number is required</p>
-                    )}
-                  </div>
-
-                  {/* Issuing Country */}
-                  <div>
-                    <Label htmlFor="issuingCountry" className="text-xs font-medium text-gray-700 mb-0.5">
-                      Issuing Country *
-                    </Label>
-                    <Input
-                      id="issuingCountry"
-                      type="text"
-                      value={document?.issuingCountry || ''}
-                      onChange={(e) => {
-                        setDocument({ ...(document || {}), issuingCountry: e.target.value } as any);
-                        validateField(e.target.value, 'issuingCountry');
-                      }}
-                      className={cn(
-                        "w-full border rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-                        validationErrors.issuingCountry ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
-                      )}
-                      placeholder="Enter issuing country"
-                    />
-                    {validationErrors.issuingCountry && (
-                      <p className="text-red-500 text-xs mt-1">Issuing country is required</p>
-                    )}
-                  </div>
-
-                  {/* Nationality */}
-                  <div>
-                    <Label htmlFor="nationality" className="text-xs font-medium text-gray-700 mb-0.5">
-                      Nationality *
-                    </Label>
-                    <Input
-                      id="nationality"
-                      type="text"
-                      value={document?.nationality || ''}
-                      onChange={(e) => {
-                        setDocument({ ...(document || {}), nationality: e.target.value } as any);
-                        validateField(e.target.value, 'nationality');
-                      }}
-                      className={cn(
-                        "w-full border rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-                        validationErrors.nationality ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
-                      )}
-                      placeholder="Enter nationality"
-                    />
-                    {validationErrors.nationality && (
-                      <p className="text-red-500 text-xs mt-1">Nationality is required</p>
-                    )}
-                  </div>
-
-                  {/* Expiry Date */}
-                  <div className="relative">
-                    <Label htmlFor="expiryDate" className="text-xs font-medium text-gray-700 mb-0.5">
-                      Expiry Date *
-                    </Label>
-                    <Input
-                      id="expiryDate"
-                      type="date"
-                      value={document?.expiryDate || ''}
-                      onChange={(e) => {
-                        setDocument({ ...(document || {}), expiryDate: e.target.value } as any);
-                        validateField(e.target.value, 'expiryDate');
-                      }}
-                      className={cn(
-                        "w-full border rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-                        validationErrors.expiryDate ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
-                      )}
-                    />
-                    {validationErrors.expiryDate && (
-                      <p className="text-red-500 text-xs mt-1">Expiry date is required</p>
-                    )}
-                    {/* Expiry Warning */}
-                    {(() => {
-                      if (!document?.expiryDate) return null;
-                      const expiryDate = new Date(document.expiryDate);
-                      const today = new Date();
-                      const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 3600 * 24));
-
-                      if (daysUntilExpiry < 180 && daysUntilExpiry > 0) {
-                        return (
-                          <div className="absolute right-2 top-1/2 transform -translate-y-1/2 mt-3">
-                            <div className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full flex items-center space-x-1">
-                              <AlertTriangle className="h-3 w-3" />
-                              <span>Expires soon</span>
-                            </div>
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()}
                   </div>
                 </div>
 
@@ -1462,7 +2292,11 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
           // Bottom sheet buttons - always sticky at bottom
           <div className="sticky bottom-0 bg-white border-t p-4 mt-6 -mx-4">
             <div className="flex space-x-3">
-              <Button variant="outline" className="flex-1">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={onClose}
+              >
                 Back
               </Button>
               <Button
@@ -1480,42 +2314,22 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
             </div>
           </div>
         ) : (
-          <>
-            {/* Desktop Action Buttons */}
-            <div className="hidden sm:flex justify-end mt-6 space-x-3">
-              <Button variant="outline" className="px-6">
-                Back
-              </Button>
-              <Button
-                onClick={handleSubmit}
-                disabled={!isFormValid}
-                className={cn(
-                  "px-6",
-                  isFormValid
-                    ? "bg-blue-600 hover:bg-blue-700"
-                    : "bg-gray-400 cursor-not-allowed"
-                )}
-              >
-                Confirm Booking
-              </Button>
-            </div>
-
-            {/* Mobile Sticky Button */}
-            <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t p-4 z-50">
-              <Button
-                onClick={handleSubmit}
-                disabled={!isFormValid}
-                className={cn(
-                  "w-full py-3 text-base",
-                  isFormValid
-                    ? "bg-blue-600 hover:bg-blue-700"
-                    : "bg-gray-400 cursor-not-allowed"
-                )}
-              >
-                Confirm Booking
-              </Button>
-            </div>
-          </>
+          // Mobile/Tablet Sticky Button (Desktop buttons are in the right column)
+          // Only show on mobile/tablet, hidden on desktop (lg and above)
+          <div className="block lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t p-4 z-50">
+            <Button
+              onClick={handleSubmit}
+              disabled={!isFormValid}
+              className={cn(
+                "w-full py-3 text-base",
+                isFormValid
+                  ? "bg-blue-600 hover:bg-blue-700"
+                  : "bg-gray-400 cursor-not-allowed"
+              )}
+            >
+              Confirm Booking
+            </Button>
+          </div>
         )}
       </div>
     </div>
