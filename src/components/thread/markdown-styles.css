@@ -70,3 +70,34 @@
     margin: 0.5rem auto;
   }
 }
+
+/* Additional image controls for any missed cases */
+.markdown-content [data-image],
+.markdown-content picture,
+.markdown-content figure img {
+  max-width: 100%;
+  height: auto;
+  max-height: 20rem;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin: 1rem auto;
+  display: block;
+}
+
+/* Responsive sizing for additional image elements */
+@media (max-width: 768px) {
+  .markdown-content [data-image],
+  .markdown-content picture,
+  .markdown-content figure img {
+    max-height: 16rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .markdown-content [data-image],
+  .markdown-content picture,
+  .markdown-content figure img {
+    max-height: 12rem;
+  }
+}

@@ -176,4 +176,101 @@
   *, *::before, *::after {
     box-sizing: border-box;
   }
+
+  /* ULTRA AGGRESSIVE IMAGE SIZE CONTROL - HIGHEST SPECIFICITY */
+  /* This will override ANY image styling */
+  html body * img,
+  html body img,
+  img,
+  [src*="data:image"] {
+    max-width: 100% !important;
+    width: auto !important;
+    height: auto !important;
+    max-height: 18rem !important; /* 288px max height - slightly smaller */
+    object-fit: contain !important;
+    border-radius: 8px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    display: block !important;
+    margin: 1rem auto !important;
+  }
+
+  /* Even more specific selectors for stubborn images */
+  div img,
+  span img,
+  p img,
+  article img,
+  section img,
+  main img,
+  .markdown-content img,
+  [class*="message"] img,
+  [class*="content"] img,
+  [class*="thread"] img {
+    max-width: 100% !important;
+    width: auto !important;
+    height: auto !important;
+    max-height: 18rem !important;
+    object-fit: contain !important;
+    border-radius: 8px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    display: block !important;
+    margin: 1rem auto !important;
+  }
+
+  /* Target Next.js Image components specifically */
+  img[src*="data:"],
+  img[src*="http"],
+  img[src*="blob:"],
+  img[src*="/"],
+  span[style*="position"] img,
+  div[style*="position"] img {
+    max-width: 100% !important;
+    width: auto !important;
+    height: auto !important;
+    max-height: 18rem !important;
+    object-fit: contain !important;
+  }
+
+  /* Responsive sizing with higher specificity */
+  @media (max-width: 768px) {
+    html body * img,
+    html body img,
+    img,
+    div img,
+    span img,
+    p img {
+      max-height: 14rem !important; /* 224px on tablets */
+    }
+  }
+
+  @media (max-width: 480px) {
+    html body * img,
+    html body img,
+    img,
+    div img,
+    span img,
+    p img {
+      max-height: 10rem !important; /* 160px on mobile */
+    }
+  }
+
+  /* Override any inline styles */
+  img[style] {
+    max-width: 100% !important;
+    width: auto !important;
+    height: auto !important;
+    max-height: 18rem !important;
+    object-fit: contain !important;
+  }
+
+  @media (max-width: 768px) {
+    img[style] {
+      max-height: 14rem !important;
+    }
+  }
+
+  @media (max-width: 480px) {
+    img[style] {
+      max-height: 10rem !important;
+    }
+  }
 }
