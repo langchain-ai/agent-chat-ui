@@ -1058,15 +1058,17 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                           <div className="text-sm font-bold">{finalFlightDetails.arrival.time}</div>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-3 text-xs text-gray-600">
-                        <div className="flex items-center space-x-1">
-                          <span className="text-xs">{finalFlightDetails.airline.flightNumber}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <span className="text-xs">{finalFlightDetails.airline.cabinClass}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <span className="text-xs">Duration: {finalFlightDetails.duration}</span>
+                      <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-2">
+                          <AirlineLogo
+                            airlineIata={finalFlightDetails.airline.iataCode || ''}
+                            airlineName={finalFlightDetails.airline.name}
+                            size="sm"
+                          />
+                          <div className="text-xs text-gray-700">
+                            <div className="font-medium">{finalFlightDetails.airline.name}</div>
+                            <div className="text-gray-600">{finalFlightDetails.airline.cabinClass}</div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1771,22 +1773,22 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                         <div className="text-base font-bold">{finalFlightDetails.arrival.time}</div>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-4 text-sm text-gray-600">
-                      <div className="flex items-center space-x-1">
-                        <span className="text-sm">{finalFlightDetails.airline.flightNumber}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <span className="text-sm">{finalFlightDetails.airline.cabinClass}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <span className="text-sm">Duration: {finalFlightDetails.duration}</span>
+                    <div className="flex items-center space-x-3">
+                      <AirlineLogo
+                        airlineIata={finalFlightDetails.airline.iataCode || ''}
+                        airlineName={finalFlightDetails.airline.name}
+                        size="sm"
+                      />
+                      <div className="text-sm text-gray-700">
+                        <div className="font-medium">{finalFlightDetails.airline.name}</div>
+                        <div className="text-gray-600">{finalFlightDetails.airline.cabinClass}</div>
                       </div>
                     </div>
                   </div>
 
                   {/* Mobile Layout */}
                   <div className="sm:hidden">
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center justify-between mb-3">
                       <div className="text-center">
                         <div className="text-base font-bold">{finalFlightDetails.departure.code}</div>
                         <div className="text-base font-bold">{finalFlightDetails.departure.time}</div>
@@ -1797,12 +1799,16 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                         <div className="text-base font-bold">{finalFlightDetails.arrival.time}</div>
                       </div>
                     </div>
-                    <div className="flex items-center justify-center space-x-3 text-xs text-gray-600">
-                      <span>{finalFlightDetails.airline.flightNumber}</span>
-                      <span>•</span>
-                      <span>{finalFlightDetails.airline.cabinClass}</span>
-                      <span>•</span>
-                      <span>{finalFlightDetails.duration}</span>
+                    <div className="flex items-center justify-center space-x-3">
+                      <AirlineLogo
+                        airlineIata={finalFlightDetails.airline.iataCode || ''}
+                        airlineName={finalFlightDetails.airline.name}
+                        size="sm"
+                      />
+                      <div className="text-center">
+                        <div className="text-sm font-medium text-gray-700">{finalFlightDetails.airline.name}</div>
+                        <div className="text-xs text-gray-600">{finalFlightDetails.airline.cabinClass}</div>
+                      </div>
                     </div>
                   </div>
                 </div>

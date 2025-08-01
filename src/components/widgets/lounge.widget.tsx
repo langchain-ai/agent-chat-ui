@@ -179,7 +179,11 @@ const LoungesWidget = () => {
   return (
     <div
       className="max-w-6xl mx-auto mt-4 sm:mt-8 p-3 sm:p-6 bg-white rounded-xl sm:rounded-2xl border border-gray-200"
-      style={{ fontFamily: 'Uber Move, Arial, Helvetica, sans-serif' }}
+      style={{
+        fontFamily: 'Uber Move, Arial, Helvetica, sans-serif',
+        transform: 'scale(0.75)',
+        transformOrigin: 'center top'
+      }}
     >
       {/* Header */}
       <div className="flex justify-between items-center mb-4 sm:mb-6">
