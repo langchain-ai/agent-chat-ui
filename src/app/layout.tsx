@@ -30,16 +30,16 @@ export default function RootLayout({
               // Image Size Enforcer - Inline for immediate execution
               (function() {
                 function resizeImage(img) {
-                  const maxHeight = window.innerWidth <= 480 ? 160 : window.innerWidth <= 768 ? 224 : 288;
-                  img.style.setProperty('max-width', '100%', 'important');
-                  img.style.setProperty('width', 'auto', 'important');
-                  img.style.setProperty('height', 'auto', 'important');
-                  img.style.setProperty('max-height', maxHeight + 'px', 'important');
-                  img.style.setProperty('object-fit', 'contain', 'important');
-                  img.style.setProperty('border-radius', '8px', 'important');
+                  const size = window.innerWidth <= 480 ? 32 : window.innerWidth <= 768 ? 40 : 48;
+                  img.style.setProperty('max-width', size + 'px', 'important');
+                  img.style.setProperty('width', size + 'px', 'important');
+                  img.style.setProperty('height', size + 'px', 'important');
+                  img.style.setProperty('max-height', size + 'px', 'important');
+                  img.style.setProperty('object-fit', 'cover', 'important');
+                  img.style.setProperty('border-radius', '50%', 'important');
                   img.style.setProperty('box-shadow', '0 2px 8px rgba(0, 0, 0, 0.1)', 'important');
-                  img.style.setProperty('display', 'block', 'important');
-                  img.style.setProperty('margin', '1rem auto', 'important');
+                  img.style.setProperty('display', 'inline-block', 'important');
+                  img.style.setProperty('margin', '0.5rem', 'important');
                 }
 
                 function processImages() {

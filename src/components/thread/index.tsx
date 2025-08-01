@@ -50,6 +50,7 @@ import { LogoutButton } from "@/components/auth";
 import { getJwtToken, GetUserId } from "@/services/authService";
 import { GenericInterruptView } from "./messages/generic-interrupt";
 import { NonAgentFlowReopenButton } from "./NonAgentFlowReopenButton";
+import { updateThreadWithMessage } from "@/utils/thread-storage";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -140,6 +141,7 @@ export function Thread() {
   const [artifactOpen, closeArtifact] = useArtifactOpen();
 
   const [threadId, _setThreadId] = useQueryState("threadId");
+  const [assistantId] = useQueryState("assistantId");
   const [chatHistoryOpen, setChatHistoryOpen] = useQueryState(
     "chatHistoryOpen",
     parseAsBoolean.withDefault(false),
@@ -267,14 +269,51 @@ export function Thread() {
       submissionData.userId = userId;
     }
 
-    stream.submit(submissionData, {
+    // Add metadata to ensure thread is properly saved and searchable
+    const submitOptions: any = {
       streamMode: ["updates"],
       optimisticValues: (prev) => ({
         ...prev,
         context,
-        messages: [...(prev.messages ?? []), ...toolMessages, newHumanMessage],
+        messages: [
+          ...(prev.messages ?? []),
+          ...toolMessages,
+          newHumanMessage,
+        ],
       }),
-    });
+    };
+
+    // Add metadata for thread creation/updating
+    if (!threadId) {
+      // For new threads, add metadata to ensure they're searchable
+      submitOptions.metadata = {
+        assistant_id: assistantId,
+        graph_id: assistantId,
+        created_at: new Date().toISOString(),
+        user_id: userId || 'anonymous',
+      };
+    }
+
+    console.log("Submitting with options:", submitOptions);
+
+    // Store thread information locally for fallback
+    const messageText = typeof newHumanMessage.content === 'string'
+      ? newHumanMessage.content
+      : Array.isArray(newHumanMessage.content)
+        ? newHumanMessage.content.find(c => c.type === 'text')?.text || ''
+        : '';
+
+    if (messageText && assistantId) {
+      // Update local storage with thread info
+      if (threadId) {
+        updateThreadWithMessage(threadId, messageText, assistantId, userId || undefined);
+      } else {
+        // For new threads, we'll update after getting the thread ID from onThreadId callback
+        console.log("Will update local storage after thread ID is assigned");
+      }
+    }
+
+    stream.submit(submissionData, submitOptions);
 
     setInput("");
     setContentBlocks([]);

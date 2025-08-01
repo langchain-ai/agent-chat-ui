@@ -44,30 +44,35 @@
   background-color: #f9f9f9;
 }
 
-/* Image styling for better aesthetics and size control */
+/* Image styling - small circular icons */
 .markdown-content img {
-  max-width: 100%;
-  height: auto;
-  border-radius: 8px;
+  max-width: 48px;
+  width: 48px;
+  height: 48px;
+  max-height: 48px;
+  border-radius: 50%;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin: 1rem auto;
-  display: block;
-  max-height: 20rem; /* 320px - reasonable max height */
-  object-fit: contain;
+  margin: 0.5rem;
+  display: inline-block;
+  object-fit: cover;
 }
 
 /* Responsive image sizing for smaller screens */
 @media (max-width: 768px) {
   .markdown-content img {
-    max-height: 16rem; /* 256px on tablets */
-    margin: 0.75rem auto;
+    max-width: 40px;
+    width: 40px;
+    height: 40px;
+    max-height: 40px;
   }
 }
 
 @media (max-width: 480px) {
   .markdown-content img {
-    max-height: 12rem; /* 192px on mobile */
-    margin: 0.5rem auto;
+    max-width: 32px;
+    width: 32px;
+    height: 32px;
+    max-height: 32px;
   }
 }
 
@@ -75,14 +80,15 @@
 .markdown-content [data-image],
 .markdown-content picture,
 .markdown-content figure img {
-  max-width: 100%;
-  height: auto;
-  max-height: 20rem;
-  object-fit: contain;
-  border-radius: 8px;
+  max-width: 48px;
+  width: 48px;
+  height: 48px;
+  max-height: 48px;
+  object-fit: cover;
+  border-radius: 50%;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin: 1rem auto;
-  display: block;
+  margin: 0.5rem;
+  display: inline-block;
 }
 
 /* Responsive sizing for additional image elements */
@@ -90,7 +96,10 @@
   .markdown-content [data-image],
   .markdown-content picture,
   .markdown-content figure img {
-    max-height: 16rem;
+    max-width: 40px;
+    width: 40px;
+    height: 40px;
+    max-height: 40px;
   }
 }
 
@@ -98,6 +107,9 @@
   .markdown-content [data-image],
   .markdown-content picture,
   .markdown-content figure img {
-    max-height: 12rem;
+    max-width: 32px;
+    width: 32px;
+    height: 32px;
+    max-height: 32px;
   }
 }

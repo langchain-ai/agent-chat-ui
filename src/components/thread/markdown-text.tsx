@@ -205,7 +205,7 @@ const defaultComponents: any = {
   img: ({ className, ...props }: { className?: string }) => (
     <img
       className={cn(
-        "max-w-full h-auto rounded-lg shadow-sm my-4 mx-auto block max-h-80 object-contain",
+        "w-12 h-12 max-w-12 max-h-12 rounded-full shadow-sm m-2 inline-block object-cover",
         className,
       )}
       {...props}
