@@ -272,7 +272,7 @@ export function Thread() {
     // Add metadata to ensure thread is properly saved and searchable
     const submitOptions: any = {
       streamMode: ["updates"],
-      optimisticValues: (prev) => ({
+      optimisticValues: (prev: any) => ({
         ...prev,
         context,
         messages: [
@@ -306,7 +306,7 @@ export function Thread() {
     if (messageText && assistantId) {
       // Update local storage with thread info
       if (threadId) {
-        updateThreadWithMessage(threadId, messageText, assistantId, userId || undefined);
+        updateThreadWithMessage(threadId, messageText, assistantId, userId ? String(userId) : undefined);
       } else {
         // For new threads, we'll update after getting the thread ID from onThreadId callback
         console.log("Will update local storage after thread ID is assigned");
