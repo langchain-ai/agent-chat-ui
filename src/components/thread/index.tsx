@@ -12,7 +12,7 @@ import {
   DO_NOT_RENDER_ID_PREFIX,
   ensureToolCallsHaveResponses,
 } from "@/lib/ensure-tool-responses";
-import { LangGraphLogoSVG } from "../icons/langgraph";
+import { FlyoLogoSVG } from "../icons/langgraph";
 import { TooltipIconButton } from "./tooltip-icon-button";
 import {
   ArrowDown,
@@ -46,6 +46,10 @@ import {
   ArtifactTitle,
   useArtifactContext,
 } from "./artifact";
+import { LogoutButton } from "@/components/auth";
+import { getJwtToken, GetUserId } from "@/services/authService";
+import { GenericInterruptView } from "./messages/generic-interrupt";
+import { updateThreadWithMessage } from "@/utils/thread-storage";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -112,11 +116,31 @@ function OpenGitHubRepo() {
   );
 }
 
+// Add this utility function to filter out tool call messages with empty content
+function isDisplayableMessage(m: Message) {
+  if (m.id?.startsWith(DO_NOT_RENDER_ID_PREFIX)) return false;
+  // Hide tool call messages with empty content
+  if (
+    (m.type === "ai" &&
+      (!m.content ||
+        (Array.isArray(m.content) && m.content.length === 0) ||
+        m.content === "") &&
+      m.tool_calls &&
+      m.tool_calls.length > 0) ||
+    m.type === "tool"
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
 export function Thread() {
   const [artifactContext, setArtifactContext] = useArtifactContext();
   const [artifactOpen, closeArtifact] = useArtifactOpen();
 
   const [threadId, _setThreadId] = useQueryState("threadId");
+  const [assistantId] = useQueryState("assistantId");
   const [chatHistoryOpen, setChatHistoryOpen] = useQueryState(
     "chatHistoryOpen",
     parseAsBoolean.withDefault(false),
@@ -142,6 +166,21 @@ export function Thread() {
   const stream = useStreamContext();
   const messages = stream.messages;
   const isLoading = stream.isLoading;
+
+  // Track the last threadId to reset displayMessages on thread switch
+  const lastThreadId = useRef<string | null>(threadId);
+  useEffect(() => {
+    lastThreadId.current = threadId;
+  }, [threadId, messages]);
+
+  // Optionally clear input and contentBlocks when threadId changes
+  useEffect(() => {
+    setInput("");
+    setContentBlocks([]);
+    if (threadId === null) {
+      // setDisplayMessages([]); // Remove this line
+    }
+  }, [threadId, setContentBlocks]);
 
   const lastError = useRef<string | undefined>(undefined);
 
@@ -201,6 +240,10 @@ export function Thread() {
       return;
     setFirstTokenReceived(false);
 
+    // Get user ID from JWT token
+    const jwtToken = getJwtToken();
+    const userId = jwtToken ? GetUserId(jwtToken) : null;
+
     const newHumanMessage: Message = {
       id: uuidv4(),
       type: "human",
@@ -215,21 +258,61 @@ export function Thread() {
     const context =
       Object.keys(artifactContext).length > 0 ? artifactContext : undefined;
 
-    stream.submit(
-      { messages: [...toolMessages, newHumanMessage], context },
-      {
-        streamMode: ["values"],
-        optimisticValues: (prev) => ({
-          ...prev,
-          context,
-          messages: [
-            ...(prev.messages ?? []),
-            ...toolMessages,
-            newHumanMessage,
-          ],
-        }),
-      },
-    );
+    // Include userId in the submission
+    const submissionData: any = {
+      messages: [...toolMessages, newHumanMessage],
+      context
+    };
+
+    if (userId) {
+      submissionData.userId = userId;
+    }
+
+    // Add metadata to ensure thread is properly saved and searchable
+    const submitOptions: any = {
+      streamMode: ["updates"],
+      optimisticValues: (prev) => ({
+        ...prev,
+        context,
+        messages: [
+          ...(prev.messages ?? []),
+          ...toolMessages,
+          newHumanMessage,
+        ],
+      }),
+    };
+
+    // Add metadata for thread creation/updating
+    if (!threadId) {
+      // For new threads, add metadata to ensure they're searchable
+      submitOptions.metadata = {
+        assistant_id: assistantId,
+        graph_id: assistantId,
+        created_at: new Date().toISOString(),
+        user_id: userId || 'anonymous',
+      };
+    }
+
+    console.log("Submitting with options:", submitOptions);
+
+    // Store thread information locally for fallback
+    const messageText = typeof newHumanMessage.content === 'string'
+      ? newHumanMessage.content
+      : Array.isArray(newHumanMessage.content)
+        ? newHumanMessage.content.find(c => c.type === 'text')?.text || ''
+        : '';
+
+    if (messageText && assistantId) {
+      // Update local storage with thread info
+      if (threadId) {
+        updateThreadWithMessage(threadId, messageText, assistantId, userId || undefined);
+      } else {
+        // For new threads, we'll update after getting the thread ID from onThreadId callback
+        console.log("Will update local storage after thread ID is assigned");
+      }
+    }
+
+    stream.submit(submissionData, submitOptions);
 
     setInput("");
     setContentBlocks([]);
@@ -243,7 +326,7 @@ export function Thread() {
     setFirstTokenReceived(false);
     stream.submit(undefined, {
       checkpoint: parentCheckpoint,
-      streamMode: ["values"],
+      streamMode: ["updates"],
     });
   };
 
@@ -322,8 +405,12 @@ export function Thread() {
                   </Button>
                 )}
               </div>
-              <div className="absolute top-2 right-4 flex items-center">
-                <OpenGitHubRepo />
+              <div className="flex items-center gap-4">
+                <LogoutButton
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-600 hover:text-gray-900"
+                />
               </div>
             </div>
           )}
@@ -357,20 +444,14 @@ export function Thread() {
                     damping: 30,
                   }}
                 >
-                  <LangGraphLogoSVG
-                    width={32}
-                    height={32}
+                  <FlyoLogoSVG
+                    width={70}
+                    height={70}
                   />
-                  <span className="text-xl font-semibold tracking-tight">
-                    Agent Chat
-                  </span>
                 </motion.button>
               </div>
 
               <div className="flex items-center gap-4">
-                <div className="flex items-center">
-                  <OpenGitHubRepo />
-                </div>
                 <TooltipIconButton
                   size="lg"
                   className="p-4"
@@ -380,6 +461,11 @@ export function Thread() {
                 >
                   <SquarePen className="size-5" />
                 </TooltipIconButton>
+                <LogoutButton
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-600 hover:text-gray-900"
+                />
               </div>
 
               <div className="from-background to-background/0 absolute inset-x-0 top-full h-5 bg-gradient-to-b" />
@@ -397,25 +483,32 @@ export function Thread() {
               content={
                 <>
                   {messages
-                    .filter((m) => !m.id?.startsWith(DO_NOT_RENDER_ID_PREFIX))
+                    .filter(isDisplayableMessage)
                     .map((message, index) =>
-                      message.type === "human" ? (
-                        <HumanMessage
-                          key={message.id || `${message.type}-${index}`}
-                          message={message}
-                          isLoading={isLoading}
-                        />
-                      ) : (
-                        <AssistantMessage
-                          key={message.id || `${message.type}-${index}`}
-                          message={message}
-                          isLoading={isLoading}
-                          handleRegenerate={handleRegenerate}
-                        />
-                      ),
+                      message.type === "human"
+                        ? (console.log(
+                            `$$$$$$$$$ 0 Assist : ${JSON.stringify(messages)}`,
+                          ),
+                          (
+                            <HumanMessage
+                              key={message.id || `${message.type}-${index}`}
+                              message={message}
+                              isLoading={isLoading}
+                            />
+                          ))
+                        : (console.log(
+                            `$$$$$$$$$ 1 Assist : ${JSON.stringify(messages)}`,
+                          ),
+                          (
+                            <AssistantMessage
+                              key={message.id || `${message.type}-${index}`}
+                              message={message}
+                              isLoading={isLoading}
+                              handleRegenerate={handleRegenerate}
+                            />
+                          )),
                     )}
-                  {/* Special rendering case where there are no AI/tool messages, but there is an interrupt.
-                    We need to render it outside of the messages list, since there are no messages to render */}
+                  {/* Special rendering case where there are no AI/tool messages, but there is an interrupt. */}
                   {hasNoAIOrToolMessages && !!stream.interrupt && (
                     <AssistantMessage
                       key="interrupt-msg"
@@ -424,8 +517,12 @@ export function Thread() {
                       handleRegenerate={handleRegenerate}
                     />
                   )}
-                  {isLoading && !firstTokenReceived && (
-                    <AssistantMessageLoading />
+                  {isLoading && <AssistantMessageLoading />}
+                  {/* Always render the interrupt widget at the end if present */}
+                  {stream.interrupt && (
+                    <GenericInterruptView
+                      interrupt={stream.interrupt.value ?? {}}
+                    />
                   )}
                 </>
               }
@@ -433,10 +530,10 @@ export function Thread() {
                 <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-white">
                   {!chatStarted && (
                     <div className="flex items-center gap-3">
-                      <LangGraphLogoSVG className="h-8 flex-shrink-0" />
-                      <h1 className="text-2xl font-semibold tracking-tight">
-                        Agent Chat
-                      </h1>
+                      <FlyoLogoSVG
+                        width={150}
+                        height={150}
+                      />
                     </div>
                   )}
 
@@ -481,7 +578,7 @@ export function Thread() {
                       />
 
                       <div className="flex items-center gap-6 p-2 pt-4">
-                        <div>
+                        {/* <div>
                           <div className="flex items-center space-x-2">
                             <Switch
                               id="render-tool-calls"
@@ -495,14 +592,14 @@ export function Thread() {
                               Hide Tool Calls
                             </Label>
                           </div>
-                        </div>
+                        </div> */}
                         <Label
                           htmlFor="file-input"
                           className="flex cursor-pointer items-center gap-2"
                         >
                           <Plus className="size-5 text-gray-600" />
                           <span className="text-sm text-gray-600">
-                            Upload PDF or Image
+                            Upload PDF, Image, or Video
                           </span>
                         </Label>
                         <input
