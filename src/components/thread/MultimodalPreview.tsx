@@ -26,17 +26,17 @@ export const MultimodalPreview: React.FC<MultimodalPreviewProps> = ({
     block.mime_type.startsWith("image/")
   ) {
     const url = `data:${block.mime_type};base64,${block.data}`;
-    let imgClass: string = "rounded-md object-contain max-h-80 max-w-full h-auto text-lg";
-    if (size === "sm") imgClass = "rounded-md object-contain max-h-40 max-w-full h-auto text-base";
-    if (size === "lg") imgClass = "rounded-md object-contain max-h-96 max-w-full h-auto text-xl";
+    let imgClass: string = "rounded-full object-cover w-12 h-12 max-w-12 max-h-12 text-lg";
+    if (size === "sm") imgClass = "rounded-full object-cover w-8 h-8 max-w-8 max-h-8 text-base";
+    if (size === "lg") imgClass = "rounded-full object-cover w-16 h-16 max-w-16 max-h-16 text-xl";
     return (
       <div className={cn("relative inline-block max-w-full", className)}>
         <Image
           src={url}
           alt={String(block.metadata?.name || "uploaded image")}
           className={imgClass}
-          width={size === "sm" ? 160 : size === "md" ? 320 : 384}
-          height={size === "sm" ? 160 : size === "md" ? 320 : 384}
+          width={size === "sm" ? 32 : size === "md" ? 48 : 64}
+          height={size === "sm" ? 32 : size === "md" ? 48 : 64}
         />
         {removable && (
           <button

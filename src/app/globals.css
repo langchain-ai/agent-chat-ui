@@ -177,21 +177,21 @@
     box-sizing: border-box;
   }
 
-  /* ULTRA AGGRESSIVE IMAGE SIZE CONTROL - HIGHEST SPECIFICITY */
+  /* ULTRA AGGRESSIVE IMAGE SIZE CONTROL - SMALL CIRCULAR ICONS */
   /* This will override ANY image styling */
   html body * img,
   html body img,
   img,
   [src*="data:image"] {
-    max-width: 100% !important;
-    width: auto !important;
-    height: auto !important;
-    max-height: 18rem !important; /* 288px max height - slightly smaller */
-    object-fit: contain !important;
-    border-radius: 8px !important;
+    max-width: 48px !important;
+    width: 48px !important;
+    height: 48px !important;
+    max-height: 48px !important;
+    object-fit: cover !important;
+    border-radius: 50% !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
-    display: block !important;
-    margin: 1rem auto !important;
+    display: inline-block !important;
+    margin: 0.5rem !important;
   }
 
   /* Even more specific selectors for stubborn images */
@@ -205,15 +205,15 @@
   [class*="message"] img,
   [class*="content"] img,
   [class*="thread"] img {
-    max-width: 100% !important;
-    width: auto !important;
-    height: auto !important;
-    max-height: 18rem !important;
-    object-fit: contain !important;
-    border-radius: 8px !important;
+    max-width: 48px !important;
+    width: 48px !important;
+    height: 48px !important;
+    max-height: 48px !important;
+    object-fit: cover !important;
+    border-radius: 50% !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
-    display: block !important;
-    margin: 1rem auto !important;
+    display: inline-block !important;
+    margin: 0.5rem !important;
   }
 
   /* Target Next.js Image components specifically */
@@ -223,14 +223,15 @@
   img[src*="/"],
   span[style*="position"] img,
   div[style*="position"] img {
-    max-width: 100% !important;
-    width: auto !important;
-    height: auto !important;
-    max-height: 18rem !important;
-    object-fit: contain !important;
+    max-width: 48px !important;
+    width: 48px !important;
+    height: 48px !important;
+    max-height: 48px !important;
+    object-fit: cover !important;
+    border-radius: 50% !important;
   }
 
-  /* Responsive sizing with higher specificity */
+  /* Responsive sizing with higher specificity - smaller on mobile */
   @media (max-width: 768px) {
     html body * img,
     html body img,
@@ -238,7 +239,10 @@
     div img,
     span img,
     p img {
-      max-height: 14rem !important; /* 224px on tablets */
+      max-width: 40px !important;
+      width: 40px !important;
+      height: 40px !important;
+      max-height: 40px !important;
     }
   }
 
@@ -249,28 +253,38 @@
     div img,
     span img,
     p img {
-      max-height: 10rem !important; /* 160px on mobile */
+      max-width: 32px !important;
+      width: 32px !important;
+      height: 32px !important;
+      max-height: 32px !important;
     }
   }
 
   /* Override any inline styles */
   img[style] {
-    max-width: 100% !important;
-    width: auto !important;
-    height: auto !important;
-    max-height: 18rem !important;
-    object-fit: contain !important;
+    max-width: 48px !important;
+    width: 48px !important;
+    height: 48px !important;
+    max-height: 48px !important;
+    object-fit: cover !important;
+    border-radius: 50% !important;
   }
 
   @media (max-width: 768px) {
     img[style] {
-      max-height: 14rem !important;
+      max-width: 40px !important;
+      width: 40px !important;
+      height: 40px !important;
+      max-height: 40px !important;
     }
   }
 
   @media (max-width: 480px) {
     img[style] {
-      max-height: 10rem !important;
+      max-width: 32px !important;
+      width: 32px !important;
+      height: 32px !important;
+      max-height: 32px !important;
     }
   }
 }

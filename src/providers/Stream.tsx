@@ -24,6 +24,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { getApiKey } from "@/lib/api-key";
 import { useThreads } from "./Thread";
 import { toast } from "sonner";
+import { storeThread } from "@/utils/thread-storage";
 
 export type StateType = { messages: Message[]; ui?: UIMessage[] };
 
@@ -93,10 +94,30 @@ const StreamSession = ({
       }
     },
     onThreadId: (id) => {
+      console.log("New thread ID created:", id);
       setThreadId(id);
+
+      // Store new thread in local storage immediately
+      storeThread({
+        thread_id: id,
+        assistant_id: assistantId,
+        title: "New Chat",
+        messages_count: 0,
+      });
+
       // Refetch threads list when thread ID changes.
       // Wait for some seconds before fetching so we're able to get the new thread that was created.
-      sleep().then(() => getThreads().then(setThreads).catch(console.error));
+      sleep().then(() => {
+        console.log("Refetching threads after new thread creation...");
+        getThreads()
+          .then((threads) => {
+            console.log(`Fetched ${threads.length} threads after creation`);
+            setThreads(threads);
+          })
+          .catch((error) => {
+            console.error("Failed to refetch threads:", error);
+          });
+      });
     },
     onUpdateEvent: (data) => {
       // Log the complete data received from the LangGraph backend
