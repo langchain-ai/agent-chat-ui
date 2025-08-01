@@ -25,6 +25,7 @@ import { getApiKey } from "@/lib/api-key";
 import { useThreads } from "./Thread";
 import { toast } from "sonner";
 import { storeThread } from "@/utils/thread-storage";
+import { InterruptPersistenceProvider } from "./InterruptPersistenceContext";
 
 export type StateType = { messages: Message[]; ui?: UIMessage[] };
 
@@ -144,9 +145,11 @@ const StreamSession = ({
   }, [apiKey, apiUrl]);
 
   return (
-    <StreamContext.Provider value={streamValue}>
-      {children}
-    </StreamContext.Provider>
+    <InterruptPersistenceProvider>
+      <StreamContext.Provider value={streamValue}>
+        {children}
+      </StreamContext.Provider>
+    </InterruptPersistenceProvider>
   );
 };
 

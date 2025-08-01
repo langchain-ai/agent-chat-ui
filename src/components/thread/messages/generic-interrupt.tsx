@@ -118,7 +118,7 @@ console.log("DynamicRendererProps interface defined - checking props:", {
   interrupt: "will be logged in component",
 });
 
-const DynamicRenderer: React.FC<DynamicRendererProps> = ({
+export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
   interruptType,
   interrupt,
 }) => {
