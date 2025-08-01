@@ -166,14 +166,17 @@
   }
 
   /* Prevent any element from causing horizontal scroll */
-  html, body {
+  html,
+  body {
     overflow-x: hidden;
     max-width: 100vw;
     box-sizing: border-box;
   }
 
   /* Ensure all elements respect box-sizing */
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     box-sizing: border-box;
   }
 

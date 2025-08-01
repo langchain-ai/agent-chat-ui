@@ -66,12 +66,12 @@ const DateInput = ({
   const formatDateDisplay = (date: Date | undefined) => {
     if (!date) return placeholder || "Select date";
     const options: Intl.DateTimeFormatOptions = {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      year: "numeric",
     };
-    return date.toLocaleDateString('en-US', options);
+    return date.toLocaleDateString("en-US", options);
   };
 
   const today = new Date();
@@ -84,21 +84,27 @@ const DateInput = ({
   };
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover
+      open={isOpen}
+      onOpenChange={setIsOpen}
+    >
       <PopoverTrigger asChild>
         <Button
           variant="outline"
           className={cn(
             "w-full justify-start text-left font-normal focus:border-black focus:ring-black",
             !date && "text-muted-foreground",
-            className
+            className,
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
           {formatDateDisplay(date)}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
+      <PopoverContent
+        className="w-auto p-0"
+        align="start"
+      >
         <Calendar
           mode="single"
           selected={date}
@@ -150,14 +156,16 @@ const CountryCombobox = ({
   value,
   onValueChange,
   placeholder = "Select country...",
-  className
+  className,
 }: CountryComboboxProps) => {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   const selectedCountry = React.useMemo(() => {
     if (!value) return null;
-    const country = POPULAR_COUNTRIES.find(c => c.name === value || c.code === value);
+    const country = POPULAR_COUNTRIES.find(
+      (c) => c.name === value || c.code === value,
+    );
     return country ? country.name : value;
   }, [value]);
 
@@ -166,31 +174,36 @@ const CountryCombobox = ({
 
     if (searchQuery && searchQuery.trim().length > 0) {
       const query = searchQuery.toLowerCase();
-      countries = countries.filter(country =>
-        country.name.toLowerCase().includes(query) ||
-        country.code.toLowerCase().includes(query)
+      countries = countries.filter(
+        (country) =>
+          country.name.toLowerCase().includes(query) ||
+          country.code.toLowerCase().includes(query),
       );
     }
 
-    return countries.map(country => ({
+    return countries.map((country) => ({
       value: country.name,
       label: country.name,
-      code: country.code
+      code: country.code,
     }));
   }, [searchQuery]);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={setOpen}
+    >
       <PopoverTrigger asChild>
         <Button
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-between focus:ring-black focus:border-black", className)}
+          className={cn(
+            "w-full justify-between focus:border-black focus:ring-black",
+            className,
+          )}
         >
-          <span className="truncate">
-            {selectedCountry || placeholder}
-          </span>
+          <span className="truncate">{selectedCountry || placeholder}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -217,12 +230,14 @@ const CountryCombobox = ({
                 >
                   <div className="flex flex-col">
                     <div className="font-medium">{country.label}</div>
-                    <div className="text-xs text-muted-foreground">{country.code}</div>
+                    <div className="text-muted-foreground text-xs">
+                      {country.code}
+                    </div>
                   </div>
                   <Check
                     className={cn(
                       "ml-auto h-4 w-4",
-                      value === country.value ? "opacity-100" : "opacity-0"
+                      value === country.value ? "opacity-100" : "opacity-0",
                     )}
                   />
                 </CommandItem>
@@ -399,6 +414,7 @@ interface TravelDocument {
   issuingCountry: string;
   expiryDate: string;
   nationality: string;
+  issuanceDate?: string;
 }
 
 interface SeatAllocation {
@@ -433,20 +449,23 @@ interface ReviewWidgetProps {
   isInBottomSheet?: boolean;
   // Function to close the bottom sheet
   onClose?: () => void;
+  // Loading state management
+  isSubmitting?: boolean;
+  onSubmittingChange?: (isSubmitting: boolean) => void;
 }
 
 // Utility functions to transform API data
 const formatDateTime = (isoString: string) => {
   const date = new Date(isoString);
-  const dateStr = date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
+  const dateStr = date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   });
-  const timeStr = date.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
+  const timeStr = date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
   });
   return { date: dateStr, time: timeStr };
 };
@@ -456,8 +475,8 @@ const parseDuration = (duration: string) => {
   const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
   if (!match) return duration;
 
-  const hours = parseInt(match[1] || '0');
-  const minutes = parseInt(match[2] || '0');
+  const hours = parseInt(match[1] || "0");
+  const minutes = parseInt(match[2] || "0");
 
   if (hours > 0 && minutes > 0) {
     return `${hours}h ${minutes}m`;
@@ -523,6 +542,12 @@ const AirlineLogo = ({
 
 const transformApiDataToFlightDetails = (apiData: ApiResponse): FlightDetails | null => {
   const flightOffer = apiData.value.widget.args.flightItinerary.selectionContext.selectedFlightOffers[0];
+const transformApiDataToFlightDetails = (
+  apiData: ApiResponse,
+): FlightDetails | null => {
+  const flightOffer =
+    apiData.value.widget.args.flightItinerary.selectionContext
+      .selectedFlightOffers[0];
   if (!flightOffer) return null;
 
   const departure = formatDateTime(flightOffer.departure.date);
@@ -534,14 +559,16 @@ const transformApiDataToFlightDetails = (apiData: ApiResponse): FlightDetails | 
   return {
     departure: {
       city: flightOffer.departure.cityCode,
-      airport: flightOffer.departure.airportName || flightOffer.departure.airportIata,
+      airport:
+        flightOffer.departure.airportName || flightOffer.departure.airportIata,
       code: flightOffer.departure.airportIata,
       date: departure.date,
       time: departure.time,
     },
     arrival: {
       city: flightOffer.arrival.cityCode,
-      airport: flightOffer.arrival.airportName || flightOffer.arrival.airportIata,
+      airport:
+        flightOffer.arrival.airportName || flightOffer.arrival.airportIata,
       code: flightOffer.arrival.airportIata,
       date: arrival.date,
       time: arrival.time,
@@ -557,8 +584,11 @@ const transformApiDataToFlightDetails = (apiData: ApiResponse): FlightDetails | 
   };
 };
 
-const transformApiDataToPassengerDetails = (apiData: ApiResponse): PassengerDetails | null => {
-  const userDetails = apiData.value.widget.args.flightItinerary.userContext.userDetails;
+const transformApiDataToPassengerDetails = (
+  apiData: ApiResponse,
+): PassengerDetails | null => {
+  const userDetails =
+    apiData.value.widget.args.flightItinerary.userContext.userDetails;
   if (!userDetails) return null;
 
   return {
@@ -566,15 +596,26 @@ const transformApiDataToPassengerDetails = (apiData: ApiResponse): PassengerDeta
     lastName: userDetails.lastName,
     dateOfBirth: userDetails.dateOfBirth,
     gender: userDetails.gender,
-    title: userDetails.gender === 'Male' ? 'Mr' : userDetails.gender === 'Female' ? 'Ms' : '',
+    title:
+      userDetails.gender === "Male"
+        ? "Mr"
+        : userDetails.gender === "Female"
+          ? "Ms"
+          : "",
   };
 };
 
-const transformApiDataToContactInfo = (apiData: ApiResponse): ContactInformation | null => {
-  const userDetails = apiData.value.widget.args.flightItinerary.userContext.userDetails;
+const transformApiDataToContactInfo = (
+  apiData: ApiResponse,
+): ContactInformation | null => {
+  const userDetails =
+    apiData.value.widget.args.flightItinerary.userContext.userDetails;
   if (!userDetails) return null;
 
-  const phone = userDetails.phone && userDetails.phone.length > 0 ? userDetails.phone[0].number : '';
+  const phone =
+    userDetails.phone && userDetails.phone.length > 0
+      ? userDetails.phone[0].number
+      : "";
 
   return {
     phone: phone,
@@ -582,14 +623,24 @@ const transformApiDataToContactInfo = (apiData: ApiResponse): ContactInformation
   };
 };
 
-const transformApiDataToTravelDocument = (apiData: ApiResponse): TravelDocument | null => {
-  const userDetails = apiData.value.widget.args.flightItinerary.userContext.userDetails;
-  if (!userDetails || !userDetails.documents || userDetails.documents.length === 0) return null;
+const transformApiDataToTravelDocument = (
+  apiData: ApiResponse,
+): TravelDocument | null => {
+  const userDetails =
+    apiData.value.widget.args.flightItinerary.userContext.userDetails;
+  if (
+    !userDetails ||
+    !userDetails.documents ||
+    userDetails.documents.length === 0
+  )
+    return null;
 
   const document = userDetails.documents[0];
 
   return {
-    type: document.documentType.charAt(0).toUpperCase() + document.documentType.slice(1),
+    type:
+      document.documentType.charAt(0).toUpperCase() +
+      document.documentType.slice(1),
     number: document.documentNumber,
     issuingCountry: document.issuingCountry,
     expiryDate: document.expiryDate,
@@ -597,14 +648,18 @@ const transformApiDataToTravelDocument = (apiData: ApiResponse): TravelDocument 
   };
 };
 
-const transformApiDataToPaymentSummary = (apiData: ApiResponse): PaymentSummary | null => {
-  const flightOffer = apiData.value.widget.args.flightItinerary.selectionContext.selectedFlightOffers[0];
+const transformApiDataToPaymentSummary = (
+  apiData: ApiResponse,
+): PaymentSummary | null => {
+  const flightOffer =
+    apiData.value.widget.args.flightItinerary.selectionContext
+      .selectedFlightOffers[0];
   if (!flightOffer) return null;
 
   // Since detailed breakdown is not provided in API, we'll estimate
   const total = flightOffer.totalAmount;
   const baseFare = Math.round(total * 0.75); // Estimate 75% as base fare
-  const taxes = Math.round(total * 0.20); // Estimate 20% as taxes
+  const taxes = Math.round(total * 0.2); // Estimate 20% as taxes
   const fees = Math.round(total * 0.05); // Estimate 5% as fees
 
   return {
@@ -619,7 +674,8 @@ const transformApiDataToPaymentSummary = (apiData: ApiResponse): PaymentSummary 
 };
 
 const transformApiDataToSavedPassengers = (apiData: ApiResponse) => {
-  const savedTravellers = apiData.value.widget.args.flightItinerary.userContext.savedTravellers;
+  const savedTravellers =
+    apiData.value.widget.args.flightItinerary.userContext.savedTravellers;
   if (!savedTravellers) return [];
 
   return savedTravellers.map((traveller, index) => ({
@@ -675,7 +731,7 @@ const mockData = {
     },
     arrival: {
       city: "San Francisco",
-      airport: "San Francisco International Airport", 
+      airport: "San Francisco International Airport",
       code: "SFO",
       date: "Dec 15, 2024",
       time: "6:15 PM",
@@ -706,6 +762,7 @@ const mockData = {
     issuingCountry: "United States",
     expiryDate: "2029-01-11",
     nationality: "American",
+    issuanceDate: "2015-04-14",
   },
   seatAllocation: {
     isSelected: true,
@@ -735,59 +792,67 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
   apiData,
   isInBottomSheet = false,
   onClose,
+  isSubmitting: externalIsSubmitting,
+  onSubmittingChange,
 }) => {
   // Get thread context for interrupt responses
-  const stream = useStreamContext();
-  const thread = (stream as any)?.thread || null;
+  const thread = useStreamContext();
 
-  // Debug logging for API data (only in development)
-  if (process.env.NODE_ENV === 'development') {
-    console.log("🔄 ReviewWidget received props:", {
-      hasApiData: !!apiData,
-      apiDataKeys: apiData ? Object.keys(apiData) : null,
-      hasFlightDetails: !!flightDetails,
-      hasPassengerDetails: !!passengerDetails,
-      hasContactInfo: !!contactInfo,
-      hasTravelDocument: !!travelDocument,
-      hasSeatAllocation: !!seatAllocation,
-      hasPaymentSummary: !!paymentSummary
-    });
-  }
+  // Add loading state - use external state if provided, otherwise use internal state
+  const [internalIsSubmitting, setInternalIsSubmitting] = useState(false);
+  const isSubmitting =
+    externalIsSubmitting !== undefined
+      ? externalIsSubmitting
+      : internalIsSubmitting;
+
+  const setIsSubmitting = (value: boolean) => {
+    if (onSubmittingChange) {
+      onSubmittingChange(value);
+    } else {
+      setInternalIsSubmitting(value);
+    }
+  };
 
   // Transform API data or use provided props/mock data
-  const transformedFlightDetails = apiData ? transformApiDataToFlightDetails(apiData) : null;
-  const transformedPassengerDetails = apiData ? transformApiDataToPassengerDetails(apiData) : null;
-  const transformedContactInfo = apiData ? transformApiDataToContactInfo(apiData) : null;
-  const transformedTravelDocument = apiData ? transformApiDataToTravelDocument(apiData) : null;
-  const transformedPaymentSummary = apiData ? transformApiDataToPaymentSummary(apiData) : null;
-  const savedPassengers = apiData ? transformApiDataToSavedPassengers(apiData) : mockSavedPassengers;
+  const transformedFlightDetails = apiData
+    ? transformApiDataToFlightDetails(apiData)
+    : null;
+  const transformedPassengerDetails = apiData
+    ? transformApiDataToPassengerDetails(apiData)
+    : null;
+  const transformedContactInfo = apiData
+    ? transformApiDataToContactInfo(apiData)
+    : null;
+  const transformedTravelDocument = apiData
+    ? transformApiDataToTravelDocument(apiData)
+    : null;
+  const transformedPaymentSummary = apiData
+    ? transformApiDataToPaymentSummary(apiData)
+    : null;
+  const savedPassengers = apiData
+    ? transformApiDataToSavedPassengers(apiData)
+    : mockSavedPassengers;
 
   // Determine if travel documents component should be shown
   // Hide if travelerRequirements is null in API data
   const showTravelDocuments = apiData
-    ? apiData.value.widget.args.bookingRequirements.travelerRequirements !== null
+    ? apiData.value.widget.args.bookingRequirements.travelerRequirements !==
+      null
     : true; // Show by default for non-API usage (legacy/demo mode)
 
-  // Debug transformed data (only in development)
-  if (process.env.NODE_ENV === 'development') {
-    console.log("🔄 Transformed data:", {
-      hasTransformedFlightDetails: !!transformedFlightDetails,
-      hasTransformedPassengerDetails: !!transformedPassengerDetails,
-      hasTransformedContactInfo: !!transformedContactInfo,
-      hasTransformedTravelDocument: !!transformedTravelDocument,
-      hasTransformedPaymentSummary: !!transformedPaymentSummary,
-      savedPassengersCount: savedPassengers.length,
-      travelerRequirements: apiData?.value.widget.args.bookingRequirements.travelerRequirements,
-      showTravelDocuments: showTravelDocuments
-    });
-  }
-
   // Use transformed data, provided props, or fallback to mock data
-  const finalFlightDetails = transformedFlightDetails || flightDetails || mockData.flightDetails;
-  const finalPassengerDetails = transformedPassengerDetails || passengerDetails || mockData.passengerDetails;
-  const finalContactInfo = transformedContactInfo || contactInfo || mockData.contactInfo;
-  const finalTravelDocument = transformedTravelDocument || travelDocument || mockData.travelDocument;
-  const finalPaymentSummary = transformedPaymentSummary || paymentSummary || mockData.paymentSummary;
+  const finalFlightDetails =
+    transformedFlightDetails || flightDetails || mockData.flightDetails;
+  const finalPassengerDetails =
+    transformedPassengerDetails ||
+    passengerDetails ||
+    mockData.passengerDetails;
+  const finalContactInfo =
+    transformedContactInfo || contactInfo || mockData.contactInfo;
+  const finalTravelDocument =
+    transformedTravelDocument || travelDocument || mockData.travelDocument;
+  const finalPaymentSummary =
+    transformedPaymentSummary || paymentSummary || mockData.paymentSummary;
   const finalSeatAllocation = seatAllocation || mockData.seatAllocation;
 
   // Determine if seat component should be shown (only if seatAllocation is provided)
@@ -802,9 +867,9 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
     };
 
     checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
+    window.addEventListener("resize", checkScreenSize);
 
-    return () => window.removeEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener("resize", checkScreenSize);
   }, []);
 
   // Component state
@@ -812,8 +877,11 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
   const [isContactExpanded, setIsContactExpanded] = useState(false);
   const [isTravelDocsExpanded, setIsTravelDocsExpanded] = useState(false);
   const [isPaymentExpanded, setIsPaymentExpanded] = useState(false);
-  const [isSeatSelected, setIsSeatSelected] = useState(finalSeatAllocation?.isSelected || false);
-  const [isSavedPassengersExpanded, setIsSavedPassengersExpanded] = useState(false);
+  const [isSeatSelected, setIsSeatSelected] = useState(
+    finalSeatAllocation?.isSelected || false,
+  );
+  const [isSavedPassengersExpanded, setIsSavedPassengersExpanded] =
+    useState(false);
 
   // Update payment expanded state when screen size changes to desktop
   React.useEffect(() => {
@@ -828,24 +896,133 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
   const [document, setDocument] = useState(
     showTravelDocuments
       ? finalTravelDocument || {
-          type: '',
-          number: '',
-          issuingCountry: '',
-          expiryDate: '',
-          nationality: ''
+          type: "",
+          number: "",
+          issuingCountry: "",
+          expiryDate: "",
+          nationality: "",
         }
-      : null
+      : null,
   );
 
   // Validation state
-  const [validationErrors, setValidationErrors] = useState<{[key: string]: boolean}>({});
+  const [validationErrors, setValidationErrors] = useState<{
+    [key: string]: boolean;
+  }>({});
+
+  // Data transformation function to format data according to backend requirements
+  const transformDataForBackend = () => {
+    // Extract phone number and country code from contact.phone
+    let phoneCountryCode = "91"; // Default to India
+    let phoneNumber = contact.phone;
+
+    // Try to parse phone number format like "+1 (555) 123-4567" or "+91 8448549215"
+    const phoneMatch = contact.phone.match(/\+(\d+)\s*[\(\)\s]*(\d+)/);
+    if (phoneMatch) {
+      phoneCountryCode = phoneMatch[1];
+      phoneNumber = phoneMatch[2].replace(/[\(\)\s]/g, "");
+    }
+
+    // Format gender to uppercase
+    const formattedGender = passenger.gender?.toUpperCase() || "MALE";
+
+    // Format document type to uppercase
+    const formattedDocumentType = document?.type?.toUpperCase() || "PASSPORT";
+
+    // Get country codes for issuing country and nationality
+    const getCountryCode = (countryName: string) => {
+      const countryMap: { [key: string]: string } = {
+        "United States": "US",
+        India: "IN",
+        "United Kingdom": "GB",
+        Canada: "CA",
+        Australia: "AU",
+        Germany: "DE",
+        France: "FR",
+        Japan: "JP",
+        China: "CN",
+        Brazil: "BR",
+        Mexico: "MX",
+        Italy: "IT",
+        Spain: "ES",
+        Netherlands: "NL",
+        Singapore: "SG",
+        "United Arab Emirates": "AE",
+      };
+      return countryMap[countryName] || countryName;
+    };
+
+    const issuingCountryCode = getCountryCode(document?.issuingCountry || "");
+    const nationalityCode = getCountryCode(document?.nationality || "");
+
+    // Format date strings to YYYY-MM-DD
+    const formatDate = (dateString: string) => {
+      if (!dateString) return "";
+      const date = new Date(dateString);
+      return date.toISOString().split("T")[0];
+    };
+
+    const travellersDetail = [
+      {
+        id: "1",
+        dateOfBirth: formatDate(passenger.dateOfBirth),
+        gender: formattedGender,
+        name: {
+          firstName: passenger.firstName?.toUpperCase() || "",
+          lastName: passenger.lastName?.toUpperCase() || "",
+        },
+        documents: document
+          ? [
+              {
+                number: document.number || "",
+                issuanceDate: formatDate(document.issuanceDate || "2015-04-14"), // Default if not provided
+                expiryDate: formatDate(document.expiryDate),
+                issuanceCountry: issuingCountryCode,
+                issuanceLocation: document.issuingCountry || "",
+                nationality: nationalityCode,
+                birthPlace: document.issuingCountry || "", // Using issuing country as birth place if not provided
+                documentType: formattedDocumentType,
+                holder: true,
+              },
+            ]
+          : [],
+        contact: {
+          purpose: "STANDARD",
+          phones: [
+            {
+              deviceType: "MOBILE",
+              countryCallingCode: phoneCountryCode,
+              number: phoneNumber || "",
+            },
+          ],
+          emailAddress: contact.email || "",
+        },
+      },
+    ];
+
+    const contactInfo = {
+      email: contact.email || "",
+      phone: {
+        countryCode: phoneCountryCode,
+        number: phoneNumber || "",
+      },
+    };
+
+    return {
+      travellersDetail,
+      contactInfo,
+    };
+  };
 
   // Validation functions
-  const validateField = (value: string | undefined | null, fieldName: string): boolean => {
-    const isEmpty = !value || value.trim() === '';
-    setValidationErrors(prev => ({
+  const validateField = (
+    value: string | undefined | null,
+    fieldName: string,
+  ): boolean => {
+    const isEmpty = !value || value.trim() === "";
+    setValidationErrors((prev) => ({
       ...prev,
-      [fieldName]: isEmpty
+      [fieldName]: isEmpty,
     }));
     return !isEmpty;
   };
@@ -853,16 +1030,16 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
   const validateEmail = (email: string | undefined | null): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const isValid = email && emailRegex.test(email);
-    setValidationErrors(prev => ({
+    setValidationErrors((prev) => ({
       ...prev,
-      email: !isValid
+      email: !isValid,
     }));
     return !!isValid;
   };
 
   const validateAllFields = (): boolean => {
     let isValid = true;
-    const errors: {[key: string]: boolean} = {};
+    const errors: { [key: string]: boolean } = {};
 
     // Validate passenger details
     if (!passenger.firstName?.trim()) {
@@ -878,7 +1055,11 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
       isValid = false;
     }
     // Only validate Date of Birth if travel documents are shown and expanded
-    if (showTravelDocuments && isTravelDocsExpanded && !passenger.dateOfBirth?.trim()) {
+    if (
+      showTravelDocuments &&
+      isTravelDocsExpanded &&
+      !passenger.dateOfBirth?.trim()
+    ) {
       errors.dateOfBirth = true;
       isValid = false;
     }
@@ -927,12 +1108,20 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
   // Check if form is valid for submit button (computed property)
   const isFormValid = useMemo(() => {
     // Check passenger details
-    if (!passenger.firstName?.trim() || !passenger.lastName?.trim() || !passenger.gender?.trim()) {
+    if (
+      !passenger.firstName?.trim() ||
+      !passenger.lastName?.trim() ||
+      !passenger.gender?.trim()
+    ) {
       return false;
     }
 
     // Only validate Date of Birth if travel documents are shown and expanded
-    if (showTravelDocuments && isTravelDocsExpanded && !passenger.dateOfBirth?.trim()) {
+    if (
+      showTravelDocuments &&
+      isTravelDocsExpanded &&
+      !passenger.dateOfBirth?.trim()
+    ) {
       return false;
     }
 
@@ -949,9 +1138,14 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
 
     // Check travel documents (only if shown)
     if (showTravelDocuments) {
-      if (!document || !document.type?.trim() || !document.number?.trim() ||
-          !document.issuingCountry?.trim() || !document.expiryDate?.trim() ||
-          !document.nationality?.trim()) {
+      if (
+        !document ||
+        !document.type?.trim() ||
+        !document.number?.trim() ||
+        !document.issuingCountry?.trim() ||
+        !document.expiryDate?.trim() ||
+        !document.nationality?.trim()
+      ) {
         return false;
       }
     }
@@ -964,12 +1158,21 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
     if (!showSeatComponent) {
       return finalPaymentSummary.total;
     }
-    const seatFare = isSeatSelected && finalSeatAllocation ? finalSeatAllocation.price : 0;
-    return finalPaymentSummary.baseFare + finalPaymentSummary.taxes + finalPaymentSummary.fees + seatFare - finalPaymentSummary.discount;
+    const seatFare =
+      isSeatSelected && finalSeatAllocation ? finalSeatAllocation.price : 0;
+    return (
+      finalPaymentSummary.baseFare +
+      finalPaymentSummary.taxes +
+      finalPaymentSummary.fees +
+      seatFare -
+      finalPaymentSummary.discount
+    );
   };
 
   // Handle selecting a saved passenger
-  const handleSelectSavedPassenger = (savedPassenger: typeof savedPassengers[0]) => {
+  const handleSelectSavedPassenger = (
+    savedPassenger: (typeof savedPassengers)[0],
+  ) => {
     setPassenger({
       firstName: savedPassenger.firstName,
       lastName: savedPassenger.lastName,
@@ -984,61 +1187,67 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
     // Validate all fields before submission
     if (!validateAllFields()) {
       // Scroll to first error field
-      const firstErrorField = window.document.querySelector('.border-red-500');
+      const firstErrorField = window.document.querySelector(".border-red-500");
       if (firstErrorField) {
-        firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        firstErrorField.scrollIntoView({ behavior: "smooth", block: "center" });
       }
       return;
     }
 
-    const bookingData = {
-      flightDetails: finalFlightDetails,
-      passenger,
-      contact,
-      document,
-      seatAllocation: showSeatComponent ? {
-        ...finalSeatAllocation,
-        isSelected: isSeatSelected,
-      } : null,
-      total: calculateTotal(),
-      apiData, // Include original API data for backend processing
-    };
+    // Set loading state
+    setIsSubmitting(true);
 
-    if (onSubmit) {
-      onSubmit(bookingData);
-    } else if (thread) {
-      await submitInterruptResponse(thread, "booking_confirmation", bookingData);
-    } else {
-      // Demo mode - just log the data
-      console.log("Demo booking submission:", bookingData);
-      const currency = finalPaymentSummary.currency === 'INR' ? '₹' : '$';
-      alert(`Booking confirmed! Total: ${currency}${calculateTotal().toFixed(2)}`);
+    try {
+      // Transform data according to backend requirements
+      const formattedData = transformDataForBackend();
+      await submitInterruptResponse(thread, "response", formattedData);
+    } catch (error) {
+      console.error("Error submitting booking:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className={cn(
-      isInBottomSheet ? "bg-white" : "bg-gray-50 min-h-screen"
-    )}>
-      <div className={cn(
-        "max-w-4xl mx-auto",
-        isInBottomSheet ? "p-4 pb-4" : "p-3 sm:p-4 pb-20 sm:pb-4"
-      )}>
+    <div
+      className={cn(
+        isInBottomSheet ? "bg-white" : "min-h-screen bg-gray-50",
+        "relative",
+      )}
+    >
+      {/* Loading Overlay */}
+      {isSubmitting && (
+        <div className="bg-opacity-75 absolute inset-0 z-50 flex items-center justify-center bg-white">
+          <div className="text-center">
+            <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
+            <p className="font-medium text-gray-600">
+              Submitting booking details...
+            </p>
+            <p className="mt-2 text-sm text-gray-500">
+              Please wait while we process your request
+            </p>
+          </div>
+        </div>
+      )}
+      <div
+        className={cn(
+          "mx-auto max-w-4xl",
+          isInBottomSheet ? "p-4 pb-4" : "p-3 pb-20 sm:p-4 sm:pb-4",
+        )}
+      >
         {/* Header - Only show if not in bottom sheet (title is in sheet header) */}
         {!isInBottomSheet && (
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">
+          <h1 className="mb-4 text-2xl font-bold text-gray-900 sm:text-3xl">
             Review Your Booking
           </h1>
         )}
-
-
 
         {/* Desktop Two-Column Layout */}
         <div className="hidden lg:grid lg:grid-cols-2 lg:gap-6">
           {/* Left Column - Flight Info and Forms */}
           <div className="space-y-3">
             {/* Flight Details */}
-            <div className="bg-white rounded-lg shadow p-4">
+            <div className="rounded-lg bg-white p-4 shadow">
               <div
                 className="cursor-pointer"
                 onClick={() => setIsFlightExpanded(!isFlightExpanded)}
@@ -1049,13 +1258,21 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                     <div className="flex items-center space-x-6">
                       <div className="flex items-center space-x-3">
                         <div className="text-center">
-                          <div className="text-sm font-bold">{finalFlightDetails.departure.code}</div>
-                          <div className="text-sm font-bold">{finalFlightDetails.departure.time}</div>
+                          <div className="text-sm font-bold">
+                            {finalFlightDetails.departure.code}
+                          </div>
+                          <div className="text-sm font-bold">
+                            {finalFlightDetails.departure.time}
+                          </div>
                         </div>
                         <ArrowRight className="h-3 w-3 text-gray-400" />
                         <div className="text-center">
-                          <div className="text-sm font-bold">{finalFlightDetails.arrival.code}</div>
-                          <div className="text-sm font-bold">{finalFlightDetails.arrival.time}</div>
+                          <div className="text-sm font-bold">
+                            {finalFlightDetails.arrival.code}
+                          </div>
+                          <div className="text-sm font-bold">
+                            {finalFlightDetails.arrival.time}
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center space-x-3">
@@ -1087,7 +1304,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
 
               {/* Expanded View */}
               {isFlightExpanded && (
-                <div className="border-t pt-4 mt-3">
+                <div className="mt-3 border-t pt-4">
                   {/* Airline Info */}
                   <div className="flex items-center space-x-3 mb-3">
                     <AirlineLogo
@@ -1097,42 +1314,62 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                     />
                     <div className="flex-1">
                       <div className="flex items-center space-x-2">
-                        <span className="font-medium text-xs">{finalFlightDetails.airline.name}</span>
+                        <span className="text-xs font-medium">
+                          {finalFlightDetails.airline.name}
+                        </span>
                       </div>
-                      <div className="flex items-center space-x-2 mt-1">
+                      <div className="mt-1 flex items-center space-x-2">
                         <span className="text-xs text-gray-600">
-                          Aircraft: {finalFlightDetails.airline.aircraftType || 'Not specified'}
+                          Aircraft:{" "}
+                          {finalFlightDetails.airline.aircraftType ||
+                            "Not specified"}
                         </span>
                       </div>
                     </div>
                   </div>
 
                   {/* Route Details */}
-                  <div className="grid grid-cols-3 gap-3 items-center">
+                  <div className="grid grid-cols-3 items-center gap-3">
                     {/* Departure */}
                     <div className="text-left">
-                      <div className="text-xs text-gray-600 mb-1">Departure</div>
-                      <div className="text-sm font-bold">{finalFlightDetails.departure.time}</div>
-                      <div className="text-xs text-gray-900">{finalFlightDetails.departure.city}</div>
-                      <div className="text-xs text-gray-600">{finalFlightDetails.departure.date}</div>
+                      <div className="mb-1 text-xs text-gray-600">
+                        Departure
+                      </div>
+                      <div className="text-sm font-bold">
+                        {finalFlightDetails.departure.time}
+                      </div>
+                      <div className="text-xs text-gray-900">
+                        {finalFlightDetails.departure.city}
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        {finalFlightDetails.departure.date}
+                      </div>
                     </div>
 
                     {/* Duration Indicator */}
                     <div className="flex flex-col items-center">
-                      <div className="text-xs text-gray-600 mb-1">{finalFlightDetails.duration}</div>
-                      <div className="flex items-center w-full">
-                        <div className="w-16 h-px bg-gray-300"></div>
-                        <ArrowRight className="h-3 w-3 text-gray-400 mx-1" />
+                      <div className="mb-1 text-xs text-gray-600">
+                        {finalFlightDetails.duration}
                       </div>
-                      <div className="text-xs text-gray-600 mt-1">Non-stop</div>
+                      <div className="flex w-full items-center">
+                        <div className="h-px w-16 bg-gray-300"></div>
+                        <ArrowRight className="mx-1 h-3 w-3 text-gray-400" />
+                      </div>
+                      <div className="mt-1 text-xs text-gray-600">Non-stop</div>
                     </div>
 
                     {/* Arrival */}
                     <div className="text-right">
-                      <div className="text-xs text-gray-600 mb-1">Arrival</div>
-                      <div className="text-sm font-bold">{finalFlightDetails.arrival.time}</div>
-                      <div className="text-xs text-gray-900">{finalFlightDetails.arrival.city}</div>
-                      <div className="text-xs text-gray-600">{finalFlightDetails.arrival.date}</div>
+                      <div className="mb-1 text-xs text-gray-600">Arrival</div>
+                      <div className="text-sm font-bold">
+                        {finalFlightDetails.arrival.time}
+                      </div>
+                      <div className="text-xs text-gray-900">
+                        {finalFlightDetails.arrival.city}
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        {finalFlightDetails.arrival.date}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1140,13 +1377,16 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
             </div>
 
             {/* Passenger Details */}
-            <div className="bg-white rounded-lg shadow p-4">
-              <h2 className="text-lg font-semibold mb-4">Passenger Details</h2>
+            <div className="rounded-lg bg-white p-4 shadow">
+              <h2 className="mb-4 text-lg font-semibold">Passenger Details</h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                 {/* First Name */}
                 <div>
-                  <Label htmlFor="firstName" className="text-xs font-medium text-gray-700 mb-0.5">
+                  <Label
+                    htmlFor="firstName"
+                    className="mb-0.5 text-xs font-medium text-gray-700"
+                  >
                     First Name *
                   </Label>
                   <Input
@@ -1155,22 +1395,29 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                     value={passenger.firstName}
                     onChange={(e) => {
                       setPassenger({ ...passenger, firstName: e.target.value });
-                      validateField(e.target.value, 'firstName');
+                      validateField(e.target.value, "firstName");
                     }}
                     className={cn(
-                      "w-full border rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-                      validationErrors.firstName ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                      "w-full rounded-md border px-2 py-1.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500",
+                      validationErrors.firstName
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                        : "",
                     )}
                     placeholder="Enter first name"
                   />
                   {validationErrors.firstName && (
-                    <p className="text-red-500 text-xs mt-1">First name is required</p>
+                    <p className="mt-1 text-xs text-red-500">
+                      First name is required
+                    </p>
                   )}
                 </div>
 
                 {/* Last Name */}
                 <div>
-                  <Label htmlFor="lastName" className="text-xs font-medium text-gray-700 mb-0.5">
+                  <Label
+                    htmlFor="lastName"
+                    className="mb-0.5 text-xs font-medium text-gray-700"
+                  >
                     Last Name *
                   </Label>
                   <Input
@@ -1179,35 +1426,46 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                     value={passenger.lastName}
                     onChange={(e) => {
                       setPassenger({ ...passenger, lastName: e.target.value });
-                      validateField(e.target.value, 'lastName');
+                      validateField(e.target.value, "lastName");
                     }}
                     className={cn(
-                      "w-full border rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-                      validationErrors.lastName ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                      "w-full rounded-md border px-2 py-1.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500",
+                      validationErrors.lastName
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                        : "",
                     )}
                     placeholder="Enter last name"
                   />
                   {validationErrors.lastName && (
-                    <p className="text-red-500 text-xs mt-1">Last name is required</p>
+                    <p className="mt-1 text-xs text-red-500">
+                      Last name is required
+                    </p>
                   )}
                 </div>
 
                 {/* Gender */}
                 <div>
-                  <Label htmlFor="gender" className="text-xs font-medium text-gray-700 mb-0.5">
+                  <Label
+                    htmlFor="gender"
+                    className="mb-0.5 text-xs font-medium text-gray-700"
+                  >
                     Gender *
                   </Label>
                   <Select
                     value={passenger.gender}
                     onValueChange={(value) => {
                       setPassenger({ ...passenger, gender: value });
-                      validateField(value, 'gender');
+                      validateField(value, "gender");
                     }}
                   >
-                    <SelectTrigger className={cn(
-                      "h-9",
-                      validationErrors.gender ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
-                    )}>
+                    <SelectTrigger
+                      className={cn(
+                        "h-9",
+                        validationErrors.gender
+                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                          : "",
+                      )}
+                    >
                       <SelectValue placeholder="Select gender" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1216,13 +1474,15 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                     </SelectContent>
                   </Select>
                   {validationErrors.gender && (
-                    <p className="text-red-500 text-xs mt-1">Gender is required</p>
+                    <p className="mt-1 text-xs text-red-500">
+                      Gender is required
+                    </p>
                   )}
                 </div>
               </div>
 
               {/* Footer Note */}
-              <div className="border-t pt-3 mt-4">
+              <div className="mt-4 border-t pt-3">
                 <p className="text-xs text-gray-600">
                   Please ensure all details match your travel documents exactly.
                 </p>
@@ -1232,8 +1492,10 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
               <div className="mt-4">
                 <Button
                   variant="outline"
-                  onClick={() => setIsSavedPassengersExpanded(!isSavedPassengersExpanded)}
-                  className="w-full flex items-center justify-between text-sm"
+                  onClick={() =>
+                    setIsSavedPassengersExpanded(!isSavedPassengersExpanded)
+                  }
+                  className="flex w-full items-center justify-between text-sm"
                 >
                   <span>Saved Passengers</span>
                   {isSavedPassengersExpanded ? (
@@ -1245,25 +1507,31 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
 
                 {/* Saved Passengers List */}
                 {isSavedPassengersExpanded && (
-                  <div className="mt-3 border rounded-lg bg-gray-50">
+                  <div className="mt-3 rounded-lg border bg-gray-50">
                     <div className="p-3">
-                      <div className="text-xs font-medium text-gray-700 mb-2">
+                      <div className="mb-2 text-xs font-medium text-gray-700">
                         Select a saved passenger:
                       </div>
                       <div className="space-y-2">
                         {savedPassengers.map((savedPassenger) => (
                           <button
                             key={savedPassenger.id}
-                            onClick={() => handleSelectSavedPassenger(savedPassenger)}
-                            className="w-full text-left p-3 bg-white border rounded-md hover:bg-blue-50 hover:border-blue-200 transition-colors duration-200"
+                            onClick={() =>
+                              handleSelectSavedPassenger(savedPassenger)
+                            }
+                            className="w-full rounded-md border bg-white p-3 text-left transition-colors duration-200 hover:border-blue-200 hover:bg-blue-50"
                           >
                             <div className="flex items-center justify-between">
                               <div>
-                                <div className="font-medium text-sm">
-                                  {savedPassenger.firstName} {savedPassenger.lastName}
+                                <div className="text-sm font-medium">
+                                  {savedPassenger.firstName}{" "}
+                                  {savedPassenger.lastName}
                                 </div>
                                 <div className="text-xs text-gray-600">
-                                  {savedPassenger.gender} • {savedPassenger.dateOfBirth ? `Born ${savedPassenger.dateOfBirth}` : 'No DOB'}
+                                  {savedPassenger.gender} •{" "}
+                                  {savedPassenger.dateOfBirth
+                                    ? `Born ${savedPassenger.dateOfBirth}`
+                                    : "No DOB"}
                                 </div>
                               </div>
                               <ArrowRight className="h-4 w-4 text-gray-400" />
@@ -1278,16 +1546,18 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
             </div>
 
             {/* Contact Information */}
-            <div className="bg-white rounded-lg shadow p-4">
+            <div className="rounded-lg bg-white p-4 shadow">
               <div
                 className="cursor-pointer"
                 onClick={() => setIsContactExpanded(!isContactExpanded)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <h2 className="text-lg font-semibold">Contact Information</h2>
+                    <h2 className="text-lg font-semibold">
+                      Contact Information
+                    </h2>
                     {!isContactExpanded && (
-                      <div className="text-sm text-gray-600 mt-1">
+                      <div className="mt-1 text-sm text-gray-600">
                         {contact.phone} • {contact.email}
                       </div>
                     )}
@@ -1303,11 +1573,14 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
               </div>
 
               {isContactExpanded && (
-                <div className="border-t pt-4 mt-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="mt-4 border-t pt-4">
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     {/* Phone Number */}
                     <div>
-                      <Label htmlFor="phone" className="text-xs font-medium text-gray-700 mb-0.5">
+                      <Label
+                        htmlFor="phone"
+                        className="mb-0.5 text-xs font-medium text-gray-700"
+                      >
                         Phone Number *
                       </Label>
                       <Input
@@ -1316,22 +1589,29 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                         value={contact.phone}
                         onChange={(e) => {
                           setContact({ ...contact, phone: e.target.value });
-                          validateField(e.target.value, 'phone');
+                          validateField(e.target.value, "phone");
                         }}
                         className={cn(
-                          "w-full border rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-                          validationErrors.phone ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                          "w-full rounded-md border px-2 py-1.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500",
+                          validationErrors.phone
+                            ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                            : "",
                         )}
                         placeholder="+1 (555) 123-4567"
                       />
                       {validationErrors.phone && (
-                        <p className="text-red-500 text-xs mt-1">Phone number is required</p>
+                        <p className="mt-1 text-xs text-red-500">
+                          Phone number is required
+                        </p>
                       )}
                     </div>
 
                     {/* Email Address */}
                     <div>
-                      <Label htmlFor="email" className="text-xs font-medium text-gray-700 mb-0.5">
+                      <Label
+                        htmlFor="email"
+                        className="mb-0.5 text-xs font-medium text-gray-700"
+                      >
                         Email Address *
                       </Label>
                       <Input
@@ -1343,20 +1623,25 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                           validateEmail(e.target.value);
                         }}
                         className={cn(
-                          "w-full border rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-                          validationErrors.email ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                          "w-full rounded-md border px-2 py-1.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500",
+                          validationErrors.email
+                            ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                            : "",
                         )}
                         placeholder="your.email@example.com"
                       />
                       {validationErrors.email && (
-                        <p className="text-red-500 text-xs mt-1">Valid email address is required</p>
+                        <p className="mt-1 text-xs text-red-500">
+                          Valid email address is required
+                        </p>
                       )}
                     </div>
                   </div>
 
-                  <div className="border-t pt-3 mt-4">
+                  <div className="mt-4 border-t pt-3">
                     <p className="text-xs text-gray-600">
-                      We&apos;ll use this information to send you booking confirmations and updates.
+                      We&apos;ll use this information to send you booking
+                      confirmations and updates.
                     </p>
                   </div>
                 </div>
@@ -1365,203 +1650,292 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
 
             {/* Travel Documents - Only show if travelerRequirements is not null */}
             {showTravelDocuments && (
-              <div className="bg-white rounded-lg shadow p-4">
-              <div
-                className="cursor-pointer"
-                onClick={() => setIsTravelDocsExpanded(!isTravelDocsExpanded)}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <h2 className="text-lg font-semibold">Travel Documents</h2>
-                    {!isTravelDocsExpanded && document && document.type && document.number && (
-                      <div className="text-sm text-gray-600 mt-1">
-                        {document.type} • {document.number} • Expires {document.expiryDate}
+              <div className="rounded-lg bg-white p-4 shadow">
+                <div
+                  className="cursor-pointer"
+                  onClick={() => setIsTravelDocsExpanded(!isTravelDocsExpanded)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <h2 className="text-lg font-semibold">
+                        Travel Documents
+                      </h2>
+                      {!isTravelDocsExpanded &&
+                        document &&
+                        document.type &&
+                        document.number && (
+                          <div className="mt-1 text-sm text-gray-600">
+                            {document.type} • {document.number} • Expires{" "}
+                            {document.expiryDate}
+                          </div>
+                        )}
+                    </div>
+                    <div className="ml-4">
+                      {isTravelDocsExpanded ? (
+                        <ChevronUp className="h-5 w-5 text-gray-400" />
+                      ) : (
+                        <ChevronDown className="h-5 w-5 text-gray-400" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {isTravelDocsExpanded && (
+                  <div className="mt-4 border-t pt-4">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      {/* Date of Birth */}
+                      <div>
+                        <Label
+                          htmlFor="dateOfBirth"
+                          className="mb-0.5 text-xs font-medium text-gray-700"
+                        >
+                          Date of Birth *
+                        </Label>
+                        <DateInput
+                          date={
+                            passenger.dateOfBirth
+                              ? new Date(passenger.dateOfBirth)
+                              : undefined
+                          }
+                          onDateChange={(date) => {
+                            const dateString = date
+                              ? date.toISOString().split("T")[0]
+                              : "";
+                            setPassenger({
+                              ...passenger,
+                              dateOfBirth: dateString,
+                            });
+                            validateField(dateString, "dateOfBirth");
+                          }}
+                          placeholder="Select date of birth"
+                          disableFuture={true}
+                          className={cn(
+                            validationErrors.dateOfBirth
+                              ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                              : "",
+                          )}
+                        />
+                        {validationErrors.dateOfBirth && (
+                          <p className="mt-1 text-xs text-red-500">
+                            Date of birth is required
+                          </p>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  <div className="ml-4">
-                    {isTravelDocsExpanded ? (
-                      <ChevronUp className="h-5 w-5 text-gray-400" />
-                    ) : (
-                      <ChevronDown className="h-5 w-5 text-gray-400" />
-                    )}
-                  </div>
-                </div>
-              </div>
 
-              {isTravelDocsExpanded && (
-                <div className="border-t pt-4 mt-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {/* Date of Birth */}
-                    <div>
-                      <Label htmlFor="dateOfBirth" className="text-xs font-medium text-gray-700 mb-0.5">
-                        Date of Birth *
-                      </Label>
-                      <DateInput
-                        date={passenger.dateOfBirth ? new Date(passenger.dateOfBirth) : undefined}
-                        onDateChange={(date) => {
-                          const dateString = date ? date.toISOString().split('T')[0] : '';
-                          setPassenger({ ...passenger, dateOfBirth: dateString });
-                          validateField(dateString, 'dateOfBirth');
-                        }}
-                        placeholder="Select date of birth"
-                        disableFuture={true}
-                        className={cn(
-                          validationErrors.dateOfBirth ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                      {/* Document Type */}
+                      <div>
+                        <Label
+                          htmlFor="documentType"
+                          className="mb-0.5 text-xs font-medium text-gray-700"
+                        >
+                          Document Type *
+                        </Label>
+                        <Select
+                          value={document?.type || ""}
+                          onValueChange={(value) => {
+                            setDocument({
+                              ...(document || {}),
+                              type: value,
+                            } as any);
+                            validateField(value, "documentType");
+                          }}
+                        >
+                          <SelectTrigger
+                            className={cn(
+                              "h-9",
+                              validationErrors.documentType
+                                ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                                : "",
+                            )}
+                          >
+                            <SelectValue placeholder="Select document type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Passport">Passport</SelectItem>
+                            <SelectItem value="National ID">
+                              National ID
+                            </SelectItem>
+                            <SelectItem value="Driver's License">
+                              Driver&apos;s License
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {validationErrors.documentType && (
+                          <p className="mt-1 text-xs text-red-500">
+                            Document type is required
+                          </p>
                         )}
-                      />
-                      {validationErrors.dateOfBirth && (
-                        <p className="text-red-500 text-xs mt-1">Date of birth is required</p>
-                      )}
-                    </div>
+                      </div>
 
-                    {/* Document Type */}
-                    <div>
-                      <Label htmlFor="documentType" className="text-xs font-medium text-gray-700 mb-0.5">
-                        Document Type *
-                      </Label>
-                      <Select
-                        value={document?.type || ''}
-                        onValueChange={(value) => {
-                          setDocument({ ...(document || {}), type: value } as any);
-                          validateField(value, 'documentType');
-                        }}
-                      >
-                        <SelectTrigger className={cn(
-                          "h-9",
-                          validationErrors.documentType ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
-                        )}>
-                          <SelectValue placeholder="Select document type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Passport">Passport</SelectItem>
-                          <SelectItem value="National ID">National ID</SelectItem>
-                          <SelectItem value="Driver&apos;s License">Driver&apos;s License</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {validationErrors.documentType && (
-                        <p className="text-red-500 text-xs mt-1">Document type is required</p>
-                      )}
-                    </div>
-
-                    {/* Document Number */}
-                    <div className="relative">
-                      <Label htmlFor="documentNumber" className="text-xs font-medium text-gray-700 mb-0.5">
-                        {document?.type || 'Document'} Number *
-                      </Label>
-                      <Input
-                        id="documentNumber"
-                        type="text"
-                        value={document?.number || ''}
-                        onChange={(e) => {
-                          setDocument({ ...(document || {}), number: e.target.value } as any);
-                          validateField(e.target.value, 'documentNumber');
-                        }}
-                        className={cn(
-                          "w-full border rounded-md px-2 py-1.5 text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-                          validationErrors.documentNumber ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                      {/* Document Number */}
+                      <div className="relative">
+                        <Label
+                          htmlFor="documentNumber"
+                          className="mb-0.5 text-xs font-medium text-gray-700"
+                        >
+                          {document?.type || "Document"} Number *
+                        </Label>
+                        <Input
+                          id="documentNumber"
+                          type="text"
+                          value={document?.number || ""}
+                          onChange={(e) => {
+                            setDocument({
+                              ...(document || {}),
+                              number: e.target.value,
+                            } as any);
+                            validateField(e.target.value, "documentNumber");
+                          }}
+                          className={cn(
+                            "w-full rounded-md border px-2 py-1.5 font-mono text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500",
+                            validationErrors.documentNumber
+                              ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                              : "",
+                          )}
+                          placeholder="Enter document number"
+                        />
+                        {validationErrors.documentNumber && (
+                          <p className="mt-1 text-xs text-red-500">
+                            Document number is required
+                          </p>
                         )}
-                        placeholder="Enter document number"
-                      />
-                      {validationErrors.documentNumber && (
-                        <p className="text-red-500 text-xs mt-1">Document number is required</p>
-                      )}
-                    </div>
+                      </div>
 
-                    {/* Issuing Country */}
-                    <div>
-                      <Label htmlFor="issuingCountry" className="text-xs font-medium text-gray-700 mb-0.5">
-                        Issuing Country *
-                      </Label>
-                      <CountryCombobox
-                        value={document?.issuingCountry || ''}
-                        onValueChange={(value) => {
-                          setDocument({ ...(document || {}), issuingCountry: value } as any);
-                          validateField(value, 'issuingCountry');
-                        }}
-                        placeholder="Select issuing country"
-                        className={cn(
-                          validationErrors.issuingCountry ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                      {/* Issuing Country */}
+                      <div>
+                        <Label
+                          htmlFor="issuingCountry"
+                          className="mb-0.5 text-xs font-medium text-gray-700"
+                        >
+                          Issuing Country *
+                        </Label>
+                        <CountryCombobox
+                          value={document?.issuingCountry || ""}
+                          onValueChange={(value) => {
+                            setDocument({
+                              ...(document || {}),
+                              issuingCountry: value,
+                            } as any);
+                            validateField(value, "issuingCountry");
+                          }}
+                          placeholder="Select issuing country"
+                          className={cn(
+                            validationErrors.issuingCountry
+                              ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                              : "",
+                          )}
+                        />
+                        {validationErrors.issuingCountry && (
+                          <p className="mt-1 text-xs text-red-500">
+                            Issuing country is required
+                          </p>
                         )}
-                      />
-                      {validationErrors.issuingCountry && (
-                        <p className="text-red-500 text-xs mt-1">Issuing country is required</p>
-                      )}
-                    </div>
+                      </div>
 
-                    {/* Nationality */}
-                    <div>
-                      <Label htmlFor="nationality" className="text-xs font-medium text-gray-700 mb-0.5">
-                        Nationality *
-                      </Label>
-                      <CountryCombobox
-                        value={document?.nationality || ''}
-                        onValueChange={(value) => {
-                          setDocument({ ...(document || {}), nationality: value } as any);
-                          validateField(value, 'nationality');
-                        }}
-                        placeholder="Select nationality"
-                        className={cn(
-                          validationErrors.nationality ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                      {/* Nationality */}
+                      <div>
+                        <Label
+                          htmlFor="nationality"
+                          className="mb-0.5 text-xs font-medium text-gray-700"
+                        >
+                          Nationality *
+                        </Label>
+                        <CountryCombobox
+                          value={document?.nationality || ""}
+                          onValueChange={(value) => {
+                            setDocument({
+                              ...(document || {}),
+                              nationality: value,
+                            } as any);
+                            validateField(value, "nationality");
+                          }}
+                          placeholder="Select nationality"
+                          className={cn(
+                            validationErrors.nationality
+                              ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                              : "",
+                          )}
+                        />
+                        {validationErrors.nationality && (
+                          <p className="mt-1 text-xs text-red-500">
+                            Nationality is required
+                          </p>
                         )}
-                      />
-                      {validationErrors.nationality && (
-                        <p className="text-red-500 text-xs mt-1">Nationality is required</p>
-                      )}
-                    </div>
+                      </div>
 
-                    {/* Expiry Date */}
-                    <div className="relative">
-                      <Label htmlFor="expiryDate" className="text-xs font-medium text-gray-700 mb-0.5">
-                        Expiry Date *
-                      </Label>
-                      <DateInput
-                        date={document?.expiryDate ? new Date(document.expiryDate) : undefined}
-                        onDateChange={(date) => {
-                          const dateString = date ? date.toISOString().split('T')[0] : '';
-                          setDocument({ ...(document || {}), expiryDate: dateString } as any);
-                          validateField(dateString, 'expiryDate');
-                        }}
-                        placeholder="Select expiry date"
-                        disablePast={true}
-                        className={cn(
-                          validationErrors.expiryDate ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                      {/* Expiry Date */}
+                      <div className="relative">
+                        <Label
+                          htmlFor="expiryDate"
+                          className="mb-0.5 text-xs font-medium text-gray-700"
+                        >
+                          Expiry Date *
+                        </Label>
+                        <DateInput
+                          date={
+                            document?.expiryDate
+                              ? new Date(document.expiryDate)
+                              : undefined
+                          }
+                          onDateChange={(date) => {
+                            const dateString = date
+                              ? date.toISOString().split("T")[0]
+                              : "";
+                            setDocument({
+                              ...(document || {}),
+                              expiryDate: dateString,
+                            } as any);
+                            validateField(dateString, "expiryDate");
+                          }}
+                          placeholder="Select expiry date"
+                          disablePast={true}
+                          className={cn(
+                            validationErrors.expiryDate
+                              ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                              : "",
+                          )}
+                        />
+                        {validationErrors.expiryDate && (
+                          <p className="mt-1 text-xs text-red-500">
+                            Expiry date is required
+                          </p>
                         )}
-                      />
-                      {validationErrors.expiryDate && (
-                        <p className="text-red-500 text-xs mt-1">Expiry date is required</p>
-                      )}
-                      {/* Expiry Warning */}
-                      {(() => {
-                        if (!document?.expiryDate) return null;
-                        const expiryDate = new Date(document.expiryDate);
-                        const today = new Date();
-                        const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 3600 * 24));
-
-                        if (daysUntilExpiry < 180 && daysUntilExpiry > 0) {
-                          return (
-                            <div className="mt-2">
-                              <div className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full flex items-center space-x-1">
-                                <AlertTriangle className="h-3 w-3" />
-                                <span>Expires soon</span>
-                              </div>
-                            </div>
+                        {/* Expiry Warning */}
+                        {(() => {
+                          if (!document?.expiryDate) return null;
+                          const expiryDate = new Date(document.expiryDate);
+                          const today = new Date();
+                          const daysUntilExpiry = Math.ceil(
+                            (expiryDate.getTime() - today.getTime()) /
+                              (1000 * 3600 * 24),
                           );
-                        }
-                        return null;
-                      })()}
-                    </div>
-                  </div>
 
-                  {/* Verification Status */}
-                  <div className="border-t pt-4 mt-4">
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center space-x-2">
-                      <Shield className="h-4 w-4 text-green-600" />
-                      <span className="text-sm text-green-700 font-medium">Document verified</span>
+                          if (daysUntilExpiry < 180 && daysUntilExpiry > 0) {
+                            return (
+                              <div className="mt-2">
+                                <div className="flex items-center space-x-1 rounded-full bg-red-100 px-2 py-1 text-xs text-red-700">
+                                  <AlertTriangle className="h-3 w-3" />
+                                  <span>Expires soon</span>
+                                </div>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </div>
+                    </div>
+
+                    {/* Verification Status */}
+                    <div className="mt-4 border-t pt-4">
+                      <div className="flex items-center space-x-2 rounded-lg border border-green-200 bg-green-50 p-3">
+                        <Shield className="h-4 w-4 text-green-600" />
+                        <span className="text-sm font-medium text-green-700">
+                          Document verified
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
               </div>
             )}
           </div>
@@ -1570,12 +1944,12 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
           <div className="space-y-3 lg:sticky lg:top-4 lg:self-start">
             {/* Seat Allocation - Only show if seat data is available */}
             {showSeatComponent && finalSeatAllocation && (
-              <div className="bg-white rounded-lg shadow p-4">
-                <div className="flex items-center justify-between mb-4">
+              <div className="rounded-lg bg-white p-4 shadow">
+                <div className="mb-4 flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <h2 className="text-lg font-semibold">Seat Allocation</h2>
                     {isSeatSelected && (
-                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                      <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
                         {finalSeatAllocation.seatNumber}
                       </span>
                     )}
@@ -1587,8 +1961,8 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                     <button
                       onClick={() => setIsSeatSelected(!isSeatSelected)}
                       className={cn(
-                        "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2",
-                        isSeatSelected ? "bg-green-600" : "bg-gray-300"
+                        "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:outline-none",
+                        isSeatSelected ? "bg-green-600" : "bg-gray-300",
                       )}
                       role="switch"
                       aria-checked={isSeatSelected}
@@ -1596,10 +1970,10 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                     >
                       <span
                         className={cn(
-                          "inline-block h-4 w-4 transform rounded-full transition-transform duration-200 shadow-sm border border-gray-200",
+                          "inline-block h-4 w-4 transform rounded-full border border-gray-200 shadow-sm transition-transform duration-200",
                           isSeatSelected
                             ? "translate-x-6 bg-white"
-                            : "translate-x-1 bg-white"
+                            : "translate-x-1 bg-white",
                         )}
                       />
                     </button>
@@ -1608,28 +1982,34 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 {/* Seat Card */}
                 <div
                   className={cn(
-                    "border rounded-lg p-4 transition-colors duration-200",
+                    "rounded-lg border p-4 transition-colors duration-200",
                     isSeatSelected
                       ? "border-green-200 bg-green-50"
-                      : "border-gray-200 bg-gray-50"
+                      : "border-gray-200 bg-gray-50",
                   )}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-2">
+                      <div className="mb-2 flex items-center space-x-2">
                         <MapPin className="h-4 w-4 text-gray-600" />
-                        <span className="font-medium text-sm">
-                          {isSeatSelected ? `Seat ${finalSeatAllocation.seatNumber}` : "No seat selected"}
+                        <span className="text-sm font-medium">
+                          {isSeatSelected
+                            ? `Seat ${finalSeatAllocation.seatNumber}`
+                            : "No seat selected"}
                         </span>
                       </div>
                       {isSeatSelected && (
-                        <p className="text-xs text-gray-600">{finalSeatAllocation.location}</p>
+                        <p className="text-xs text-gray-600">
+                          {finalSeatAllocation.location}
+                        </p>
                       )}
                     </div>
 
                     <div className="text-right">
                       <div className="text-lg font-semibold">
-                        {isSeatSelected ? `${finalPaymentSummary.currency === 'INR' ? '₹' : '$'}${finalSeatAllocation.price.toFixed(2)}` : `${finalPaymentSummary.currency === 'INR' ? '₹' : '$'}0.00`}
+                        {isSeatSelected
+                          ? `${finalPaymentSummary.currency === "INR" ? "₹" : "$"}${finalSeatAllocation.price.toFixed(2)}`
+                          : `${finalPaymentSummary.currency === "INR" ? "₹" : "$"}0.00`}
                       </div>
                       <div className="text-xs text-gray-600">
                         {isSeatSelected ? "Seat fee" : "No fee"}
@@ -1639,9 +2019,10 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 </div>
 
                 {!isSeatSelected && (
-                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-3">
                     <p className="text-sm text-blue-700">
-                      💡 Select a seat to ensure you get your preferred location on the aircraft.
+                      💡 Select a seat to ensure you get your preferred location
+                      on the aircraft.
                     </p>
                   </div>
                 )}
@@ -1649,16 +2030,19 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
             )}
 
             {/* Payment Summary */}
-            <div className="bg-white rounded-lg shadow p-4">
+            <div className="rounded-lg bg-white p-4 shadow">
               <div
                 className="cursor-pointer"
                 onClick={() => setIsPaymentExpanded(!isPaymentExpanded)}
               >
-                <div className="bg-gray-50 rounded-lg p-3 flex items-center justify-between">
+                <div className="flex items-center justify-between rounded-lg bg-gray-50 p-3">
                   <div>
                     <h2 className="text-lg font-semibold">Payment Summary</h2>
                     <div className="text-sm font-bold text-gray-900">
-                      Total: {finalPaymentSummary.currency === 'INR' ? '₹' : '$'}{calculateTotal().toFixed(2)} {finalPaymentSummary.currency}
+                      Total:{" "}
+                      {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
+                      {calculateTotal().toFixed(2)}{" "}
+                      {finalPaymentSummary.currency}
                     </div>
                   </div>
                   <div>
@@ -1672,31 +2056,45 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
               </div>
 
               {isPaymentExpanded && (
-                <div className="border-t pt-4 mt-4 space-y-2">
+                <div className="mt-4 space-y-2 border-t pt-4">
                   {/* Base Fare */}
                   <div className="flex justify-between">
                     <span className="text-xs text-gray-600">Base fare</span>
-                    <span className="text-xs font-medium">{finalPaymentSummary.currency === 'INR' ? '₹' : '$'}{finalPaymentSummary.baseFare.toFixed(2)}</span>
+                    <span className="text-xs font-medium">
+                      {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
+                      {finalPaymentSummary.baseFare.toFixed(2)}
+                    </span>
                   </div>
 
                   {/* Taxes */}
                   <div className="flex justify-between">
                     <span className="text-xs text-gray-600">Taxes & fees</span>
-                    <span className="text-xs font-medium">{finalPaymentSummary.currency === 'INR' ? '₹' : '$'}{finalPaymentSummary.taxes.toFixed(2)}</span>
+                    <span className="text-xs font-medium">
+                      {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
+                      {finalPaymentSummary.taxes.toFixed(2)}
+                    </span>
                   </div>
 
                   {/* Service Fees */}
                   <div className="flex justify-between">
                     <span className="text-xs text-gray-600">Service fees</span>
-                    <span className="text-xs font-medium">{finalPaymentSummary.currency === 'INR' ? '₹' : '$'}{finalPaymentSummary.fees.toFixed(2)}</span>
+                    <span className="text-xs font-medium">
+                      {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
+                      {finalPaymentSummary.fees.toFixed(2)}
+                    </span>
                   </div>
 
                   {/* Seat Selection - Only show if seat component is enabled */}
                   {showSeatComponent && finalSeatAllocation && (
                     <div className="flex justify-between">
-                      <span className="text-xs text-gray-600">Seat selection</span>
+                      <span className="text-xs text-gray-600">
+                        Seat selection
+                      </span>
                       <span className="text-xs font-medium">
-                        {finalPaymentSummary.currency === 'INR' ? '₹' : '$'}{isSeatSelected ? finalSeatAllocation.price.toFixed(2) : "0.00"}
+                        {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
+                        {isSeatSelected
+                          ? finalSeatAllocation.price.toFixed(2)
+                          : "0.00"}
                       </span>
                     </div>
                   )}
@@ -1706,17 +2104,20 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                     <div className="flex justify-between">
                       <span className="text-xs text-gray-600">Discount</span>
                       <span className="text-xs font-medium text-green-600">
-                        -{finalPaymentSummary.currency === 'INR' ? '₹' : '$'}{finalPaymentSummary.discount.toFixed(2)}
+                        -{finalPaymentSummary.currency === "INR" ? "₹" : "$"}
+                        {finalPaymentSummary.discount.toFixed(2)}
                       </span>
                     </div>
                   )}
 
                   {/* Total */}
-                  <div className="border-t pt-2 mt-2">
+                  <div className="mt-2 border-t pt-2">
                     <div className="flex justify-between">
                       <span className="text-sm font-semibold">Total</span>
                       <span className="text-sm font-bold">
-                        {finalPaymentSummary.currency === 'INR' ? '₹' : '$'}{calculateTotal().toFixed(2)} {finalPaymentSummary.currency}
+                        {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
+                        {calculateTotal().toFixed(2)}{" "}
+                        {finalPaymentSummary.currency}
                       </span>
                     </div>
                   </div>
@@ -1730,29 +2131,37 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 variant="outline"
                 className="w-full"
                 onClick={onClose}
+                disabled={isSubmitting}
               >
                 Back
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={!isFormValid}
+                disabled={!isFormValid || isSubmitting}
                 className={cn(
                   "w-full py-3 text-base",
-                  isFormValid
+                  isFormValid && !isSubmitting
                     ? "bg-blue-600 hover:bg-blue-700"
-                    : "bg-gray-400 cursor-not-allowed"
+                    : "cursor-not-allowed bg-gray-400",
                 )}
               >
-                Confirm Booking
+                {isSubmitting ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                    <span>Submitting...</span>
+                  </div>
+                ) : (
+                  "Confirm Booking"
+                )}
               </Button>
             </div>
           </div>
         </div>
 
         {/* Mobile/Tablet Single Column Layout */}
-        <div className="lg:hidden space-y-3">
+        <div className="space-y-3 lg:hidden">
           {/* Flight Details */}
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="rounded-lg bg-white p-4 shadow">
             <div
               className="cursor-pointer"
               onClick={() => setIsFlightExpanded(!isFlightExpanded)}
@@ -1761,16 +2170,24 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   {/* Desktop Layout */}
-                  <div className="hidden sm:flex items-center space-x-6">
+                  <div className="hidden items-center space-x-6 sm:flex">
                     <div className="flex items-center space-x-3">
                       <div className="text-center">
-                        <div className="text-base font-bold">{finalFlightDetails.departure.code}</div>
-                        <div className="text-base font-bold">{finalFlightDetails.departure.time}</div>
+                        <div className="text-base font-bold">
+                          {finalFlightDetails.departure.code}
+                        </div>
+                        <div className="text-base font-bold">
+                          {finalFlightDetails.departure.time}
+                        </div>
                       </div>
                       <ArrowRight className="h-4 w-4 text-gray-400" />
                       <div className="text-center">
-                        <div className="text-base font-bold">{finalFlightDetails.arrival.code}</div>
-                        <div className="text-base font-bold">{finalFlightDetails.arrival.time}</div>
+                        <div className="text-base font-bold">
+                          {finalFlightDetails.arrival.code}
+                        </div>
+                        <div className="text-base font-bold">
+                          {finalFlightDetails.arrival.time}
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
@@ -1790,13 +2207,21 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                   <div className="sm:hidden">
                     <div className="flex items-center justify-between mb-3">
                       <div className="text-center">
-                        <div className="text-base font-bold">{finalFlightDetails.departure.code}</div>
-                        <div className="text-base font-bold">{finalFlightDetails.departure.time}</div>
+                        <div className="text-base font-bold">
+                          {finalFlightDetails.departure.code}
+                        </div>
+                        <div className="text-base font-bold">
+                          {finalFlightDetails.departure.time}
+                        </div>
                       </div>
                       <ArrowRight className="h-4 w-4 text-gray-400" />
                       <div className="text-center">
-                        <div className="text-base font-bold">{finalFlightDetails.arrival.code}</div>
-                        <div className="text-base font-bold">{finalFlightDetails.arrival.time}</div>
+                        <div className="text-base font-bold">
+                          {finalFlightDetails.arrival.code}
+                        </div>
+                        <div className="text-base font-bold">
+                          {finalFlightDetails.arrival.time}
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center justify-center space-x-3">
@@ -1826,7 +2251,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
 
             {/* Expanded View */}
             {isFlightExpanded && (
-              <div className="border-t pt-4 mt-3">
+              <div className="mt-3 border-t pt-4">
                 {/* Airline Info */}
                 <div className="flex items-center space-x-3 mb-4">
                   <AirlineLogo
@@ -1836,42 +2261,60 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                   />
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
-                      <span className="font-medium text-sm">{finalFlightDetails.airline.name}</span>
+                      <span className="text-sm font-medium">
+                        {finalFlightDetails.airline.name}
+                      </span>
                     </div>
-                    <div className="flex items-center space-x-2 mt-1">
+                    <div className="mt-1 flex items-center space-x-2">
                       <span className="text-xs text-gray-600">
-                        Aircraft: {finalFlightDetails.airline.aircraftType || 'Not specified'}
+                        Aircraft:{" "}
+                        {finalFlightDetails.airline.aircraftType ||
+                          "Not specified"}
                       </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Route Details */}
-                <div className="grid grid-cols-3 gap-4 items-center">
+                <div className="grid grid-cols-3 items-center gap-4">
                   {/* Departure */}
                   <div className="text-left">
-                    <div className="text-sm text-gray-600 mb-1">Departure</div>
-                    <div className="text-base font-bold">{finalFlightDetails.departure.time}</div>
-                    <div className="text-sm text-gray-900">{finalFlightDetails.departure.city}</div>
-                    <div className="text-xs text-gray-600">{finalFlightDetails.departure.date}</div>
+                    <div className="mb-1 text-sm text-gray-600">Departure</div>
+                    <div className="text-base font-bold">
+                      {finalFlightDetails.departure.time}
+                    </div>
+                    <div className="text-sm text-gray-900">
+                      {finalFlightDetails.departure.city}
+                    </div>
+                    <div className="text-xs text-gray-600">
+                      {finalFlightDetails.departure.date}
+                    </div>
                   </div>
 
                   {/* Duration Indicator */}
                   <div className="flex flex-col items-center">
-                    <div className="text-xs text-gray-600 mb-1">{finalFlightDetails.duration}</div>
-                    <div className="flex items-center w-full">
-                      <div className="w-20 h-px bg-gray-300"></div>
-                      <ArrowRight className="h-3 w-3 text-gray-400 mx-1" />
+                    <div className="mb-1 text-xs text-gray-600">
+                      {finalFlightDetails.duration}
                     </div>
-                    <div className="text-xs text-gray-600 mt-1">Non-stop</div>
+                    <div className="flex w-full items-center">
+                      <div className="h-px w-20 bg-gray-300"></div>
+                      <ArrowRight className="mx-1 h-3 w-3 text-gray-400" />
+                    </div>
+                    <div className="mt-1 text-xs text-gray-600">Non-stop</div>
                   </div>
 
                   {/* Arrival */}
                   <div className="text-right">
-                    <div className="text-sm text-gray-600 mb-1">Arrival</div>
-                    <div className="text-base font-bold">{finalFlightDetails.arrival.time}</div>
-                    <div className="text-sm text-gray-900">{finalFlightDetails.arrival.city}</div>
-                    <div className="text-xs text-gray-600">{finalFlightDetails.arrival.date}</div>
+                    <div className="mb-1 text-sm text-gray-600">Arrival</div>
+                    <div className="text-base font-bold">
+                      {finalFlightDetails.arrival.time}
+                    </div>
+                    <div className="text-sm text-gray-900">
+                      {finalFlightDetails.arrival.city}
+                    </div>
+                    <div className="text-xs text-gray-600">
+                      {finalFlightDetails.arrival.date}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1879,13 +2322,16 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
           </div>
 
           {/* Passenger Details */}
-          <div className="bg-white rounded-lg shadow p-4">
-            <h2 className="text-lg font-semibold mb-4">Passenger Details</h2>
+          <div className="rounded-lg bg-white p-4 shadow">
+            <h2 className="mb-4 text-lg font-semibold">Passenger Details</h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               {/* First Name */}
               <div>
-                <Label htmlFor="firstName-mobile" className="text-xs font-medium text-gray-700 mb-0.5">
+                <Label
+                  htmlFor="firstName-mobile"
+                  className="mb-0.5 text-xs font-medium text-gray-700"
+                >
                   First Name *
                 </Label>
                 <Input
@@ -1894,22 +2340,29 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                   value={passenger.firstName}
                   onChange={(e) => {
                     setPassenger({ ...passenger, firstName: e.target.value });
-                    validateField(e.target.value, 'firstName');
+                    validateField(e.target.value, "firstName");
                   }}
                   className={cn(
-                    "w-full border rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-                    validationErrors.firstName ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                    "w-full rounded-md border px-2 py-1.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500",
+                    validationErrors.firstName
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                      : "",
                   )}
                   placeholder="Enter first name"
                 />
                 {validationErrors.firstName && (
-                  <p className="text-red-500 text-xs mt-1">First name is required</p>
+                  <p className="mt-1 text-xs text-red-500">
+                    First name is required
+                  </p>
                 )}
               </div>
 
               {/* Last Name */}
               <div>
-                <Label htmlFor="lastName-mobile" className="text-xs font-medium text-gray-700 mb-0.5">
+                <Label
+                  htmlFor="lastName-mobile"
+                  className="mb-0.5 text-xs font-medium text-gray-700"
+                >
                   Last Name *
                 </Label>
                 <Input
@@ -1918,35 +2371,46 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                   value={passenger.lastName}
                   onChange={(e) => {
                     setPassenger({ ...passenger, lastName: e.target.value });
-                    validateField(e.target.value, 'lastName');
+                    validateField(e.target.value, "lastName");
                   }}
                   className={cn(
-                    "w-full border rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-                    validationErrors.lastName ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                    "w-full rounded-md border px-2 py-1.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500",
+                    validationErrors.lastName
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                      : "",
                   )}
                   placeholder="Enter last name"
                 />
                 {validationErrors.lastName && (
-                  <p className="text-red-500 text-xs mt-1">Last name is required</p>
+                  <p className="mt-1 text-xs text-red-500">
+                    Last name is required
+                  </p>
                 )}
               </div>
 
               {/* Gender */}
               <div>
-                <Label htmlFor="gender-mobile" className="text-xs font-medium text-gray-700 mb-0.5">
+                <Label
+                  htmlFor="gender-mobile"
+                  className="mb-0.5 text-xs font-medium text-gray-700"
+                >
                   Gender *
                 </Label>
                 <Select
                   value={passenger.gender}
                   onValueChange={(value) => {
                     setPassenger({ ...passenger, gender: value });
-                    validateField(value, 'gender');
+                    validateField(value, "gender");
                   }}
                 >
-                  <SelectTrigger className={cn(
-                    "h-9",
-                    validationErrors.gender ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
-                  )}>
+                  <SelectTrigger
+                    className={cn(
+                      "h-9",
+                      validationErrors.gender
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                        : "",
+                    )}
+                  >
                     <SelectValue placeholder="Select gender" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1955,13 +2419,15 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                   </SelectContent>
                 </Select>
                 {validationErrors.gender && (
-                  <p className="text-red-500 text-xs mt-1">Gender is required</p>
+                  <p className="mt-1 text-xs text-red-500">
+                    Gender is required
+                  </p>
                 )}
               </div>
             </div>
 
             {/* Footer Note */}
-            <div className="border-t pt-3 mt-4">
+            <div className="mt-4 border-t pt-3">
               <p className="text-xs text-gray-600">
                 Please ensure all details match your travel documents exactly.
               </p>
@@ -1971,8 +2437,10 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
             <div className="mt-4">
               <Button
                 variant="outline"
-                onClick={() => setIsSavedPassengersExpanded(!isSavedPassengersExpanded)}
-                className="w-full flex items-center justify-between text-sm"
+                onClick={() =>
+                  setIsSavedPassengersExpanded(!isSavedPassengersExpanded)
+                }
+                className="flex w-full items-center justify-between text-sm"
               >
                 <span>Saved Passengers</span>
                 {isSavedPassengersExpanded ? (
@@ -1984,25 +2452,31 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
 
               {/* Saved Passengers List */}
               {isSavedPassengersExpanded && (
-                <div className="mt-3 border rounded-lg bg-gray-50">
+                <div className="mt-3 rounded-lg border bg-gray-50">
                   <div className="p-3">
-                    <div className="text-xs font-medium text-gray-700 mb-2">
+                    <div className="mb-2 text-xs font-medium text-gray-700">
                       Select a saved passenger:
                     </div>
                     <div className="space-y-2">
                       {savedPassengers.map((savedPassenger) => (
                         <button
                           key={savedPassenger.id}
-                          onClick={() => handleSelectSavedPassenger(savedPassenger)}
-                          className="w-full text-left p-3 bg-white border rounded-md hover:bg-blue-50 hover:border-blue-200 transition-colors duration-200"
+                          onClick={() =>
+                            handleSelectSavedPassenger(savedPassenger)
+                          }
+                          className="w-full rounded-md border bg-white p-3 text-left transition-colors duration-200 hover:border-blue-200 hover:bg-blue-50"
                         >
                           <div className="flex items-center justify-between">
                             <div>
-                              <div className="font-medium text-sm">
-                                {savedPassenger.firstName} {savedPassenger.lastName}
+                              <div className="text-sm font-medium">
+                                {savedPassenger.firstName}{" "}
+                                {savedPassenger.lastName}
                               </div>
                               <div className="text-xs text-gray-600">
-                                {savedPassenger.gender} • {savedPassenger.dateOfBirth ? `Born ${savedPassenger.dateOfBirth}` : 'No DOB'}
+                                {savedPassenger.gender} •{" "}
+                                {savedPassenger.dateOfBirth
+                                  ? `Born ${savedPassenger.dateOfBirth}`
+                                  : "No DOB"}
                               </div>
                             </div>
                             <ArrowRight className="h-4 w-4 text-gray-400" />
@@ -2017,7 +2491,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
           </div>
 
           {/* Contact Information */}
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="rounded-lg bg-white p-4 shadow">
             <div
               className="cursor-pointer"
               onClick={() => setIsContactExpanded(!isContactExpanded)}
@@ -2026,7 +2500,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 <div className="flex-1">
                   <h2 className="text-lg font-semibold">Contact Information</h2>
                   {!isContactExpanded && (
-                    <div className="text-sm text-gray-600 mt-1">
+                    <div className="mt-1 text-sm text-gray-600">
                       {contact.phone} • {contact.email}
                     </div>
                   )}
@@ -2042,11 +2516,14 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
             </div>
 
             {isContactExpanded && (
-              <div className="border-t pt-4 mt-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="mt-4 border-t pt-4">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   {/* Phone Number */}
                   <div>
-                    <Label htmlFor="phone-mobile" className="text-xs font-medium text-gray-700 mb-0.5">
+                    <Label
+                      htmlFor="phone-mobile"
+                      className="mb-0.5 text-xs font-medium text-gray-700"
+                    >
                       Phone Number *
                     </Label>
                     <Input
@@ -2055,22 +2532,29 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                       value={contact.phone}
                       onChange={(e) => {
                         setContact({ ...contact, phone: e.target.value });
-                        validateField(e.target.value, 'phone');
+                        validateField(e.target.value, "phone");
                       }}
                       className={cn(
-                        "w-full border rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-                        validationErrors.phone ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                        "w-full rounded-md border px-2 py-1.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500",
+                        validationErrors.phone
+                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                          : "",
                       )}
                       placeholder="+1 (555) 123-4567"
                     />
                     {validationErrors.phone && (
-                      <p className="text-red-500 text-xs mt-1">Phone number is required</p>
+                      <p className="mt-1 text-xs text-red-500">
+                        Phone number is required
+                      </p>
                     )}
                   </div>
 
                   {/* Email Address */}
                   <div>
-                    <Label htmlFor="email-mobile" className="text-xs font-medium text-gray-700 mb-0.5">
+                    <Label
+                      htmlFor="email-mobile"
+                      className="mb-0.5 text-xs font-medium text-gray-700"
+                    >
                       Email Address *
                     </Label>
                     <Input
@@ -2082,20 +2566,25 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                         validateEmail(e.target.value);
                       }}
                       className={cn(
-                        "w-full border rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-                        validationErrors.email ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                        "w-full rounded-md border px-2 py-1.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500",
+                        validationErrors.email
+                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                          : "",
                       )}
                       placeholder="your.email@example.com"
                     />
                     {validationErrors.email && (
-                      <p className="text-red-500 text-xs mt-1">Valid email address is required</p>
+                      <p className="mt-1 text-xs text-red-500">
+                        Valid email address is required
+                      </p>
                     )}
                   </div>
                 </div>
 
-                <div className="border-t pt-3 mt-4">
+                <div className="mt-4 border-t pt-3">
                   <p className="text-xs text-gray-600">
-                    We&apos;ll use this information to send you booking confirmations and updates.
+                    We&apos;ll use this information to send you booking
+                    confirmations and updates.
                   </p>
                 </div>
               </div>
@@ -2104,106 +2593,144 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
 
           {/* Travel Documents - Only show if travelerRequirements is not null */}
           {showTravelDocuments && (
-            <div className="bg-white rounded-lg shadow p-4">
-            <div
-              className="cursor-pointer"
-              onClick={() => setIsTravelDocsExpanded(!isTravelDocsExpanded)}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <h2 className="text-lg font-semibold">Travel Documents</h2>
-                  {!isTravelDocsExpanded && document && document.type && document.number && (
-                    <div className="text-sm text-gray-600 mt-1">
-                      {document.type} • {document.number} • Expires {document.expiryDate}
-                    </div>
-                  )}
-                </div>
-                <div className="ml-4">
-                  {isTravelDocsExpanded ? (
-                    <ChevronUp className="h-5 w-5 text-gray-400" />
-                  ) : (
-                    <ChevronDown className="h-5 w-5 text-gray-400" />
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {isTravelDocsExpanded && (
-              <div className="border-t pt-4 mt-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {/* Date of Birth */}
-                  <div>
-                    <Label htmlFor="dateOfBirth-mobile" className="text-xs font-medium text-gray-700 mb-0.5">
-                      Date of Birth *
-                    </Label>
-                    <DateInput
-                      date={passenger.dateOfBirth ? new Date(passenger.dateOfBirth) : undefined}
-                      onDateChange={(date) => {
-                        const dateString = date ? date.toISOString().split('T')[0] : '';
-                        setPassenger({ ...passenger, dateOfBirth: dateString });
-                        validateField(dateString, 'dateOfBirth');
-                      }}
-                      placeholder="Select date of birth"
-                      disableFuture={true}
-                      className={cn(
-                        validationErrors.dateOfBirth ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+            <div className="rounded-lg bg-white p-4 shadow">
+              <div
+                className="cursor-pointer"
+                onClick={() => setIsTravelDocsExpanded(!isTravelDocsExpanded)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <h2 className="text-lg font-semibold">Travel Documents</h2>
+                    {!isTravelDocsExpanded &&
+                      document &&
+                      document.type &&
+                      document.number && (
+                        <div className="mt-1 text-sm text-gray-600">
+                          {document.type} • {document.number} • Expires{" "}
+                          {document.expiryDate}
+                        </div>
                       )}
-                    />
-                    {validationErrors.dateOfBirth && (
-                      <p className="text-red-500 text-xs mt-1">Date of birth is required</p>
-                    )}
                   </div>
-
-                  {/* Document Type */}
-                  <div>
-                    <Label htmlFor="documentType-mobile" className="text-xs font-medium text-gray-700 mb-0.5">
-                      Document Type *
-                    </Label>
-                    <Select
-                      value={document?.type || ''}
-                      onValueChange={(value) => {
-                        setDocument({ ...(document || {}), type: value } as any);
-                        validateField(value, 'documentType');
-                      }}
-                    >
-                      <SelectTrigger className={cn(
-                        "h-9",
-                        validationErrors.documentType ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
-                      )}>
-                        <SelectValue placeholder="Select document type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Passport">Passport</SelectItem>
-                        <SelectItem value="National ID">National ID</SelectItem>
-                        <SelectItem value="Driver&apos;s License">Driver&apos;s License</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {validationErrors.documentType && (
-                      <p className="text-red-500 text-xs mt-1">Document type is required</p>
+                  <div className="ml-4">
+                    {isTravelDocsExpanded ? (
+                      <ChevronUp className="h-5 w-5 text-gray-400" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5 text-gray-400" />
                     )}
-                  </div>
-                </div>
-
-                {/* Verification Status */}
-                <div className="border-t pt-4 mt-4">
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center space-x-2">
-                    <Shield className="h-4 w-4 text-green-600" />
-                    <span className="text-sm text-green-700 font-medium">Document verified</span>
                   </div>
                 </div>
               </div>
-            )}
+
+              {isTravelDocsExpanded && (
+                <div className="mt-4 border-t pt-4">
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    {/* Date of Birth */}
+                    <div>
+                      <Label
+                        htmlFor="dateOfBirth-mobile"
+                        className="mb-0.5 text-xs font-medium text-gray-700"
+                      >
+                        Date of Birth *
+                      </Label>
+                      <DateInput
+                        date={
+                          passenger.dateOfBirth
+                            ? new Date(passenger.dateOfBirth)
+                            : undefined
+                        }
+                        onDateChange={(date) => {
+                          const dateString = date
+                            ? date.toISOString().split("T")[0]
+                            : "";
+                          setPassenger({
+                            ...passenger,
+                            dateOfBirth: dateString,
+                          });
+                          validateField(dateString, "dateOfBirth");
+                        }}
+                        placeholder="Select date of birth"
+                        disableFuture={true}
+                        className={cn(
+                          validationErrors.dateOfBirth
+                            ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                            : "",
+                        )}
+                      />
+                      {validationErrors.dateOfBirth && (
+                        <p className="mt-1 text-xs text-red-500">
+                          Date of birth is required
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Document Type */}
+                    <div>
+                      <Label
+                        htmlFor="documentType-mobile"
+                        className="mb-0.5 text-xs font-medium text-gray-700"
+                      >
+                        Document Type *
+                      </Label>
+                      <Select
+                        value={document?.type || ""}
+                        onValueChange={(value) => {
+                          setDocument({
+                            ...(document || {}),
+                            type: value,
+                          } as any);
+                          validateField(value, "documentType");
+                        }}
+                      >
+                        <SelectTrigger
+                          className={cn(
+                            "h-9",
+                            validationErrors.documentType
+                              ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                              : "",
+                          )}
+                        >
+                          <SelectValue placeholder="Select document type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Passport">Passport</SelectItem>
+                          <SelectItem value="National ID">
+                            National ID
+                          </SelectItem>
+                          <SelectItem value="Driver's License">
+                            Driver&apos;s License
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {validationErrors.documentType && (
+                        <p className="mt-1 text-xs text-red-500">
+                          Document type is required
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Verification Status */}
+                  <div className="mt-4 border-t pt-4">
+                    <div className="flex items-center space-x-2 rounded-lg border border-green-200 bg-green-50 p-3">
+                      <Shield className="h-4 w-4 text-green-600" />
+                      <span className="text-sm font-medium text-green-700">
+                        Document verified
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
           {/* Seat Allocation - Only show if seat data is available */}
           {showSeatComponent && finalSeatAllocation && (
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="flex items-center justify-between mb-4">
+            <div className="rounded-lg bg-white p-4 shadow">
+              <div className="mb-4 flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <h2 className="text-lg font-semibold">Seat Allocation</h2>
                   {isSeatSelected && (
-                    <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                    <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
                       {finalSeatAllocation.seatNumber}
                     </span>
                   )}
@@ -2215,8 +2742,8 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                   <button
                     onClick={() => setIsSeatSelected(!isSeatSelected)}
                     className={cn(
-                      "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2",
-                      isSeatSelected ? "bg-green-600" : "bg-gray-300"
+                      "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:outline-none",
+                      isSeatSelected ? "bg-green-600" : "bg-gray-300",
                     )}
                     role="switch"
                     aria-checked={isSeatSelected}
@@ -2224,10 +2751,10 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                   >
                     <span
                       className={cn(
-                        "inline-block h-4 w-4 transform rounded-full transition-transform duration-200 shadow-sm border border-gray-200",
+                        "inline-block h-4 w-4 transform rounded-full border border-gray-200 shadow-sm transition-transform duration-200",
                         isSeatSelected
                           ? "translate-x-6 bg-white"
-                          : "translate-x-1 bg-white"
+                          : "translate-x-1 bg-white",
                       )}
                     />
                   </button>
@@ -2237,28 +2764,34 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
               {/* Seat Card */}
               <div
                 className={cn(
-                  "border rounded-lg p-4 transition-colors duration-200",
+                  "rounded-lg border p-4 transition-colors duration-200",
                   isSeatSelected
                     ? "border-green-200 bg-green-50"
-                    : "border-gray-200 bg-gray-50"
+                    : "border-gray-200 bg-gray-50",
                 )}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-2">
+                    <div className="mb-2 flex items-center space-x-2">
                       <MapPin className="h-4 w-4 text-gray-600" />
-                      <span className="font-medium text-sm">
-                        {isSeatSelected ? `Seat ${finalSeatAllocation.seatNumber}` : "No seat selected"}
+                      <span className="text-sm font-medium">
+                        {isSeatSelected
+                          ? `Seat ${finalSeatAllocation.seatNumber}`
+                          : "No seat selected"}
                       </span>
                     </div>
                     {isSeatSelected && (
-                      <p className="text-xs text-gray-600">{finalSeatAllocation.location}</p>
+                      <p className="text-xs text-gray-600">
+                        {finalSeatAllocation.location}
+                      </p>
                     )}
                   </div>
 
                   <div className="text-right">
                     <div className="text-lg font-semibold">
-                      {isSeatSelected ? `${finalPaymentSummary.currency === 'INR' ? '₹' : '$'}${finalSeatAllocation.price.toFixed(2)}` : `${finalPaymentSummary.currency === 'INR' ? '₹' : '$'}0.00`}
+                      {isSeatSelected
+                        ? `${finalPaymentSummary.currency === "INR" ? "₹" : "$"}${finalSeatAllocation.price.toFixed(2)}`
+                        : `${finalPaymentSummary.currency === "INR" ? "₹" : "$"}0.00`}
                     </div>
                     <div className="text-xs text-gray-600">
                       {isSeatSelected ? "Seat fee" : "No fee"}
@@ -2268,9 +2801,10 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
               </div>
 
               {!isSeatSelected && (
-                <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-3">
                   <p className="text-sm text-blue-700">
-                    💡 Select a seat to ensure you get your preferred location on the aircraft.
+                    💡 Select a seat to ensure you get your preferred location
+                    on the aircraft.
                   </p>
                 </div>
               )}
@@ -2278,16 +2812,17 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
           )}
 
           {/* Payment Summary */}
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="rounded-lg bg-white p-4 shadow">
             <div
               className="cursor-pointer"
               onClick={() => setIsPaymentExpanded(!isPaymentExpanded)}
             >
-              <div className="bg-gray-50 rounded-lg p-3 flex items-center justify-between">
+              <div className="flex items-center justify-between rounded-lg bg-gray-50 p-3">
                 <div>
                   <h2 className="text-lg font-semibold">Payment Summary</h2>
                   <div className="text-sm font-bold text-gray-900">
-                    Total: {finalPaymentSummary.currency === 'INR' ? '₹' : '$'}{calculateTotal().toFixed(2)} {finalPaymentSummary.currency}
+                    Total: {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
+                    {calculateTotal().toFixed(2)} {finalPaymentSummary.currency}
                   </div>
                 </div>
                 <div>
@@ -2301,31 +2836,45 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
             </div>
 
             {isPaymentExpanded && (
-              <div className="border-t pt-4 mt-4 space-y-2">
+              <div className="mt-4 space-y-2 border-t pt-4">
                 {/* Base Fare */}
                 <div className="flex justify-between">
                   <span className="text-xs text-gray-600">Base fare</span>
-                  <span className="text-xs font-medium">{finalPaymentSummary.currency === 'INR' ? '₹' : '$'}{finalPaymentSummary.baseFare.toFixed(2)}</span>
+                  <span className="text-xs font-medium">
+                    {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
+                    {finalPaymentSummary.baseFare.toFixed(2)}
+                  </span>
                 </div>
 
                 {/* Taxes */}
                 <div className="flex justify-between">
                   <span className="text-xs text-gray-600">Taxes & fees</span>
-                  <span className="text-xs font-medium">{finalPaymentSummary.currency === 'INR' ? '₹' : '$'}{finalPaymentSummary.taxes.toFixed(2)}</span>
+                  <span className="text-xs font-medium">
+                    {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
+                    {finalPaymentSummary.taxes.toFixed(2)}
+                  </span>
                 </div>
 
                 {/* Service Fees */}
                 <div className="flex justify-between">
                   <span className="text-xs text-gray-600">Service fees</span>
-                  <span className="text-xs font-medium">{finalPaymentSummary.currency === 'INR' ? '₹' : '$'}{finalPaymentSummary.fees.toFixed(2)}</span>
+                  <span className="text-xs font-medium">
+                    {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
+                    {finalPaymentSummary.fees.toFixed(2)}
+                  </span>
                 </div>
 
                 {/* Seat Selection - Only show if seat component is enabled */}
                 {showSeatComponent && finalSeatAllocation && (
                   <div className="flex justify-between">
-                    <span className="text-xs text-gray-600">Seat selection</span>
+                    <span className="text-xs text-gray-600">
+                      Seat selection
+                    </span>
                     <span className="text-xs font-medium">
-                      {finalPaymentSummary.currency === 'INR' ? '₹' : '$'}{isSeatSelected ? finalSeatAllocation.price.toFixed(2) : "0.00"}
+                      {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
+                      {isSeatSelected
+                        ? finalSeatAllocation.price.toFixed(2)
+                        : "0.00"}
                     </span>
                   </div>
                 )}
@@ -2335,17 +2884,20 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                   <div className="flex justify-between">
                     <span className="text-xs text-gray-600">Discount</span>
                     <span className="text-xs font-medium text-green-600">
-                      -{finalPaymentSummary.currency === 'INR' ? '₹' : '$'}{finalPaymentSummary.discount.toFixed(2)}
+                      -{finalPaymentSummary.currency === "INR" ? "₹" : "$"}
+                      {finalPaymentSummary.discount.toFixed(2)}
                     </span>
                   </div>
                 )}
 
                 {/* Total */}
-                <div className="border-t pt-2 mt-2">
+                <div className="mt-2 border-t pt-2">
                   <div className="flex justify-between">
                     <span className="text-sm font-semibold">Total</span>
                     <span className="text-sm font-bold">
-                      {finalPaymentSummary.currency === 'INR' ? '₹' : '$'}{calculateTotal().toFixed(2)} {finalPaymentSummary.currency}
+                      {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
+                      {calculateTotal().toFixed(2)}{" "}
+                      {finalPaymentSummary.currency}
                     </span>
                   </div>
                 </div>
@@ -2357,44 +2909,59 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
         {/* Action Buttons */}
         {isInBottomSheet ? (
           // Bottom sheet buttons - always sticky at bottom
-          <div className="sticky bottom-0 bg-white border-t p-4 mt-6 -mx-4">
+          <div className="sticky bottom-0 -mx-4 mt-6 border-t bg-white p-4">
             <div className="flex space-x-3">
               <Button
                 variant="outline"
                 className="flex-1"
                 onClick={onClose}
+                disabled={isSubmitting}
               >
                 Back
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={!isFormValid}
+                disabled={!isFormValid || isSubmitting}
                 className={cn(
                   "flex-1",
-                  isFormValid
+                  isFormValid && !isSubmitting
                     ? "bg-blue-600 hover:bg-blue-700"
-                    : "bg-gray-400 cursor-not-allowed"
+                    : "cursor-not-allowed bg-gray-400",
                 )}
               >
-                Confirm Booking
+                {isSubmitting ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                    <span>Submitting...</span>
+                  </div>
+                ) : (
+                  "Confirm Booking"
+                )}
               </Button>
             </div>
           </div>
         ) : (
           // Mobile/Tablet Sticky Button (Desktop buttons are in the right column)
           // Only show on mobile/tablet, hidden on desktop (lg and above)
-          <div className="block lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t p-4 z-50">
+          <div className="fixed right-0 bottom-0 left-0 z-50 block border-t bg-white p-4 lg:hidden">
             <Button
               onClick={handleSubmit}
-              disabled={!isFormValid}
+              disabled={!isFormValid || isSubmitting}
               className={cn(
                 "w-full py-3 text-base",
-                isFormValid
+                isFormValid && !isSubmitting
                   ? "bg-blue-600 hover:bg-blue-700"
-                  : "bg-gray-400 cursor-not-allowed"
+                  : "cursor-not-allowed bg-gray-400",
               )}
             >
-              Confirm Booking
+              {isSubmitting ? (
+                <div className="flex items-center space-x-2">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                  <span>Submitting...</span>
+                </div>
+              ) : (
+                "Confirm Booking"
+              )}
             </Button>
           </div>
         )}

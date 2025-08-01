@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { componentMap, ComponentType } from "@/components/widgets";
@@ -9,10 +9,11 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { useNonAgentFlow } from "@/providers/NonAgentFlowContext";
 
 // Debug utility function
 const debugLog = (message: string, data?: any) => {
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV === "development") {
     console.group(`🐛 GenericInterrupt Debug: ${message}`);
     if (data !== undefined) {
       console.log(data);
@@ -28,7 +29,10 @@ interface DynamicRendererProps {
 }
 
 // Wrapper component for TravelerDetailsWidget with bottom sheet
-const TravelerDetailsBottomSheet: React.FC<{ apiData: any; args: any }> = ({ apiData, args }) => {
+const TravelerDetailsBottomSheet: React.FC<{ apiData: any; args: any }> = ({
+  apiData,
+  args,
+}) => {
   const [isOpen, setIsOpen] = useState(true);
 
   // Get the actual ReviewWidget component
@@ -40,12 +44,15 @@ const TravelerDetailsBottomSheet: React.FC<{ apiData: any; args: any }> = ({ api
   };
 
   return (
-    <Sheet open={isOpen} onOpenChange={setIsOpen}>
+    <Sheet
+      open={isOpen}
+      onOpenChange={setIsOpen}
+    >
       <SheetContent
         side="bottom"
-        className="h-[90vh] sm:h-[85vh] flex flex-col overflow-hidden p-0"
+        className="flex h-[90vh] flex-col overflow-hidden p-0 sm:h-[85vh]"
       >
-        <SheetHeader className="flex-shrink-0 px-6 py-4 border-b border-gray-200">
+        <SheetHeader className="flex-shrink-0 border-b border-gray-200 px-6 py-4">
           <SheetTitle className="text-xl font-semibold">
             Review Your Booking
           </SheetTitle>
@@ -64,7 +71,52 @@ const TravelerDetailsBottomSheet: React.FC<{ apiData: any; args: any }> = ({ api
   );
 };
 
-console.log("DynamicRendererProps interface defined - checking props:", { interruptType: "will be logged in component", interrupt: "will be logged in component" });
+// Wrapper component for NonAgentFlowWidget with bottom sheet
+const NonAgentFlowBottomSheet: React.FC<{ apiData: any; args: any }> = ({
+  apiData,
+  args,
+}) => {
+  const [isOpen, setIsOpen] = useState(true);
+
+  // Get the actual NonAgentFlowWidget component
+  const NonAgentFlowWidget = componentMap.NonAgentFlowWidget;
+
+  // Function to close the bottom sheet
+  const handleClose = () => {
+    setIsOpen(false);
+  };
+
+  return (
+    <Sheet
+      open={isOpen}
+      onOpenChange={setIsOpen}
+    >
+      <SheetContent
+        side="bottom"
+        className="flex h-[90vh] flex-col overflow-hidden p-0 sm:h-[85vh]"
+      >
+        <SheetHeader className="flex-shrink-0 border-b border-gray-200 px-6 py-4">
+          <SheetTitle className="text-xl font-semibold">
+            Complete Your Booking
+          </SheetTitle>
+        </SheetHeader>
+
+        <div className="flex-1 overflow-auto">
+          <NonAgentFlowWidget
+            apiData={apiData}
+            {...args}
+            onClose={handleClose}
+          />
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+};
+
+console.log("DynamicRendererProps interface defined - checking props:", {
+  interruptType: "will be logged in component",
+  interrupt: "will be logged in component",
+});
 
 const DynamicRenderer: React.FC<DynamicRendererProps> = ({
   interruptType,
@@ -73,7 +125,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = ({
   console.log("🔄 STREAMING DATA - DynamicRenderer received:", {
     interruptType,
     interrupt,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
   debugLog("DynamicRenderer called", { interruptType, interrupt });
 
@@ -82,7 +134,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = ({
     interruptType,
     widgetType: interrupt.value?.widget?.type,
     availableWidgets: Object.keys(componentMap),
-    isWidgetTypeInMap: interrupt.value?.widget?.type in componentMap
+    isWidgetTypeInMap: interrupt.value?.widget?.type in componentMap,
   });
 
   // Check if the type exists in componentMap
@@ -94,12 +146,27 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = ({
       componentMap[interrupt.value.widget.type as ComponentType];
     debugLog("Widget component found", {
       componentType: interrupt.value.widget.type,
-      args: interrupt.value.widget.args
+      args: interrupt.value.widget.args,
     });
 
     // For TravelerDetailsWidget, render in bottom sheet
     if (interrupt.value.widget.type === "TravelerDetailsWidget") {
-      return <TravelerDetailsBottomSheet apiData={interrupt} args={interrupt.value.widget.args} />;
+      return (
+        <TravelerDetailsBottomSheet
+          apiData={interrupt}
+          args={interrupt.value.widget.args}
+        />
+      );
+    }
+
+    // For NonAgentFlowWidget, render in bottom sheet
+    if (interrupt.value.widget.type === "NonAgentFlowWidget") {
+      return (
+        <NonAgentFlowBottomSheet
+          apiData={interrupt}
+          args={interrupt.value.widget.args}
+        />
+      );
     }
 
     // For other widgets, pass the args object directly to the component
@@ -125,7 +192,7 @@ export function GenericInterruptView({
   console.log("🔄 STREAMING DATA - GenericInterruptView received:", {
     interrupt,
     isArray: Array.isArray(interrupt),
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
   debugLog("GenericInterruptView rendered", { interrupt });
 
@@ -143,7 +210,7 @@ export function GenericInterruptView({
     interruptObj,
     interruptType,
     shouldTruncate,
-    contentLines: contentLines.length
+    contentLines: contentLines.length,
   });
 
   // Try to render dynamic widget first
@@ -208,70 +275,70 @@ export function GenericInterruptView({
             <h3 className="font-medium text-gray-900">Human Interrupt</h3>
           </div>
         </div>
-      <motion.div
-        className="min-w-full bg-gray-100"
-        initial={false}
-        animate={{ height: "auto" }}
-        transition={{ duration: 0.3 }}
-      >
-        <div className="p-3">
-          <AnimatePresence
-            mode="wait"
-            initial={false}
-          >
-            <motion.div
-              key={isExpanded ? "expanded" : "collapsed"}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.2 }}
-              style={{
-                maxHeight: isExpanded ? "none" : "500px",
-                overflow: "auto",
-              }}
+        <motion.div
+          className="min-w-full bg-gray-100"
+          initial={false}
+          animate={{ height: "auto" }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="p-3">
+            <AnimatePresence
+              mode="wait"
+              initial={false}
             >
-              <table className="min-w-full divide-y divide-gray-200">
-                <tbody className="divide-y divide-gray-200">
-                  {displayEntries.map((item, argIdx) => {
-                    const [key, value] = Array.isArray(interrupt)
-                      ? [argIdx.toString(), item]
-                      : (item as [string, any]);
-                    return (
-                      <tr key={argIdx}>
-                        <td className="px-4 py-2 text-sm font-medium whitespace-nowrap text-gray-900">
-                          {key}
-                        </td>
-                        <td className="px-4 py-2 text-sm text-gray-500">
-                          {isComplexValue(value) ? (
-                            <code className="rounded bg-gray-50 px-2 py-1 font-mono text-sm">
-                              {JSON.stringify(value, null, 2)}
-                            </code>
-                          ) : (
-                            String(value)
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </motion.div>
-          </AnimatePresence>
-        </div>
-        {(shouldTruncate ||
-          (Array.isArray(interrupt) && interrupt.length > 5)) && (
-          <motion.button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="flex w-full cursor-pointer items-center justify-center border-t-[1px] border-gray-200 py-2 text-gray-500 transition-all duration-200 ease-in-out hover:bg-gray-50 hover:text-gray-600"
-            initial={{ scale: 1 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            {isExpanded ? <ChevronUp /> : <ChevronDown />}
-          </motion.button>
-        )}
-      </motion.div>
-    </div>
+              <motion.div
+                key={isExpanded ? "expanded" : "collapsed"}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.2 }}
+                style={{
+                  maxHeight: isExpanded ? "none" : "500px",
+                  overflow: "auto",
+                }}
+              >
+                <table className="min-w-full divide-y divide-gray-200">
+                  <tbody className="divide-y divide-gray-200">
+                    {displayEntries.map((item, argIdx) => {
+                      const [key, value] = Array.isArray(interrupt)
+                        ? [argIdx.toString(), item]
+                        : (item as [string, any]);
+                      return (
+                        <tr key={argIdx}>
+                          <td className="px-4 py-2 text-sm font-medium whitespace-nowrap text-gray-900">
+                            {key}
+                          </td>
+                          <td className="px-4 py-2 text-sm text-gray-500">
+                            {isComplexValue(value) ? (
+                              <code className="rounded bg-gray-50 px-2 py-1 font-mono text-sm">
+                                {JSON.stringify(value, null, 2)}
+                              </code>
+                            ) : (
+                              String(value)
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+          {(shouldTruncate ||
+            (Array.isArray(interrupt) && interrupt.length > 5)) && (
+            <motion.button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="flex w-full cursor-pointer items-center justify-center border-t-[1px] border-gray-200 py-2 text-gray-500 transition-all duration-200 ease-in-out hover:bg-gray-50 hover:text-gray-600"
+              initial={{ scale: 1 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              {isExpanded ? <ChevronUp /> : <ChevronDown />}
+            </motion.button>
+          )}
+        </motion.div>
+      </div>
     </>
   );
 }

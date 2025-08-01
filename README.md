@@ -163,6 +163,7 @@ The Agent Chat UI provides rich markdown rendering with advanced features:
 ### Supported Languages
 
 The syntax highlighter supports popular programming languages including:
+
 - TypeScript/JavaScript (tsx, ts, js, jsx)
 - Python
 - Java
@@ -220,6 +221,7 @@ The application includes several built-in widgets for common use cases:
 - **LoungeWidget**: For displaying airport lounge information
 - **WeatherWidget**: For showing weather information
 - **TravelerDetailsWidget**: For collecting traveler information and booking details
+- **NonAgentFlowWidget**: For handling payment flow with prePayment API, Razorpay integration, and transaction verification
 
 ### Using Interrupts
 
@@ -233,6 +235,27 @@ const result = interrupt({
     type: "SearchCriteriaWidget",
     searchCriteria: searchCriteria,
     selectedTravellers: selectedTravellers,
+  },
+});
+
+// NonAgentFlowWidget example
+const result = interrupt({
+  value: {
+    interrupt_id: "payment-flow-id",
+    type: "NonAgentFlowWidget",
+    args: {
+      tripId: "Tswodli37",
+      flightItinerary: {
+        userContext: {
+          userDetails: primaryTraveller,
+          userId: userId,
+        },
+        selectionContext: {
+          selectedFlightOffers: selectedOffers,
+        },
+      },
+      itinId: "itin123",
+    },
   },
 });
 ```
@@ -283,6 +306,7 @@ You can create custom widgets for your specific use cases by:
 ### Styling and Theming
 
 The application uses:
+
 - **Tailwind CSS**: For utility-first styling
 - **Shadcn/ui**: For consistent UI components
 - **Custom CSS**: For specialized styling needs
@@ -349,7 +373,7 @@ export function Writer(props: {
       </div>
 
       <Artifact title={props.title}>
-        <p className="p-4 whitespace-pre-wrap">{props.content}</p>
+        <p className="whitespace-pre-wrap p-4">{props.content}</p>
       </Artifact>
     </>
   );

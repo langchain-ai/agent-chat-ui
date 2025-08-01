@@ -24,15 +24,8 @@ function CustomComponent({
 }) {
   const artifact = useArtifact();
   const { values } = useStreamContext();
-  console.log(
-    `12345CustomValues: ${JSON.stringify(values.ui)}}`,
-  );
   const customComponents = values.ui?.filter(
     (ui) => ui.metadata?.message_id === message.id,
-  );
-
-  console.log(
-    `12345CustomComponent: ${JSON.stringify(customComponents)} \n message: ${JSON.stringify(message)}`,
   );
 
   if (!customComponents?.length) return null;
@@ -85,9 +78,6 @@ function Interrupt({
   isLastMessage,
   hasNoAIOrToolMessages,
 }: InterruptProps) {
-  console.log(
-    `12345Interrupt: ${JSON.stringify(interruptValue)} \n isLastMessage: ${isLastMessage} \n hasNoAIOrToolMessages: ${hasNoAIOrToolMessages}`,
-  );
   return (
     <>
       {isAgentInboxInterruptSchema(interruptValue) &&
@@ -121,8 +111,6 @@ export function AssistantMessage({
   );
 
   const thread = useStreamContext();
-
-  console.log(`$$$$$$$$$ Message : ${JSON.stringify(message)}`);
 
   const isLastMessage =
     thread.messages.length > 0 &&

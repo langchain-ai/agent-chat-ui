@@ -49,6 +49,7 @@ import {
 import { LogoutButton } from "@/components/auth";
 import { getJwtToken, GetUserId } from "@/services/authService";
 import { GenericInterruptView } from "./messages/generic-interrupt";
+import { NonAgentFlowReopenButton } from "./NonAgentFlowReopenButton";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -259,28 +260,21 @@ export function Thread() {
     // Include userId in the submission
     const submissionData: any = {
       messages: [...toolMessages, newHumanMessage],
-      context
+      context,
     };
 
     if (userId) {
       submissionData.userId = userId;
     }
 
-    stream.submit(
-      submissionData,
-      {
-        streamMode: ["updates"],
-        optimisticValues: (prev) => ({
-          ...prev,
-          context,
-          messages: [
-            ...(prev.messages ?? []),
-            ...toolMessages,
-            newHumanMessage,
-          ],
-        }),
-      },
-    );
+    stream.submit(submissionData, {
+      streamMode: ["updates"],
+      optimisticValues: (prev) => ({
+        ...prev,
+        context,
+        messages: [...(prev.messages ?? []), ...toolMessages, newHumanMessage],
+      }),
+    });
 
     setInput("");
     setContentBlocks([]);
@@ -454,27 +448,20 @@ export function Thread() {
                     .filter(isDisplayableMessage)
                     .map((message, index) =>
                       message.type === "human"
-                        ? (console.log(
-                            `$$$$$$$$$ 0 Assist : ${JSON.stringify(messages)}`,
-                          ),
-                          (
+                        ? (
                             <HumanMessage
                               key={message.id || `${message.type}-${index}`}
                               message={message}
                               isLoading={isLoading}
                             />
-                          ))
-                        : (console.log(
-                            `$$$$$$$$$ 1 Assist : ${JSON.stringify(messages)}`,
-                          ),
-                          (
-                            <AssistantMessage
+                          )
+                        : (<AssistantMessage
                               key={message.id || `${message.type}-${index}`}
                               message={message}
                               isLoading={isLoading}
                               handleRegenerate={handleRegenerate}
                             />
-                          )),
+                          ),
                     )}
                   {/* Special rendering case where there are no AI/tool messages, but there is an interrupt. */}
                   {hasNoAIOrToolMessages && !!stream.interrupt && (
@@ -622,6 +609,7 @@ export function Thread() {
           </div>
         </div>
       </div>
+      <NonAgentFlowReopenButton />
     </div>
   );
 }
