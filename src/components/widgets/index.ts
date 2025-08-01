@@ -5,7 +5,6 @@ import LoungeWidget from "./lounge.widget";
 import weatherWidget from "./weather.widget";
 import ReviewWidget from "./review.widget";
 import PaymentWidget from "./payment.widget";
-import EnhancedPaymentWidget from "./enhanced-payment.widget";
 import NonAgentFlowWidget from "./non-agent-flow.widget";
 
 export const componentMap = {

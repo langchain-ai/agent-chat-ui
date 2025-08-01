@@ -3,10 +3,10 @@ import { executePrepayment } from "@/services/paymentService";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { tripId: string } },
+  { params }: { params: Promise<{ tripId: string }> },
 ) {
   try {
-    const { tripId } = params;
+    const { tripId } = await params;
 
     // Validate tripId
     if (!tripId) {

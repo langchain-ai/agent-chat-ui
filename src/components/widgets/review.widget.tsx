@@ -489,7 +489,7 @@ const parseDuration = (duration: string) => {
 
 // Helper function to get airline logo path
 const getAirlineLogoPath = (airlineIata: string): string => {
-  if (!airlineIata) return '';
+  if (!airlineIata) return "";
   return `/airlines/${airlineIata.toUpperCase()}.png`;
 };
 
@@ -497,39 +497,44 @@ const getAirlineLogoPath = (airlineIata: string): string => {
 const AirlineLogo = ({
   airlineIata,
   airlineName,
-  size = 'md'
+  size = "md",
 }: {
   airlineIata: string;
   airlineName: string;
-  size?: 'sm' | 'md' | 'lg'
+  size?: "sm" | "md" | "lg";
 }) => {
   const logoPath = getAirlineLogoPath(airlineIata);
 
   // Size configurations
   const sizeConfig = {
-    sm: { container: 'w-6 h-6', fallback: 'w-4 h-4' },
-    md: { container: 'w-8 h-8', fallback: 'w-6 h-6' },
-    lg: { container: 'w-10 h-10', fallback: 'w-8 h-8' }
+    sm: { container: "w-6 h-6", fallback: "w-4 h-4" },
+    md: { container: "w-8 h-8", fallback: "w-6 h-6" },
+    lg: { container: "w-10 h-10", fallback: "w-8 h-8" },
   };
 
   const { container, fallback } = sizeConfig[size];
 
   return (
-    <div className={cn("rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 overflow-hidden", container)}>
+    <div
+      className={cn(
+        "flex flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-200",
+        container,
+      )}
+    >
       {logoPath ? (
         <Image
           src={logoPath}
           alt={`${airlineName} logo`}
-          width={size === 'sm' ? 24 : size === 'md' ? 32 : 40}
-          height={size === 'sm' ? 24 : size === 'md' ? 32 : 40}
-          className="object-contain rounded-full"
+          width={size === "sm" ? 24 : size === "md" ? 32 : 40}
+          height={size === "sm" ? 24 : size === "md" ? 32 : 40}
+          className="rounded-full object-contain"
           onError={(e) => {
             // Fallback to gray circle if image fails to load
             const target = e.target as HTMLImageElement;
-            target.style.display = 'none';
+            target.style.display = "none";
             const parent = target.parentElement;
             if (parent) {
-              parent.innerHTML = `<div class="${cn('rounded-full bg-gray-400', fallback)}"></div>`;
+              parent.innerHTML = `<div class="${cn("rounded-full bg-gray-400", fallback)}"></div>`;
             }
           }}
         />
@@ -540,8 +545,6 @@ const AirlineLogo = ({
   );
 };
 
-const transformApiDataToFlightDetails = (apiData: ApiResponse): FlightDetails | null => {
-  const flightOffer = apiData.value.widget.args.flightItinerary.selectionContext.selectedFlightOffers[0];
 const transformApiDataToFlightDetails = (
   apiData: ApiResponse,
 ): FlightDetails | null => {
@@ -1278,13 +1281,19 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                       <div className="flex items-center space-x-3">
                         <div className="flex items-center space-x-2">
                           <AirlineLogo
-                            airlineIata={finalFlightDetails.airline.iataCode || ''}
+                            airlineIata={
+                              finalFlightDetails.airline.iataCode || ""
+                            }
                             airlineName={finalFlightDetails.airline.name}
                             size="sm"
                           />
                           <div className="text-xs text-gray-700">
-                            <div className="font-medium">{finalFlightDetails.airline.name}</div>
-                            <div className="text-gray-600">{finalFlightDetails.airline.cabinClass}</div>
+                            <div className="font-medium">
+                              {finalFlightDetails.airline.name}
+                            </div>
+                            <div className="text-gray-600">
+                              {finalFlightDetails.airline.cabinClass}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1306,9 +1315,9 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
               {isFlightExpanded && (
                 <div className="mt-3 border-t pt-4">
                   {/* Airline Info */}
-                  <div className="flex items-center space-x-3 mb-3">
+                  <div className="mb-3 flex items-center space-x-3">
                     <AirlineLogo
-                      airlineIata={finalFlightDetails.airline.iataCode || ''}
+                      airlineIata={finalFlightDetails.airline.iataCode || ""}
                       airlineName={finalFlightDetails.airline.name}
                       size="sm"
                     />
@@ -2192,20 +2201,24 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                     </div>
                     <div className="flex items-center space-x-3">
                       <AirlineLogo
-                        airlineIata={finalFlightDetails.airline.iataCode || ''}
+                        airlineIata={finalFlightDetails.airline.iataCode || ""}
                         airlineName={finalFlightDetails.airline.name}
                         size="sm"
                       />
                       <div className="text-sm text-gray-700">
-                        <div className="font-medium">{finalFlightDetails.airline.name}</div>
-                        <div className="text-gray-600">{finalFlightDetails.airline.cabinClass}</div>
+                        <div className="font-medium">
+                          {finalFlightDetails.airline.name}
+                        </div>
+                        <div className="text-gray-600">
+                          {finalFlightDetails.airline.cabinClass}
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Mobile Layout */}
                   <div className="sm:hidden">
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="mb-3 flex items-center justify-between">
                       <div className="text-center">
                         <div className="text-base font-bold">
                           {finalFlightDetails.departure.code}
@@ -2226,13 +2239,17 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                     </div>
                     <div className="flex items-center justify-center space-x-3">
                       <AirlineLogo
-                        airlineIata={finalFlightDetails.airline.iataCode || ''}
+                        airlineIata={finalFlightDetails.airline.iataCode || ""}
                         airlineName={finalFlightDetails.airline.name}
                         size="sm"
                       />
                       <div className="text-center">
-                        <div className="text-sm font-medium text-gray-700">{finalFlightDetails.airline.name}</div>
-                        <div className="text-xs text-gray-600">{finalFlightDetails.airline.cabinClass}</div>
+                        <div className="text-sm font-medium text-gray-700">
+                          {finalFlightDetails.airline.name}
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          {finalFlightDetails.airline.cabinClass}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -2253,9 +2270,9 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
             {isFlightExpanded && (
               <div className="mt-3 border-t pt-4">
                 {/* Airline Info */}
-                <div className="flex items-center space-x-3 mb-4">
+                <div className="mb-4 flex items-center space-x-3">
                   <AirlineLogo
-                    airlineIata={finalFlightDetails.airline.iataCode || ''}
+                    airlineIata={finalFlightDetails.airline.iataCode || ""}
                     airlineName={finalFlightDetails.airline.name}
                     size="md"
                   />
