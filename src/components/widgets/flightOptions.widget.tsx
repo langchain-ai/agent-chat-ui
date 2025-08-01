@@ -10,6 +10,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  Luggage,
+  Briefcase,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
@@ -21,6 +24,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import Image from "next/image";
 
 interface FlightOption {
   flightOfferId: string;
@@ -60,6 +64,19 @@ interface FlightSegment {
 
 interface FlightOfferRules {
   isRefundable: boolean
+}
+
+interface BaggageInfo {
+  checkedBaggage?: {
+    included: boolean;
+    weight?: string;
+    pieces?: number;
+  };
+  carryOnBaggage?: {
+    included: boolean;
+    weight?: string;
+    dimensions?: string;
+  };
 }
 
 const getCurrencySymbol = (currencyCode: string): string => {
@@ -184,32 +201,176 @@ const getCurrencySymbol = (currencyCode: string): string => {
   return currencyMap[currencyCode.toUpperCase()] || currencyCode;
 };
 
-const getBadgeConfigs = (tags: string[]) => {
-  const badges = [];
+// Helper function to get airline logo path
+const getAirlineLogoPath = (airlineIata: string): string => {
+  if (!airlineIata) return '';
+  // The airlines folder is in the root directory, so we need to go up from src
+  return `/airlines/${airlineIata.toUpperCase()}.png`;
+};
 
+// Airline Logo Component
+const AirlineLogo = ({
+  airlineIata,
+  airlineName,
+  size = 'md'
+}: {
+  airlineIata: string;
+  airlineName: string;
+  size?: 'sm' | 'md' | 'lg'
+}) => {
+  const logoPath = getAirlineLogoPath(airlineIata);
+
+  // Size configurations
+  const sizeConfig = {
+    sm: { container: 'w-5 h-5', fallback: 'w-3 h-3' },
+    md: { container: 'w-6 h-6', fallback: 'w-4 h-4' },
+    lg: { container: 'w-8 h-8', fallback: 'w-6 h-6' }
+  };
+
+  const { container, fallback } = sizeConfig[size];
+
+  return (
+    <div className={cn("rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 overflow-hidden", container)}>
+      {logoPath ? (
+        <Image
+          src={logoPath}
+          alt={`${airlineName} logo`}
+          width={size === 'sm' ? 20 : size === 'md' ? 24 : 32}
+          height={size === 'sm' ? 20 : size === 'md' ? 24 : 32}
+          className="object-contain rounded-full"
+          onError={(e) => {
+            // Fallback to gray circle if image fails to load
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+            const parent = target.parentElement;
+            if (parent) {
+              parent.innerHTML = `<div class="${cn('rounded-full bg-gray-400', fallback)}"></div>`;
+            }
+          }}
+        />
+      ) : (
+        <div className={cn("rounded-full bg-gray-400", fallback)}></div>
+      )}
+    </div>
+  );
+};
+
+const getBadgeConfigs = (tags: string[]) => {
+  // Priority order: recommended > cheapest > fastest
+  // Only show one badge per flight
   if (tags.includes("recommended")) {
-    badges.push({
+    return [{
       emoji: "⭐",
-      text: "Recommended",
+      text: "Best",
       color: "bg-white text-gray-800 border-gray-200",
-    });
+    }];
   }
   if (tags.includes("cheapest")) {
-    badges.push({
+    return [{
       emoji: "💰",
       text: "Cheapest",
       color: "bg-white text-gray-800 border-gray-200",
-    });
+    }];
   }
   if (tags.includes("fastest")) {
-    badges.push({
+    return [{
       emoji: "⚡",
       text: "Fastest",
       color: "bg-white text-gray-800 border-gray-200",
-    });
+    }];
   }
 
-  return badges;
+  return [];
+};
+
+// Generate mock baggage data for demonstration
+const getMockBaggageInfo = (flight: FlightOption): BaggageInfo => {
+  // Generate different baggage scenarios based on flight characteristics
+  const isLowCost = flight.tags?.includes('cheapest');
+  const isPremium = flight.tags?.includes('recommended');
+
+  // Mock scenarios
+  const scenarios = [
+    // Scenario 1: Full service airline
+    {
+      checkedBaggage: { included: true, weight: "23kg", pieces: 1 },
+      carryOnBaggage: { included: true, weight: "7kg", dimensions: "55x40x20cm" }
+    },
+    // Scenario 2: Low cost carrier
+    {
+      checkedBaggage: { included: false },
+      carryOnBaggage: { included: true, weight: "7kg", dimensions: "55x40x20cm" }
+    },
+    // Scenario 3: Premium service
+    {
+      checkedBaggage: { included: true, weight: "32kg", pieces: 2 },
+      carryOnBaggage: { included: true, weight: "10kg", dimensions: "55x40x20cm" }
+    },
+    // Scenario 4: Basic service
+    {
+      checkedBaggage: { included: true, weight: "20kg", pieces: 1 },
+      carryOnBaggage: { included: true, weight: "7kg", dimensions: "55x40x20cm" }
+    }
+  ];
+
+  // Select scenario based on flight type
+  if (isPremium) {
+    return scenarios[2]; // Premium service
+  } else if (isLowCost) {
+    return scenarios[1]; // Low cost carrier
+  } else {
+    // Randomly select between full service and basic service
+    return Math.random() > 0.5 ? scenarios[0] : scenarios[3];
+  }
+};
+
+// Baggage Display Component
+const BaggageDisplay = ({ flight }: { flight: FlightOption }) => {
+  const baggageInfo = getMockBaggageInfo(flight);
+
+  return (
+    <div className="mb-4 flex items-center justify-between gap-4 px-2 py-2 bg-gray-50 rounded-lg">
+      {/* Checked Baggage */}
+      <div className="flex items-center gap-2 flex-1">
+        <Luggage className="h-4 w-4 text-gray-600 flex-shrink-0" />
+        <div className="min-w-0">
+          <div className="text-xs font-medium text-gray-700">Check-in</div>
+          {baggageInfo.checkedBaggage?.included ? (
+            <div className="text-xs text-gray-600">
+              {baggageInfo.checkedBaggage.weight}
+              {baggageInfo.checkedBaggage.pieces && baggageInfo.checkedBaggage.pieces > 1
+                ? ` (${baggageInfo.checkedBaggage.pieces} pcs)`
+                : ''}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center">
+              <X className="h-4 w-4 text-red-500" />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div className="w-px h-8 bg-gray-300"></div>
+
+      {/* Carry-on Baggage */}
+      <div className="flex items-center gap-2 flex-1">
+        <Briefcase className="h-4 w-4 text-gray-600 flex-shrink-0" />
+        <div className="min-w-0">
+          <div className="text-xs font-medium text-gray-700">Carry-on</div>
+          {baggageInfo.carryOnBaggage?.included ? (
+            <div className="text-xs text-gray-600">
+              {baggageInfo.carryOnBaggage.weight}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center">
+              <X className="h-4 w-4 text-red-500" />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const FlightCard = ({
@@ -284,6 +445,14 @@ const FlightCard = ({
     return name;
   };
 
+  // Get airline IATA code from segments
+  const getAirlineIataFromFlightOption = (flight: FlightOption) => {
+    if (flight.segments && flight.segments.length > 0) {
+      return flight.segments[0].airlineIata || "";
+    }
+    return "";
+  };
+
   // Get airline name from segments (truncated to 10 characters)
   const getAirlineNameFromFlightOption = (flight: FlightOption) => {
     if (flight.segments && flight.segments.length > 0) {
@@ -341,10 +510,12 @@ const FlightCard = ({
         {/* Airline and Flight Number - Top Right */}
         <div className="flex flex-col items-end text-right min-w-0 flex-shrink-0">
           <div className="flex items-center gap-2">
-            {/* Circular Airline Logo Placeholder */}
-            <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-              <div className="w-4 h-4 rounded-full bg-gray-400"></div>
-            </div>
+            {/* Airline Logo */}
+            <AirlineLogo
+              airlineIata={getAirlineIataFromFlightOption(flight)}
+              airlineName={getAirlineNameFromFlightOption(flight)}
+              size="md"
+            />
             <span className="font-medium text-gray-900 text-xs sm:text-sm truncate">
               {getAirlineNameFromFlightOption(flight)}
             </span>
@@ -407,11 +578,15 @@ const FlightCard = ({
           <div className="text-xs sm:text-sm text-gray-600 truncate">{arrivalInfo.airportIata}</div>
         </div>
       </div>
+
+      {/* Baggage Information */}
+      <BaggageDisplay flight={flight} />
+
       {/* Flight Highlights with Moving Gradient Border */}
       {(() => {
         const highlights = getFlightHighlights(flight);
         return highlights.length > 0 && (
-          <div>
+          <div className="mb-4">
             <div
               className="relative rounded-lg animate-gradient-border"
               style={{
@@ -712,7 +887,7 @@ const ResponsiveCarousel = ({
   );
 };
 
-// Direct Flight Display Component - Shows only the 3 tagged flights
+// Direct Flight Display Component - Shows exactly 3 distinct flights
 const DirectFlightDisplay = ({
   flights,
   onSelect,
@@ -722,130 +897,103 @@ const DirectFlightDisplay = ({
   onSelect: (flightOfferId: string) => void;
   isLoading: boolean;
 }) => {
-  // Get one flight for each mandatory tag
-  const recommendedFlight = flights.find(flight => flight.tags?.includes('recommended'));
-  const cheapestFlight = flights.find(flight => flight.tags?.includes('cheapest'));
-  const fastestFlight = flights.find(flight => flight.tags?.includes('fastest'));
+  // Helper function to get flights sorted by different criteria
+  const getSortedFlights = (flights: FlightOption[], sortBy: 'price' | 'duration' | 'ranking') => {
+    const flightsCopy = [...flights];
 
-  // Create array of unique flights in priority order: recommended > cheapest > fastest
-  // Avoid duplicates if same flight has multiple tags
-  const taggedFlights = [];
-  const addedFlightIds = new Set();
+    switch (sortBy) {
+      case 'price':
+        return flightsCopy.sort((a, b) => (a.totalAmount || 0) - (b.totalAmount || 0));
+      case 'duration':
+        return flightsCopy.sort((a, b) => {
+          const getDurationMinutes = (duration: string) => {
+            const match = duration.match(/PT(\d+)H(\d+)?M?/);
+            if (match) {
+              const hours = parseInt(match[1]) || 0;
+              const minutes = parseInt(match[2]) || 0;
+              return hours * 60 + minutes;
+            }
+            return 0;
+          };
+          return getDurationMinutes(a.duration || '') - getDurationMinutes(b.duration || '');
+        });
+      case 'ranking':
+        return flightsCopy.sort((a, b) => (b.rankingScore || 0) - (a.rankingScore || 0));
+      default:
+        return flightsCopy;
+    }
+  };
 
-  // Priority 1: Recommended flight
-  if (recommendedFlight && !addedFlightIds.has(recommendedFlight.flightOfferId)) {
-    taggedFlights.push(recommendedFlight);
-    addedFlightIds.add(recommendedFlight.flightOfferId);
-  }
+  // Get the three distinct flights to display
+  const getThreeDistinctFlights = () => {
+    if (flights.length === 0) return [];
 
-  // Priority 2: Cheapest flight (only if not already added)
-  if (cheapestFlight && !addedFlightIds.has(cheapestFlight.flightOfferId)) {
-    taggedFlights.push(cheapestFlight);
-    addedFlightIds.add(cheapestFlight.flightOfferId);
-  }
+    const selectedFlights: FlightOption[] = [];
+    const usedFlightIds = new Set<string>();
 
-  // Priority 3: Fastest flight (only if not already added)
-  if (fastestFlight && !addedFlightIds.has(fastestFlight.flightOfferId)) {
-    taggedFlights.push(fastestFlight);
-    addedFlightIds.add(fastestFlight.flightOfferId);
-  }
+    // 1. First priority: Best flight (highest ranking or recommended)
+    const recommendedFlight = flights.find(flight => flight.tags?.includes('recommended'));
+    const bestFlight = recommendedFlight || getSortedFlights(flights, 'ranking')[0];
 
-  console.log("DirectFlightDisplay - Tagged flights found:", taggedFlights.length);
-  console.log("DirectFlightDisplay - Recommended:", !!recommendedFlight);
-  console.log("DirectFlightDisplay - Cheapest:", !!cheapestFlight);
-  console.log("DirectFlightDisplay - Fastest:", !!fastestFlight);
+    if (bestFlight) {
+      // Ensure this flight has the "recommended" tag for display
+      const flightWithBestTag = {
+        ...bestFlight,
+        tags: [...(bestFlight.tags || []), 'recommended'].filter((tag, index, arr) => arr.indexOf(tag) === index)
+      };
+      selectedFlights.push(flightWithBestTag);
+      usedFlightIds.add(bestFlight.flightOfferId);
+    }
 
-  // Create display array with exactly 3 slots in order: recommended, cheapest, fastest
-  type DisplaySlot =
-    | { type: 'flight'; flight: FlightOption; key: string }
-    | { type: 'empty'; key: string };
+    // 2. Second priority: Cheapest flight (not already selected)
+    const cheapestFlights = getSortedFlights(flights, 'price');
+    const cheapestFlight = cheapestFlights.find(flight => !usedFlightIds.has(flight.flightOfferId));
 
-  const displaySlots: DisplaySlot[] = [];
+    if (cheapestFlight) {
+      // Ensure this flight has the "cheapest" tag for display
+      const flightWithCheapestTag = {
+        ...cheapestFlight,
+        tags: [...(cheapestFlight.tags || []), 'cheapest'].filter((tag, index, arr) => arr.indexOf(tag) === index)
+      };
+      selectedFlights.push(flightWithCheapestTag);
+      usedFlightIds.add(cheapestFlight.flightOfferId);
+    }
 
-  // Slot 1: Recommended
-  if (recommendedFlight) {
-    displaySlots.push({
-      type: 'flight',
-      flight: recommendedFlight,
-      key: `recommended-${recommendedFlight.flightOfferId}`
-    });
-  } else {
-    displaySlots.push({
-      type: 'empty',
-      key: 'empty-recommended'
-    });
-  }
+    // 3. Third priority: Fastest flight (not already selected)
+    const fastestFlights = getSortedFlights(flights, 'duration');
+    const fastestFlight = fastestFlights.find(flight => !usedFlightIds.has(flight.flightOfferId));
 
-  // Slot 2: Cheapest (only if different from recommended)
-  if (cheapestFlight && (!recommendedFlight || cheapestFlight.flightOfferId !== recommendedFlight.flightOfferId)) {
-    displaySlots.push({
-      type: 'flight',
-      flight: cheapestFlight,
-      key: `cheapest-${cheapestFlight.flightOfferId}`
-    });
-  } else if (!cheapestFlight) {
-    displaySlots.push({
-      type: 'empty',
-      key: 'empty-cheapest'
-    });
-  }
+    if (fastestFlight) {
+      // Ensure this flight has the "fastest" tag for display
+      const flightWithFastestTag = {
+        ...fastestFlight,
+        tags: [...(fastestFlight.tags || []), 'fastest'].filter((tag, index, arr) => arr.indexOf(tag) === index)
+      };
+      selectedFlights.push(flightWithFastestTag);
+      usedFlightIds.add(fastestFlight.flightOfferId);
+    }
 
-  // Slot 3: Fastest (only if different from recommended and cheapest)
-  if (fastestFlight &&
-      (!recommendedFlight || fastestFlight.flightOfferId !== recommendedFlight.flightOfferId) &&
-      (!cheapestFlight || fastestFlight.flightOfferId !== cheapestFlight.flightOfferId)) {
-    displaySlots.push({
-      type: 'flight',
-      flight: fastestFlight,
-      key: `fastest-${fastestFlight.flightOfferId}`
-    });
-  } else if (!fastestFlight) {
-    displaySlots.push({
-      type: 'empty',
-      key: 'empty-fastest'
-    });
-  }
+    // If we still don't have 3 flights, add more from the remaining flights
+    if (selectedFlights.length < 3) {
+      const remainingFlights = flights.filter(flight => !usedFlightIds.has(flight.flightOfferId));
+      const additionalFlights = remainingFlights.slice(0, 3 - selectedFlights.length);
+      selectedFlights.push(...additionalFlights);
+    }
 
-  // Ensure we always have exactly 3 slots
-  while (displaySlots.length < 3) {
-    displaySlots.push({
-      type: 'empty',
-      key: `empty-${displaySlots.length}`
-    });
-  }
+    return selectedFlights;
+  };
 
-  // Use ResponsiveCarousel for mobile horizontal scrolling
-  const flightsToShow = displaySlots
-    .filter(slot => slot.type === 'flight')
-    .map(slot => (slot as { type: 'flight'; flight: FlightOption; key: string }).flight);
+  const flightsToShow = getThreeDistinctFlights();
 
-  // If we have flights, use the carousel, otherwise show the grid for empty states
-  if (flightsToShow.length > 0) {
-    return (
-      <ResponsiveCarousel
-        flights={flightsToShow}
-        onSelect={onSelect}
-        isLoading={isLoading}
-      />
-    );
-  }
+  console.log("DirectFlightDisplay - Flights to show:", flightsToShow.length);
 
-  // Fallback to grid for empty states
+  // Always use ResponsiveCarousel for consistent display
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {displaySlots.map((slot) => (
-        slot.type === 'flight' ? (
-          <FlightCard
-            key={slot.key}
-            flight={slot.flight}
-            onSelect={onSelect}
-            isLoading={isLoading}
-          />
-        ) : (
-          <EmptyFlightCard key={slot.key} isLoading={false} />
-        )
-      ))}
-    </div>
+    <ResponsiveCarousel
+      flights={flightsToShow}
+      onSelect={onSelect}
+      isLoading={isLoading}
+    />
   );
 };
 
@@ -880,6 +1028,7 @@ const FlightListItem = ({
   const getAirlineInfo = (flight: FlightOption) => {
     if (flight.segments && flight.segments.length > 0) {
       const airlineName = flight.segments[0].airlineName || flight.segments[0].airlineIata || "Unknown";
+      const airlineIata = flight.segments[0].airlineIata || "";
       // Truncate airline name to 10 characters
       const airline = airlineName.length > 10 ? airlineName.substring(0, 10) + "..." : airlineName;
 
@@ -888,18 +1037,20 @@ const FlightListItem = ({
         const flightNumbers = flight.segments.map(s => s.flightNumber).join(", ");
         return {
           airline,
+          airlineIata,
           flightNumber: flightNumbers,
           isMultiFlight: true
         };
       } else {
         return {
           airline,
+          airlineIata,
           flightNumber: flight.segments[0].flightNumber,
           isMultiFlight: false
         };
       }
     }
-    return { airline: "Unknown", flightNumber: "Unknown", isMultiFlight: false };
+    return { airline: "Unknown", airlineIata: "", flightNumber: "Unknown", isMultiFlight: false };
   };
 
   const departureInfo = flight.departure;
@@ -908,7 +1059,7 @@ const FlightListItem = ({
   const price = flight.totalAmount || 0;
   const currency = flight.currency || "USD";
   const currencySymbol = getCurrencySymbol(currency);
-  const { airline, flightNumber } = getAirlineInfo(flight);
+  const { airline, airlineIata, flightNumber } = getAirlineInfo(flight);
 
   return (
     <div
@@ -921,11 +1072,13 @@ const FlightListItem = ({
         <div className="flex items-center justify-between">
           {/* Left: Airline Info */}
           <div className="flex items-center gap-3">
-            {/* Airline Logo Placeholder */}
+            {/* Airline Logo */}
             <div className="flex-shrink-0">
-              <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center">
-                <div className="w-4 h-4 rounded-full bg-gray-400"></div>
-              </div>
+              <AirlineLogo
+                airlineIata={airlineIata}
+                airlineName={airline}
+                size="md"
+              />
             </div>
 
             {/* Airline Details */}
@@ -984,10 +1137,12 @@ const FlightListItem = ({
         {/* Left: Airline Info */}
         <div className="flex flex-col min-w-0" style={{ width: '180px' }}>
           <div className="flex items-center gap-2">
-            {/* Circular Airline Logo Placeholder */}
-            <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-              <div className="w-3 h-3 rounded-full bg-gray-400"></div>
-            </div>
+            {/* Airline Logo */}
+            <AirlineLogo
+              airlineIata={airlineIata}
+              airlineName={airline}
+              size="sm"
+            />
             <span className="font-medium text-gray-900 text-sm truncate">{airline}</span>
           </div>
           <div className="text-xs text-gray-500 truncate">

@@ -41,6 +41,7 @@ import {
 import { cn } from "@/lib/utils";
 import { submitInterruptResponse } from "./util";
 import { useStreamContext } from "@/providers/Stream";
+import Image from "next/image";
 
 // DateInput component using shadcn Calendar (same as searchCriteria.widget.tsx)
 interface DateInputProps {
@@ -374,6 +375,7 @@ interface FlightDetails {
     flightNumber: string;
     cabinClass: string;
     aircraftType?: string;
+    iataCode?: string;
   };
   duration: string;
 }
@@ -466,6 +468,59 @@ const parseDuration = (duration: string) => {
   }
 };
 
+// Helper function to get airline logo path
+const getAirlineLogoPath = (airlineIata: string): string => {
+  if (!airlineIata) return '';
+  return `/airlines/${airlineIata.toUpperCase()}.png`;
+};
+
+// Airline Logo Component
+const AirlineLogo = ({
+  airlineIata,
+  airlineName,
+  size = 'md'
+}: {
+  airlineIata: string;
+  airlineName: string;
+  size?: 'sm' | 'md' | 'lg'
+}) => {
+  const logoPath = getAirlineLogoPath(airlineIata);
+
+  // Size configurations
+  const sizeConfig = {
+    sm: { container: 'w-6 h-6', fallback: 'w-4 h-4' },
+    md: { container: 'w-8 h-8', fallback: 'w-6 h-6' },
+    lg: { container: 'w-10 h-10', fallback: 'w-8 h-8' }
+  };
+
+  const { container, fallback } = sizeConfig[size];
+
+  return (
+    <div className={cn("rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 overflow-hidden", container)}>
+      {logoPath ? (
+        <Image
+          src={logoPath}
+          alt={`${airlineName} logo`}
+          width={size === 'sm' ? 24 : size === 'md' ? 32 : 40}
+          height={size === 'sm' ? 24 : size === 'md' ? 32 : 40}
+          className="object-contain rounded-full"
+          onError={(e) => {
+            // Fallback to gray circle if image fails to load
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+            const parent = target.parentElement;
+            if (parent) {
+              parent.innerHTML = `<div class="${cn('rounded-full bg-gray-400', fallback)}"></div>`;
+            }
+          }}
+        />
+      ) : (
+        <div className={cn("rounded-full bg-gray-400", fallback)}></div>
+      )}
+    </div>
+  );
+};
+
 const transformApiDataToFlightDetails = (apiData: ApiResponse): FlightDetails | null => {
   const flightOffer = apiData.value.widget.args.flightItinerary.selectionContext.selectedFlightOffers[0];
   if (!flightOffer) return null;
@@ -496,6 +551,7 @@ const transformApiDataToFlightDetails = (apiData: ApiResponse): FlightDetails | 
       flightNumber: `${firstSegment.airlineIata} ${firstSegment.flightNumber}`,
       cabinClass: "Economy", // Default as not provided in API
       aircraftType: firstSegment.aircraftType,
+      iataCode: firstSegment.airlineIata,
     },
     duration: parseDuration(flightOffer.duration),
   };
@@ -629,6 +685,7 @@ const mockData = {
       flightNumber: "AA 1234",
       cabinClass: "Economy",
       aircraftType: "Boeing 737-800",
+      iataCode: "AA",
     },
     duration: "5h 45m",
   },
@@ -1031,9 +1088,11 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 <div className="border-t pt-4 mt-3">
                   {/* Airline Info */}
                   <div className="flex items-center space-x-3 mb-3">
-                    <div className="h-6 w-6 bg-blue-100 rounded-full flex items-center justify-center">
-                      <Plane className="h-3 w-3 text-blue-600" />
-                    </div>
+                    <AirlineLogo
+                      airlineIata={finalFlightDetails.airline.iataCode || ''}
+                      airlineName={finalFlightDetails.airline.name}
+                      size="sm"
+                    />
                     <div className="flex-1">
                       <div className="flex items-center space-x-2">
                         <span className="font-medium text-xs">{finalFlightDetails.airline.name}</span>
@@ -1764,9 +1823,11 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
               <div className="border-t pt-4 mt-3">
                 {/* Airline Info */}
                 <div className="flex items-center space-x-3 mb-4">
-                  <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Plane className="h-4 w-4 text-blue-600" />
-                  </div>
+                  <AirlineLogo
+                    airlineIata={finalFlightDetails.airline.iataCode || ''}
+                    airlineName={finalFlightDetails.airline.name}
+                    size="md"
+                  />
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
                       <span className="font-medium text-sm">{finalFlightDetails.airline.name}</span>
