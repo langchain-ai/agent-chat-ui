@@ -12,7 +12,7 @@ interface ItineraryComponentProps {
   streamData?: any;
 }
 
-export const ItineraryComponent: React.FC<ItineraryComponentProps> = ({
+export const ItineraryView: React.FC<ItineraryComponentProps> = ({
   flightSearchCriteria,
   streamData
 }) => {

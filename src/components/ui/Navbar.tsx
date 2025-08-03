@@ -15,13 +15,13 @@ export const Navbar = () => {
 
   const [chatHistoryOpen, setChatHistoryOpen] = useQueryState(
     "chatHistoryOpen",
-    parseAsBoolean.withDefault(false)
+    parseAsBoolean.withDefault(false),
   );
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
 
   return (
-    <div className="relative z-10 flex items-center justify-between gap-3 p-2">
-      <div className="relative flex items-center justify-start gap-2">
+    <div className="sticky top-0 z-50 flex items-center justify-between gap-3 border-b bg-white p-2">
+      <div className="sticky flex items-center justify-start gap-2">
         <div className="absolute left-0 z-10">
           {(!chatHistoryOpen || !isLargeScreen) && (
             <Button
@@ -48,7 +48,10 @@ export const Navbar = () => {
             damping: 30,
           }}
         >
-          <FlyoLogoSVG width={70} height={70} />
+          <FlyoLogoSVG
+            width={70}
+            height={70}
+          />
         </motion.button>
       </div>
 

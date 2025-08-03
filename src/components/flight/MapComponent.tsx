@@ -44,7 +44,7 @@ const AIRPORT_COORDINATES: { [key: string]: [number, number] } = {
   // Add more airports as needed
 };
 
-export const MapComponent: React.FC<MapComponentProps> = ({
+export const MapView: React.FC<MapComponentProps> = ({
   flightSearchCriteria,
   streamData
 }) => {

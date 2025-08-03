@@ -1,7 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@radix-ui/react-tabs";
 import React from "react";
-import { MapComponent } from "@/components/flight/MapComponent";
-import { ItineraryComponent } from "@/components/flight/ItineraryComponent";
+import { MapView } from "@/components/flight/MapComponent";
+import { ItineraryView } from "@/components/flight/ItineraryComponent";
 import { Thread } from "@/components/thread/chat";
 import { useQueryState } from "nuqs";
 
@@ -12,43 +12,44 @@ const tabs = [
   },
   {
     name: "Map",
-    component: <MapComponent />,
+    component: <MapView />,
   },
   {
     name: "Itinerary",
-    component: <ItineraryComponent />,
+    component: <ItineraryView />,
   },
 ];
 
 export const TabsLayout = () => {
-
-  const [threadId, _setThreadId] = useQueryState("threadId")
+  const [threadId, _setThreadId] = useQueryState("threadId");
 
   return (
     <Tabs defaultValue="Chat" className="flex h-screen w-full flex-col items-center">
-      <TabsList className="flex items-center justify-center gap-2 bg-white px-4 py-2">
-        {threadId && tabs.map((tab, index) => (
-          <TabsTrigger
-            key={index}
-            value={tab.name}
-            className="rounded-4xl border px-4 py-2 text-sm data-[state=active]:bg-black data-[state=active]:text-white"
-          >
-            {tab.name}
-          </TabsTrigger>
-        ))}
-      </TabsList>
+      {/* Sticky tab bar at top */}
+      <div className="sticky top-0 z-50 bg-white p-1 rounded-4xl border-2 mt-2">
+        <TabsList className="flex items-center justify-center gap-2">
+          {threadId &&
+            tabs.map((tab, index) => (
+              <TabsTrigger
+                key={index}
+                value={tab.name}
+                className="rounded-4xl px-4 py-2 text-sm data-[state=active]:bg-black data-[state=active]:text-white"
+              >
+                {tab.name}
+              </TabsTrigger>
+            ))}
+        </TabsList>
+      </div>
 
-      {/* Content container should grow and allow overflow control to TabsContent */}
-      <div className="flex w-full max-w-3xl flex-1 flex-col min-h-0">
+      {/* Scrollable content area */}
+      <div className="flex-1 w-full max-w-3xl overflow-y-auto min-h-0">
         {tabs.map((tab, index) => (
           <TabsContent
             key={index}
             value={tab.name}
-            className="flex-1 min-h-0"
+            className="h-full"
           >
-            <div className="h-full"> {/* ensures Chat gets full height */}
-              {tab.component}
-            </div>
+            {tab.component}
           </TabsContent>
         ))}
       </div>

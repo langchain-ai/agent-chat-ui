@@ -55,8 +55,7 @@ function StickyToBottomContent(props: {
   return (
     <div
       ref={context.scrollRef}
-      style={{ width: "100%", height: "100%" }}
-      className={props.className}
+      className={cn("flex flex-col h-full w-full", props.className)}
     >
       <div
         ref={context.contentRef}
@@ -435,7 +434,7 @@ export function Thread() {
                   </>
                 }
                 footer={
-                  <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-white">
+                  <div className="mt-auto w-full flex flex-col items-center gap-4 bg-white px-4 py-4">
                     {!chatStarted && (
                       <div className="flex items-center gap-3">
                         <FlyoLogoSVG
