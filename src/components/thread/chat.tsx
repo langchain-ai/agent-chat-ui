@@ -362,90 +362,6 @@ export function Thread() {
                 : { duration: 0 }
             }
           >
-            {!chatStarted && (
-              <div className="absolute top-0 left-0 z-10 flex w-full items-center justify-between gap-3 p-2 pl-4">
-                <div>
-                  {(!chatHistoryOpen || !isLargeScreen) && (
-                    <Button
-                      className="hover:bg-gray-100"
-                      variant="ghost"
-                      onClick={() => setChatHistoryOpen((p) => !p)}
-                    >
-                      {chatHistoryOpen ? (
-                        <PanelRightOpen className="size-5" />
-                      ) : (
-                        <PanelRightClose className="size-5" />
-                      )}
-                    </Button>
-                  )}
-                </div>
-                <div className="flex items-center gap-4">
-                  <LogoutButton
-                    variant="ghost"
-                    size="sm"
-                    className="text-gray-600 hover:text-gray-900"
-                  />
-                </div>
-              </div>
-            )}
-            {chatStarted && (
-              <div className="relative z-10 flex items-center justify-between gap-3 p-2">
-                <div className="relative flex items-center justify-start gap-2">
-                  <div className="absolute left-0 z-10">
-                    {(!chatHistoryOpen || !isLargeScreen) && (
-                      <Button
-                        className="hover:bg-gray-100"
-                        variant="ghost"
-                        onClick={() => setChatHistoryOpen((p) => !p)}
-                      >
-                        {chatHistoryOpen ? (
-                          <PanelRightOpen className="size-5" />
-                        ) : (
-                          <PanelRightClose className="size-5" />
-                        )}
-                      </Button>
-                    )}
-                  </div>
-                  <motion.button
-                    className="flex cursor-pointer items-center gap-2"
-                    onClick={() => setThreadId(null)}
-                    animate={{
-                      marginLeft: !chatHistoryOpen ? 48 : 0,
-                    }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 300,
-                      damping: 30,
-                    }}
-                  >
-                    <FlyoLogoSVG
-                      width={70}
-                      height={70}
-                    />
-                  </motion.button>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <TooltipIconButton
-                    size="lg"
-                    className="p-4"
-                    tooltip="New thread"
-                    variant="ghost"
-                    onClick={() => setThreadId(null)}
-                  >
-                    <SquarePen className="size-5" />
-                  </TooltipIconButton>
-                  <LogoutButton
-                    variant="ghost"
-                    size="sm"
-                    className="text-gray-600 hover:text-gray-900"
-                  />
-                </div>
-
-                <div className="from-background to-background/0 absolute inset-x-0 top-full h-5 bg-gradient-to-b" />
-              </div>
-            )}
-
             <StickToBottom className="relative flex-1 overflow-hidden">
               <StickyToBottomContent
                 className={cn(
@@ -453,7 +369,7 @@ export function Thread() {
                   !chatStarted && "mt-[25vh] flex flex-col items-stretch",
                   chatStarted && "grid grid-rows-[1fr_auto]",
                 )}
-                contentClassName="pt-8 pb-16  max-w-3xl mx-auto flex flex-col gap-4 w-full"
+                contentClassName="pt-8 pb-16 mx-auto flex flex-col gap-4"
                 content={
                   <>
                     {messages
@@ -478,8 +394,8 @@ export function Thread() {
                         // Check if there are any persisted interrupts associated with this message
                         const messageInterrupts = message.id
                           ? interruptPersistence.getInterruptsForMessage(
-                              message.id,
-                            )
+                            message.id,
+                          )
                           : [];
 
                         // Return array of elements: message + persistent interrupts
@@ -585,15 +501,6 @@ export function Thread() {
                             </Label>
                           </div>
                         </div> */}
-                          <Label
-                            htmlFor="file-input"
-                            className="flex cursor-pointer items-center gap-2"
-                          >
-                            <Plus className="size-5 text-gray-600" />
-                            <span className="text-sm text-gray-600">
-                              Upload PDF, Image, or Video
-                            </span>
-                          </Label>
                           <input
                             id="file-input"
                             type="file"

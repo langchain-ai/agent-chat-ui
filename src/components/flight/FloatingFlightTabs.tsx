@@ -37,7 +37,7 @@ export const FloatingFlightTabs = () => {
   };
 
   return (
-    <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-40">
+    <div className="fixed bottom-36 left-1/2 transform -translate-x-1/2 z-40">
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
           <div className="flex border rounded-full p-2 gap-2">
             <button

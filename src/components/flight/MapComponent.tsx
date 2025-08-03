@@ -272,7 +272,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
   };
 
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full space-y-4 p-4">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

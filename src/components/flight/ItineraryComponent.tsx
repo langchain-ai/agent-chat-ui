@@ -82,7 +82,7 @@ export const ItineraryComponent: React.FC<ItineraryComponentProps> = ({
 
   if (!flightSearchCriteria) {
     return (
-      <div className="w-full space-y-4">
+      <div className="w-full space-y-4 p-4">
         <Card>
           <CardContent className="py-16">
             <div className="flex flex-col items-center justify-center text-center">
