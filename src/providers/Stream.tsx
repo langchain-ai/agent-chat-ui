@@ -26,8 +26,9 @@ import { useThreads } from "./Thread";
 import { toast } from "sonner";
 import { storeThread } from "@/utils/thread-storage";
 import { InterruptPersistenceProvider } from "./InterruptPersistenceContext";
+import { FlightSearchCriteria } from "@/types/flightSearchCriteria";
 
-export type StateType = { messages: Message[]; ui?: UIMessage[] };
+export type StateType = { messages: Message[]; ui?: UIMessage[], flightSearchCriteria: FlightSearchCriteria };
 
 const useTypedStream = useStream<
   StateType,

@@ -1,9 +1,8 @@
 import { v4 as uuidv4 } from "uuid";
-import { ReactNode, useEffect, useRef } from "react";
+import { FormEvent, ReactNode, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
-import { useState, FormEvent } from "react";
 import { Button } from "../ui/button";
 import { Checkpoint, Message } from "@langchain/langgraph-sdk";
 import { AssistantMessage, AssistantMessageLoading } from "./messages/ai";
@@ -17,34 +16,25 @@ import { TooltipIconButton } from "./tooltip-icon-button";
 import {
   ArrowDown,
   LoaderCircle,
-  PanelRightOpen,
   PanelRightClose,
+  PanelRightOpen,
+  Plus,
   SquarePen,
   XIcon,
-  Plus,
-  CircleX,
 } from "lucide-react";
-import { useQueryState, parseAsBoolean } from "nuqs";
+import { parseAsBoolean, useQueryState } from "nuqs";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 import ThreadHistory from "./history";
 import { toast } from "sonner";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { Label } from "../ui/label";
-import { Switch } from "../ui/switch";
-import { GitHubSVG } from "../icons/github";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "../ui/tooltip";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { ContentBlocksPreview } from "./ContentBlocksPreview";
 import {
-  useArtifactOpen,
   ArtifactContent,
   ArtifactTitle,
   useArtifactContext,
+  useArtifactOpen,
 } from "./artifact";
 import { LogoutButton } from "@/components/auth";
 import { getJwtToken, GetUserId } from "@/services/authService";
@@ -54,6 +44,7 @@ import { PersistentInterruptList } from "./messages/persistent-interrupt";
 import { useInterruptPersistenceContext } from "@/providers/InterruptPersistenceContext";
 import { GenericInterruptView } from "./messages/generic-interrupt";
 import { NonAgentFlowReopenButton } from "./NonAgentFlowReopenButton";
+import { FloatingFlightTabs } from "@/components/flight/FloatingFlightTabs";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -93,30 +84,6 @@ function ScrollToBottom(props: { className?: string }) {
       <ArrowDown className="h-4 w-4" />
       <span>Scroll to bottom</span>
     </Button>
-  );
-}
-
-function OpenGitHubRepo() {
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <a
-            href="https://github.com/langchain-ai/agent-chat-ui"
-            target="_blank"
-            className="flex items-center justify-center"
-          >
-            <GitHubSVG
-              width="24"
-              height="24"
-            />
-          </a>
-        </TooltipTrigger>
-        <TooltipContent side="left">
-          <p>Open GitHub repo</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
   );
 }
 
@@ -165,7 +132,7 @@ export function Thread() {
     dragOver,
     handlePaste,
   } = useFileUpload();
-  const [firstTokenReceived, setFirstTokenReceived] = useState(false);
+  const [firstTokenReceived, setFirstTokenReceived] = useState(false); //TODO: remove if not needed
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
 
   const stream = useStreamContext();
@@ -183,7 +150,7 @@ export function Thread() {
     setInput("");
     setContentBlocks([]);
     if (threadId === null) {
-      // setDisplayMessages([]); // Remove this line
+      // setDisplayMessages([]); // Remove this line //TODO: come back here
     }
   }, [threadId, setContentBlocks]);
 
@@ -681,6 +648,8 @@ export function Thread() {
           </div>
         </div>
         <NonAgentFlowReopenButton />
+        {/* Floating Flight Tabs - appears from first message */}
+        <FloatingFlightTabs />
       </div>
     </InterruptManager>
   );
