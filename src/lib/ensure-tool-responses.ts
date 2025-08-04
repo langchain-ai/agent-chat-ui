@@ -4,31 +4,46 @@ import { Message, ToolMessage } from "@langchain/langgraph-sdk";
 export const DO_NOT_RENDER_ID_PREFIX = "do-not-render-";
 
 export function ensureToolCallsHaveResponses(messages: Message[]): Message[] {
-  const newMessages: ToolMessage[] = [];
-
-  messages.forEach((message, index) => {
-    if (message.type !== "ai" || message.tool_calls?.length === 0) {
-      // If it's not an AI message, or it doesn't have tool calls, we can ignore.
-      return;
+  return messages.map((message) => {
+    if (message.type === "tool" && !message.content) {
+      return {
+        ...message,
+        content: "Tool call completed",
+      };
     }
-    // If it has tool calls, ensure the message which follows this is a tool message
-    const followingMessage = messages[index + 1];
-    if (followingMessage && followingMessage.type === "tool") {
-      // Following message is a tool message, so we can ignore.
-      return;
-    }
+    return message;
+  });
+}
 
-    // Since the following message is not a tool message, we must create a new tool message
-    newMessages.push(
-      ...(message.tool_calls?.map((tc) => ({
-        type: "tool" as const,
-        tool_call_id: tc.id ?? "",
-        id: `${DO_NOT_RENDER_ID_PREFIX}${uuidv4()}`,
-        name: tc.name,
-        content: "Successfully handled tool call.",
-      })) ?? []),
-    );
+/**
+ * Preserves all messages (main graph and subgraph) with duplicate handling
+ * @param existingMessages - Current messages array
+ * @param newMessages - New messages to merge
+ * @returns Merged messages array with duplicates handled
+ */
+export function preserveMessagesWithDuplicates(
+  existingMessages: Message[],
+  newMessages: Message[],
+): Message[] {
+  // Create a map of existing messages by ID for quick lookup
+  const existingMessagesMap = new Map<string, Message>();
+
+  existingMessages.forEach((msg) => {
+    if (msg.id) {
+      existingMessagesMap.set(msg.id, msg);
+    }
   });
 
-  return newMessages;
+  // Merge new messages, updating duplicates with latest ones
+  newMessages.forEach((newMsg) => {
+    if (newMsg.id) {
+      existingMessagesMap.set(newMsg.id, newMsg);
+    } else {
+      // If no ID, append to the end with a temporary ID
+      existingMessagesMap.set(`temp-${Date.now()}-${Math.random()}`, newMsg);
+    }
+  });
+
+  // Convert back to array
+  return Array.from(existingMessagesMap.values());
 }

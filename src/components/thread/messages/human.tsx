@@ -8,6 +8,7 @@ import { BranchSwitcher, CommandBar } from "./shared";
 import { MultimodalPreview } from "@/components/thread/MultimodalPreview";
 import { isBase64ContentBlock } from "@/lib/multimodal-utils";
 import { getJwtToken, GetUserId } from "@/services/authService";
+import { preserveMessagesWithDuplicates } from "@/lib/ensure-tool-responses";
 
 function EditableContent({
   value,
@@ -65,24 +66,36 @@ export function HumanMessage({
       submissionData.userId = userId;
     }
 
-    thread.submit(
-      submissionData,
-      {
-        checkpoint: parentCheckpoint,
-        streamMode: ["updates"],
-        streamSubgraphs: true,
-        optimisticValues: (prev) => {
-          const values = meta?.firstSeenState?.values;
-          if (!values) return prev;
+    thread.submit(submissionData, {
+      checkpoint: parentCheckpoint,
+      streamMode: ["updates"],
+      streamSubgraphs: true,
+      optimisticValues: (prev) => {
+        const values = meta?.firstSeenState?.values;
+        if (!values) return prev;
 
-          return {
-            ...values,
-            messages: [...(values.messages ?? []), newMessage],
-            ui: prev.ui ?? [], // Preserve UI state
-          };
-        },
+        // Preserve all messages with duplicate handling using utility function
+        const existingMessages = prev.messages ?? [];
+        const newMessages = values.messages ?? [];
+
+        // Merge existing and new messages
+        const mergedMessages = preserveMessagesWithDuplicates(
+          existingMessages,
+          newMessages,
+        );
+
+        // Add the new human message
+        const finalMessages = preserveMessagesWithDuplicates(mergedMessages, [
+          newMessage,
+        ]);
+
+        return {
+          ...values,
+          messages: finalMessages,
+          ui: prev.ui ?? [], // Preserve all UI values
+        };
       },
-    );
+    });
   };
 
   return (
@@ -122,7 +135,7 @@ export function HumanMessage({
               </div>
             )}
             {/* Render text if present, otherwise fallback to file/image name */}
-            <p className="bg-muted ml-auto w-full max-w-[80vw] rounded-3xl px-4 py-2 text-right whitespace-pre-wrap break-words">
+            <p className="bg-muted ml-auto w-full max-w-[80vw] rounded-3xl px-4 py-2 text-right break-words whitespace-pre-wrap">
               {contentString}
             </p>
           </div>

@@ -39,19 +39,20 @@ export const UIWidgetPreserver: React.FC = () => {
 
   useEffect(() => {
     if (stream.values.ui) {
+      console.log("🔍 Preserving UI widgets:", stream.values.ui.length);
       stream.values.ui.forEach((uiWidget) => {
         // Preserve by both id and message_id
         if (uiWidget.id) {
           preservedUIWidgets.set(uiWidget.id, uiWidget);
+          console.log("🔍 Preserved UI widget by ID:", uiWidget.id);
         }
         if (uiWidget.metadata?.message_id) {
           preservedUIWidgets.set(uiWidget.metadata.message_id, uiWidget);
+          console.log(
+            "🔍 Preserved UI widget by message_id:",
+            uiWidget.metadata.message_id,
+          );
         }
-        console.log(
-          "🔍 Preserved UI widget:",
-          uiWidget.id,
-          uiWidget.metadata?.message_id,
-        );
       });
     }
   }, [stream.values.ui]);

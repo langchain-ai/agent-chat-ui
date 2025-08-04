@@ -21,15 +21,28 @@ export function InterruptManager({ children }: InterruptManagerProps) {
           ? stream.messages[stream.messages.length - 1].id
           : undefined;
 
-      const interruptId = interruptPersistence.addInterrupt(
-        stream.interrupt.value || stream.interrupt,
-        currentMessageId,
-      );
+      // Only persist interrupts with type "widgets"
+      const interruptData = stream.interrupt.value || stream.interrupt;
+      const interruptType = interruptData?.type || interruptData?.value?.type;
 
-      activeInterruptIdRef.current = interruptId;
-      lastInterruptRef.current = stream.interrupt;
+      if (interruptType === "widgets") {
+        const interruptId = interruptPersistence.addInterrupt(
+          interruptData,
+          currentMessageId,
+        );
 
-      console.log("📌 Persisted new interrupt:", interruptId);
+        activeInterruptIdRef.current = interruptId;
+        lastInterruptRef.current = stream.interrupt;
+
+        console.log("📌 Persisted widget interrupt:", interruptId);
+      } else {
+        console.log(
+          "🔍 Skipping interrupt persistence for type:",
+          interruptType,
+        );
+        // Still track the interrupt but don't persist it
+        lastInterruptRef.current = stream.interrupt;
+      }
     }
   }, [stream.interrupt, interruptPersistence]);
 

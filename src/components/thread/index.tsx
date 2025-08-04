@@ -10,6 +10,7 @@ import { HumanMessage } from "./messages/human";
 import {
   DO_NOT_RENDER_ID_PREFIX,
   ensureToolCallsHaveResponses,
+  preserveMessagesWithDuplicates,
 } from "@/lib/ensure-tool-responses";
 import { FlyoLogoSVG } from "../icons/langgraph";
 import { TooltipIconButton } from "./tooltip-icon-button";
@@ -243,11 +244,23 @@ export function Thread() {
     const submitOptions: any = {
       streamMode: ["updates"],
       streamSubgraphs: true,
-      optimisticValues: (prev: any) => ({
-        ...prev,
-        context,
-        messages: [...(prev.messages ?? []), ...toolMessages, newHumanMessage],
-      }),
+      optimisticValues: (prev: any) => {
+        // Preserve all messages with duplicate handling using utility function
+        const existingMessages = prev.messages ?? [];
+        const newMessages = [...toolMessages, newHumanMessage];
+
+        const mergedMessages = preserveMessagesWithDuplicates(
+          existingMessages,
+          newMessages,
+        );
+
+        return {
+          ...prev,
+          context,
+          messages: mergedMessages,
+          ui: prev.ui ?? [], // Preserve all UI values
+        };
+      },
     };
 
     // Add metadata for thread creation/updating
@@ -302,6 +315,14 @@ export function Thread() {
       streamSubgraphs: true,
       checkpoint: parentCheckpoint,
       streamMode: ["updates"],
+      optimisticValues: (prev: any) => {
+        // Preserve all existing messages and UI values
+        return {
+          ...prev,
+          messages: prev.messages ?? [], // Preserve all messages
+          ui: prev.ui ?? [], // Preserve all UI values
+        };
+      },
     });
   };
 
@@ -472,8 +493,8 @@ export function Thread() {
                             <AssistantMessage
                               key={message.id || `${message.type}-${index}`}
                               message={message}
-                      isLoading={isLoading}
-                      handleRegenerate={handleRegenerate}
+                              isLoading={isLoading}
+                              handleRegenerate={handleRegenerate}
                             />
                           );
 
@@ -513,7 +534,10 @@ export function Thread() {
                     )}
                     {isLoading && <AssistantMessageLoading />}
                     {/* Always render the interrupt widget at the end if present */}
-                    {console.log("🔍 Stream interrupt 1:", JSON.stringify(stream.values.ui))}
+                    {console.log(
+                      "🔍 Stream interrupt 1:",
+                      JSON.stringify(stream.values.ui),
+                    )}
                     {stream.interrupt && (
                       <GenericInterruptView
                         interrupt={stream.interrupt.value ?? {}}
