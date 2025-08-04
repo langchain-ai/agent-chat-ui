@@ -24,25 +24,24 @@ export const TabsLayout = () => {
   const [threadId, _setThreadId] = useQueryState("threadId");
 
   return (
-    <Tabs defaultValue="Chat" className="flex h-full w-full flex-col">
-      {/* Sticky tab bar at top */}
-      <div className="flex-shrink-0 bg-white p-1 rounded-4xl border-2 mt-2 mx-auto">
-        <TabsList className="flex items-center justify-center gap-2">
-          {threadId &&
-            tabs.map((tab, index) => (
-              <TabsTrigger
-                key={index}
-                value={tab.name}
-                className="rounded-4xl px-4 py-2 text-sm data-[state=active]:bg-black data-[state=active]:text-white"
-              >
-                {tab.name}
-              </TabsTrigger>
-            ))}
-        </TabsList>
-      </div>
-
+    <Tabs
+      defaultValue="Chat"
+      className="flex h-full w-full flex-col"
+    >
+      <TabsList className="flex items-center justify-center gap-2">
+        {threadId &&
+          tabs.map((tab, index) => (
+            <TabsTrigger
+              key={index}
+              value={tab.name}
+              className="rounded-4xl px-4 py-2 text-sm data-[state=active]:bg-black data-[state=active]:text-white"
+            >
+              {tab.name}
+            </TabsTrigger>
+          ))}
+      </TabsList>
       {/* Content area */}
-      <div className="flex-1 w-full min-h-0">
+      <div className="min-h-0 w-full flex-1">
         {tabs.map((tab, index) => (
           <TabsContent
             key={index}
@@ -56,4 +55,3 @@ export const TabsLayout = () => {
     </Tabs>
   );
 };
-
