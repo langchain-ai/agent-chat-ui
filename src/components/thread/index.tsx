@@ -242,6 +242,7 @@ export function Thread() {
     // Add metadata to ensure thread is properly saved and searchable
     const submitOptions: any = {
       streamMode: ["updates"],
+      streamSubgraphs: true,
       optimisticValues: (prev: any) => ({
         ...prev,
         context,
@@ -298,6 +299,7 @@ export function Thread() {
     prevMessageLength.current = prevMessageLength.current - 1;
     setFirstTokenReceived(false);
     stream.submit(undefined, {
+      streamSubgraphs: true,
       checkpoint: parentCheckpoint,
       streamMode: ["updates"],
     });
@@ -470,8 +472,8 @@ export function Thread() {
                             <AssistantMessage
                               key={message.id || `${message.type}-${index}`}
                               message={message}
-                              isLoading={isLoading}
-                              handleRegenerate={handleRegenerate}
+                      isLoading={isLoading}
+                      handleRegenerate={handleRegenerate}
                             />
                           );
 
@@ -511,6 +513,7 @@ export function Thread() {
                     )}
                     {isLoading && <AssistantMessageLoading />}
                     {/* Always render the interrupt widget at the end if present */}
+                    {console.log("🔍 Stream interrupt 1:", JSON.stringify(stream.values.ui))}
                     {stream.interrupt && (
                       <GenericInterruptView
                         interrupt={stream.interrupt.value ?? {}}

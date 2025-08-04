@@ -41,7 +41,10 @@ import { updateThreadWithMessage } from "@/utils/thread-storage";
 import { InterruptManager } from "./messages/interrupt-manager";
 import { PersistentInterruptList } from "./messages/persistent-interrupt";
 import { useInterruptPersistenceContext } from "@/providers/InterruptPersistenceContext";
-import { GenericInterruptView } from "./messages/generic-interrupt";
+import {
+  GenericInterruptView,
+  UIWidgetPreserver,
+} from "./messages/generic-interrupt";
 import { NonAgentFlowReopenButton } from "./NonAgentFlowReopenButton";
 
 // Add this utility function to filter out tool call messages with empty content
@@ -200,10 +203,12 @@ export function Thread() {
     // Add metadata to ensure thread is properly saved and searchable
     const submitOptions: any = {
       streamMode: ["updates"],
+      streamSubgraphs: true,
       optimisticValues: (prev: any) => ({
         ...prev,
         context,
         messages: [...(prev.messages ?? []), ...toolMessages, newHumanMessage],
+        ui: prev.ui ?? [], // Preserve UI state
       }),
     };
 
@@ -258,6 +263,11 @@ export function Thread() {
     stream.submit(undefined, {
       checkpoint: parentCheckpoint,
       streamMode: ["updates"],
+      streamSubgraphs: true,
+      optimisticValues: (prev: any) => ({
+        ...prev,
+        ui: prev.ui ?? [], // Preserve UI state
+      }),
     });
   };
 
@@ -268,6 +278,7 @@ export function Thread() {
 
   return (
     <InterruptManager>
+      <UIWidgetPreserver />
       <div className="flex h-full w-full overflow-hidden">
         <div className="relative hidden lg:flex">
           <motion.div
@@ -467,6 +478,13 @@ export function Thread() {
                           handleRegenerate={handleRegenerate}
                         />
                       )}
+                      {(() => {
+                        console.log(
+                          "🔍 Stream interrupt 2:",
+                          JSON.stringify(stream.values.ui),
+                        );
+                        return null;
+                      })()}
                       {isLoading && <AssistantMessageLoading />}
                       {/* Always render the interrupt widget at the end if present */}
                       {stream.interrupt && (

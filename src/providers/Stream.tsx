@@ -4,6 +4,7 @@ import React, {
   ReactNode,
   useState,
   useEffect,
+  useRef,
 } from "react";
 import { useStream } from "@langchain/langgraph-sdk/react";
 import { type Message } from "@langchain/langgraph-sdk";
@@ -27,7 +28,11 @@ import { toast } from "sonner";
 import { storeThread } from "@/utils/thread-storage";
 import { InterruptPersistenceProvider } from "./InterruptPersistenceContext";
 
-export type StateType = { messages: Message[]; ui?: UIMessage[], itinerary: any };
+export type StateType = {
+  messages: Message[];
+  ui?: UIMessage[];
+  itinerary: any;
+};
 
 const useTypedStream = useStream<
   StateType,
@@ -81,18 +86,54 @@ const StreamSession = ({
 }) => {
   const [threadId, setThreadId] = useQueryState("threadId");
   const { getThreads, setThreads } = useThreads();
+
+  // Track current interrupt for UI preservation logic
+  const currentInterruptRef = useRef<any>(null);
+
   const streamValue = useTypedStream({
     apiUrl,
     apiKey: apiKey ?? undefined,
     assistantId,
     threadId: threadId ?? null,
     onCustomEvent: (event, options) => {
-      if (isUIMessage(event) || isRemoveUIMessage(event)) {
-        options.mutate((prev) => {
-          const ui = uiMessageReducer(prev.ui ?? [], event);
-          return { ...prev, ui };
-        });
-      }
+      console.log("🔍 Custom event received:", event);
+      console.log("🔍 Event type:", event.type);
+      console.log("🔍 Is UI message:", isUIMessage(event));
+      console.log("🔍 Is remove UI message:", isRemoveUIMessage(event));
+
+      options.mutate((prev) => {
+        console.log("🔍 Current UI state before reducer:", prev.ui);
+        console.log("🔍 UI array length before reducer:", prev.ui?.length || 0);
+
+        // Check if this is a RemoveUIMessage event and if we have a widgetFromBE interrupt
+        const isWidgetFromBEInterrupt =
+          currentInterruptRef.current?.value?.type === "widgetFromBE";
+
+        let ui;
+        if (isRemoveUIMessage(event) && isWidgetFromBEInterrupt) {
+          console.log("🔍 Preserving UI widgets during widgetFromBE interrupt");
+          // Don't remove UI widgets during widgetFromBE interrupt processing
+          ui = prev.ui ?? [];
+        } else {
+          ui = uiMessageReducer(prev.ui ?? [], event);
+        }
+
+        console.log("🔍 UI state after reducer:", ui);
+        console.log("🔍 UI array length after reducer:", ui?.length || 0);
+
+        // Log if UI array was cleared
+        if ((prev.ui?.length || 0) > 0 && (ui?.length || 0) === 0) {
+          console.log(
+            "⚠️ UI array was cleared! Previous length:",
+            prev.ui?.length,
+            "Current length:",
+            ui?.length,
+          );
+          console.log("⚠️ Event that caused clearing:", event);
+        }
+
+        return { ...prev, ui };
+      });
     },
     onThreadId: (id) => {
       console.log("New thread ID created:", id);
@@ -123,8 +164,14 @@ const StreamSession = ({
     onUpdateEvent: (data) => {
       // Log the complete data received from the LangGraph backend
       console.log("LangGraph backend full update:", data);
+      console.log("🔍 Update event UI data:", data);
     },
   });
+
+  // Update interrupt ref when stream interrupt changes
+  useEffect(() => {
+    currentInterruptRef.current = streamValue.interrupt;
+  }, [streamValue.interrupt]);
 
   useEffect(() => {
     checkGraphStatus(apiUrl, apiKey).then((ok) => {

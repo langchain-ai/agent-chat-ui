@@ -64,18 +64,56 @@ await thread.submit(
   {},
   {
     command: {
-      resume: [
-        {
-          type: "response", // or any custom type you sent from server
-          args: responseData, // object containing user input or selected values
-        },
-      ],
+      type: "resume",
+      value: {
+        interrupt_id: "32835f20-f631-4f0d-9e8e-8b0018bedf50",
+        // Add any data that needs to be sent back to the server
+        userInput: "User's response",
+      },
     },
   },
 );
 ```
 
-This will send the data back to the server and resume the paused flow.
+---
+
+## 🎯 New: widgetFromBE Interrupt Type
+
+The `widgetFromBE` interrupt type allows rendering UI widgets that are sent from the backend via the typed stream. This is useful for dynamic, configurable widgets.
+
+### ✅ Server Side: Sending widgetFromBE Interrupt
+
+```ts
+const response = interrupt({
+  value: {
+    type: "widgetFromBE",
+    metadata: {
+      attachmentId: uiWidget.id, // This should match a UI widget ID in the typed stream
+    },
+  },
+});
+```
+
+### ✅ Client Side: Handling widgetFromBE Interrupt
+
+The system automatically:
+
+1. **Extracts the attachmentId** from `interrupt.value.metadata.attachmentId`
+2. **Finds the matching UI widget** in the typed stream (`stream.values.ui`)
+3. **Renders the widget** using `LoadExternalComponent` with the UI widget data
+
+The widget will be rendered on the chat screen using the UI data from the typed stream, making it fully configurable from the backend.
+
+### ✅ Example Flow
+
+1. Backend sends UI widget via typed stream with ID `"flight-options-123"`
+2. Backend sends interrupt with `attachmentId: "flight-options-123"`
+3. Frontend finds the UI widget with matching ID
+4. Frontend renders the widget using `LoadExternalComponent`
+5. User interacts with the widget
+6. User submits response to resume the graph
+
+This approach allows for completely dynamic and configurable UI widgets that can be defined and sent from the backend.
 
 ---
 

@@ -70,6 +70,7 @@ export function HumanMessage({
       {
         checkpoint: parentCheckpoint,
         streamMode: ["updates"],
+        streamSubgraphs: true,
         optimisticValues: (prev) => {
           const values = meta?.firstSeenState?.values;
           if (!values) return prev;
@@ -77,6 +78,7 @@ export function HumanMessage({
           return {
             ...values,
             messages: [...(values.messages ?? []), newMessage],
+            ui: prev.ui ?? [], // Preserve UI state
           };
         },
       },
