@@ -22,7 +22,6 @@ import {
   SquarePen,
   XIcon,
   Plus,
-  CircleX,
 } from "lucide-react";
 import { useQueryState, parseAsBoolean } from "nuqs";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
@@ -30,7 +29,6 @@ import ThreadHistory from "./history";
 import { toast } from "sonner";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { Label } from "../ui/label";
-import { Switch } from "../ui/switch";
 import { GitHubSVG } from "../icons/github";
 import {
   Tooltip,
@@ -46,7 +44,6 @@ import {
   ArtifactTitle,
   useArtifactContext,
 } from "./artifact";
-import { LogoutButton } from "@/components/auth";
 import { getJwtToken, GetUserId } from "@/services/authService";
 import { updateThreadWithMessage } from "@/utils/thread-storage";
 import { InterruptManager } from "./messages/interrupt-manager";
@@ -397,7 +394,7 @@ export function Thread() {
             }
           >
             {!chatStarted && (
-              <div className="absolute top-0 left-0 z-10 flex w-full items-center justify-between gap-3 p-2 pl-4">
+              <div className="absolute top-0 left-0 z-10 flex w-full items-center justify-between gap-3 py-2">
                 <div>
                   {(!chatHistoryOpen || !isLargeScreen) && (
                     <Button
@@ -412,13 +409,6 @@ export function Thread() {
                       )}
                     </Button>
                   )}
-                </div>
-                <div className="flex items-center gap-4">
-                  <LogoutButton
-                    variant="ghost"
-                    size="sm"
-                    className="text-gray-600 hover:text-gray-900"
-                  />
                 </div>
               </div>
             )}
@@ -440,23 +430,6 @@ export function Thread() {
                       </Button>
                     )}
                   </div>
-                  <motion.button
-                    className="flex cursor-pointer items-center gap-2"
-                    onClick={() => setThreadId(null)}
-                    animate={{
-                      marginLeft: !chatHistoryOpen ? 48 : 0,
-                    }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 300,
-                      damping: 30,
-                    }}
-                  >
-                    <FlyoLogoSVG
-                      width={70}
-                      height={70}
-                    />
-                  </motion.button>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -469,11 +442,6 @@ export function Thread() {
                   >
                     <SquarePen className="size-5" />
                   </TooltipIconButton>
-                  <LogoutButton
-                    variant="ghost"
-                    size="sm"
-                    className="text-gray-600 hover:text-gray-900"
-                  />
                 </div>
 
                 <div className="from-background to-background/0 absolute inset-x-0 top-full h-5 bg-gradient-to-b" />
