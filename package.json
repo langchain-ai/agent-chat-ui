@@ -19,9 +19,10 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
-    "@langchain/core": "^0.3.44",
-    "@langchain/langgraph": "^0.2.63",
+    "@langchain/core": "^0.3.66",
+    "@langchain/langgraph": "^0.2.72",
     "@langchain/langgraph-sdk": "^0.0.73",
+    "@langchain/openai": "^0.6.3",
     "@radix-ui/react-avatar": "^1.1.3",
     "@radix-ui/react-dialog": "^1.1.13",
     "@radix-ui/react-label": "^2.1.2",
