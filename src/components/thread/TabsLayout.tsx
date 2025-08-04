@@ -24,9 +24,9 @@ export const TabsLayout = () => {
   const [threadId, _setThreadId] = useQueryState("threadId");
 
   return (
-    <Tabs defaultValue="Chat" className="flex h-screen w-full flex-col items-center">
+    <Tabs defaultValue="Chat" className="flex h-full w-full flex-col">
       {/* Sticky tab bar at top */}
-      <div className="sticky top-0 z-50 bg-white p-1 rounded-4xl border-2 mt-2">
+      <div className="flex-shrink-0 bg-white p-1 rounded-4xl border-2 mt-2 mx-auto">
         <TabsList className="flex items-center justify-center gap-2">
           {threadId &&
             tabs.map((tab, index) => (
@@ -41,8 +41,8 @@ export const TabsLayout = () => {
         </TabsList>
       </div>
 
-      {/* Scrollable content area */}
-      <div className="flex-1 w-full max-w-3xl overflow-y-auto min-h-0">
+      {/* Content area */}
+      <div className="flex-1 w-full min-h-0">
         {tabs.map((tab, index) => (
           <TabsContent
             key={index}

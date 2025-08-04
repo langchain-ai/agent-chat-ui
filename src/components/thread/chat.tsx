@@ -268,13 +268,7 @@ export function Thread() {
 
   return (
     <InterruptManager>
-      <div
-        className="flex h-screen w-full overflow-hidden"
-        style={{
-          height: "100dvh", // Use dynamic viewport height for mobile
-          minHeight: "100vh",
-        }}
-      >
+      <div className="flex h-full w-full overflow-hidden">
         <div className="relative hidden lg:flex">
           <motion.div
             className="absolute z-20 h-full overflow-hidden border-r bg-white"
@@ -326,9 +320,9 @@ export function Thread() {
                 : { duration: 0 }
             }
           >
-            <div className="flex h-full flex-col">
+            <div className="flex h-full min-h-0 flex-col">
               {/* Messages Area */}
-              <div className="flex-1 overflow-y-auto px-4 pt-8 pb-4">
+              <div className="flex-1 overflow-y-auto scroll-smooth px-4 pt-8 pb-4">
                 <div className="mx-auto flex max-w-3xl flex-col gap-4">
                   {messages
                     .filter(isDisplayableMessage)
@@ -394,12 +388,13 @@ export function Thread() {
               </div>
 
               {/* Chat Input Area */}
-              <div className="flex flex-col items-center gap-4 border-t bg-white px-4 py-2 sm:py-4">
+              <div className="flex flex-shrink-0 flex-col items-center gap-2 border-t bg-white px-4 py-2">
                 {!chatStarted && (
                   <div className="flex items-center gap-3">
                     <FlyoLogoSVG
-                      width={150}
-                      height={150}
+                      width={80}
+                      height={80}
+                      className="sm:h-[120px] sm:w-[120px]"
                     />
                   </div>
                 )}
@@ -439,10 +434,10 @@ export function Thread() {
                         }
                       }}
                       placeholder="Type your message..."
-                      className="field-sizing-content resize-none border-none bg-transparent p-3.5 pb-0 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none"
+                      className="field-sizing-content resize-none border-none bg-transparent p-2 pb-0 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none"
                     />
 
-                    <div className="flex items-center gap-6 p-2 pt-4">
+                    <div className="flex items-center gap-6 p-2 pt-2">
                       <input
                         id="file-input"
                         type="file"

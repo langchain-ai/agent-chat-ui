@@ -22,8 +22,12 @@ export default function DemoPage(): React.ReactNode {
           <StreamProvider>
             <ArtifactProvider>
               <NonAgentFlowProvider>
-                <Navbar/>
-                <TabsLayout/>
+                <div className="flex flex-col h-screen">
+                  <Navbar/>
+                  <div className="flex-1 min-h-0">
+                    <TabsLayout/>
+                  </div>
+                </div>
               </NonAgentFlowProvider>
             </ArtifactProvider>
           </StreamProvider>
