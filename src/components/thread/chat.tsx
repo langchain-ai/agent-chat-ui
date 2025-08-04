@@ -320,241 +320,240 @@ export function Thread() {
                 : { duration: 0 }
             }
           >
-            {!chatStarted ? (
-              /* New Thread - Centered Layout */
-              <div className="flex h-full flex-col items-center justify-center px-4">
-                <div className="flex w-full max-w-3xl flex-col items-center gap-6">
-                  <FlyoLogoSVG
-                    width={120}
-                    height={120}
-                    className="sm:h-[150px] sm:w-[150px]"
-                  />
-
-                  <div
-                    ref={dropRef}
-                    className={cn(
-                      "bg-muted relative z-10 w-full rounded-2xl shadow-xs transition-all",
-                      dragOver
-                        ? "border-primary border-2 border-dotted"
-                        : "border border-solid",
-                    )}
-                  >
-                    <form
-                      onSubmit={handleSubmit}
-                      className="grid grid-rows-[1fr_auto] gap-2"
-                    >
-                      <ContentBlocksPreview
-                        blocks={contentBlocks}
-                        onRemove={removeBlock}
-                      />
-                      <textarea
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onPaste={handlePaste}
-                        onKeyDown={(e) => {
-                          if (
-                            e.key === "Enter" &&
-                            !e.shiftKey &&
-                            !e.metaKey &&
-                            !e.nativeEvent.isComposing
-                          ) {
-                            e.preventDefault();
-                            const el = e.target as HTMLElement | undefined;
-                            const form = el?.closest("form");
-                            form?.requestSubmit();
-                          }
-                        }}
-                        placeholder="Type your message..."
-                        className="field-sizing-content resize-none border-none bg-transparent p-4 pb-0 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none"
-                      />
-
-                      <div className="flex items-center gap-6 p-4 pt-2">
-                        <Label
-                          htmlFor="file-input"
-                          className="flex cursor-pointer items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
-                        >
-                          <Plus className="h-4 w-4" />
-                          Upload PDF, Image, or Video
-                        </Label>
-                        <input
-                          id="file-input"
-                          type="file"
-                          onChange={handleFileUpload}
-                          multiple
-                          accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
-                          className="hidden"
-                        />
-                        {stream.isLoading ? (
-                          <Button
-                            key="stop"
-                            onClick={() => stream.stop()}
-                            className="ml-auto"
-                          >
-                            <LoaderCircle className="h-4 w-4 animate-spin" />
-                            Cancel
-                          </Button>
-                        ) : (
-                          <Button
-                            type="submit"
-                            className="ml-auto shadow-md transition-all"
-                            disabled={
-                              isLoading ||
-                              (!input.trim() && contentBlocks.length === 0)
-                            }
-                          >
-                            Send
-                          </Button>
-                        )}
-                      </div>
-                    </form>
+            <div className="flex h-full min-h-0 flex-col">
+              {!chatStarted ? (
+                // New thread layout - centered content
+                <div className="flex flex-1 flex-col items-center justify-center px-4">
+                  {/* Centered Logo */}
+                  <div className="mb-8 flex items-center justify-center">
+                    <FlyoLogoSVG
+                      width={120}
+                      height={120}
+                      className="sm:h-[150px] sm:w-[150px]"
+                    />
                   </div>
-                </div>
-              </div>
-            ) : (
-              /* Active Chat - Bottom Input Layout */
-              <div className="flex h-full min-h-0 flex-col">
-                {/* Messages Area */}
-                <div className="flex-1 overflow-y-auto scroll-smooth px-4 pt-8 pb-4">
-                  <div className="mx-auto flex max-w-3xl flex-col gap-4">
-                    {messages
-                      .filter(isDisplayableMessage)
-                      .flatMap((message, index) => {
-                        const messageElement =
-                          message.type === "human" ? (
-                            <HumanMessage
-                              key={message.id || `${message.type}-${index}`}
-                              message={message}
-                              isLoading={isLoading}
-                            />
-                          ) : (
-                            <AssistantMessage
-                              key={message.id || `${message.type}-${index}`}
-                              message={message}
-                              isLoading={isLoading}
-                              handleRegenerate={handleRegenerate}
-                            />
-                          );
 
-                        // Check if there are any persisted interrupts associated with this message
-                        const messageInterrupts = message.id
-                          ? interruptPersistence.getInterruptsForMessage(
-                              message.id,
-                            )
-                          : [];
+                  {/* Centered Chat Input */}
+                  <div className="w-full max-w-3xl">
+                    <div
+                      ref={dropRef}
+                      className={cn(
+                        "bg-muted relative z-10 mx-auto w-full rounded-2xl shadow-xs transition-all",
+                        dragOver
+                          ? "border-primary border-2 border-dotted"
+                          : "border border-solid",
+                      )}
+                    >
+                      <form
+                        onSubmit={handleSubmit}
+                        className="mx-auto grid max-w-3xl grid-rows-[1fr_auto] gap-2"
+                      >
+                        <ContentBlocksPreview
+                          blocks={contentBlocks}
+                          onRemove={removeBlock}
+                        />
+                        <textarea
+                          value={input}
+                          onChange={(e) => setInput(e.target.value)}
+                          onPaste={handlePaste}
+                          onKeyDown={(e) => {
+                            if (
+                              e.key === "Enter" &&
+                              !e.shiftKey &&
+                              !e.metaKey &&
+                              !e.nativeEvent.isComposing
+                            ) {
+                              e.preventDefault();
+                              const el = e.target as HTMLElement | undefined;
+                              const form = el?.closest("form");
+                              form?.requestSubmit();
+                            }
+                          }}
+                          placeholder="Type your message..."
+                          className="field-sizing-content resize-none border-none bg-transparent p-2 pb-0 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none"
+                        />
 
-                        // Return array of elements: message + persistent interrupts
-                        const elements = [messageElement];
-
-                        if (messageInterrupts.length > 0) {
-                          elements.push(
-                            <div
-                              key={`${message.id || `${message.type}-${index}`}-interrupts`}
-                              className="mt-2"
+                        <div className="flex items-center gap-6 p-2 pt-2">
+                          <input
+                            id="file-input"
+                            type="file"
+                            onChange={handleFileUpload}
+                            multiple
+                            accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
+                            className="hidden"
+                          />
+                          {stream.isLoading ? (
+                            <Button
+                              key="stop"
+                              onClick={() => stream.stop()}
+                              className="ml-auto"
                             >
-                              <PersistentInterruptList
-                                interrupts={messageInterrupts}
+                              <LoaderCircle className="h-4 w-4 animate-spin" />
+                              Cancel
+                            </Button>
+                          ) : (
+                            <Button
+                              type="submit"
+                              className="ml-auto shadow-md transition-all"
+                              disabled={
+                                isLoading ||
+                                (!input.trim() && contentBlocks.length === 0)
+                              }
+                            >
+                              Send
+                            </Button>
+                          )}
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                // Chat started layout - messages at top, input at bottom
+                <>
+                  {/* Messages Area */}
+                  <div className="flex-1 overflow-y-auto scroll-smooth px-4 pt-8 pb-4">
+                    <div className="mx-auto flex max-w-3xl flex-col gap-4">
+                      {messages
+                        .filter(isDisplayableMessage)
+                        .flatMap((message, index) => {
+                          const messageElement =
+                            message.type === "human" ? (
+                              <HumanMessage
+                                key={message.id || `${message.type}-${index}`}
+                                message={message}
+                                isLoading={isLoading}
                               />
-                            </div>,
-                          );
-                        }
+                            ) : (
+                              <AssistantMessage
+                                key={message.id || `${message.type}-${index}`}
+                                message={message}
+                                isLoading={isLoading}
+                                handleRegenerate={handleRegenerate}
+                              />
+                            );
 
-                        return elements;
-                      })}
-                    {/* Special rendering case where there are no AI/tool messages, but there is an interrupt. */}
-                    {hasNoAIOrToolMessages && !!stream.interrupt && (
-                      <AssistantMessage
-                        key="interrupt-msg"
-                        message={undefined}
-                        isLoading={isLoading}
-                        handleRegenerate={handleRegenerate}
-                      />
-                    )}
-                    {isLoading && <AssistantMessageLoading />}
-                    {/* Always render the interrupt widget at the end if present */}
-                    {stream.interrupt && (
-                      <GenericInterruptView
-                        interrupt={stream.interrupt.value ?? {}}
-                      />
-                    )}
-                  </div>
-                </div>
+                          // Check if there are any persisted interrupts associated with this message
+                          const messageInterrupts = message.id
+                            ? interruptPersistence.getInterruptsForMessage(
+                                message.id,
+                              )
+                            : [];
 
-                {/* Chat Input Area */}
-                <div className="flex flex-shrink-0 flex-col items-center gap-2 border-t bg-white px-4 py-2">
-                  <div
-                    ref={dropRef}
-                    className={cn(
-                      "bg-muted relative z-10 mx-auto w-full max-w-3xl rounded-2xl shadow-xs transition-all",
-                      dragOver
-                        ? "border-primary border-2 border-dotted"
-                        : "border border-solid",
-                    )}
-                  >
-                    <form
-                      onSubmit={handleSubmit}
-                      className="mx-auto grid max-w-3xl grid-rows-[1fr_auto] gap-2"
-                    >
-                      <ContentBlocksPreview
-                        blocks={contentBlocks}
-                        onRemove={removeBlock}
-                      />
-                      <textarea
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onPaste={handlePaste}
-                        onKeyDown={(e) => {
-                          if (
-                            e.key === "Enter" &&
-                            !e.shiftKey &&
-                            !e.metaKey &&
-                            !e.nativeEvent.isComposing
-                          ) {
-                            e.preventDefault();
-                            const el = e.target as HTMLElement | undefined;
-                            const form = el?.closest("form");
-                            form?.requestSubmit();
+                          // Return array of elements: message + persistent interrupts
+                          const elements = [messageElement];
+
+                          if (messageInterrupts.length > 0) {
+                            elements.push(
+                              <div
+                                key={`${message.id || `${message.type}-${index}`}-interrupts`}
+                                className="mt-2"
+                              >
+                                <PersistentInterruptList
+                                  interrupts={messageInterrupts}
+                                />
+                              </div>,
+                            );
                           }
-                        }}
-                        placeholder="Type your message..."
-                        className="field-sizing-content resize-none border-none bg-transparent p-2 pb-0 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none"
-                      />
 
-                      <div className="flex items-center gap-6 p-2 pt-2">
-                        <input
-                          id="file-input"
-                          type="file"
-                          onChange={handleFileUpload}
-                          multiple
-                          accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
-                          className="hidden"
+                          return elements;
+                        })}
+                      {/* Special rendering case where there are no AI/tool messages, but there is an interrupt. */}
+                      {hasNoAIOrToolMessages && !!stream.interrupt && (
+                        <AssistantMessage
+                          key="interrupt-msg"
+                          message={undefined}
+                          isLoading={isLoading}
+                          handleRegenerate={handleRegenerate}
                         />
-                        {stream.isLoading ? (
-                          <Button
-                            key="stop"
-                            onClick={() => stream.stop()}
-                            className="ml-auto"
-                          >
-                            <LoaderCircle className="h-4 w-4 animate-spin" />
-                            Cancel
-                          </Button>
-                        ) : (
-                          <Button
-                            type="submit"
-                            className="ml-auto shadow-md transition-all"
-                            disabled={
-                              isLoading ||
-                              (!input.trim() && contentBlocks.length === 0)
-                            }
-                          >
-                            Send
-                          </Button>
-                        )}
-                      </div>
-                    </form>
+                      )}
+                      {isLoading && <AssistantMessageLoading />}
+                      {/* Always render the interrupt widget at the end if present */}
+                      {stream.interrupt && (
+                        <GenericInterruptView
+                          interrupt={stream.interrupt.value ?? {}}
+                        />
+                      )}
+                    </div>
                   </div>
-                </div>
-              </div>
-            )}
+
+                  {/* Chat Input Area - Bottom */}
+                  <div className="flex flex-shrink-0 flex-col items-center gap-2 border-t bg-white px-4 py-2">
+                    <div
+                      ref={dropRef}
+                      className={cn(
+                        "bg-muted relative z-10 mx-auto w-full max-w-3xl rounded-2xl shadow-xs transition-all",
+                        dragOver
+                          ? "border-primary border-2 border-dotted"
+                          : "border border-solid",
+                      )}
+                    >
+                      <form
+                        onSubmit={handleSubmit}
+                        className="mx-auto grid max-w-3xl grid-rows-[1fr_auto] gap-2"
+                      >
+                        <ContentBlocksPreview
+                          blocks={contentBlocks}
+                          onRemove={removeBlock}
+                        />
+                        <textarea
+                          value={input}
+                          onChange={(e) => setInput(e.target.value)}
+                          onPaste={handlePaste}
+                          onKeyDown={(e) => {
+                            if (
+                              e.key === "Enter" &&
+                              !e.shiftKey &&
+                              !e.metaKey &&
+                              !e.nativeEvent.isComposing
+                            ) {
+                              e.preventDefault();
+                              const el = e.target as HTMLElement | undefined;
+                              const form = el?.closest("form");
+                              form?.requestSubmit();
+                            }
+                          }}
+                          placeholder="Type your message..."
+                          className="field-sizing-content resize-none border-none bg-transparent p-2 pb-0 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none"
+                        />
+
+                        <div className="flex items-center gap-6 p-2 pt-2">
+                          <input
+                            id="file-input"
+                            type="file"
+                            onChange={handleFileUpload}
+                            multiple
+                            accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
+                            className="hidden"
+                          />
+                          {stream.isLoading ? (
+                            <Button
+                              key="stop"
+                              onClick={() => stream.stop()}
+                              className="ml-auto"
+                            >
+                              <LoaderCircle className="h-4 w-4 animate-spin" />
+                              Cancel
+                            </Button>
+                          ) : (
+                            <Button
+                              type="submit"
+                              className="ml-auto shadow-md transition-all"
+                              disabled={
+                                isLoading ||
+                                (!input.trim() && contentBlocks.length === 0)
+                              }
+                            >
+                              Send
+                            </Button>
+                          )}
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </motion.div>
           <div className="relative flex flex-col border-l">
             <div className="absolute inset-0 flex min-w-[30vw] flex-col">
