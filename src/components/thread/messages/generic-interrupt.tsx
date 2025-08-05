@@ -159,6 +159,10 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
       );
     }
 
+    if (interrupt.value.widget.type === "SeatPaymentWidget") {
+      return <Component {...interrupt.value.widget.args} />;
+    }
+
     // For NonAgentFlowWidget, render in bottom sheet
     if (interrupt.value.widget.type === "NonAgentFlowWidget") {
       return (
@@ -167,6 +171,11 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
           args={interrupt.value.widget.args}
         />
       );
+    }
+
+    // For seat-related widgets, render directly without bottom sheet
+    if (["SeatPreferenceWidget", "SeatSelectionWidget", "SeatMapWidget", "SeatCombinedWidget"].includes(interrupt.value.widget.type)) {
+      return <Component {...interrupt.value.widget.args} />;
     }
 
     // For other widgets, pass the args object directly to the component
