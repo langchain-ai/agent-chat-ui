@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/common/ui/button";
 import { useStreamContext } from "@/providers/Stream";
 import { submitInterruptResponse } from "./util";
-import { CreditCard, X, CheckCircle, AlertCircle, Plane } from "lucide-react";
+import { CreditCard, X, CheckCircle, Plane } from "lucide-react";
 
 interface SeatPaymentWidgetProps {
   seatNumber?: string;
@@ -17,34 +17,12 @@ const SeatPaymentWidget: React.FC<SeatPaymentWidgetProps> = (args) => {
   const thread = useStreamContext();
   const [isLoading, setIsLoading] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success'>('idle');
-  const [countdown, setCountdown] = useState(5);
-  const [autoPayStarted, setAutoPayStarted] = useState(false);
-  
+
   const seatNumber = args.seatNumber || "14F";
   const amount = args.amount || 350;
   const currency = args.currency || "₹";
 
-  // Auto-pay countdown effect
-  useEffect(() => {
-    if (paymentStatus === 'idle' && !autoPayStarted) {
-      const timer = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            setAutoPayStarted(true);
-            simulatePayment();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      return () => clearInterval(timer);
-    }
-  }, [paymentStatus, autoPayStarted]);
-
   const handlePaymentConfirm = () => {
-    setAutoPayStarted(true);
     simulatePayment();
   };
 
@@ -186,41 +164,19 @@ const SeatPaymentWidget: React.FC<SeatPaymentWidgetProps> = (args) => {
         </div>
       </div>
 
-      {/* Auto-pay countdown notice */}
-      {!autoPayStarted && countdown > 0 && (
-        <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-orange-600" />
-            <span className="text-sm text-orange-800">
-              Auto-payment in <span className="font-bold">{countdown}</span> seconds
-            </span>
-          </div>
-        </div>
-      )}
-
       <div className="space-y-3">
         <Button
           onClick={handlePaymentConfirm}
-          disabled={isLoading || autoPayStarted}
-          className="w-full relative overflow-hidden bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-4 rounded-lg text-base flex items-center justify-center gap-2 shadow-lg disabled:opacity-75"
+          disabled={isLoading}
+          className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-4 rounded-lg text-base flex items-center justify-center gap-2 shadow-lg disabled:opacity-75"
         >
-          {/* Loading fill effect */}
-          {!autoPayStarted && countdown < 5 && (
-            <div
-              className="absolute left-0 top-0 h-full bg-green-800 transition-all duration-1000 ease-linear"
-              style={{ width: `${((5 - countdown) / 5) * 100}%` }}
-            />
-          )}
-
-          <div className="relative z-10 flex items-center gap-2">
-            <CreditCard className="w-5 h-5" />
-            {autoPayStarted ? "Processing..." : `Pay ${currency}${amount} Now`}
-          </div>
+          <CreditCard className="w-5 h-5" />
+          {isLoading ? "Processing..." : `Pay ${currency}${amount} Now`}
         </Button>
 
         <Button
           onClick={handlePaymentCancel}
-          disabled={isLoading || autoPayStarted}
+          disabled={isLoading}
           variant="outline"
           className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 font-medium py-3 rounded-lg text-base flex items-center justify-center gap-2 disabled:opacity-50"
         >
