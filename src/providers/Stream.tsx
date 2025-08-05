@@ -4,16 +4,11 @@ import React, {
   ReactNode,
   useState,
   useEffect,
+  useRef,
 } from "react";
-import { useStream } from "@langchain/langgraph-sdk/react";
+import { useStream } from "@/lib/langgraph-index";
 import { type Message } from "@langchain/langgraph-sdk";
-import {
-  uiMessageReducer,
-  isUIMessage,
-  isRemoveUIMessage,
-  type UIMessage,
-  type RemoveUIMessage,
-} from "@langchain/langgraph-sdk/react-ui";
+
 import { useQueryState } from "nuqs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -27,19 +22,13 @@ import { toast } from "sonner";
 import { storeThread } from "@/utils/thread-storage";
 import { InterruptPersistenceProvider } from "./InterruptPersistenceContext";
 
-export type StateType = { messages: Message[]; ui?: UIMessage[] };
+export type StateType = {
+  messages: Message[];
+  ui?: any[];
+  itinerary: any;
+};
 
-const useTypedStream = useStream<
-  StateType,
-  {
-    UpdateType: {
-      messages?: Message[] | Message | string;
-      ui?: (UIMessage | RemoveUIMessage)[] | UIMessage | RemoveUIMessage;
-      context?: Record<string, unknown>;
-    };
-    CustomEventType: UIMessage | RemoveUIMessage;
-  }
->;
+const useTypedStream = useStream;
 
 type StreamContextType = ReturnType<typeof useTypedStream>;
 const StreamContext = createContext<StreamContextType | undefined>(undefined);
@@ -81,20 +70,13 @@ const StreamSession = ({
 }) => {
   const [threadId, setThreadId] = useQueryState("threadId");
   const { getThreads, setThreads } = useThreads();
+
   const streamValue = useTypedStream({
     apiUrl,
     apiKey: apiKey ?? undefined,
     assistantId,
     threadId: threadId ?? null,
-    onCustomEvent: (event, options) => {
-      if (isUIMessage(event) || isRemoveUIMessage(event)) {
-        options.mutate((prev) => {
-          const ui = uiMessageReducer(prev.ui ?? [], event);
-          return { ...prev, ui };
-        });
-      }
-    },
-    onThreadId: (id) => {
+    onThreadId: (id: string) => {
       console.log("New thread ID created:", id);
       setThreadId(id);
 
@@ -119,10 +101,6 @@ const StreamSession = ({
             console.error("Failed to refetch threads:", error);
           });
       });
-    },
-    onUpdateEvent: (data) => {
-      // Log the complete data received from the LangGraph backend
-      console.log("LangGraph backend full update:", data);
     },
   });
 

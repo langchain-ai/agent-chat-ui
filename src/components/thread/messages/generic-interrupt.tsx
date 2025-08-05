@@ -9,7 +9,9 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { useNonAgentFlow } from "@/providers/NonAgentFlowContext";
+import { useStreamContext } from "@/providers/Stream";
+import { LoadExternalComponent } from "@langchain/langgraph-sdk/react-ui";
+import { useArtifact } from "../artifact";
 
 // Debug utility function
 const debugLog = (message: string, data?: any) => {
@@ -27,6 +29,35 @@ interface DynamicRendererProps {
   interruptType: string;
   interrupt: Record<string, any>;
 }
+
+// State to preserve UI widgets during interrupt processing
+const preservedUIWidgets = new Map<string, any>();
+
+// Component to monitor and preserve UI widgets
+export const UIWidgetPreserver: React.FC = () => {
+  const stream = useStreamContext();
+
+  useEffect(() => {
+    if (stream.values.ui) {
+      stream.values.ui.forEach((uiWidget) => {
+        // Preserve by both id and message_id
+        if (uiWidget.id) {
+          preservedUIWidgets.set(uiWidget.id, uiWidget);
+        }
+        if (uiWidget.metadata?.message_id) {
+          preservedUIWidgets.set(uiWidget.metadata.message_id, uiWidget);
+        }
+        console.log(
+          "🔍 Preserved UI widget:",
+          uiWidget.id,
+          uiWidget.metadata?.message_id,
+        );
+      });
+    }
+  }, [stream.values.ui]);
+
+  return null; // This component doesn't render anything
+};
 
 // Wrapper component for TravelerDetailsWidget with bottom sheet
 const TravelerDetailsBottomSheet: React.FC<{ apiData: any; args: any }> = ({
@@ -133,11 +164,71 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
   console.log("🔍 Widget type check:", {
     interruptType,
     widgetType: interrupt.value?.widget?.type,
+    attachmentId: interrupt.value?.metadata?.attachmentId,
     availableWidgets: Object.keys(componentMap),
     isWidgetTypeInMap: interrupt.value?.widget?.type in componentMap,
   });
 
-  // Check if the type exists in componentMap
+  // Handle widgetFromBE interrupt type
+  if (interruptType === "widgetFromBE") {
+    const attachmentId = interrupt.value?.metadata?.attachmentId;
+
+    if (attachmentId) {
+      const stream = useStreamContext();
+      const artifact = useArtifact();
+
+      // First try to find in current UI widgets
+      let matchingUIWidget = stream.values.ui?.find(
+        (ui) =>
+          ui.id === attachmentId || ui.metadata?.message_id === attachmentId,
+      );
+
+      // If not found in current UI widgets, try preserved widgets
+      if (!matchingUIWidget) {
+        matchingUIWidget = preservedUIWidgets.get(attachmentId);
+        console.log("🔍 Checking preserved widgets for:", attachmentId);
+        console.log("🔍 Found in preserved widgets:", matchingUIWidget);
+      }
+
+      console.log("🔍 All UI widgets:", JSON.stringify(stream.values.ui));
+      console.log(
+        "🔍 Preserved widgets:",
+        Array.from(preservedUIWidgets.keys()),
+      );
+      console.log("🔍 Looking for attachmentId:", attachmentId);
+      console.log("🔍 Matching widget found:", matchingUIWidget);
+
+      if (matchingUIWidget) {
+        debugLog("WidgetFromBE UI widget found", {
+          attachmentId,
+          uiWidget: matchingUIWidget,
+        });
+
+        return (
+          <LoadExternalComponent
+            key={matchingUIWidget.id}
+            stream={stream}
+            message={matchingUIWidget}
+            meta={{ ui: matchingUIWidget, artifact }}
+          />
+        );
+      }
+
+      debugLog("No widgetFromBE UI widget found", { attachmentId, interrupt });
+      console.log(
+        `No widgetFromBE UI widget found for attachmentId: ${attachmentId} and interrupt: ${JSON.stringify(interrupt)}`,
+      );
+      return null;
+    }
+
+    debugLog("No attachmentId found in widgetFromBE interrupt", { interrupt });
+    console.log(
+      `No attachmentId found in widgetFromBE interrupt: ${JSON.stringify(interrupt)}`,
+    );
+    return null;
+  }
+
+  // Check if the type exists in componentMap (existing logic for "widget" type)
   if (
     interruptType === "widget" &&
     interrupt.value.widget.type in componentMap

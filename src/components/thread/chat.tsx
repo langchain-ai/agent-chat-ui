@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import { FormEvent, ReactNode, useEffect, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
@@ -14,7 +14,6 @@ import {
 import { FlyoLogoSVG } from "../icons/langgraph";
 import { TooltipIconButton } from "./tooltip-icon-button";
 import {
-  ArrowDown,
   LoaderCircle,
   PanelRightClose,
   PanelRightOpen,
@@ -23,7 +22,7 @@ import {
   XIcon,
 } from "lucide-react";
 import { parseAsBoolean, useQueryState } from "nuqs";
-import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
+
 import ThreadHistory from "./history";
 import { toast } from "sonner";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
@@ -36,54 +35,17 @@ import {
   useArtifactContext,
   useArtifactOpen,
 } from "./artifact";
+import { LogoutButton } from "@/components/auth";
 import { getJwtToken, GetUserId } from "@/services/authService";
 import { updateThreadWithMessage } from "@/utils/thread-storage";
 import { InterruptManager } from "./messages/interrupt-manager";
 import { PersistentInterruptList } from "./messages/persistent-interrupt";
 import { useInterruptPersistenceContext } from "@/providers/InterruptPersistenceContext";
-import { GenericInterruptView } from "./messages/generic-interrupt";
+import {
+  GenericInterruptView,
+  UIWidgetPreserver,
+} from "./messages/generic-interrupt";
 import { NonAgentFlowReopenButton } from "./NonAgentFlowReopenButton";
-
-function StickyToBottomContent(props: {
-  content: ReactNode;
-  footer?: ReactNode;
-  className?: string;
-  contentClassName?: string;
-}) {
-  const context = useStickToBottomContext();
-  return (
-    <div
-      ref={context.scrollRef}
-      style={{ width: "100%", height: "100%" }}
-      className={props.className}
-    >
-      <div
-        ref={context.contentRef}
-        className={props.contentClassName}
-      >
-        {props.content}
-      </div>
-
-      {props.footer}
-    </div>
-  );
-}
-
-function ScrollToBottom(props: { className?: string }) {
-  const { isAtBottom, scrollToBottom } = useStickToBottomContext();
-
-  if (isAtBottom) return null;
-  return (
-    <Button
-      variant="outline"
-      className={props.className}
-      onClick={() => scrollToBottom()}
-    >
-      <ArrowDown className="h-4 w-4" />
-      <span>Scroll to bottom</span>
-    </Button>
-  );
-}
 
 // Add this utility function to filter out tool call messages with empty content
 function isDisplayableMessage(m: Message) {
@@ -246,6 +208,7 @@ export function Thread() {
         ...prev,
         context,
         messages: [...(prev.messages ?? []), ...toolMessages, newHumanMessage],
+        ui: prev.ui ?? [], // Preserve UI state
       }),
     };
 
@@ -298,9 +261,13 @@ export function Thread() {
     prevMessageLength.current = prevMessageLength.current - 1;
     setFirstTokenReceived(false);
     stream.submit(undefined, {
-      streamSubgraphs: true,
       checkpoint: parentCheckpoint,
       streamMode: ["updates"],
+      streamSubgraphs: true,
+      optimisticValues: (prev: any) => ({
+        ...prev,
+        ui: prev.ui ?? [], // Preserve UI state
+      }),
     });
   };
 
@@ -311,7 +278,8 @@ export function Thread() {
 
   return (
     <InterruptManager>
-      <div className="flex h-screen w-full overflow-hidden">
+      <UIWidgetPreserver />
+      <div className="flex h-full w-full overflow-hidden">
         <div className="relative hidden lg:flex">
           <motion.div
             className="absolute z-20 h-full overflow-hidden border-r bg-white"
@@ -363,151 +331,25 @@ export function Thread() {
                 : { duration: 0 }
             }
           >
-            {!chatStarted && (
-              <div className="absolute top-0 left-0 z-10 flex w-full items-center justify-between gap-3 py-2">
-                <div>
-                  {(!chatHistoryOpen || !isLargeScreen) && (
-                    <Button
-                      className="hover:bg-gray-100"
-                      variant="ghost"
-                      onClick={() => setChatHistoryOpen((p) => !p)}
-                    >
-                      {chatHistoryOpen ? (
-                        <PanelRightOpen className="size-5" />
-                      ) : (
-                        <PanelRightClose className="size-5" />
-                      )}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
-            {chatStarted && (
-              <div className="relative z-10 flex items-center justify-between gap-3 p-2">
-                <div className="relative flex items-center justify-start gap-2">
-                  <div className="absolute left-0 z-10">
-                    {(!chatHistoryOpen || !isLargeScreen) && (
-                      <Button
-                        className="hover:bg-gray-100"
-                        variant="ghost"
-                        onClick={() => setChatHistoryOpen((p) => !p)}
-                      >
-                        {chatHistoryOpen ? (
-                          <PanelRightOpen className="size-5" />
-                        ) : (
-                          <PanelRightClose className="size-5" />
-                        )}
-                      </Button>
-                    )}
+            <div className="flex h-full min-h-0 flex-col">
+              {!chatStarted ? (
+                // New thread layout - centered content
+                <div className="flex flex-1 flex-col items-center justify-center px-4">
+                  {/* Centered Logo */}
+                  <div className="mb-8 flex items-center justify-center">
+                    <FlyoLogoSVG
+                      width={120}
+                      height={120}
+                      className="sm:h-[150px] sm:w-[150px]"
+                    />
                   </div>
-                </div>
 
-                <div className="flex items-center gap-4">
-                  <TooltipIconButton
-                    size="lg"
-                    className="p-4"
-                    tooltip="New thread"
-                    variant="ghost"
-                    onClick={() => setThreadId(null)}
-                  >
-                    <SquarePen className="size-5" />
-                  </TooltipIconButton>
-                </div>
-
-                <div className="from-background to-background/0 absolute inset-x-0 top-full h-5 bg-gradient-to-b" />
-              </div>
-            )}
-
-            <StickToBottom className="relative flex-1 overflow-hidden">
-              <StickyToBottomContent
-                className={cn(
-                  "absolute inset-0 overflow-y-scroll px-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent",
-                  !chatStarted && "mt-[25vh] flex flex-col items-stretch",
-                  chatStarted && "grid grid-rows-[1fr_auto]",
-                )}
-                contentClassName="pt-8 pb-16  max-w-3xl mx-auto flex flex-col gap-4 w-full"
-                content={
-                  <>
-                    {messages
-                      .filter(isDisplayableMessage)
-                      .flatMap((message, index) => {
-                        const messageElement =
-                          message.type === "human" ? (
-                            <HumanMessage
-                              key={message.id || `${message.type}-${index}`}
-                              message={message}
-                              isLoading={isLoading}
-                            />
-                          ) : (
-                            <AssistantMessage
-                              key={message.id || `${message.type}-${index}`}
-                              message={message}
-                      isLoading={isLoading}
-                      handleRegenerate={handleRegenerate}
-                            />
-                          );
-
-                        // Check if there are any persisted interrupts associated with this message
-                        const messageInterrupts = message.id
-                          ? interruptPersistence.getInterruptsForMessage(
-                              message.id,
-                            )
-                          : [];
-
-                        // Return array of elements: message + persistent interrupts
-                        const elements = [messageElement];
-
-                        if (messageInterrupts.length > 0) {
-                          elements.push(
-                            <div
-                              key={`${message.id || `${message.type}-${index}`}-interrupts`}
-                              className="mt-2"
-                            >
-                              <PersistentInterruptList
-                                interrupts={messageInterrupts}
-                              />
-                            </div>,
-                          );
-                        }
-
-                        return elements;
-                      })}
-                    {/* Special rendering case where there are no AI/tool messages, but there is an interrupt. */}
-                    {hasNoAIOrToolMessages && !!stream.interrupt && (
-                      <AssistantMessage
-                        key="interrupt-msg"
-                        message={undefined}
-                        isLoading={isLoading}
-                        handleRegenerate={handleRegenerate}
-                      />
-                    )}
-                    {isLoading && <AssistantMessageLoading />}
-                    {/* Always render the interrupt widget at the end if present */}
-                    {console.log("🔍 Stream interrupt 1:", JSON.stringify(stream.values.ui))}
-                    {stream.interrupt && (
-                      <GenericInterruptView
-                        interrupt={stream.interrupt.value ?? {}}
-                      />
-                    )}
-                  </>
-                }
-                footer={
-                  <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-white">
-                    {!chatStarted && (
-                      <div className="flex items-center gap-3">
-                        <FlyoLogoSVG
-                          width={150}
-                          height={150}
-                        />
-                      </div>
-                    )}
-
-                    <ScrollToBottom className="animate-in fade-in-0 zoom-in-95 absolute bottom-full left-1/2 mb-4 -translate-x-1/2" />
-
+                  {/* Centered Chat Input */}
+                  <div className="w-full max-w-3xl">
                     <div
                       ref={dropRef}
                       className={cn(
-                        "bg-muted relative z-10 mx-auto mb-8 w-full max-w-3xl rounded-2xl shadow-xs transition-all",
+                        "bg-muted relative z-10 mx-auto w-full rounded-2xl shadow-xs transition-all",
                         dragOver
                           ? "border-primary border-2 border-dotted"
                           : "border border-solid",
@@ -539,34 +381,10 @@ export function Thread() {
                             }
                           }}
                           placeholder="Type your message..."
-                          className="field-sizing-content resize-none border-none bg-transparent p-3.5 pb-0 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none"
+                          className="field-sizing-content resize-none border-none bg-transparent p-2 pb-0 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none"
                         />
 
-                        <div className="flex items-center gap-6 p-2 pt-4">
-                          {/* <div>
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              id="render-tool-calls"
-                              checked={hideToolCalls ?? false}
-                              onCheckedChange={setHideToolCalls}
-                            />
-                            <Label
-                              htmlFor="render-tool-calls"
-                              className="text-sm text-gray-600"
-                            >
-                              Hide Tool Calls
-                            </Label>
-                          </div>
-                        </div> */}
-                          <Label
-                            htmlFor="file-input"
-                            className="flex cursor-pointer items-center gap-2"
-                          >
-                            <Plus className="size-5 text-gray-600" />
-                            <span className="text-sm text-gray-600">
-                              Upload PDF, Image, or Video
-                            </span>
-                          </Label>
+                        <div className="flex items-center gap-6 p-2 pt-2">
                           <input
                             id="file-input"
                             type="file"
@@ -600,9 +418,160 @@ export function Thread() {
                       </form>
                     </div>
                   </div>
-                }
-              />
-            </StickToBottom>
+                </div>
+              ) : (
+                // Chat started layout - messages at top, input at bottom
+                <>
+                  {/* Messages Area */}
+                  <div className="flex-1 overflow-y-auto scroll-smooth px-4 pt-8 pb-4">
+                    <div className="mx-auto flex max-w-3xl flex-col gap-4">
+                      {messages
+                        .filter(isDisplayableMessage)
+                        .flatMap((message, index) => {
+                          const messageElement =
+                            message.type === "human" ? (
+                              <HumanMessage
+                                key={message.id || `${message.type}-${index}`}
+                                message={message}
+                                isLoading={isLoading}
+                              />
+                            ) : (
+                              <AssistantMessage
+                                key={message.id || `${message.type}-${index}`}
+                                message={message}
+                                isLoading={isLoading}
+                                handleRegenerate={handleRegenerate}
+                              />
+                            );
+
+                          // Check if there are any persisted interrupts associated with this message
+                          const messageInterrupts = message.id
+                            ? interruptPersistence.getInterruptsForMessage(
+                                message.id,
+                              )
+                            : [];
+
+                          // Return array of elements: message + persistent interrupts
+                          const elements = [messageElement];
+
+                          if (messageInterrupts.length > 0) {
+                            elements.push(
+                              <div
+                                key={`${message.id || `${message.type}-${index}`}-interrupts`}
+                                className="mt-2"
+                              >
+                                <PersistentInterruptList
+                                  interrupts={messageInterrupts}
+                                />
+                              </div>,
+                            );
+                          }
+
+                          return elements;
+                        })}
+                      {/* Special rendering case where there are no AI/tool messages, but there is an interrupt. */}
+                      {hasNoAIOrToolMessages && !!stream.interrupt && (
+                        <AssistantMessage
+                          key="interrupt-msg"
+                          message={undefined}
+                          isLoading={isLoading}
+                          handleRegenerate={handleRegenerate}
+                        />
+                      )}
+                      {(() => {
+                        console.log(
+                          "🔍 Stream interrupt 2:",
+                          JSON.stringify(stream.values.ui),
+                        );
+                        return null;
+                      })()}
+                      {isLoading && <AssistantMessageLoading />}
+                      {/* Always render the interrupt widget at the end if present */}
+                      {stream.interrupt && (
+                        <GenericInterruptView
+                          interrupt={stream.interrupt.value ?? {}}
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Chat Input Area - Bottom */}
+                  <div className="flex flex-shrink-0 flex-col items-center gap-2 border-t bg-white px-4 py-2">
+                    <div
+                      ref={dropRef}
+                      className={cn(
+                        "bg-muted relative z-10 mx-auto w-full max-w-3xl rounded-2xl shadow-xs transition-all",
+                        dragOver
+                          ? "border-primary border-2 border-dotted"
+                          : "border border-solid",
+                      )}
+                    >
+                      <form
+                        onSubmit={handleSubmit}
+                        className="mx-auto grid max-w-3xl grid-rows-[1fr_auto] gap-2"
+                      >
+                        <ContentBlocksPreview
+                          blocks={contentBlocks}
+                          onRemove={removeBlock}
+                        />
+                        <textarea
+                          value={input}
+                          onChange={(e) => setInput(e.target.value)}
+                          onPaste={handlePaste}
+                          onKeyDown={(e) => {
+                            if (
+                              e.key === "Enter" &&
+                              !e.shiftKey &&
+                              !e.metaKey &&
+                              !e.nativeEvent.isComposing
+                            ) {
+                              e.preventDefault();
+                              const el = e.target as HTMLElement | undefined;
+                              const form = el?.closest("form");
+                              form?.requestSubmit();
+                            }
+                          }}
+                          placeholder="Type your message..."
+                          className="field-sizing-content resize-none border-none bg-transparent p-2 pb-0 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none"
+                        />
+
+                        <div className="flex items-center gap-6 p-2 pt-2">
+                          <input
+                            id="file-input"
+                            type="file"
+                            onChange={handleFileUpload}
+                            multiple
+                            accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
+                            className="hidden"
+                          />
+                          {stream.isLoading ? (
+                            <Button
+                              key="stop"
+                              onClick={() => stream.stop()}
+                              className="ml-auto"
+                            >
+                              <LoaderCircle className="h-4 w-4 animate-spin" />
+                              Cancel
+                            </Button>
+                          ) : (
+                            <Button
+                              type="submit"
+                              className="ml-auto shadow-md transition-all"
+                              disabled={
+                                isLoading ||
+                                (!input.trim() && contentBlocks.length === 0)
+                              }
+                            >
+                              Send
+                            </Button>
+                          )}
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </motion.div>
           <div className="relative flex flex-col border-l">
             <div className="absolute inset-0 flex min-w-[30vw] flex-col">
