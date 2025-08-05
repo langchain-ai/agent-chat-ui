@@ -163,6 +163,10 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
       return <Component {...interrupt.value.widget.args} />;
     }
 
+    if (interrupt.value.widget.type === "AddBaggageWidget") {
+      return <Component {...interrupt.value.widget.args} />;
+    }
+
     // For NonAgentFlowWidget, render in bottom sheet
     if (interrupt.value.widget.type === "NonAgentFlowWidget") {
       return (

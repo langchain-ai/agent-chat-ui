@@ -10,6 +10,7 @@ import SeatPreferenceWidget from "./seatPreference.widget";
 import SeatSelectionWidget from "./seatSelection.widget";
 import SeatPaymentWidget from "./seatPayment.widget";
 import SeatCombinedWidget from "./seatCombined.widget";
+import AddBaggageWidget from "./addBaggage.widget";
 
 export const componentMap = {
   SearchCriteriaWidget, // Add mapping for SearchCriteria type
@@ -24,6 +25,7 @@ export const componentMap = {
   SeatSelectionWidget, /// Visual seat map selection widget
   SeatPaymentWidget, /// Seat payment confirmation widget
   SeatCombinedWidget, /// Combined seat selection widget with all options
+  AddBaggageWidget, /// Baggage selection widget with weight and price options
 } as const;
 
 export type ComponentType = keyof typeof componentMap;
