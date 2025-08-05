@@ -35,6 +35,7 @@ export async function submitInterruptResponse(
     await thread.submit(
       { userId },
       {
+        streamSubgraphs: true,
         command: {
           resume: [
             {
