@@ -13,6 +13,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { VisuallyHidden } from "@/components/ui/visually-hidden";
 import { SquarePen, Grid3X3, X, MoreVertical } from "lucide-react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -223,6 +224,9 @@ export default function ThreadHistory() {
             side="left"
             className="flex w-[260px] flex-col p-0"
           >
+            <VisuallyHidden>
+              <SheetTitle>Chat History</SheetTitle>
+            </VisuallyHidden>
             {/* Header */}
             <div className="flex items-center justify-center border-b border-gray-200 p-1">
               <FlyoLogoSVG
