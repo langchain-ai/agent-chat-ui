@@ -17,13 +17,15 @@ import {
 import { useQueryState } from "nuqs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { LangGraphLogoSVG } from "@/components/icons/langgraph";
+import { FlyoLogoSVG } from "@/components/icons/langgraph";
 import { Label } from "@/components/ui/label";
 import { ArrowRight } from "lucide-react";
 import { PasswordInput } from "@/components/ui/password-input";
 import { getApiKey } from "@/lib/api-key";
 import { useThreads } from "./Thread";
 import { toast } from "sonner";
+import { storeThread } from "@/utils/thread-storage";
+import { InterruptPersistenceProvider } from "./InterruptPersistenceContext";
 
 export type StateType = { messages: Message[]; ui?: UIMessage[] };
 
@@ -93,10 +95,34 @@ const StreamSession = ({
       }
     },
     onThreadId: (id) => {
+      console.log("New thread ID created:", id);
       setThreadId(id);
+
+      // Store new thread in local storage immediately
+      storeThread({
+        thread_id: id,
+        assistant_id: assistantId,
+        title: "New Chat",
+        messages_count: 0,
+      });
+
       // Refetch threads list when thread ID changes.
       // Wait for some seconds before fetching so we're able to get the new thread that was created.
-      sleep().then(() => getThreads().then(setThreads).catch(console.error));
+      sleep().then(() => {
+        console.log("Refetching threads after new thread creation...");
+        getThreads()
+          .then((threads) => {
+            console.log(`Fetched ${threads.length} threads after creation`);
+            setThreads(threads);
+          })
+          .catch((error) => {
+            console.error("Failed to refetch threads:", error);
+          });
+      });
+    },
+    onUpdateEvent: (data) => {
+      // Log the complete data received from the LangGraph backend
+      console.log("LangGraph backend full update:", data);
     },
   });
 
@@ -119,9 +145,11 @@ const StreamSession = ({
   }, [apiKey, apiUrl]);
 
   return (
-    <StreamContext.Provider value={streamValue}>
-      {children}
-    </StreamContext.Provider>
+    <InterruptPersistenceProvider>
+      <StreamContext.Provider value={streamValue}>
+        {children}
+      </StreamContext.Provider>
+    </InterruptPersistenceProvider>
   );
 };
 
@@ -167,13 +195,10 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
         <div className="animate-in fade-in-0 zoom-in-95 bg-background flex max-w-3xl flex-col rounded-lg border shadow-lg">
           <div className="mt-14 flex flex-col gap-2 border-b p-6">
             <div className="flex flex-col items-start gap-2">
-              <LangGraphLogoSVG className="h-7" />
-              <h1 className="text-xl font-semibold tracking-tight">
-                Agent Chat
-              </h1>
+              <FlyoLogoSVG className="h-7" />
             </div>
             <p className="text-muted-foreground">
-              Welcome to Agent Chat! Before you get started, you need to enter
+              Welcome to Flyo Chat! Before you get started, you need to enter
               the URL of the deployment and the assistant / graph ID.
             </p>
           </div>
@@ -234,9 +259,9 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
               <Label htmlFor="apiKey">LangSmith API Key</Label>
               <p className="text-muted-foreground text-sm">
                 This is <strong>NOT</strong> required if using a local LangGraph
-                server. This value is stored in your browser's local storage and
-                is only used to authenticate requests sent to your LangGraph
-                server.
+                server. This value is stored in your browser&apos;s local
+                storage and is only used to authenticate requests sent to your
+                LangGraph server.
               </p>
               <PasswordInput
                 id="apiKey"

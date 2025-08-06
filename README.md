@@ -2,8 +2,33 @@
 
 Agent Chat UI is a Next.js application which enables chatting with any LangGraph server with a `messages` key through a chat interface.
 
+## Key Features
+
+- **🔄 Real-time Streaming**: Live streaming of AI responses with typing indicators
+- **📁 Multimodal Support**: Upload and process images, PDFs, and other files
+- **🎛️ Interactive Widgets**: Custom UI components triggered by agent interrupts
+- **📋 Agent Inbox**: Human-in-the-loop workflows with review and approval capabilities
+- **🎨 Rich Markdown**: Enhanced markdown rendering with syntax highlighting and math support
+- **📱 Responsive Design**: Optimized for both desktop and mobile experiences
+- **🔧 Customizable**: Easy to extend with custom widgets and styling
+- **🚀 Production Ready**: Built-in authentication and deployment support
+
 > [!NOTE]
 > 🎥 Watch the video setup guide [here](https://youtu.be/lInrwVnZ83o).
+
+## Table of Contents
+
+- [Setup](#setup)
+- [Usage](#usage)
+- [Environment Variables](#environment-variables)
+- [Hiding Messages in the Chat](#hiding-messages-in-the-chat)
+- [Enhanced Markdown and Code Rendering](#enhanced-markdown-and-code-rendering)
+- [Multimodal Support](#multimodal-support)
+- [Interactive Widgets and Interrupts](#interactive-widgets-and-interrupts)
+- [Agent Inbox](#agent-inbox)
+- [Rendering Artifacts](#rendering-artifacts)
+- [Development and Customization](#development-and-customization)
+- [Going to Production](#going-to-production)
 
 ## Setup
 
@@ -123,6 +148,177 @@ return { messages: [result] };
 
 This approach guarantees the message remains completely hidden from the user interface.
 
+## Enhanced Markdown and Code Rendering
+
+The Agent Chat UI provides rich markdown rendering with advanced features:
+
+### Markdown Features
+
+- **GitHub Flavored Markdown (GFM)**: Full support for tables, strikethrough, task lists, and more
+- **Math Rendering**: LaTeX math expressions using KaTeX
+- **Syntax Highlighting**: Code blocks with syntax highlighting for multiple languages
+- **Copy Code**: One-click copying of code blocks with a copy button
+- **Responsive Tables**: Tables that adapt to different screen sizes
+
+### Supported Languages
+
+The syntax highlighter supports popular programming languages including:
+
+- TypeScript/JavaScript (tsx, ts, js, jsx)
+- Python
+- Java
+- C/C++
+- Go
+- Rust
+- And many more
+
+### Code Block Features
+
+- **Language Detection**: Automatic language detection for syntax highlighting
+- **Dark Theme**: Professional dark theme for code blocks
+- **Line Numbers**: Optional line numbering for better readability
+- **Copy Functionality**: Easy copying of code snippets
+
+## Multimodal Support
+
+The Agent Chat UI supports multimodal conversations with file uploads and rich media handling:
+
+### Supported File Types
+
+- **Images**: JPEG, PNG, GIF, WebP
+- **Documents**: PDF files
+- **Future Support**: Video files (infrastructure ready)
+
+### Upload Methods
+
+1. **File Upload Button**: Click the "Upload PDF, Image, or Video" button to select files
+2. **Drag and Drop**: Drag files directly into the chat interface
+3. **Paste**: Paste images or files directly from your clipboard (Ctrl+V/Cmd+V)
+
+### Features
+
+- **Preview**: Visual previews of uploaded images and file icons for PDFs
+- **Duplicate Detection**: Prevents uploading the same file multiple times
+- **Error Handling**: Clear error messages for unsupported file types
+- **Removal**: Easy removal of uploaded files before sending
+- **Base64 Encoding**: Automatic conversion to base64 for LangGraph compatibility
+
+### Usage in Messages
+
+Uploaded files are automatically included in your messages to the LangGraph server as `Base64ContentBlock` objects, making them available for processing by your AI agents. Images can be analyzed, PDFs can be read and processed, enabling rich multimodal AI interactions.
+
+## Interactive Widgets and Interrupts
+
+The Agent Chat UI supports interactive widgets that can be triggered by your LangGraph server using interrupts. This allows your agent to pause execution and display custom UI components for user interaction.
+
+### Widget System
+
+The application includes several built-in widgets for common use cases:
+
+- **SearchCriteriaWidget**: For collecting search parameters and filters
+- **FlightOptionsWidget**: For displaying flight search results with booking options
+- **FlightStatusWidget**: For showing flight status information
+- **LoungeWidget**: For displaying airport lounge information
+- **WeatherWidget**: For showing weather information
+- **TravelerDetailsWidget**: For collecting traveler information and booking details
+- **NonAgentFlowWidget**: For handling payment flow with prePayment API, Razorpay integration, and transaction verification
+
+### Using Interrupts
+
+To trigger a widget from your LangGraph server, use the `interrupt()` function:
+
+```typescript
+// Server-side interrupt
+const result = interrupt({
+  value: {
+    interrupt_id: "unique-id-here",
+    type: "SearchCriteriaWidget",
+    searchCriteria: searchCriteria,
+    selectedTravellers: selectedTravellers,
+  },
+});
+
+// NonAgentFlowWidget example
+const result = interrupt({
+  value: {
+    interrupt_id: "payment-flow-id",
+    type: "NonAgentFlowWidget",
+    args: {
+      tripId: "Tswodli37",
+      flightItinerary: {
+        userContext: {
+          userDetails: primaryTraveller,
+          userId: userId,
+        },
+        selectionContext: {
+          selectedFlightOffers: selectedOffers,
+        },
+      },
+      itinId: "itin123",
+    },
+  },
+});
+```
+
+The client will automatically render the appropriate widget based on the `type` field and display it as a bottom sheet overlay with a close button.
+
+### Widget Features
+
+- **Bottom Sheet Display**: Widgets automatically render as overlay bottom sheets
+- **Responsive Design**: Two-column layout on desktop, single column on mobile
+- **Data Pre-filling**: Widgets can pre-fill forms with data from the interrupt
+- **Streaming Support**: Widgets can handle streamed API response data
+- **Interactive Forms**: Full form validation and submission capabilities
+
+For detailed documentation on handling interrupts, see the [interrupt documentation](documentation/interrupt.md).
+
+## Agent Inbox
+
+The Agent Chat UI includes an Agent Inbox feature for managing human-in-the-loop workflows. This allows agents to pause execution and wait for human review, approval, or input before continuing.
+
+### Features
+
+- **Thread Management**: View and manage multiple conversation threads
+- **Human Review**: Review agent responses before they are sent
+- **State Inspection**: View the current state of the agent's workflow
+- **Interrupt Handling**: Respond to agent interrupts with custom actions
+- **Status Tracking**: Monitor thread status (in-queue, processing, human-in-the-loop, done)
+
+### Usage
+
+The Agent Inbox automatically appears when your LangGraph server sends interrupts that require human intervention. Users can:
+
+1. **Review**: Examine the agent's proposed actions or responses
+2. **Edit**: Modify the agent's output before approval
+3. **Accept**: Approve the agent's actions to continue execution
+4. **Respond**: Provide additional input or instructions to the agent
+
+## Development and Customization
+
+### Custom Widgets
+
+You can create custom widgets for your specific use cases by:
+
+1. **Creating Widget Components**: Add new widget components in `src/components/widgets/`
+2. **Registering Widgets**: Update the `componentMap` in `src/components/widgets/index.ts`
+3. **Server Integration**: Use the interrupt system to trigger your custom widgets
+
+### Styling and Theming
+
+The application uses:
+
+- **Tailwind CSS**: For utility-first styling
+- **Shadcn/ui**: For consistent UI components
+- **Custom CSS**: For specialized styling needs
+- **Responsive Design**: Mobile-first approach with desktop enhancements
+
+### API Integration
+
+- **LangGraph SDK**: Built-in integration with LangGraph servers
+- **Streaming Support**: Real-time message streaming
+- **Error Handling**: Comprehensive error handling and user feedback
+- **Authentication**: Support for both development and production authentication methods
+
 ## Rendering Artifacts
 
 The Agent Chat UI supports rendering artifacts in the chat. Artifacts are rendered in a side panel to the right of the chat. To render an artifact, you can obtain the artifact context from the `thread.meta.artifact` field. Here's a sample utility hook for obtaining the artifact context:
@@ -177,7 +373,7 @@ export function Writer(props: {
       </div>
 
       <Artifact title={props.title}>
-        <p className="p-4 whitespace-pre-wrap">{props.content}</p>
+        <p className="whitespace-pre-wrap p-4">{props.content}</p>
       </Artifact>
     </>
   );

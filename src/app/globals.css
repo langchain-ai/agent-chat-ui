@@ -148,4 +148,146 @@
   .shadow-inner-left {
     box-shadow: inset 9px 0 6px -1px rgb(0 0 0 / 0.02);
   }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Ensure no horizontal overflow on all screen sizes */
+  .flight-carousel-container {
+    max-width: 100vw;
+    overflow-x: hidden;
+    box-sizing: border-box;
+  }
+
+  /* Prevent any element from causing horizontal scroll */
+  html,
+  body {
+    overflow-x: hidden;
+    max-width: 100vw;
+    box-sizing: border-box;
+  }
+
+  /* Ensure all elements respect box-sizing */
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  /* ULTRA AGGRESSIVE IMAGE SIZE CONTROL - SMALL CIRCULAR ICONS */
+  /* This will override ANY image styling */
+  html body * img,
+  html body img,
+  img,
+  [src*="data:image"] {
+    max-width: 48px !important;
+    width: 48px !important;
+    height: 48px !important;
+    max-height: 48px !important;
+    object-fit: cover !important;
+    border-radius: 50% !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    display: inline-block !important;
+    margin: 0.5rem !important;
+  }
+
+  /* Even more specific selectors for stubborn images */
+  div img,
+  span img,
+  p img,
+  article img,
+  section img,
+  main img,
+  .markdown-content img,
+  [class*="message"] img,
+  [class*="content"] img,
+  [class*="thread"] img {
+    max-width: 48px !important;
+    width: 48px !important;
+    height: 48px !important;
+    max-height: 48px !important;
+    object-fit: cover !important;
+    border-radius: 50% !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    display: inline-block !important;
+    margin: 0.5rem !important;
+  }
+
+  /* Target Next.js Image components specifically */
+  img[src*="data:"],
+  img[src*="http"],
+  img[src*="blob:"],
+  img[src*="/"],
+  span[style*="position"] img,
+  div[style*="position"] img {
+    max-width: 48px !important;
+    width: 48px !important;
+    height: 48px !important;
+    max-height: 48px !important;
+    object-fit: cover !important;
+    border-radius: 50% !important;
+  }
+
+  /* Responsive sizing with higher specificity - smaller on mobile */
+  @media (max-width: 768px) {
+    html body * img,
+    html body img,
+    img,
+    div img,
+    span img,
+    p img {
+      max-width: 40px !important;
+      width: 40px !important;
+      height: 40px !important;
+      max-height: 40px !important;
+    }
+  }
+
+  @media (max-width: 480px) {
+    html body * img,
+    html body img,
+    img,
+    div img,
+    span img,
+    p img {
+      max-width: 32px !important;
+      width: 32px !important;
+      height: 32px !important;
+      max-height: 32px !important;
+    }
+  }
+
+  /* Override any inline styles */
+  img[style] {
+    max-width: 48px !important;
+    width: 48px !important;
+    height: 48px !important;
+    max-height: 48px !important;
+    object-fit: cover !important;
+    border-radius: 50% !important;
+  }
+
+  @media (max-width: 768px) {
+    img[style] {
+      max-width: 40px !important;
+      width: 40px !important;
+      height: 40px !important;
+      max-height: 40px !important;
+    }
+  }
+
+  @media (max-width: 480px) {
+    img[style] {
+      max-width: 32px !important;
+      width: 32px !important;
+      height: 32px !important;
+      max-height: 32px !important;
+    }
+  }
 }
