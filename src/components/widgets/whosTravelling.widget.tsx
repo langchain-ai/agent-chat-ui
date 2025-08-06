@@ -70,11 +70,41 @@ interface SavedPassenger {
   gender: string;
   dateOfBirth: string;
   type?: 'adult' | 'child' | 'infant';
+  title?: string; // Added title field for salutation-based gender derivation
   email?: string;
   phone?: Phone[];
   documents?: Document[];
   nationality?: string;
 }
+  // Helper function to derive gender from salutation/title
+  const deriveGender = (title?: string, existingGender?: string): string => {
+    if (existingGender && existingGender.trim()) {
+      return existingGender.trim().toUpperCase();
+    }
+
+    if (!title || !title.trim()) {
+      return 'MALE'; // Default to MALE if no title available
+    }
+
+    const titleLower = title.toLowerCase().trim();
+
+    // Female titles/salutations
+    const femaleTitles = ['ms.', 'mrs.', 'miss', 'ms', 'mrs'];
+
+    // Male titles/salutations
+    const maleTitles = ['mr.', 'mr', 'master'];
+
+    if (femaleTitles.includes(titleLower)) {
+      return 'FEMALE';
+    }
+
+    if (maleTitles.includes(titleLower)) {
+      return 'MALE';
+    }
+
+    // Default to MALE if title is not recognized
+    return 'MALE';
+  };
 
 interface NewPassenger {
   title: string;
@@ -262,11 +292,15 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
 
   // Convert savedTravellers to SavedPassenger format - all saved passengers are adults by default
   const savedPassengers: SavedPassenger[] = savedTravellersData.map((traveller: SavedTraveller) => {
+    // Derive title from existing gender if available
+    const derivedTitle = traveller.gender?.toLowerCase() === 'female' ? 'Ms.' : 'Mr.';
+
     return {
       id: traveller.travellerId.toString(),
       firstName: traveller.firstName,
       lastName: traveller.lastName,
-      gender: traveller.gender,
+      gender: traveller.gender || deriveGender(derivedTitle, traveller.gender), // Ensure gender is always set
+      title: derivedTitle, // Set title based on existing gender
       dateOfBirth: traveller.dateOfBirth,
       type: 'adult', // All saved passengers are shown in adult section only
       email: traveller.email,
@@ -292,8 +326,7 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
   };
 
   const flightPrice = getFlightOfferPrice();
-  const totalPassengers = numberOfTravellers.adults + numberOfTravellers.children + numberOfTravellers.infants;
-  const totalAmount = flightPrice.amount * totalPassengers;
+  const totalAmount = flightPrice.amount; // Display original price without multiplication
   const currency = flightPrice.currency;
 
   // Date validation helpers
@@ -388,7 +421,8 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
 
   // Validation function to check if passenger has missing required fields
   const hasIncompleteInfo = (passenger: SavedPassenger): boolean => {
-    const requiredFields = ['firstName', 'lastName', 'gender', 'dateOfBirth'];
+    // Core required fields - gender is derived automatically so not strictly required for validation
+    const requiredFields = ['firstName', 'lastName', 'dateOfBirth'];
     const internationalFields = isInternational && passenger.documents?.length ? [] :
       isInternational ? ['documents'] : [];
     const allRequiredFields = [...requiredFields, ...internationalFields];
@@ -397,12 +431,21 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
       if (field === 'documents') {
         return !passenger.documents || passenger.documents.length === 0;
       }
-      return !passenger[field as keyof SavedPassenger];
+      const value = passenger[field as keyof SavedPassenger];
+      // Check for null, undefined, empty string, or whitespace-only string
+      return !value || (typeof value === 'string' && value.trim() === '');
     });
   };
 
   const getPassengersByType = (type: 'adult' | 'child' | 'infant') => {
     return savedPassengers.filter((p: SavedPassenger) => p.type === type);
+  };
+
+  // Helper function to get the most current passenger data (updated or original)
+  const getCurrentPassengerData = (passengerId: string): SavedPassenger | null => {
+    const selectedPassenger = selectedPassengers[passengerId];
+    const originalPassenger = savedPassengers.find(p => p.id === passengerId);
+    return selectedPassenger || originalPassenger || null;
   };
 
   const getSelectedCount = (type: 'adult' | 'child' | 'infant') => {
@@ -453,7 +496,14 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
     setShowAddPassengerModal(true);
   };
 
-  const handleEditPassenger = (passenger: SavedPassenger) => {
+  const handleEditPassenger = (passengerId: string) => {
+    // Get the most recent passenger data - check selectedPassengers first, then fall back to savedPassengers
+    const selectedPassenger = selectedPassengers[passengerId];
+    const originalPassenger = savedPassengers.find(p => p.id === passengerId);
+    const passenger = selectedPassenger || originalPassenger;
+
+    if (!passenger) return;
+
     setEditingPassenger(passenger);
 
     // Initialize nationality and issuing country from passenger's documents if available
@@ -525,6 +575,20 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
   const handleSaveEditedPassenger = () => {
     if (!editingPassenger) return;
 
+    // Create a proper copy of the passenger data to avoid mutation
+    const trimmedFirstName = editingPassenger.firstName?.trim() || '';
+    const trimmedLastName = editingPassenger.lastName?.trim() || '';
+    const trimmedDateOfBirth = editingPassenger.dateOfBirth?.trim() || '';
+
+    const updatedPassenger: SavedPassenger = {
+      ...editingPassenger,
+      // Ensure all string fields are trimmed
+      firstName: trimmedFirstName,
+      lastName: trimmedLastName,
+      gender: deriveGender(editingPassenger.title, editingPassenger.gender), // Derive gender from title
+      dateOfBirth: trimmedDateOfBirth,
+    };
+
     // Update nationality and issuing country in documents if they exist
     if (editingPassenger.documents && editingPassenger.documents.length > 0) {
       const updatedDocuments = editingPassenger.documents.map(doc => ({
@@ -532,12 +596,12 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
         nationality: editSelectedNationality.code,
         issuingCountry: editSelectedIssuingCountry.code,
       }));
-      editingPassenger.documents = updatedDocuments;
+      updatedPassenger.documents = updatedDocuments;
     }
 
     setSelectedPassengers(prev => ({
       ...prev,
-      [editingPassenger.id]: editingPassenger
+      [updatedPassenger.id]: updatedPassenger
     }));
     setShowEditModal(false);
     setEditingPassenger(null);
@@ -698,37 +762,39 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
           </div>
 
           <div className="space-y-2">
-            {getPassengersByType('adult').slice(0, showAllPassengers ? undefined : 2).map((passenger) => (
+            {getPassengersByType('adult').slice(0, showAllPassengers ? undefined : 2).map((originalPassenger) => {
+              const currentPassenger = getCurrentPassengerData(originalPassenger.id) || originalPassenger;
+              return (
               <div
-                key={passenger.id}
+                key={originalPassenger.id}
                 className={cn(
                   "flex items-center justify-between p-3 border-2 rounded-xl transition-all duration-200 hover:shadow-md",
-                  isPassengerSelected(passenger.id)
+                  isPassengerSelected(originalPassenger.id)
                     ? "border-black bg-gray-50"
                     : "border-gray-200 hover:border-gray-300"
                 )}
               >
                 <div
                   className="flex items-center space-x-2 flex-1 cursor-pointer"
-                  onClick={() => handlePassengerToggle(passenger)}
+                  onClick={() => handlePassengerToggle(originalPassenger)}
                 >
                   <div
                     className={cn(
                       "w-4 h-4 rounded border-2 flex items-center justify-center",
-                      isPassengerSelected(passenger.id)
+                      isPassengerSelected(originalPassenger.id)
                         ? "bg-black border-black"
                         : "border-gray-300"
                     )}
                   >
-                    {isPassengerSelected(passenger.id) && (
+                    {isPassengerSelected(originalPassenger.id) && (
                       <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
                     )}
                   </div>
                   <div className="flex items-center space-x-2">
                     <span className="font-medium text-black text-sm">
-                      {passenger.firstName} {passenger.lastName}
+                      {currentPassenger.firstName} {currentPassenger.lastName}
                     </span>
-                    {hasIncompleteInfo(passenger) && (
+                    {hasIncompleteInfo(currentPassenger) && (
                       <div title="Incomplete information">
                         <AlertCircle className="w-3 h-3 text-red-500" />
                       </div>
@@ -737,10 +803,11 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
                 </div>
                 <Edit
                   className="w-3 h-3 text-gray-400 cursor-pointer hover:text-gray-600"
-                  onClick={() => handleEditPassenger(passenger)}
+                  onClick={() => handleEditPassenger(originalPassenger.id)}
                 />
               </div>
-            ))}
+              );
+            })}
 
             {/* Display new passengers */}
             {Object.entries(newPassengers)
@@ -766,13 +833,13 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
               </div>
             ))}
 
-            {!showAllPassengers && getPassengersByType('adult').length > 2 && (
+            {getPassengersByType('adult').length > 2 && (
               <Button
-                onClick={() => setShowAllPassengers(true)}
+                onClick={() => setShowAllPassengers(!showAllPassengers)}
                 variant="ghost"
                 className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-sm py-2"
               >
-                View all saved travellers
+                {showAllPassengers ? 'Collapse list' : 'View all saved travellers'}
               </Button>
             )}
           </div>
@@ -797,37 +864,39 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
           </div>
 
           <div className="space-y-2">
-            {getPassengersByType('child').slice(0, showAllPassengers ? undefined : 2).map((passenger) => (
+            {getPassengersByType('child').slice(0, showAllPassengers ? undefined : 2).map((originalPassenger) => {
+              const currentPassenger = getCurrentPassengerData(originalPassenger.id) || originalPassenger;
+              return (
               <div
-                key={passenger.id}
+                key={originalPassenger.id}
                 className={cn(
                   "flex items-center justify-between p-3 border-2 rounded-xl transition-all duration-200 hover:shadow-md",
-                  isPassengerSelected(passenger.id)
+                  isPassengerSelected(originalPassenger.id)
                     ? "border-black bg-gray-50"
                     : "border-gray-200 hover:border-gray-300"
                 )}
               >
                 <div
                   className="flex items-center space-x-2 flex-1 cursor-pointer"
-                  onClick={() => handlePassengerToggle(passenger)}
+                  onClick={() => handlePassengerToggle(originalPassenger)}
                 >
                   <div
                     className={cn(
                       "w-4 h-4 rounded border-2 flex items-center justify-center",
-                      isPassengerSelected(passenger.id)
+                      isPassengerSelected(originalPassenger.id)
                         ? "bg-black border-black"
                         : "border-gray-300"
                     )}
                   >
-                    {isPassengerSelected(passenger.id) && (
+                    {isPassengerSelected(originalPassenger.id) && (
                       <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
                     )}
                   </div>
                   <div className="flex items-center space-x-2">
                     <span className="font-medium text-black text-sm">
-                      {passenger.firstName} {passenger.lastName}
+                      {currentPassenger.firstName} {currentPassenger.lastName}
                     </span>
-                    {hasIncompleteInfo(passenger) && (
+                    {hasIncompleteInfo(currentPassenger) && (
                       <div title="Incomplete information">
                         <AlertCircle className="w-3 h-3 text-red-500" />
                       </div>
@@ -836,10 +905,11 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
                 </div>
                 <Edit
                   className="w-3 h-3 text-gray-400 cursor-pointer hover:text-gray-600"
-                  onClick={() => handleEditPassenger(passenger)}
+                  onClick={() => handleEditPassenger(originalPassenger.id)}
                 />
               </div>
-            ))}
+              );
+            })}
 
             {/* Display new child passengers */}
             {Object.entries(newPassengers)
@@ -886,37 +956,39 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
           </div>
 
           <div className="space-y-3">
-            {getPassengersByType('infant').slice(0, showAllPassengers ? undefined : 2).map((passenger) => (
+            {getPassengersByType('infant').slice(0, showAllPassengers ? undefined : 2).map((originalPassenger) => {
+              const currentPassenger = getCurrentPassengerData(originalPassenger.id) || originalPassenger;
+              return (
               <div
-                key={passenger.id}
+                key={originalPassenger.id}
                 className={cn(
                   "flex items-center justify-between p-4 border-2 rounded-xl transition-all duration-200 hover:shadow-md",
-                  isPassengerSelected(passenger.id)
+                  isPassengerSelected(originalPassenger.id)
                     ? "border-black bg-gray-50"
                     : "border-gray-200 hover:border-gray-300"
                 )}
               >
                 <div
                   className="flex items-center space-x-3 flex-1 cursor-pointer"
-                  onClick={() => handlePassengerToggle(passenger)}
+                  onClick={() => handlePassengerToggle(originalPassenger)}
                 >
                   <div
                     className={cn(
                       "w-5 h-5 rounded border-2 flex items-center justify-center",
-                      isPassengerSelected(passenger.id)
+                      isPassengerSelected(originalPassenger.id)
                         ? "bg-black border-black"
                         : "border-gray-300"
                     )}
                   >
-                    {isPassengerSelected(passenger.id) && (
+                    {isPassengerSelected(originalPassenger.id) && (
                       <div className="w-2 h-2 bg-white rounded-full"></div>
                     )}
                   </div>
                   <div className="flex items-center space-x-2">
                     <span className="font-medium text-black">
-                      {passenger.firstName} {passenger.lastName}
+                      {currentPassenger.firstName} {currentPassenger.lastName}
                     </span>
-                    {hasIncompleteInfo(passenger) && (
+                    {hasIncompleteInfo(currentPassenger) && (
                       <div title="Incomplete information">
                         <AlertCircle className="w-4 h-4 text-red-500" />
                       </div>
@@ -925,10 +997,11 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
                 </div>
                 <Edit
                   className="w-4 h-4 text-gray-400 cursor-pointer hover:text-gray-600"
-                  onClick={() => handleEditPassenger(passenger)}
+                  onClick={() => handleEditPassenger(originalPassenger.id)}
                 />
               </div>
-            ))}
+              );
+            })}
 
             {/* Display new infant passengers */}
             {Object.entries(newPassengers)
@@ -1154,6 +1227,25 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
           <div className="flex-1 overflow-auto px-6 py-4">
             {editingPassenger && (
               <div className="space-y-4 max-w-md mx-auto">
+              {/* Title Selection */}
+              <div className="flex space-x-2">
+                {['Mr.', 'Ms.', 'Mrs.'].map((title) => (
+                  <Button
+                    key={title}
+                    onClick={() => setEditingPassenger(prev => prev ? { ...prev, title } : null)}
+                    variant={editingPassenger.title === title ? "default" : "outline"}
+                    className={cn(
+                      "px-4 py-2 rounded-xl",
+                      editingPassenger.title === title
+                        ? "bg-black text-white"
+                        : "border-2 border-gray-300 text-black hover:bg-gray-50"
+                    )}
+                  >
+                    {title}
+                  </Button>
+                ))}
+              </div>
+
               <Input
                 placeholder="First Name"
                 value={editingPassenger.firstName}
