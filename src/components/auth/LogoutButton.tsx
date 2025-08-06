@@ -3,6 +3,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { logout } from "@/services/authService";
+import { cn } from "@/lib/utils";
 
 interface LogoutButtonProps {
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | "brand";
@@ -26,7 +27,7 @@ const LogoutButton: React.FC<LogoutButtonProps> = ({
       onClick={handleLogout}
       variant={variant}
       size={size}
-      className={className}
+      className={cn(className,'w-full')}
     >
       Logout
     </Button>

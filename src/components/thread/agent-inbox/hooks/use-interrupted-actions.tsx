@@ -96,6 +96,7 @@ export default function useInterruptedActions({
       thread.submit(
         submissionData,
         {
+          streamSubgraphs: true,
           command: {
             resume: response,
           },
@@ -267,6 +268,7 @@ export default function useInterruptedActions({
       thread.submit(
         {},
         {
+          streamSubgraphs: true,
           command: {
             goto: END,
           },
