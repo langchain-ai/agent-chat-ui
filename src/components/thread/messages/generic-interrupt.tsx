@@ -64,6 +64,7 @@ const TravelerDetailsBottomSheet: React.FC<{ apiData: any; args: any }> = ({
   apiData,
   args,
 }) => {
+  console.log('args:', JSON.stringify(args.bookingRequirements,null,2));
   const [isOpen, setIsOpen] = useState(true);
 
   // Get the actual ReviewWidget component
@@ -75,30 +76,10 @@ const TravelerDetailsBottomSheet: React.FC<{ apiData: any; args: any }> = ({
   };
 
   return (
-    <Sheet
-      open={isOpen}
-      onOpenChange={setIsOpen}
-    >
-      <SheetContent
-        side="bottom"
-        className="flex h-[90vh] flex-col overflow-hidden p-0 sm:h-[85vh]"
-      >
-        <SheetHeader className="flex-shrink-0 border-b border-gray-200 px-6 py-4">
-          <SheetTitle className="text-xl font-semibold">
-            Review Your Booking
-          </SheetTitle>
-        </SheetHeader>
-
-        <div className="flex-1 overflow-auto">
           <ReviewWidget
             apiData={apiData}
             {...args}
-            isInBottomSheet={true}
-            onClose={handleClose}
           />
-        </div>
-      </SheetContent>
-    </Sheet>
   );
 };
 
@@ -244,6 +225,7 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
 
     // For TravelerDetailsWidget, render in bottom sheet
     if (interrupt.value.widget.type === "TravelerDetailsWidget") {
+      console.log('interrupt: ',JSON.stringify(interrupt.value.widget.args, null, 2));
       return (
         <TravelerDetailsBottomSheet
           apiData={interrupt}
