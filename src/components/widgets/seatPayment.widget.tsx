@@ -84,13 +84,13 @@ const SeatPaymentWidget: React.FC<SeatPaymentWidgetProps> = (args) => {
     return (
       <div className="mx-auto mt-2 w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 font-sans shadow-lg">
         <div className="text-center py-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4 animate-pulse">
-            <CreditCard className="w-8 h-8 text-blue-600" />
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-black animate-pulse">
+            <CreditCard className="h-6 w-6 text-white" />
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Processing Payment</h2>
-          <p className="text-gray-600">Please wait while we process your payment...</p>
+          <h2 className="text-xl font-bold text-black mb-2">Processing Payment</h2>
+          <p className="text-sm text-gray-600">Please wait while we process your payment...</p>
           <div className="mt-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-black border-t-transparent mx-auto"></div>
           </div>
         </div>
       </div>
@@ -101,13 +101,13 @@ const SeatPaymentWidget: React.FC<SeatPaymentWidgetProps> = (args) => {
     return (
       <div className="mx-auto mt-2 w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 font-sans shadow-lg">
         <div className="text-center py-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-            <CheckCircle className="w-8 h-8 text-green-600" />
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-black">
+            <CheckCircle className="h-6 w-6 text-white" />
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Payment Successful!</h2>
-          <p className="text-gray-600 mb-4">Your seat {seatNumber} has been reserved.</p>
-          <div className="bg-green-50 rounded-lg p-4">
-            <p className="text-green-800 font-medium">Amount Paid: {currency}{amount}</p>
+          <h2 className="text-xl font-bold text-black mb-2">Payment Successful!</h2>
+          <p className="text-sm text-gray-600 mb-4">Your seat {seatNumber} has been reserved.</p>
+          <div className="bg-gray-50 rounded-lg p-3">
+            <p className="text-black font-semibold">Amount Paid: {currency}{amount}</p>
           </div>
         </div>
       </div>
@@ -117,49 +117,31 @@ const SeatPaymentWidget: React.FC<SeatPaymentWidgetProps> = (args) => {
   return (
     <div className="mx-auto mt-2 w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 font-sans shadow-lg">
       <div className="mb-6 text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
-          <span className="text-2xl font-bold text-blue-600">{seatNumber}</span>
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-black">
+          <span className="text-lg font-bold text-white">{seatNumber}</span>
         </div>
 
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">Seat Payment</h2>
-        <p className="text-gray-600 mb-4">
+        <h2 className="text-xl font-bold text-black">Seat Payment</h2>
+        <p className="mt-1 text-sm text-gray-600">
           Complete your payment for seat {seatNumber}
         </p>
       </div>
 
       {/* Seat Details Card */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 mb-6 border border-blue-100">
-        <div className="flex items-center justify-between mb-3">
+      <div className="rounded-lg bg-gray-50 p-4 mb-6 border border-gray-200">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-              <Plane className="w-4 h-4 text-white" />
+            <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center">
+              <Plane className="w-5 h-5 text-white" />
             </div>
             <div>
-              <div className="font-semibold text-gray-900">Seat {seatNumber}</div>
-              <div className="text-sm text-gray-600">Premium Selection</div>
+              <div className="font-semibold text-black">Seat {seatNumber}</div>
+              <div className="text-xs text-gray-600">Premium Selection</div>
             </div>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-bold text-gray-900">{currency}{amount}</div>
-            <div className="text-sm text-gray-500">Total Amount</div>
-          </div>
-        </div>
-
-        {/* Payment Benefits */}
-        <div className="border-t border-blue-200 pt-3 mt-3">
-          <div className="text-sm text-gray-600">
-            <div className="flex items-center gap-2 mb-1">
-              <CheckCircle className="w-4 h-4 text-green-500" />
-              <span>Guaranteed seat reservation</span>
-            </div>
-            <div className="flex items-center gap-2 mb-1">
-              <CheckCircle className="w-4 h-4 text-green-500" />
-              <span>Priority boarding</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-green-500" />
-              <span>Free cancellation up to 24hrs</span>
-            </div>
+            <div className="text-lg font-bold text-black">{currency} {amount}</div>
+            <div className="text-xs text-gray-500">Total Amount</div>
           </div>
         </div>
       </div>
@@ -168,20 +150,38 @@ const SeatPaymentWidget: React.FC<SeatPaymentWidgetProps> = (args) => {
         <Button
           onClick={handlePaymentConfirm}
           disabled={isLoading}
-          className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-4 rounded-lg text-base flex items-center justify-center gap-2 shadow-lg disabled:opacity-75"
+          className="w-full rounded-xl bg-black py-3 text-white transition-all duration-200 hover:bg-gray-800 disabled:bg-gray-300 disabled:text-gray-500"
         >
-          <CreditCard className="w-5 h-5" />
-          {isLoading ? "Processing..." : `Pay ${currency}${amount} Now`}
+          {isLoading ? (
+            <div className="flex items-center justify-center space-x-2">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+              <span>Processing...</span>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center space-x-2">
+              <CreditCard className="w-5 h-5" />
+              <span>Pay {currency} {amount} Now</span>
+            </div>
+          )}
         </Button>
 
         <Button
           onClick={handlePaymentCancel}
           disabled={isLoading}
           variant="outline"
-          className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 font-medium py-3 rounded-lg text-base flex items-center justify-center gap-2 disabled:opacity-50"
+          className="w-full rounded-xl border-2 border-gray-300 text-black hover:bg-gray-50 hover:border-gray-400 disabled:bg-gray-100 disabled:text-gray-400"
         >
-          <X className="w-5 h-5" />
-          {isLoading ? "Cancelling..." : "Skip Payment"}
+          {isLoading ? (
+            <div className="flex items-center justify-center space-x-2">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-400 border-t-transparent"></div>
+              <span>Cancelling...</span>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center space-x-2">
+              <X className="w-5 h-5" />
+              <span>Skip Payment</span>
+            </div>
+          )}
         </Button>
       </div>
     </div>
