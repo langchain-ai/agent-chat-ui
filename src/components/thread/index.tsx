@@ -314,14 +314,14 @@ export function Thread() {
       <div className="flex h-screen w-full overflow-hidden">
         <div className="relative hidden lg:flex">
           <motion.div
-            className="absolute z-20 h-full overflow-hidden border-r bg-white"
-            style={{ width: 300 }}
+            className="absolute z-20 h-full overflow-hidden border-r border-gray-200 bg-white"
+            style={{ width: 260 }}
             animate={
               isLargeScreen
-                ? { x: chatHistoryOpen ? 0 : -300 }
-                : { x: chatHistoryOpen ? 0 : -300 }
+                ? { x: chatHistoryOpen ? 0 : -260 }
+                : { x: chatHistoryOpen ? 0 : -260 }
             }
-            initial={{ x: -300 }}
+            initial={{ x: -260 }}
             transition={
               isLargeScreen
                 ? { type: "spring", stiffness: 300, damping: 30 }
@@ -330,7 +330,7 @@ export function Thread() {
           >
             <div
               className="relative h-full"
-              style={{ width: 300 }}
+              style={{ width: 260 }}
             >
               <ThreadHistory />
             </div>
@@ -350,10 +350,10 @@ export function Thread() {
             )}
             layout={isLargeScreen}
             animate={{
-              marginLeft: chatHistoryOpen ? (isLargeScreen ? 300 : 0) : 0,
+              marginLeft: chatHistoryOpen ? (isLargeScreen ? 260 : 0) : 0,
               width: chatHistoryOpen
                 ? isLargeScreen
-                  ? "calc(100% - 300px)"
+                  ? "calc(100% - 260px)"
                   : "100%"
                 : "100%",
             }}
@@ -364,18 +364,18 @@ export function Thread() {
             }
           >
             {!chatStarted && (
-              <div className="absolute top-0 left-0 z-10 flex w-full items-center justify-between gap-3 py-2">
+              <div className="absolute top-0 left-0 z-10 flex w-full items-center justify-between gap-3 py-1">
                 <div>
                   {(!chatHistoryOpen || !isLargeScreen) && (
                     <Button
-                      className="hover:bg-gray-100"
+                      className="h-8 w-8 p-0 hover:bg-gray-100"
                       variant="ghost"
                       onClick={() => setChatHistoryOpen((p) => !p)}
                     >
                       {chatHistoryOpen ? (
-                        <PanelRightOpen className="size-5" />
+                        <PanelRightOpen className="size-4" />
                       ) : (
-                        <PanelRightClose className="size-5" />
+                        <PanelRightClose className="size-4" />
                       )}
                     </Button>
                   )}
@@ -383,19 +383,19 @@ export function Thread() {
               </div>
             )}
             {chatStarted && (
-              <div className="relative z-10 flex items-center justify-between gap-3 p-2">
+              <div className="relative z-10 flex items-center justify-between gap-3 p-1">
                 <div className="relative flex items-center justify-start gap-2">
                   <div className="absolute left-0 z-10">
                     {(!chatHistoryOpen || !isLargeScreen) && (
                       <Button
-                        className="hover:bg-gray-100"
+                        className="h-8 w-8 p-0 hover:bg-gray-100"
                         variant="ghost"
                         onClick={() => setChatHistoryOpen((p) => !p)}
                       >
                         {chatHistoryOpen ? (
-                          <PanelRightOpen className="size-5" />
+                          <PanelRightOpen className="size-4" />
                         ) : (
-                          <PanelRightClose className="size-5" />
+                          <PanelRightClose className="size-4" />
                         )}
                       </Button>
                     )}
@@ -404,17 +404,17 @@ export function Thread() {
 
                 <div className="flex items-center gap-4">
                   <TooltipIconButton
-                    size="lg"
-                    className="p-4"
+                    size="sm"
+                    className="p-2"
                     tooltip="New thread"
                     variant="ghost"
                     onClick={() => setThreadId(null)}
                   >
-                    <SquarePen className="size-5" />
+                    <SquarePen className="size-4" />
                   </TooltipIconButton>
                 </div>
 
-                <div className="from-background to-background/0 absolute inset-x-0 top-full h-5 bg-gradient-to-b" />
+                <div className="from-background to-background/0 absolute inset-x-0 top-full h-3 bg-gradient-to-b" />
               </div>
             )}
 
@@ -442,8 +442,8 @@ export function Thread() {
                             <AssistantMessage
                               key={message.id || `${message.type}-${index}`}
                               message={message}
-                      isLoading={isLoading}
-                      handleRegenerate={handleRegenerate}
+                              isLoading={isLoading}
+                              handleRegenerate={handleRegenerate}
                             />
                           );
 
@@ -483,7 +483,10 @@ export function Thread() {
                     )}
                     {isLoading && <AssistantMessageLoading />}
                     {/* Always render the interrupt widget at the end if present */}
-                    {console.log("🔍 Stream interrupt 1:", JSON.stringify(stream.values.ui))}
+                    {console.log(
+                      "🔍 Stream interrupt 1:",
+                      JSON.stringify(stream.values.ui),
+                    )}
                     {stream.interrupt && (
                       <GenericInterruptView
                         interrupt={stream.interrupt.value ?? {}}

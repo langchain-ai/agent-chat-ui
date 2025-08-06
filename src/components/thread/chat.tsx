@@ -283,13 +283,13 @@ export function Thread() {
         <div className="relative hidden lg:flex">
           <motion.div
             className="absolute z-20 h-full overflow-hidden border-r bg-white"
-            style={{ width: 300 }}
+            style={{ width: 250 }}
             animate={
               isLargeScreen
-                ? { x: chatHistoryOpen ? 0 : -300 }
-                : { x: chatHistoryOpen ? 0 : -300 }
+                ? { x: chatHistoryOpen ? 0 : -260 }
+                : { x: chatHistoryOpen ? 0 : -260 }
             }
-            initial={{ x: -300 }}
+            initial={{ x: -260 }}
             transition={
               isLargeScreen
                 ? { type: "spring", stiffness: 300, damping: 30 }
@@ -298,7 +298,7 @@ export function Thread() {
           >
             <div
               className="relative h-full"
-              style={{ width: 300 }}
+              style={{ width: 260 }}
             >
               <ThreadHistory />
             </div>
@@ -318,10 +318,10 @@ export function Thread() {
             )}
             layout={isLargeScreen}
             animate={{
-              marginLeft: chatHistoryOpen ? (isLargeScreen ? 300 : 0) : 0,
+              marginLeft: chatHistoryOpen ? (isLargeScreen ? 260 : 0) : 0,
               width: chatHistoryOpen
                 ? isLargeScreen
-                  ? "calc(100% - 300px)"
+                  ? "calc(100% - 260px)"
                   : "100%"
                 : "100%",
             }}
