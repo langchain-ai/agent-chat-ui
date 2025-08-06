@@ -23,7 +23,6 @@ export default function DemoPage(): React.ReactNode {
             <ArtifactProvider>
               <NonAgentFlowProvider>
                 <div className="flex flex-col h-screen">
-                  <Navbar/>
                   <div className="flex-1 min-h-0">
                     <TabsLayout/>
                   </div>

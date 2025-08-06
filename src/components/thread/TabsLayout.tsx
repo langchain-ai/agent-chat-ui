@@ -26,20 +26,21 @@ export const TabsLayout = () => {
   return (
     <Tabs
       defaultValue="Chat"
-      className="flex h-full w-full flex-col"
+      className="flex h-full w-full flex-col p-3"
     >
-      <TabsList className="flex items-center justify-center gap-2">
+      <TabsList className="flex items-center gap-2 justify-center rounded-xl border border-gray-300 bg-white p-1 shadow-sm">
         {threadId &&
           tabs.map((tab, index) => (
             <TabsTrigger
               key={index}
               value={tab.name}
-              className="rounded-4xl px-4 py-2 text-sm data-[state=active]:bg-black data-[state=active]:text-white"
+              className="rounded-lg px-4 py-2 text-sm transition-colors data-[state=active]:bg-black data-[state=active]:text-white"
             >
               {tab.name}
             </TabsTrigger>
           ))}
       </TabsList>
+
       {/* Content area */}
       <div className="min-h-0 w-full flex-1">
         {tabs.map((tab, index) => (
