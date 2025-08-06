@@ -8,12 +8,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { ProtectedRoute } from "@/components/auth";
 import React, { useState } from "react";
 import { TabsLayout } from "@/components/thread/TabsLayout";
-import { Navbar } from "@/components/ui/Navbar";
-import { useQueryState } from "nuqs";
-
 
 export default function DemoPage(): React.ReactNode {
-
   return (
     <React.Suspense fallback={<div>Loading (layout)...</div>}>
       <Toaster />
@@ -22,9 +18,9 @@ export default function DemoPage(): React.ReactNode {
           <StreamProvider>
             <ArtifactProvider>
               <NonAgentFlowProvider>
-                <div className="flex flex-col h-screen">
-                  <div className="flex-1 min-h-0">
-                    <TabsLayout/>
+                <div className="flex h-screen flex-col">
+                  <div className="min-h-0 flex-1">
+                    <TabsLayout />
                   </div>
                 </div>
               </NonAgentFlowProvider>

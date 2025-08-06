@@ -1,58 +1,66 @@
+"use client";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@radix-ui/react-tabs";
 import React from "react";
 import { MapView } from "@/components/flight/MapComponent";
 import { ItineraryView } from "@/components/flight/ItineraryComponent";
 import { Thread } from "@/components/thread/chat";
 import { useQueryState } from "nuqs";
+import { FlyoLogoSVG } from "../icons/langgraph";
+import { Button } from "@/components/ui/button";
+import { SquarePen } from "lucide-react";
+import { useRouter } from "next/navigation"; // Make sure this matches your Next.js version (see note below)
 
 const tabs = [
-  {
-    name: "Chat",
-    component: <Thread />,
-  },
-  {
-    name: "Map",
-    component: <MapView />,
-  },
-  {
-    name: "Itinerary",
-    component: <ItineraryView />,
-  },
+  { name: "Map", component: <MapView /> },
+  { name: "Chat", component: <Thread /> },
+  { name: "Itinerary", component: <ItineraryView /> },
 ];
 
 export const TabsLayout = () => {
-  const [threadId, _setThreadId] = useQueryState("threadId");
+  const [threadId] = useQueryState("threadId");
+  const router = useRouter();
 
   return (
-    <Tabs
-      defaultValue="Chat"
-      className="flex h-full w-full flex-col p-3"
-    >
-      <TabsList className="flex items-center gap-2 justify-center rounded-xl border border-gray-300 bg-white p-1 shadow-sm">
-        {threadId &&
-          tabs.map((tab, index) => (
-            <TabsTrigger
-              key={index}
-              value={tab.name}
-              className="rounded-lg px-4 py-2 text-sm transition-colors data-[state=active]:bg-black data-[state=active]:text-white"
-            >
-              {tab.name}
-            </TabsTrigger>
-          ))}
-      </TabsList>
+    <div className="flex h-full w-full flex-col">
+      <Tabs defaultValue="Chat" className="flex h-full w-full flex-col">
+        <div className="flex items-center justify-between p-2">
+          <FlyoLogoSVG width={50} height={50} />
 
-      {/* Content area */}
-      <div className="min-h-0 w-full flex-1">
-        {tabs.map((tab, index) => (
-          <TabsContent
-            key={index}
-            value={tab.name}
-            className="h-full"
+          <TabsList className="flex flex-grow justify-center rounded-md bg-muted p-1 mx-4 max-w-md">
+            {tabs.map((tab) => (
+              <TabsTrigger
+                key={tab.name}
+                value={tab.name}
+                className="flex-1 whitespace-nowrap rounded-sm px-4 py-1 text-sm font-medium text-muted-foreground transition-colors data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:shadow-sm"
+              >
+                {tab.name}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+
+          <Button
+            size="lg"
+            className="p-2"
+            variant="ghost"
+            onClick={() => router.push("/")}
           >
-            {tab.component}
-          </TabsContent>
-        ))}
-      </div>
-    </Tabs>
+            <SquarePen className="size-6" />
+          </Button>
+        </div>
+
+        <div className="flex flex-1 flex-col overflow-hidden">
+          {tabs.map((tab) => (
+            <TabsContent
+              key={tab.name}
+              value={tab.name}
+              className="flex flex-1 flex-col overflow-y-auto"
+            >
+              {tab.component}
+            </TabsContent>
+          ))}
+        </div>
+      </Tabs>
+    </div>
   );
 };
