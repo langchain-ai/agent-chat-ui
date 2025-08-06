@@ -15,7 +15,7 @@ import { createClient } from "./client";
 import {
   getStoredThreads,
   convertStoredThreadsToThreads,
-  StoredThread
+  StoredThread,
 } from "@/utils/thread-storage";
 
 interface ThreadContextType {
@@ -39,8 +39,23 @@ function getThreadSearchMetadata(
 }
 
 export function ThreadProvider({ children }: { children: ReactNode }) {
-  const [apiUrl] = useQueryState("apiUrl");
-  const [assistantId] = useQueryState("assistantId");
+  // Get environment variables
+  const envApiUrl: string | undefined = process.env.NEXT_PUBLIC_API_URL;
+  const envAssistantId: string | undefined =
+    process.env.NEXT_PUBLIC_ASSISTANT_ID;
+
+  // Use URL params with env var fallbacks
+  const [apiUrl] = useQueryState("apiUrl", {
+    defaultValue: envApiUrl || "",
+  });
+  const [assistantId] = useQueryState("assistantId", {
+    defaultValue: envAssistantId || "",
+  });
+
+  // Determine final values to use, prioritizing URL params then env vars
+  const finalApiUrl = apiUrl || envApiUrl;
+  const finalAssistantId = assistantId || envAssistantId;
+
   const [threads, setThreads] = useState<Thread[]>([]);
   const [threadsLoading, setThreadsLoading] = useState(false);
 
@@ -48,50 +63,52 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
     if (!apiUrl || !assistantId) return [];
 
     try {
-      const client = createClient(apiUrl, getApiKey() ?? undefined);
-
+      const client = createClient(finalApiUrl!, getApiKey() ?? undefined);
+      
       // Try multiple search strategies to find threads
       let threads: Thread[] = [];
 
       // Strategy 1: Search with metadata
       try {
+        const metadata = getThreadSearchMetadata(finalAssistantId!);
+        console.log("🔍 ThreadProvider: Searching with metadata:", metadata);
         threads = await client.threads.search({
           metadata: {
-            ...getThreadSearchMetadata(assistantId),
+            ...metadata,
           },
           limit: 100,
         });
-        console.log(`Found ${threads.length} threads with metadata search`);
+        
       } catch (error) {
-        console.warn("Metadata search failed:", error);
+        console.warn("ThreadProvider: Metadata search failed:", error);
       }
 
       // Strategy 2: If no threads found, try without metadata (fallback)
       if (threads.length === 0) {
         try {
           threads = await client.threads.search({
-            limit: 100,
+            limit: 15,
           });
-          console.log(`Found ${threads.length} threads with general search`);
+          console.log(
+            `✅ ThreadProvider: Found ${threads.length} threads with general search`,
+          );
         } catch (error) {
-          console.warn("General search failed:", error);
+          console.warn("ThreadProvider: General search failed:", error);
         }
       }
 
       // Strategy 3: If server search fails, use local storage as fallback
       if (threads.length === 0) {
-        console.log("Using local storage fallback for threads");
         const storedThreads = getStoredThreads();
         threads = convertStoredThreadsToThreads(storedThreads);
-        console.log(`Found ${threads.length} threads from local storage`);
       }
 
       return threads;
     } catch (error) {
-      console.error("Failed to fetch threads:", error);
+      console.error("💥 ThreadProvider: Failed to fetch threads:", error);
       return [];
     }
-  }, [apiUrl, assistantId]);
+  }, [finalApiUrl, finalAssistantId]);
 
   const value = {
     getThreads,
