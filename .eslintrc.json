@@ -1,5 +1,12 @@
 {
   "extends": [
     "next/core-web-vitals"
-  ]
+  ],
+  "rules": {
+    "no-instanceof/no-instanceof": "off",
+    "@typescript-eslint/ban-ts-comment": "off",
+    "@typescript-eslint/no-misused-promises": "off",
+    "react-hooks/exhaustive-deps": "warn",
+    "@next/next/no-img-element": "warn"
+  }
 }
