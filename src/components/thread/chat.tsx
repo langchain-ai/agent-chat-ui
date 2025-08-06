@@ -489,7 +489,7 @@ export function Thread() {
                       {/* Always render the interrupt widget at the end if present */}
                       {stream.interrupt && (
                         <GenericInterruptView
-                          interrupt={stream.interrupt.value ?? {}}
+                          interrupt={(stream.interrupt && stream.interrupt.value) ?? {}}
                         />
                       )}
                     </div>

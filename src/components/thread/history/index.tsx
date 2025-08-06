@@ -38,8 +38,6 @@ function UserProfile() {
   const userName = userData?.name || userData?.email?.split("@")[0] || "User";
   const userInitial = userName.charAt(0).toUpperCase();
 
-  console.log(`---> userData ${JSON.stringify(userData)}`);
-
   return (
     <div className="flex items-center gap-3 px-3 py-2">
       <Avatar className="h-8 w-8">
