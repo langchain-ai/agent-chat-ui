@@ -20,19 +20,19 @@ export const Navbar = () => {
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
 
   return (
-    <div className="sticky top-0 z-50 flex items-center justify-between gap-3 border-b bg-white p-2">
+    <div className="sticky top-0 z-50 flex items-center justify-between gap-3 border-b bg-white p-1">
       <div className="sticky flex items-center justify-start gap-2">
         <div className="absolute left-0 z-10">
           {(!chatHistoryOpen || !isLargeScreen) && (
             <Button
-              className="hover:bg-gray-100"
+              className="h-12 w-12 p-0 hover:bg-gray-100"
               variant="ghost"
               onClick={() => setChatHistoryOpen((p) => !p)}
             >
               {chatHistoryOpen ? (
-                <PanelRightOpen className="size-5" />
+                <PanelRightOpen className="size-6" />
               ) : (
-                <PanelRightClose className="size-5" />
+                <PanelRightClose className="size-6" />
               )}
             </Button>
           )}
@@ -49,27 +49,27 @@ export const Navbar = () => {
           }}
         >
           <FlyoLogoSVG
-            width={70}
-            height={70}
+            width={50}
+            height={50}
           />
         </motion.button>
       </div>
 
       <div className="flex items-center gap-4">
-        <TooltipIconButton
+        <Button
           size="lg"
-          className="p-4"
-          tooltip="New thread"
+          className="p-2"
+          
           variant="ghost"
           onClick={() => router.push("/")}
         >
-          <SquarePen className="size-5" />
-        </TooltipIconButton>
-        <LogoutButton
+          <SquarePen className="size-6" />
+        </Button>
+        {/* <LogoutButton
           variant="ghost"
           size="sm"
           className="text-gray-600 hover:text-gray-900"
-        />
+        /> */}
       </div>
     </div>
   );
