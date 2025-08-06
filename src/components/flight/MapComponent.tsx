@@ -228,9 +228,11 @@ export const MapView: React.FC<MapComponentProps> = ({
 
     // Add popup on click
     map.current.on("click", "airports", (e) => {
-      const coordinates = e.features![0].geometry.coordinates.slice();
-      const title = e.features![0].properties!.title;
-      const type = e.features![0].properties!.type;
+      const feature = e.features![0];
+      const geometry = feature.geometry as any;
+      const coordinates = geometry.coordinates?.slice() || [0, 0];
+      const title = feature.properties!.title;
+      const type = feature.properties!.type;
 
       new mapboxgl.Popup()
         .setLngLat(coordinates as [number, number])

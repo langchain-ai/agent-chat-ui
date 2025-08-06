@@ -39,7 +39,7 @@ export const UIWidgetPreserver: React.FC = () => {
 
   useEffect(() => {
     if (stream.values.ui) {
-      stream.values.ui.forEach((uiWidget) => {
+      stream.values.ui.forEach((uiWidget: any) => {
         // Preserve by both id and message_id
         if (uiWidget.id) {
           preservedUIWidgets.set(uiWidget.id, uiWidget);
@@ -153,6 +153,10 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
   interruptType,
   interrupt,
 }) => {
+  // Always call hooks at the top level
+  const stream = useStreamContext();
+  const artifact = useArtifact();
+
   console.log("🔄 STREAMING DATA - DynamicRenderer received:", {
     interruptType,
     interrupt,
@@ -174,12 +178,10 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
     const attachmentId = interrupt.value?.metadata?.attachmentId;
 
     if (attachmentId) {
-      const stream = useStreamContext();
-      const artifact = useArtifact();
 
       // First try to find in current UI widgets
       let matchingUIWidget = stream.values.ui?.find(
-        (ui) =>
+        (ui: any) =>
           ui.id === attachmentId || ui.metadata?.message_id === attachmentId,
       );
 
@@ -207,7 +209,7 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
         return (
           <LoadExternalComponent
             key={matchingUIWidget.id}
-            stream={stream}
+            stream={stream as any}
             message={matchingUIWidget}
             meta={{ ui: matchingUIWidget, artifact }}
           />

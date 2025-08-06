@@ -1,9 +1,10 @@
 /* __LC_ALLOW_ENTRYPOINT_SIDE_EFFECTS__ */
+/* eslint-disable */
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState, } from "react";
 import { coerceMessageLikeToMessage, convertToChunk, isBaseMessageChunk, } from "@langchain/core/messages";
 import { Client } from "@langchain/langgraph-sdk";
-import { getClientConfigHash } from "@langchain/langgraph-sdk/client";
+// import { getClientConfigHash } from "@langchain/langgraph-sdk/client";
 
 class StreamError extends Error {
     constructor(data) {
@@ -210,7 +211,7 @@ function useThreadHistory(threadId, client, limit, clearCallbackRef, submittingR
     const [history, setHistory] = useState(undefined);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(undefined);
-    const clientHash = getClientConfigHash(client);
+    const clientHash = JSON.stringify(client?.config || {});
     const clientRef = useRef(client);
     clientRef.current = client;
     const fetcher = useCallback((threadId) => {

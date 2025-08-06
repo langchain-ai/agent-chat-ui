@@ -296,7 +296,7 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
       {/* Header */}
       <div className="mb-6 flex items-center space-x-3">
         <ArrowLeft className="h-6 w-6 text-black cursor-pointer" />
-        <h1 className="text-xl font-bold text-black">Who's travelling?</h1>
+        <h1 className="text-xl font-bold text-black">Who&apos;s travelling?</h1>
       </div>
 
       {/* Passenger Sections */}
