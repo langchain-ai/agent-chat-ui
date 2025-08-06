@@ -8,11 +8,11 @@ import { LoadExternalComponent } from "@langchain/langgraph-sdk/react-ui";
 import { cn } from "@/lib/utils";
 import { ToolCalls, ToolResult } from "./tool-calls";
 import { MessageContentComplex } from "@langchain/core/messages";
-import { Fragment } from "react/jsx-runtime";
+import { Fragment } from "react";
 import { isAgentInboxInterruptSchema } from "@/lib/agent-inbox-interrupt";
 import { ThreadView } from "../agent-inbox";
 import { useQueryState, parseAsBoolean } from "nuqs";
-import { GenericInterruptView } from "./generic-interrupt";
+// import { GenericInterruptView } from "./generic-interrupt";
 import { useArtifact } from "../artifact";
 
 function CustomComponent({
@@ -25,16 +25,16 @@ function CustomComponent({
   const artifact = useArtifact();
   const { values } = useStreamContext();
   const customComponents = values.ui?.filter(
-    (ui) => ui.metadata?.message_id === message.id,
+    (ui: any) => ui.metadata?.message_id === message.id,
   );
 
   if (!customComponents?.length) return null;
   return (
     <Fragment key={message.id}>
-      {customComponents.map((customComponent) => (
+      {customComponents.map((customComponent: any) => (
         <LoadExternalComponent
           key={customComponent.id}
-          stream={thread}
+          stream={thread as any}
           message={customComponent}
           meta={{ ui: customComponent, artifact }}
         />
@@ -84,11 +84,12 @@ function Interrupt({
         (isLastMessage || hasNoAIOrToolMessages) && (
           <ThreadView interrupt={interruptValue} />
         )}
-      {interruptValue &&
+      {/* Todo: @Shubham removed this to avoid duplicate rendering of Interrupt */}
+      {/* {interruptValue &&
       !isAgentInboxInterruptSchema(interruptValue) &&
       isLastMessage ? (
         <GenericInterruptView interrupt={interruptValue} />
-      ) : null}
+      ) : null} */}
     </>
   );
 }
@@ -110,10 +111,12 @@ export function AssistantMessage({
   );
 
   const thread = useStreamContext();
+
   const isLastMessage =
-    thread.messages[thread.messages.length - 1].id === message?.id;
+    thread.messages.length > 0 &&
+    thread.messages[thread.messages.length - 1]?.id === message?.id;
   const hasNoAIOrToolMessages = !thread.messages.find(
-    (m) => m.type === "ai" || m.type === "tool",
+    (m: any) => m.type === "ai" || m.type === "tool",
   );
   const meta = message ? thread.getMessagesMetadata(message) : undefined;
   const threadInterrupt = thread.interrupt;
@@ -180,11 +183,6 @@ export function AssistantMessage({
                 thread={thread}
               />
             )}
-            <Interrupt
-              interruptValue={threadInterrupt?.value}
-              isLastMessage={isLastMessage}
-              hasNoAIOrToolMessages={hasNoAIOrToolMessages}
-            />
             <div
               className={cn(
                 "mr-auto flex items-center gap-2 transition-opacity",
@@ -213,11 +211,20 @@ export function AssistantMessage({
 
 export function AssistantMessageLoading() {
   return (
-    <div className="mr-auto flex items-start gap-2">
-      <div className="bg-muted flex h-8 items-center gap-1 rounded-2xl px-4 py-2">
-        <div className="bg-foreground/50 h-1.5 w-1.5 animate-[pulse_1.5s_ease-in-out_infinite] rounded-full"></div>
-        <div className="bg-foreground/50 h-1.5 w-1.5 animate-[pulse_1.5s_ease-in-out_0.5s_infinite] rounded-full"></div>
-        <div className="bg-foreground/50 h-1.5 w-1.5 animate-[pulse_1.5s_ease-in-out_1s_infinite] rounded-full"></div>
+    <div className="mr-auto flex items-start gap-3 py-2">
+      {/* Loader Bubble */}
+      <div className="relative flex flex-col items-start">
+        <div className="bg-muted animate-pulse-bubble flex min-w-[80px] items-center rounded-2xl px-5 py-3 shadow">
+          {/* <span className="sr-only">Agent is thinking...</span> */}
+          <div className="flex gap-1">
+            <span className="bg-foreground/60 h-2 w-2 animate-bounce rounded-full [animation-delay:0s]"></span>
+            <span className="bg-foreground/60 h-2 w-2 animate-bounce rounded-full [animation-delay:0.2s]"></span>
+            <span className="bg-foreground/60 h-2 w-2 animate-bounce rounded-full [animation-delay:0.4s]"></span>
+          </div>
+        </div>
+        {/* <span className="mt-2 ml-2 text-xs text-gray-400">
+          Agent is thinking...
+        </span> */}
       </div>
     </div>
   );

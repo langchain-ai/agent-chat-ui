@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { BranchSwitcher, CommandBar } from "./shared";
 import { MultimodalPreview } from "@/components/thread/MultimodalPreview";
 import { isBase64ContentBlock } from "@/lib/multimodal-utils";
+import { getJwtToken, GetUserId } from "@/services/authService";
 
 function EditableContent({
   value,
@@ -52,19 +53,32 @@ export function HumanMessage({
   const handleSubmitEdit = () => {
     setIsEditing(false);
 
+    // Get user ID from JWT token
+    const jwtToken = getJwtToken();
+    const userId = jwtToken ? GetUserId(jwtToken) : null;
+
     const newMessage: Message = { type: "human", content: value };
+
+    // Include userId in the submission
+    const submissionData: any = { messages: [newMessage] };
+    if (userId) {
+      submissionData.userId = userId;
+    }
+
     thread.submit(
-      { messages: [newMessage] },
+      submissionData,
       {
         checkpoint: parentCheckpoint,
-        streamMode: ["values"],
-        optimisticValues: (prev) => {
+        streamMode: ["updates"],
+        streamSubgraphs: true,
+        optimisticValues: (prev: any) => {
           const values = meta?.firstSeenState?.values;
           if (!values) return prev;
 
           return {
             ...values,
             messages: [...(values.messages ?? []), newMessage],
+            ui: prev.ui ?? [], // Preserve UI state
           };
         },
       },
@@ -108,11 +122,9 @@ export function HumanMessage({
               </div>
             )}
             {/* Render text if present, otherwise fallback to file/image name */}
-            {contentString ? (
-              <p className="bg-muted ml-auto w-fit rounded-3xl px-4 py-2 text-right whitespace-pre-wrap">
-                {contentString}
-              </p>
-            ) : null}
+            <p className="bg-muted ml-auto w-full max-w-[80vw] rounded-3xl px-4 py-2 text-right whitespace-pre-wrap break-words">
+              {contentString}
+            </p>
           </div>
         )}
 

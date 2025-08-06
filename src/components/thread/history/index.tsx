@@ -4,16 +4,19 @@ import { Thread } from "@langchain/langgraph-sdk";
 import { useEffect } from "react";
 
 import { getContentString } from "../utils";
-import { useQueryState, parseAsBoolean } from "nuqs";
+import { parseAsBoolean, useQueryState } from "nuqs";
 import {
   Sheet,
   SheetContent,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PanelRightOpen, PanelRightClose } from "lucide-react";
+import { PanelRightClose, PanelRightOpen, SquarePen } from "lucide-react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import LogoutButton from "@/components/auth/LogoutButton";
+import { useRouter, useSearchParams } from "next/navigation";
 
 function ThreadList({
   threads,
@@ -82,6 +85,10 @@ export default function ThreadHistory() {
     parseAsBoolean.withDefault(false),
   );
 
+  const [threadId, _setThreadId] = useQueryState("threadId");
+
+  const router = useRouter();
+
   const { getThreads, threads, setThreads, threadsLoading, setThreadsLoading } =
     useThreads();
 
@@ -92,12 +99,14 @@ export default function ThreadHistory() {
       .then(setThreads)
       .catch(console.error)
       .finally(() => setThreadsLoading(false));
-  }, []);
+  }, [getThreads, setThreads, setThreadsLoading]);
+
+  const searchParams = useSearchParams();
 
   return (
     <>
       <div className="shadow-inner-right hidden h-screen w-[300px] shrink-0 flex-col items-start justify-start gap-6 border-r-[1px] border-slate-300 lg:flex">
-        <div className="flex w-full items-center justify-between px-4 pt-1.5">
+        <div className="flex w-full items-center justify-between px-4 pt-6">
           <Button
             className="hover:bg-gray-100"
             variant="ghost"
@@ -109,15 +118,46 @@ export default function ThreadHistory() {
               <PanelRightClose className="size-5" />
             )}
           </Button>
-          <h1 className="text-xl font-semibold tracking-tight">
-            Thread History
-          </h1>
+          <h1 className="text-xl font-semibold tracking-tight">Chat History</h1>
         </div>
-        {threadsLoading ? (
-          <ThreadHistoryLoading />
-        ) : (
-          <ThreadList threads={threads} />
-        )}
+
+        <div className="w-full px-4">
+          <Button
+            onClick={() => {
+              // Clone the current params and remove threadId
+              const params = new URLSearchParams(searchParams.toString());
+              params.delete('threadId');
+
+              // Update URL without reloading
+              router.replace(`${window.location.pathname}?${params.toString()}`);
+              // Close history panel
+              setChatHistoryOpen(false);
+              _setThreadId(null);
+            }}
+            className="text-foreground h-11 w-full justify-start gap-3 font-medium"
+            variant="outline"
+          >
+            New Chat
+          </Button>
+        </div>
+
+        {/* Thread List - Now takes remaining space */}
+        <div className="flex-1 overflow-hidden">
+          {threadsLoading ? (
+            <ThreadHistoryLoading />
+          ) : (
+            <ThreadList threads={threads} />
+          )}
+        </div>
+
+        {/* Logout Button at Bottom */}
+        <div className="w-full border-t border-slate-200 px-4 pt-4 pb-6">
+          <LogoutButton
+            variant="ghost"
+            size="sm"
+            className="h-10 w-full justify-start gap-3 text-gray-600 transition-all duration-200 hover:bg-gray-100 hover:text-gray-900"
+          />
+        </div>
       </div>
       <div className="lg:hidden">
         <Sheet
@@ -129,15 +169,48 @@ export default function ThreadHistory() {
         >
           <SheetContent
             side="left"
-            className="flex lg:hidden"
+            className="flex flex-col p-0 lg:hidden"
           >
-            <SheetHeader>
-              <SheetTitle>Thread History</SheetTitle>
+            <SheetHeader className="flex">
+              <SheetTitle>Chats</SheetTitle>
             </SheetHeader>
-            <ThreadList
-              threads={threads}
-              onThreadClick={() => setChatHistoryOpen((o) => !o)}
-            />
+
+            {/* New Chat Button */}
+            <div
+              className="flex gap-2 px-6 cursor-pointer"
+              onClick={() => {
+                // Clone the current params and remove threadId
+                const params = new URLSearchParams(searchParams.toString());
+                params.delete('threadId');
+
+                // Update URL without reloading
+                router.replace(`${window.location.pathname}?${params.toString()}`);
+                // Close history panel
+                setChatHistoryOpen(false);
+                _setThreadId(null);
+
+              }}
+            >
+              <SquarePen className="size-5" />
+              <span className={""}>New chat</span>
+            </div>
+
+            {/* Thread List - Takes remaining space */}
+            <div className="flex-1 overflow-hidden px-4">
+              <ThreadList
+                threads={threads}
+                onThreadClick={() => setChatHistoryOpen((o) => !o)}
+              />
+            </div>
+
+            {/* Logout Button at Bottom */}
+            <SheetFooter className="border-slate-200 px-6 pt-4 pb-2">
+              <LogoutButton
+                variant="ghost"
+                size="sm"
+                className="w-full"
+              />
+            </SheetFooter>
           </SheetContent>
         </Sheet>
       </div>

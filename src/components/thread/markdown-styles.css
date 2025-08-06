@@ -43,3 +43,73 @@
 .markdown-content tr:nth-child(even) {
   background-color: #f9f9f9;
 }
+
+/* Image styling - small circular icons */
+.markdown-content img {
+  max-width: 48px;
+  width: 48px;
+  height: 48px;
+  max-height: 48px;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin: 0.5rem;
+  display: inline-block;
+  object-fit: cover;
+}
+
+/* Responsive image sizing for smaller screens */
+@media (max-width: 768px) {
+  .markdown-content img {
+    max-width: 40px;
+    width: 40px;
+    height: 40px;
+    max-height: 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .markdown-content img {
+    max-width: 32px;
+    width: 32px;
+    height: 32px;
+    max-height: 32px;
+  }
+}
+
+/* Additional image controls for any missed cases */
+.markdown-content [data-image],
+.markdown-content picture,
+.markdown-content figure img {
+  max-width: 48px;
+  width: 48px;
+  height: 48px;
+  max-height: 48px;
+  object-fit: cover;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin: 0.5rem;
+  display: inline-block;
+}
+
+/* Responsive sizing for additional image elements */
+@media (max-width: 768px) {
+  .markdown-content [data-image],
+  .markdown-content picture,
+  .markdown-content figure img {
+    max-width: 40px;
+    width: 40px;
+    height: 40px;
+    max-height: 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .markdown-content [data-image],
+  .markdown-content picture,
+  .markdown-content figure img {
+    max-width: 32px;
+    width: 32px;
+    height: 32px;
+    max-height: 32px;
+  }
+}
