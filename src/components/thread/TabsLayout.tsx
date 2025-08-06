@@ -6,10 +6,7 @@ import { MapView } from "@/components/flight/MapComponent";
 import { ItineraryView } from "@/components/flight/ItineraryComponent";
 import { Thread } from "@/components/thread/chat";
 import { useQueryState } from "nuqs";
-import { FlyoLogoSVG } from "../icons/langgraph";
-import { Button } from "@/components/ui/button";
-import { SquarePen } from "lucide-react";
-import { useRouter } from "next/navigation"; // Make sure this matches your Next.js version (see note below)
+import { useTabContext } from "@/providers/TabContext";
 
 const tabs = [
   { name: "Map", component: <MapView /> },
@@ -19,48 +16,42 @@ const tabs = [
 
 export const TabsLayout = () => {
   const [threadId] = useQueryState("threadId");
-  const router = useRouter();
+  const { activeTab, setActiveTab } = useTabContext();
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value as "Chat" | "Map" | "Itinerary");
+  };
 
   return (
-    <div className="flex h-full w-full flex-col">
-      <Tabs defaultValue="Chat" className="flex h-full w-full flex-col">
-        <div className="flex items-center justify-between p-2">
-          <FlyoLogoSVG width={50} height={50} />
-
-          <TabsList className="flex flex-grow justify-center rounded-md bg-muted p-1 mx-4 max-w-md">
-            {tabs.map((tab) => (
-              <TabsTrigger
-                key={tab.name}
-                value={tab.name}
-                className="flex-1 whitespace-nowrap rounded-sm px-4 py-1 text-sm font-medium text-muted-foreground transition-colors data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:shadow-sm"
-              >
-                {tab.name}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          <Button
-            size="lg"
-            className="p-2"
-            variant="ghost"
-            onClick={() => router.push("/")}
-          >
-            <SquarePen className="size-6" />
-          </Button>
-        </div>
-
-        <div className="flex flex-1 flex-col overflow-hidden">
-          {tabs.map((tab) => (
-            <TabsContent
-              key={tab.name}
+    <Tabs
+      value={activeTab}
+      onValueChange={handleTabChange}
+      className="flex h-full w-full flex-col"
+    >
+      <TabsList className="flex items-center justify-center gap-2">
+        {threadId &&
+          tabs.map((tab, index) => (
+            <TabsTrigger
+              key={index}
               value={tab.name}
-              className="flex flex-1 flex-col overflow-y-auto"
+              className="rounded-4xl px-4 py-2 text-sm data-[state=active]:bg-black data-[state=active]:text-white"
             >
-              {tab.component}
-            </TabsContent>
+              {tab.name}
+            </TabsTrigger>
           ))}
-        </div>
-      </Tabs>
-    </div>
+      </TabsList>
+      {/* Content area */}
+      <div className="min-h-0 w-full flex-1">
+        {tabs.map((tab, index) => (
+          <TabsContent
+            key={index}
+            value={tab.name}
+            className="h-full"
+          >
+            {tab.component}
+          </TabsContent>
+        ))}
+      </div>
+    </Tabs>
   );
 };

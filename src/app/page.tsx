@@ -4,10 +4,13 @@ import { StreamProvider } from "@/providers/Stream";
 import { ThreadProvider } from "@/providers/Thread";
 import { ArtifactProvider } from "@/components/thread/artifact";
 import { NonAgentFlowProvider } from "@/providers/NonAgentFlowContext";
+import { TabProvider } from "@/providers/TabContext";
+import { ItineraryWidgetProvider } from "@/providers/ItineraryWidgetContext";
 import { Toaster } from "@/components/ui/sonner";
 import { ProtectedRoute } from "@/components/auth";
-import React, { useState } from "react";
+import React from "react";
 import { TabsLayout } from "@/components/thread/TabsLayout";
+import { Navbar } from "@/components/ui/Navbar";
 
 export default function DemoPage(): React.ReactNode {
   return (
@@ -18,11 +21,16 @@ export default function DemoPage(): React.ReactNode {
           <StreamProvider>
             <ArtifactProvider>
               <NonAgentFlowProvider>
-                <div className="flex h-screen flex-col">
-                  <div className="min-h-0 flex-1">
-                    <TabsLayout />
-                  </div>
-                </div>
+                <TabProvider>
+                  <ItineraryWidgetProvider>
+                    <div className="flex flex-col h-screen">
+                      <Navbar />
+                      <div className="flex-1 min-h-0">
+                        <TabsLayout />
+                      </div>
+                    </div>
+                  </ItineraryWidgetProvider>
+                </TabProvider>
               </NonAgentFlowProvider>
             </ArtifactProvider>
           </StreamProvider>
