@@ -247,6 +247,12 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
   const [selectedNationality, setSelectedNationality] = useState(countries[0]);
   const [selectedIssuingCountry, setSelectedIssuingCountry] = useState(countries[0]);
 
+  // State for edit modal nationality and issuing country dropdowns
+  const [showEditNationalitySheet, setShowEditNationalitySheet] = useState(false);
+  const [showEditIssuingCountrySheet, setShowEditIssuingCountrySheet] = useState(false);
+  const [editSelectedNationality, setEditSelectedNationality] = useState(countries[0]);
+  const [editSelectedIssuingCountry, setEditSelectedIssuingCountry] = useState(countries[0]);
+
   const numberOfTravellers = args.numberOfTravellers || { adults: 4, children: 3, infants: 2 };
   const isInternational = args.isInternational || false;
 
@@ -449,6 +455,20 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
 
   const handleEditPassenger = (passenger: SavedPassenger) => {
     setEditingPassenger(passenger);
+
+    // Initialize nationality and issuing country from passenger's documents if available
+    if (passenger.documents && passenger.documents.length > 0) {
+      const doc = passenger.documents[0];
+      const nationality = countries.find(c => c.code === doc.nationality) || countries[0];
+      const issuingCountry = countries.find(c => c.code === doc.issuingCountry) || countries[0];
+      setEditSelectedNationality(nationality);
+      setEditSelectedIssuingCountry(issuingCountry);
+    } else {
+      // Reset to defaults if no documents
+      setEditSelectedNationality(countries[0]);
+      setEditSelectedIssuingCountry(countries[0]);
+    }
+
     setShowEditModal(true);
   };
 
@@ -505,6 +525,16 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
   const handleSaveEditedPassenger = () => {
     if (!editingPassenger) return;
 
+    // Update nationality and issuing country in documents if they exist
+    if (editingPassenger.documents && editingPassenger.documents.length > 0) {
+      const updatedDocuments = editingPassenger.documents.map(doc => ({
+        ...doc,
+        nationality: editSelectedNationality.code,
+        issuingCountry: editSelectedIssuingCountry.code,
+      }));
+      editingPassenger.documents = updatedDocuments;
+    }
+
     setSelectedPassengers(prev => ({
       ...prev,
       [editingPassenger.id]: editingPassenger
@@ -540,9 +570,9 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
         const passengerSequence = index + 1;
         const documentRequired = isDocumentRequired(passengerSequence);
 
-        // Build documents array
+        // Build documents array - include documents if they exist or if required
         let documents: any[] = [];
-        if (documentRequired && passenger.documents && passenger.documents.length > 0) {
+        if (passenger.documents && passenger.documents.length > 0 && (documentRequired || isInternational)) {
           // Use existing document data
           documents = passenger.documents.map(doc => ({
             documentType: doc.documentType,
@@ -578,9 +608,9 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
         const passengerSequence = Object.values(selectedPassengers).length + index + 1;
         const documentRequired = isDocumentRequired(passengerSequence);
 
-        // Build documents array for new passengers
+        // Build documents array for new passengers - include if passport info exists or if required
         let documents: any[] = [];
-        if (documentRequired && passenger.passportNumber) {
+        if (passenger.passportNumber && (documentRequired || isInternational)) {
           documents = [{
             documentType: "passport",
             documentNumber: passenger.passportNumber,
@@ -1148,40 +1178,78 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
                 className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:border-black focus:ring-black"
               />
 
-              {/* Display passport information if available */}
-              {editingPassenger.documents && editingPassenger.documents.length > 0 && (
+              {/* Passport Information - Editable Fields */}
+              {(isInternational || isAnyDocumentRequired()) && (
                 <div className="space-y-4">
                   <h4 className="text-lg font-semibold text-black">Passport Information</h4>
-                  {editingPassenger.documents.map((doc, index) => (
-                    <div key={index} className="p-4 border-2 border-gray-200 rounded-xl bg-gray-50">
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Document Type:</span>
-                          <span className="text-sm font-medium">{doc.documentType}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Document Number:</span>
-                          <span className="text-sm font-medium">{doc.documentNumber}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Nationality:</span>
-                          <span className="text-sm font-medium">{doc.nationality}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Issuing Country:</span>
-                          <span className="text-sm font-medium">{doc.issuingCountry}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Expiry Date:</span>
-                          <span className="text-sm font-medium">{new Date(doc.expiryDate).toLocaleDateString()}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Issuing Date:</span>
-                          <span className="text-sm font-medium">{new Date(doc.issuingDate).toLocaleDateString()}</span>
-                        </div>
-                      </div>
+
+                  {/* Nationality Dropdown */}
+                  <div className="relative">
+                    <div
+                      className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:border-black focus:ring-black cursor-pointer flex items-center justify-between"
+                      onClick={() => setShowEditNationalitySheet(true)}
+                    >
+                      <span className={editSelectedNationality.name ? "text-black" : "text-gray-500"}>
+                        {editSelectedNationality.name || "Nationality"}
+                      </span>
+                      <ChevronDown className="w-4 h-4 text-gray-400" />
                     </div>
-                  ))}
+                  </div>
+
+                  <Input
+                    placeholder="Passport number"
+                    value={editingPassenger.documents?.[0]?.documentNumber || ''}
+                    onChange={(e) => {
+                      const newDocuments = editingPassenger.documents ? [...editingPassenger.documents] : [{
+                        documentId: 0,
+                        documentType: 'passport',
+                        documentNumber: '',
+                        nationality: editSelectedNationality.code,
+                        expiryDate: '',
+                        issuingDate: '',
+                        issuingCountry: editSelectedIssuingCountry.code,
+                        documentUrl: ''
+                      }];
+                      newDocuments[0] = { ...newDocuments[0], documentNumber: e.target.value };
+                      setEditingPassenger(prev => prev ? { ...prev, documents: newDocuments } : null);
+                    }}
+                    className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:border-black focus:ring-black"
+                  />
+
+                  {/* Passport Issuing Country Dropdown */}
+                  <div className="relative">
+                    <div
+                      className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:border-black focus:ring-black cursor-pointer flex items-center justify-between"
+                      onClick={() => setShowEditIssuingCountrySheet(true)}
+                    >
+                      <span className={editSelectedIssuingCountry.name ? "text-black" : "text-gray-500"}>
+                        {editSelectedIssuingCountry.name || "Passport issuing country"}
+                      </span>
+                      <ChevronDown className="w-4 h-4 text-gray-400" />
+                    </div>
+                  </div>
+
+                  <Input
+                    type="date"
+                    placeholder="Passport expiry date"
+                    value={formatDateForInput(editingPassenger.documents?.[0]?.expiryDate)}
+                    onChange={(e) => {
+                      const newDocuments = editingPassenger.documents ? [...editingPassenger.documents] : [{
+                        documentId: 0,
+                        documentType: 'passport',
+                        documentNumber: '',
+                        nationality: editSelectedNationality.code,
+                        expiryDate: '',
+                        issuingDate: '',
+                        issuingCountry: editSelectedIssuingCountry.code,
+                        documentUrl: ''
+                      }];
+                      newDocuments[0] = { ...newDocuments[0], expiryDate: e.target.value };
+                      setEditingPassenger(prev => prev ? { ...prev, documents: newDocuments } : null);
+                    }}
+                    min={new Date().toISOString().split('T')[0]} // Block past dates
+                    className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:border-black focus:ring-black"
+                  />
                 </div>
               )}
 
@@ -1315,6 +1383,86 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
                     </div>
                   </div>
                   {selectedIssuingCountry.code === country.code && (
+                    <div className="w-5 h-5 rounded-full bg-black flex items-center justify-center">
+                      <div className="w-2 h-2 bg-white rounded-full"></div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Edit Modal - Nationality Selection Sheet */}
+      <Sheet open={showEditNationalitySheet} onOpenChange={setShowEditNationalitySheet}>
+        <SheetContent side="bottom" className="h-[60vh] rounded-t-3xl">
+          <SheetHeader className="pb-4 border-b border-gray-200">
+            <SheetTitle className="text-xl font-bold text-black">Select Nationality</SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 overflow-auto py-4">
+            <div className="space-y-3">
+              {countries.map((country) => (
+                <div
+                  key={country.code}
+                  onClick={() => {
+                    setEditSelectedNationality(country);
+                    setShowEditNationalitySheet(false);
+                  }}
+                  className={cn(
+                    "flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md",
+                    editSelectedNationality.code === country.code
+                      ? "border-black bg-gray-50"
+                      : "border-gray-200 hover:border-gray-300"
+                  )}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div>
+                      <span className="font-medium text-black">{country.name}</span>
+                      <span className="text-sm text-gray-500 ml-2">{country.code}</span>
+                    </div>
+                  </div>
+                  {editSelectedNationality.code === country.code && (
+                    <div className="w-5 h-5 rounded-full bg-black flex items-center justify-center">
+                      <div className="w-2 h-2 bg-white rounded-full"></div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Edit Modal - Issuing Country Selection Sheet */}
+      <Sheet open={showEditIssuingCountrySheet} onOpenChange={setShowEditIssuingCountrySheet}>
+        <SheetContent side="bottom" className="h-[60vh] rounded-t-3xl">
+          <SheetHeader className="pb-4 border-b border-gray-200">
+            <SheetTitle className="text-xl font-bold text-black">Select Passport Issuing Country</SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 overflow-auto py-4">
+            <div className="space-y-3">
+              {countries.map((country) => (
+                <div
+                  key={country.code}
+                  onClick={() => {
+                    setEditSelectedIssuingCountry(country);
+                    setShowEditIssuingCountrySheet(false);
+                  }}
+                  className={cn(
+                    "flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md",
+                    editSelectedIssuingCountry.code === country.code
+                      ? "border-black bg-gray-50"
+                      : "border-gray-200 hover:border-gray-300"
+                  )}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div>
+                      <span className="font-medium text-black">{country.name}</span>
+                      <span className="text-sm text-gray-500 ml-2">{country.code}</span>
+                    </div>
+                  </div>
+                  {editSelectedIssuingCountry.code === country.code && (
                     <div className="w-5 h-5 rounded-full bg-black flex items-center justify-center">
                       <div className="w-2 h-2 bg-white rounded-full"></div>
                     </div>

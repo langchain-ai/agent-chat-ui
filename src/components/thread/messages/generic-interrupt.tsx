@@ -12,6 +12,8 @@ import {
 import { useStreamContext } from "@/providers/Stream";
 import { LoadExternalComponent } from "@langchain/langgraph-sdk/react-ui";
 import { useArtifact } from "../artifact";
+import { useTabContext } from "@/providers/TabContext";
+import { useItineraryWidget } from "@/providers/ItineraryWidgetContext";
 
 // Debug utility function
 const debugLog = (message: string, data?: any) => {
@@ -88,40 +90,14 @@ const NonAgentFlowBottomSheet: React.FC<{ apiData: any; args: any }> = ({
   apiData,
   args,
 }) => {
-  const [isOpen, setIsOpen] = useState(true);
-
   // Get the actual NonAgentFlowWidget component
   const NonAgentFlowWidget = componentMap.NonAgentFlowWidget;
 
-  // Function to close the bottom sheet
-  const handleClose = () => {
-    setIsOpen(false);
-  };
-
   return (
-    <Sheet
-      open={isOpen}
-      onOpenChange={setIsOpen}
-    >
-      <SheetContent
-        side="bottom"
-        className="flex h-[90vh] flex-col overflow-hidden p-0 sm:h-[85vh]"
-      >
-        <SheetHeader className="flex-shrink-0 border-b border-gray-200 px-6 py-4">
-          <SheetTitle className="text-xl font-semibold">
-            Complete Your Booking
-          </SheetTitle>
-        </SheetHeader>
-
-        <div className="flex-1 overflow-auto">
           <NonAgentFlowWidget
             apiData={apiData}
             {...args}
-            onClose={handleClose}
           />
-        </div>
-      </SheetContent>
-    </Sheet>
   );
 };
 
@@ -137,6 +113,8 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
   // Always call hooks at the top level
   const stream = useStreamContext();
   const artifact = useArtifact();
+  const { switchToItinerary } = useTabContext();
+  const { addWidget } = useItineraryWidget();
 
   console.log("🔄 STREAMING DATA - DynamicRenderer received:", {
     interruptType,
@@ -223,42 +201,58 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
       args: interrupt.value.widget.args,
     });
 
+    // Check for renderingWindow to determine where to render the widget
+    const renderingWindow = interrupt.value.widget.args?.renderingWindow || "chat";
+
+    // Create the widget component
+    let widgetComponent: React.ReactNode;
+
     // For TravelerDetailsWidget, render in bottom sheet
     if (interrupt.value.widget.type === "TravelerDetailsWidget") {
       console.log('interrupt: ',JSON.stringify(interrupt.value.widget.args, null, 2));
-      return (
+      widgetComponent = (
         <TravelerDetailsBottomSheet
           apiData={interrupt}
           args={interrupt.value.widget.args}
         />
       );
-    }
-
-    if (interrupt.value.widget.type === "SeatPaymentWidget") {
-      return <Component {...interrupt.value.widget.args} />;
-    }
-
-    if (interrupt.value.widget.type === "AddBaggageWidget") {
-      return <Component {...interrupt.value.widget.args} />;
-    }
-
-    // For NonAgentFlowWidget, render in bottom sheet
-    if (interrupt.value.widget.type === "NonAgentFlowWidget") {
-      return (
+    } else if (interrupt.value.widget.type === "SeatPaymentWidget") {
+      widgetComponent = <Component {...interrupt.value.widget.args} />;
+    } else if (interrupt.value.widget.type === "AddBaggageWidget") {
+      widgetComponent = <Component {...interrupt.value.widget.args} />;
+    } else if (interrupt.value.widget.type === "NonAgentFlowWidget") {
+      // For NonAgentFlowWidget, render in bottom sheet
+      widgetComponent = (
         <NonAgentFlowBottomSheet
           apiData={interrupt}
           args={interrupt.value.widget.args}
         />
       );
+    } else if (["SeatPreferenceWidget", "SeatSelectionWidget", "SeatMapWidget", "SeatCombinedWidget"].includes(interrupt.value.widget.type)) {
+      // For seat-related widgets, render directly without bottom sheet
+      widgetComponent = <Component {...interrupt.value.widget.args} />;
+    } else {
+      // For other widgets, pass the args object directly to the component
+      widgetComponent = <Component {...interrupt.value.widget.args} />;
     }
 
-    // For seat-related widgets, render directly without bottom sheet
-    if (["SeatPreferenceWidget", "SeatSelectionWidget", "SeatMapWidget", "SeatCombinedWidget"].includes(interrupt.value.widget.type)) {
-      return <Component {...interrupt.value.widget.args} />;
+    // Handle rendering based on renderingWindow
+    if (renderingWindow === "itinerary") {
+      // Add widget to itinerary section and switch to itinerary tab
+      // Use interrupt_id if available, otherwise create a stable ID based on widget type and args
+      const interruptId = interrupt.value?.interrupt_id || interrupt.value?.widget?.args?.interrupt_id;
+      const argsHash = JSON.stringify(interrupt.value.widget.args || {});
+      const widgetId = interruptId || `${interrupt.value.widget.type}-${btoa(argsHash).slice(0, 8)}`;
+
+      addWidget(widgetId, widgetComponent);
+      switchToItinerary();
+
+      // Return null for chat section since widget is rendered in itinerary
+      return null;
     }
 
-    // For other widgets, pass the args object directly to the component
-    return <Component {...interrupt.value.widget.args} />;
+    // Default: render in chat section
+    return widgetComponent;
   }
 
   debugLog("No widget found", { interruptType, interrupt });

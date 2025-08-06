@@ -6,6 +6,7 @@ import { Plus, Minus, CalendarIcon } from "lucide-react";
 import { AirportCombobox } from "@/components/common/ui/airportCombobox";
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
+import { useTabContext } from "@/providers/TabContext";
 import {submitInterruptResponse} from "./util";
 import {
   Popover,
@@ -78,6 +79,7 @@ const DateInput = ({
 
 const SearchCriteriaWidget = (args: Record<string, any>) => {
   const thread = useStreamContext();
+  const { switchToChat } = useTabContext();
 
   // Extract data from args
   const flightSearchCriteria = args.flightSearchCriteria || {};
@@ -185,6 +187,8 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
 
     try {
       await submitInterruptResponse(thread, "response", responseData);
+      // Switch back to Chat tab after successful submission since response will appear there
+      switchToChat();
     } catch (error: any) {
       console.error("Error submitting interrupt response:", error);
       // Optional: already handled inside the utility

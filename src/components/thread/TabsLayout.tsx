@@ -4,6 +4,7 @@ import { MapView } from "@/components/flight/MapComponent";
 import { ItineraryView } from "@/components/flight/ItineraryComponent";
 import { Thread } from "@/components/thread/chat";
 import { useQueryState } from "nuqs";
+import { useTabContext } from "@/providers/TabContext";
 
 const tabs = [
   {
@@ -22,10 +23,16 @@ const tabs = [
 
 export const TabsLayout = () => {
   const [threadId, _setThreadId] = useQueryState("threadId");
+  const { activeTab, setActiveTab } = useTabContext();
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value as "Chat" | "Map" | "Itinerary");
+  };
 
   return (
     <Tabs
-      defaultValue="Chat"
+      value={activeTab}
+      onValueChange={handleTabChange}
       className="flex h-full w-full flex-col"
     >
       <TabsList className="flex items-center justify-center gap-2">
