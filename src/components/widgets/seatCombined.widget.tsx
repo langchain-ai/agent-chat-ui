@@ -174,29 +174,32 @@ const SeatCombinedWidget: React.FC<SeatCombinedWidgetProps> = (args) => {
 
   const getSeatColor = (seat: any) => {
     if (seat.id === selectedSeat) {
-      return "bg-blue-500 text-white border-blue-500";
+      return "bg-black text-white border-black";
     }
     if (seat.status === 'available') {
-      return "bg-green-100 text-green-800 border-green-300 hover:bg-green-200 cursor-pointer";
+      return "bg-white text-black border-gray-300 hover:bg-gray-50 hover:border-gray-400 cursor-pointer";
     }
-    return "bg-red-100 text-red-800 border-red-300 cursor-not-allowed";
+    return "bg-gray-300 text-gray-500 border-gray-400 cursor-not-allowed";
   };
 
   return (
     <>
       <div className="mx-auto mt-2 w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 font-sans shadow-lg">
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Choose Your Seat Option</h2>
-          <p className="text-gray-600">Select one of the following seat options</p>
+        <div className="mb-6 text-center">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-black">
+            <Plane className="h-6 w-6 text-white" />
+          </div>
+          <h2 className="text-xl font-bold text-black">Choose Your Seat</h2>
+          <p className="mt-1 text-sm text-gray-600">Select from the options below</p>
         </div>
 
         <form className="space-y-3">
           {/* Option 1: Select Usual Seat */}
           <label className={cn(
-            "flex items-center gap-4 p-4 border-2 rounded-lg cursor-pointer transition-all",
+            "flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md",
             selectedOption === "usual"
-              ? "border-blue-500 bg-blue-50"
-              : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+              ? "border-black bg-gray-50"
+              : "border-gray-200 hover:border-gray-300"
           )}>
             <input
               type="radio"
@@ -204,23 +207,26 @@ const SeatCombinedWidget: React.FC<SeatCombinedWidgetProps> = (args) => {
               value="usual"
               checked={selectedOption === "usual"}
               onChange={(e) => setSelectedOption(e.target.value)}
-              className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+              className="w-4 h-4 text-black border-gray-300 focus:ring-black"
             />
-            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-              <Plane className="w-5 h-5 text-blue-600" />
+            <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center">
+              <Plane className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1">
-              <div className="font-medium text-gray-900">Select Usual Seat</div>
-              <div className="text-sm text-gray-500">Seat {usualSeat} - ₹350</div>
+              <div className="font-semibold text-black">Select Usual Seat</div>
+              <div className="text-xs text-gray-600">Seat {usualSeat}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-lg font-bold text-black">INR 350</div>
             </div>
           </label>
 
           {/* Option 2: Browse Seat Map */}
           <label className={cn(
-            "flex items-center gap-4 p-4 border-2 rounded-lg cursor-pointer transition-all",
+            "flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md",
             selectedOption === "browse"
-              ? "border-green-500 bg-green-50"
-              : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+              ? "border-black bg-gray-50"
+              : "border-gray-200 hover:border-gray-300"
           )}>
             <input
               type="radio"
@@ -228,23 +234,26 @@ const SeatCombinedWidget: React.FC<SeatCombinedWidgetProps> = (args) => {
               value="browse"
               checked={selectedOption === "browse"}
               onChange={(e) => setSelectedOption(e.target.value)}
-              className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
+              className="w-4 h-4 text-black border-gray-300 focus:ring-black"
             />
-            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-              <MapPin className="w-5 h-5 text-green-600" />
+            <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center">
+              <MapPin className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1">
-              <div className="font-medium text-gray-900">Browse Seat Map</div>
-              <div className="text-sm text-gray-500">Choose from available seats</div>
+              <div className="font-semibold text-black">Select Seat</div>
+              <div className="text-xs text-gray-600">Choose from available seats</div>
+            </div>
+            <div className="text-right">
+              <div className="text-lg font-bold text-black">PAID</div>
             </div>
           </label>
 
           {/* Option 3: Random Free Seat */}
           <label className={cn(
-            "flex items-center gap-4 p-4 border-2 rounded-lg cursor-pointer transition-all",
+            "flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md",
             selectedOption === "random"
-              ? "border-orange-500 bg-orange-50"
-              : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+              ? "border-black bg-gray-50"
+              : "border-gray-200 hover:border-gray-300"
           )}>
             <input
               type="radio"
@@ -252,14 +261,17 @@ const SeatCombinedWidget: React.FC<SeatCombinedWidgetProps> = (args) => {
               value="random"
               checked={selectedOption === "random"}
               onChange={(e) => setSelectedOption(e.target.value)}
-              className="w-4 h-4 text-orange-600 border-gray-300 focus:ring-orange-500"
+              className="w-4 h-4 text-black border-gray-300 focus:ring-black"
             />
-            <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-              <Shuffle className="w-5 h-5 text-orange-600" />
+            <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center">
+              <Shuffle className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1">
-              <div className="font-medium text-gray-900">Random Free Seat</div>
-              <div className="text-sm text-gray-500">Get any available free seat</div>
+              <div className="font-semibold text-black">Auto Allocate Seat </div>
+              <div className="text-xs text-gray-600">Get best available free seat</div>
+            </div>
+            <div className="text-right">
+              <div className="text-lg font-bold text-black">FREE</div>
             </div>
           </label>
         </form>
@@ -277,10 +289,14 @@ const SeatCombinedWidget: React.FC<SeatCombinedWidgetProps> = (args) => {
               }
             }}
             disabled={!selectedOption || isLoading}
-            className="w-full bg-black text-white hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed py-3 text-base font-medium"
+            className="w-full rounded-xl bg-black py-3 text-white transition-all duration-200 hover:bg-gray-800 disabled:bg-gray-300 disabled:text-gray-500"
           >
-            {isLoading ? "Processing..." :
-             selectedOption === "usual" ? `Choose Seat ${usualSeat}` :
+            {isLoading ? (
+              <div className="flex items-center justify-center space-x-2">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                <span>Processing...</span>
+              </div>
+            ) : selectedOption === "usual" ? `Choose Seat ${usualSeat}` :
              selectedOption === "browse" ? "Browse Seats" :
              selectedOption === "random" ? "Get Random Free Seat" :
              "Select an Option"}
@@ -290,43 +306,44 @@ const SeatCombinedWidget: React.FC<SeatCombinedWidgetProps> = (args) => {
 
       {/* Seat Map Bottom Sheet */}
       <Sheet open={showSeatMap} onOpenChange={setShowSeatMap}>
-        <SheetContent side="bottom" className="h-[80vh] overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Select Your Seat</SheetTitle>
+        <SheetContent side="bottom" className="h-[85vh] flex flex-col p-0">
+          <SheetHeader className="flex-shrink-0 px-6 py-4 border-b border-gray-200">
+            <SheetTitle className="text-xl font-bold text-black">Select Your Seat</SheetTitle>
           </SheetHeader>
 
-          <div className="mt-6">
+          {/* Scrollable content area */}
+          <div className="flex-1 overflow-y-auto px-6 py-4">
             {/* Legend */}
             <div className="flex justify-center gap-6 mb-6 text-sm">
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
-                <span>Available</span>
+                <div className="w-4 h-4 bg-white border-2 border-gray-300 rounded"></div>
+                <span className="text-gray-700">Available</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-red-100 border border-red-300 rounded"></div>
-                <span>Occupied</span>
+                <div className="w-4 h-4 bg-gray-300 border-2 border-gray-400 rounded"></div>
+                <span className="text-gray-700">Occupied</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-blue-500 border border-blue-500 rounded"></div>
-                <span>Selected</span>
+                <div className="w-4 h-4 bg-black border-2 border-black rounded"></div>
+                <span className="text-gray-700">Selected</span>
               </div>
             </div>
 
             {/* Seat Map */}
-            <div className="mb-6 overflow-x-auto">
+            <div className="mb-20 overflow-x-auto">
               <div className="min-w-max">
                 {/* Header with seat letters */}
-                <div className="flex justify-center mb-2">
+                <div className="flex justify-center mb-4">
                   <div className="flex gap-1">
-                    <div className="w-8 h-8 flex items-center justify-center text-sm font-medium"></div>
+                    <div className="w-10 h-8 flex items-center justify-center text-sm font-semibold text-gray-600"></div>
                     {['A', 'B', 'C'].map(letter => (
-                      <div key={letter} className="w-8 h-8 flex items-center justify-center text-sm font-medium">
+                      <div key={letter} className="w-10 h-8 flex items-center justify-center text-sm font-semibold text-gray-600">
                         {letter}
                       </div>
                     ))}
-                    <div className="w-4"></div> {/* Aisle space */}
+                    <div className="w-6"></div> {/* Aisle space */}
                     {['D', 'E', 'F'].map(letter => (
-                      <div key={letter} className="w-8 h-8 flex items-center justify-center text-sm font-medium">
+                      <div key={letter} className="w-10 h-8 flex items-center justify-center text-sm font-semibold text-gray-600">
                         {letter}
                       </div>
                     ))}
@@ -334,7 +351,7 @@ const SeatCombinedWidget: React.FC<SeatCombinedWidgetProps> = (args) => {
                 </div>
 
                 {/* Seat rows */}
-                <div className="space-y-1">
+                <div className="space-y-2">
                   {seatRows.map(rowNum => {
                     const rowSeats = seats.filter(s => s.row === rowNum);
                     const leftSeats = rowSeats.filter(s => ['A', 'B', 'C'].includes(s.seat));
@@ -344,7 +361,7 @@ const SeatCombinedWidget: React.FC<SeatCombinedWidgetProps> = (args) => {
                       <div key={rowNum} className="flex justify-center">
                         <div className="flex gap-1 items-center">
                           {/* Row number */}
-                          <div className="w-8 h-8 flex items-center justify-center text-sm font-medium">
+                          <div className="w-10 h-10 flex items-center justify-center text-sm font-semibold text-gray-600 bg-gray-100 rounded">
                             {rowNum}
                           </div>
 
@@ -357,14 +374,14 @@ const SeatCombinedWidget: React.FC<SeatCombinedWidgetProps> = (args) => {
                               onMouseLeave={() => setHoveredSeat("")}
                               disabled={seat.status === 'unavailable'}
                               className={cn(
-                                "w-8 h-8 text-xs font-medium border rounded transition-colors relative",
+                                "w-10 h-10 text-sm font-semibold border-2 rounded-lg transition-all duration-200 relative hover:shadow-md",
                                 getSeatColor(seat)
                               )}
                               title={`Seat ${seat.id} - ${seat.price === 0 ? 'Free' : `₹${seat.price}`}`}
                             >
                               {seat.seat}
                               {seat.price > 0 && (
-                                <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full text-[8px] flex items-center justify-center text-black font-bold">
+                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-black rounded-full text-[10px] flex items-center justify-center text-white font-bold">
                                   ₹
                                 </div>
                               )}
@@ -372,8 +389,8 @@ const SeatCombinedWidget: React.FC<SeatCombinedWidgetProps> = (args) => {
                           ))}
 
                           {/* Aisle space */}
-                          <div className="w-4 flex items-center justify-center">
-                            <div className="w-px h-6 bg-gray-300"></div>
+                          <div className="w-6 flex items-center justify-center">
+                            <div className="w-px h-8 bg-gray-300"></div>
                           </div>
 
                           {/* Right side seats (D, E, F) */}
@@ -385,14 +402,14 @@ const SeatCombinedWidget: React.FC<SeatCombinedWidgetProps> = (args) => {
                               onMouseLeave={() => setHoveredSeat("")}
                               disabled={seat.status === 'unavailable'}
                               className={cn(
-                                "w-8 h-8 text-xs font-medium border rounded transition-colors relative",
+                                "w-10 h-10 text-sm font-semibold border-2 rounded-lg transition-all duration-200 relative hover:shadow-md",
                                 getSeatColor(seat)
                               )}
                               title={`Seat ${seat.id} - ${seat.price === 0 ? 'Free' : `₹${seat.price}`}`}
                             >
                               {seat.seat}
                               {seat.price > 0 && (
-                                <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full text-[8px] flex items-center justify-center text-black font-bold">
+                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-black rounded-full text-[10px] flex items-center justify-center text-white font-bold">
                                   ₹
                                 </div>
                               )}
@@ -405,36 +422,80 @@ const SeatCombinedWidget: React.FC<SeatCombinedWidgetProps> = (args) => {
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Selected seat info and submit button */}
-            {selectedSeat && (
-              <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                <div className="flex justify-between items-center mb-3">
-                  <div>
-                    <div className="font-medium">Selected Seat: {selectedSeat}</div>
-                    <div className="text-sm text-gray-600">
-                      {selectedPrice === 0 ? 'Free' : `₹${selectedPrice}`}
+          {/* Sticky Footer with selected seat info and buttons */}
+          <div className="flex-shrink-0 border-t border-gray-200 bg-white px-6 py-4">
+            {selectedSeat ? (
+              <div className="space-y-4">
+                {/* Selected seat info */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center">
+                        <span className="text-white font-bold text-sm">{selectedSeat}</span>
+                      </div>
+                      <div>
+                        <div className="font-semibold text-black">Seat {selectedSeat}</div>
+                        <div className="text-xs text-gray-600">
+                          {selectedPrice === 0 ? 'Free Seat' : `Premium Seat`}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-black">
+                        {selectedPrice === 0 ? 'FREE' : `₹${selectedPrice}`}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {selectedPrice === 0 ? 'No charge' : 'Total amount'}
+                      </div>
                     </div>
                   </div>
                 </div>
+
+                {/* Action buttons */}
+                <div className="space-y-3">
+                  <Button
+                    onClick={handleSeatMapSubmit}
+                    disabled={isLoading}
+                    className="w-full rounded-xl bg-black py-3 text-white transition-all duration-200 hover:bg-gray-800 disabled:bg-gray-300 disabled:text-gray-500"
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center justify-center space-x-2">
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                        <span>Confirming...</span>
+                      </div>
+                    ) : (
+                      "Confirm Seat Selection"
+                    )}
+                  </Button>
+
+                  <Button
+                    onClick={() => setShowSeatMap(false)}
+                    variant="outline"
+                    className="w-full rounded-xl border-2 border-gray-300 text-black hover:bg-gray-50 hover:border-gray-400"
+                  >
+                    Close
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* No seat selected message */}
+                <div className="text-center py-4">
+                  <div className="text-gray-500 text-sm">Select a seat from the map above</div>
+                </div>
+
+                {/* Close button only */}
                 <Button
-                  onClick={handleSeatMapSubmit}
-                  disabled={isLoading}
-                  className="w-full bg-black text-white hover:bg-gray-800"
+                  onClick={() => setShowSeatMap(false)}
+                  variant="outline"
+                  className="w-full rounded-xl border-2 border-gray-300 text-black hover:bg-gray-50 hover:border-gray-400"
                 >
-                  {isLoading ? "Confirming..." : "Confirm Seat Selection"}
+                  Close
                 </Button>
               </div>
             )}
-
-            {/* Close button */}
-            <Button
-              onClick={() => setShowSeatMap(false)}
-              variant="outline"
-              className="w-full"
-            >
-              Close
-            </Button>
           </div>
         </SheetContent>
       </Sheet>
