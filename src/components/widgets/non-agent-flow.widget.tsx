@@ -245,6 +245,26 @@ const NonAgentFlowWidgetContent: React.FC<
               });
 
               console.log("Verification response:", verificationResponse);
+
+              // Safely extract PNR with error handling
+              const extractPNR = (response: any): string => {
+                try {
+                  const pnr = response?.data?.bookingData?.associatedRecords?.[0]?.reference;
+                  if (pnr && typeof pnr === 'string' && pnr.trim() !== '') {
+                    console.log("PNR extracted successfully:", pnr);
+                    return pnr.trim();
+                  } else {
+                    console.warn("PNR not found or invalid in response:", response?.data?.bookingData);
+                    return '';
+                  }
+                } catch (error) {
+                  console.error("Error extracting PNR from response:", error);
+                  return '';
+                }
+              };
+
+              const pnr = extractPNR(verificationResponse);
+
               setPaymentState({
                 status: "success",
                 prepaymentData: prepaymentResponse.data,
@@ -265,6 +285,7 @@ const NonAgentFlowWidgetContent: React.FC<
                       paymentStatus: verificationResponse.data.paymentStatus,
                       bookingStatus: verificationResponse.data.bookingStatus,
                       tripId,
+                      pnr: pnr || '', // Ensure PNR is always a string (empty if not found)
                       transactionData: {
                         paymentStatus: verificationResponse.data.paymentStatus,
                         bookingStatus: verificationResponse.data.bookingStatus,
@@ -272,9 +293,12 @@ const NonAgentFlowWidgetContent: React.FC<
                           prepaymentResponse.data.transaction.transaction_id,
                         bookingError: verificationResponse.data.bookingError,
                         // Add booking data structure - this would typically come from the server response
-                        bookingData: null, // Will be populated by server with actual booking details
+                        bookingData: (verificationResponse.data as any)?.bookingData || null,
                       },
                     };
+
+                    console.log("Sending interrupt response with PNR:", pnr || 'No PNR found');
+                    console.log("Complete response data:", responseData);
 
                     await submitInterruptResponse(
                       thread,
@@ -322,6 +346,7 @@ const NonAgentFlowWidgetContent: React.FC<
                     paymentStatus: "FAILED",
                     bookingStatus: "FAILED",
                     tripId,
+                    pnr: '', // No PNR available on verification failure
                     error: errorMessage,
                     transactionData: {
                       paymentStatus: "FAILED",
@@ -389,6 +414,7 @@ const NonAgentFlowWidgetContent: React.FC<
                       paymentStatus: "FAILED",
                       bookingStatus: "FAILED",
                       tripId,
+                      pnr: '', // No PNR available on cancellation
                       error: errorMessage,
                       cancelled: true,
                       transactionData: {
@@ -446,6 +472,7 @@ const NonAgentFlowWidgetContent: React.FC<
               paymentStatus: "FAILED",
               bookingStatus: "FAILED",
               tripId,
+              pnr: '', // No PNR available on payment initiation failure
               error: errorMessage,
               transactionData: {
                 paymentStatus: "FAILED",
@@ -485,17 +512,17 @@ const NonAgentFlowWidgetContent: React.FC<
   ]);
 
   // Countdown effect
-  // useEffect(() => {
-  //   if (isCountdownActive && countdown > 0 && !hasUserClicked) {
-  //     const timer = setTimeout(() => {
-  //       setCountdown(countdown - 1);
-  //     }, 1000);
-  //     return () => clearTimeout(timer);
-  //   } else if (isCountdownActive && countdown === 0 && !hasUserClicked) {
-  //     // Auto-trigger payment when countdown reaches 0
-  //     handlePaymentClick();
-  //   }
-  // }, [countdown, isCountdownActive, hasUserClicked, handlePaymentClick]);
+  useEffect(() => {
+    if (isCountdownActive && countdown > 0 && !hasUserClicked) {
+      const timer = setTimeout(() => {
+        setCountdown(countdown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (isCountdownActive && countdown === 0 && !hasUserClicked) {
+      // Auto-trigger payment when countdown reaches 0
+      handlePaymentClick();
+    }
+  }, [countdown, isCountdownActive, hasUserClicked, handlePaymentClick]);
 
   // Start countdown when component mounts
   useEffect(() => {
@@ -540,9 +567,6 @@ const NonAgentFlowWidgetContent: React.FC<
                 Processing Payment
               </span>
             </div>
-            <p className="text-sm text-gray-600">
-              Please complete the payment in the popup window
-            </p>
           </div>
         );
 

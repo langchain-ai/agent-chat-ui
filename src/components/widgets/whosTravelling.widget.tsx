@@ -317,6 +317,77 @@ const getCitiesByQuery = (query: string): string[] => {
 // Countries list for nationality and issuing country - now using i18n-iso-countries
 const countries = getAllCountries();
 
+// Custom Date Input Component with Placeholder
+interface DateInputProps {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  min?: string;
+  max?: string;
+  required?: boolean;
+  className?: string;
+}
+
+const DateInput: React.FC<DateInputProps> = ({
+  value,
+  onChange,
+  placeholder,
+  min,
+  max,
+  required = false,
+  className
+}) => {
+  const [isFocused, setIsFocused] = useState(false);
+  const [inputType, setInputType] = useState<'text' | 'date'>('text');
+
+  // Show date input when focused or when there's a value
+  const shouldShowDateInput = isFocused || value;
+
+  const handleFocus = () => {
+    setIsFocused(true);
+    setInputType('date');
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    // Keep as date input if there's a value, otherwise switch back to text
+    if (!value) {
+      setInputType('text');
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(e.target.value);
+  };
+
+  return (
+    <div className="relative">
+      <Input
+        type={shouldShowDateInput ? 'date' : 'text'}
+        value={shouldShowDateInput ? value : ''}
+        placeholder={shouldShowDateInput ? undefined : placeholder}
+        onChange={handleChange}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        min={min}
+        max={max}
+        required={required}
+        className={cn(
+          "w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:border-black focus:ring-black",
+          !shouldShowDateInput && !value && "text-gray-500",
+          className
+        )}
+      />
+      {/* Helper text for better UX */}
+      {!shouldShowDateInput && !value && (
+        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm pointer-events-none">
+          📅
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Country Combobox Component with Search
 interface CountryComboboxProps {
   value: string; // Country code
@@ -1492,14 +1563,12 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
             />
 
             {/* Date of Birth (Optional) */}
-            <Input
-              type="date"
-              placeholder="Date of Birth (Optional)"
+            <DateInput
+              placeholder="Date of Birth"
               value={formatDateForInput(newPassengerForm.dateOfBirth)}
-              onChange={(e) => setNewPassengerForm(prev => ({ ...prev, dateOfBirth: e.target.value }))}
+              onChange={(value) => setNewPassengerForm(prev => ({ ...prev, dateOfBirth: value }))}
               min={getDateLimits(addPassengerType).min}
               max={getDateLimits(addPassengerType).max}
-              className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:border-black focus:ring-black"
             />
 
             {/* Document Fields - Show when document is required or for international flights */}
@@ -1545,13 +1614,11 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
                   placeholder="Select passport issuing country"
                 />
 
-                <Input
-                  type="date"
+                <DateInput
                   placeholder="Passport expiry date"
                   value={formatDateForInput(newPassengerForm.passportExpiry)}
-                  onChange={(e) => setNewPassengerForm(prev => ({ ...prev, passportExpiry: e.target.value }))}
+                  onChange={(value) => setNewPassengerForm(prev => ({ ...prev, passportExpiry: value }))}
                   min={new Date().toISOString().split('T')[0]} // Block past dates
-                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:border-black focus:ring-black"
                   required={isAnyDocumentRequired()}
                 />
               </>
@@ -1616,14 +1683,12 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
                 className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:border-black focus:ring-black"
               />
 
-              <Input
-                type="date"
-                placeholder="Date of Birth (Optional)"
+              <DateInput
+                placeholder="Date of Birth"
                 value={formatDateForInput(editingPassenger.dateOfBirth)}
-                onChange={(e) => setEditingPassenger(prev => prev ? { ...prev, dateOfBirth: e.target.value } : null)}
+                onChange={(value) => setEditingPassenger(prev => prev ? { ...prev, dateOfBirth: value } : null)}
                 min={getDateLimits(editingPassenger.type || 'adult').min}
                 max={getDateLimits(editingPassenger.type || 'adult').max}
-                className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:border-black focus:ring-black"
               />
 
               {/* Passport Information - Editable Fields */}
@@ -1709,11 +1774,10 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
                     placeholder="Select passport issuing country"
                   />
 
-                  <Input
-                    type="date"
+                  <DateInput
                     placeholder="Passport expiry date"
                     value={formatDateForInput(editingPassenger.documents?.[0]?.expiryDate)}
-                    onChange={(e) => {
+                    onChange={(value) => {
                       const newDocuments = editingPassenger.documents ? [...editingPassenger.documents] : [{
                         documentId: 0,
                         documentType: 'passport',
@@ -1726,11 +1790,10 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
                         issuanceLocation: '',
                         documentUrl: ''
                       }];
-                      newDocuments[0] = { ...newDocuments[0], expiryDate: e.target.value };
+                      newDocuments[0] = { ...newDocuments[0], expiryDate: value };
                       setEditingPassenger(prev => prev ? { ...prev, documents: newDocuments } : null);
                     }}
                     min={new Date().toISOString().split('T')[0]} // Block past dates
-                    className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:border-black focus:ring-black"
                   />
                 </div>
               )}
