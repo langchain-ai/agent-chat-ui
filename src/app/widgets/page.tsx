@@ -13,6 +13,7 @@ import ReviewWidget from "@/components/widgets/review.widget";
 // Import the StreamProvider to wrap our widgets
 import { StreamProvider } from "@/providers/Stream";
 import { ThreadProvider } from "@/providers/Thread";
+import { TabProvider } from "@/providers/TabContext";
 
 // Mock data for SearchCriteriaWidget
 const mockSearchCriteriaData = {
@@ -664,160 +665,162 @@ const StandaloneReviewWidget = () => {
 
 export default function WidgetsPage(): React.ReactNode {
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-12 text-center">
-          <h1 className="mb-4 text-4xl font-bold text-gray-900">
-            Widget Showcase
-          </h1>
-          <p className="text-lg text-gray-600">
-            All available widgets displayed in one place
-          </p>
-        </div>
-
-        <div className="space-y-12">
-          {/* Interactive Widgets Section */}
-          <div className="mb-8">
-            <h2 className="mb-4 text-center text-3xl font-bold text-gray-900">
-              Interactive Chat Widgets
-            </h2>
-            <p className="mb-8 text-center text-gray-600">
-              These widgets are used for user input and interaction in chat
-              conversations
+    <TabProvider>
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-12 text-center">
+            <h1 className="mb-4 text-4xl font-bold text-gray-900">
+              Widget Showcase
+            </h1>
+            <p className="text-lg text-gray-600">
+              All available widgets displayed in one place
             </p>
           </div>
 
-          {/* Search Criteria Widget */}
-          <section className="rounded-lg bg-white p-6 shadow-md">
-            <div className="mb-6">
-              <h3 className="mb-2 text-2xl font-semibold text-gray-800">
-                Search Criteria Widget
-              </h3>
-              <p className="text-sm text-gray-600">
-                Interactive form for flight search parameters. Used when the
-                agent needs user input for flight search criteria.
+          <div className="space-y-12">
+            {/* Interactive Widgets Section */}
+            <div className="mb-8">
+              <h2 className="mb-4 text-center text-3xl font-bold text-gray-900">
+                Interactive Chat Widgets
+              </h2>
+              <p className="mb-8 text-center text-gray-600">
+                These widgets are used for user input and interaction in chat
+                conversations
               </p>
             </div>
-            <div className="w-full">
-              <StandaloneSearchCriteriaWidget />
-            </div>
-          </section>
 
-          {/* Flight Options Widget */}
-          <section className="rounded-lg bg-white p-6 shadow-md">
-            <div className="mb-6">
-              <h3 className="mb-2 text-2xl font-semibold text-gray-800">
-                Flight Options Widget
-              </h3>
-              <p className="text-sm text-gray-600">
-                Interactive flight selection interface. Used when the agent
-                presents flight options for user selection.
+            {/* Search Criteria Widget */}
+            <section className="rounded-lg bg-white p-6 shadow-md">
+              <div className="mb-6">
+                <h3 className="mb-2 text-2xl font-semibold text-gray-800">
+                  Search Criteria Widget
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Interactive form for flight search parameters. Used when the
+                  agent needs user input for flight search criteria.
+                </p>
+              </div>
+              <div className="w-full">
+                <StandaloneSearchCriteriaWidget />
+              </div>
+            </section>
+
+            {/* Flight Options Widget */}
+            <section className="rounded-lg bg-white p-6 shadow-md">
+              <div className="mb-6">
+                <h3 className="mb-2 text-2xl font-semibold text-gray-800">
+                  Flight Options Widget
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Interactive flight selection interface. Used when the agent
+                  presents flight options for user selection.
+                </p>
+              </div>
+              <div className="flex justify-center">
+                <StandaloneFlightOptionsWidget />
+              </div>
+            </section>
+
+            {/* Display Widgets Section */}
+            <div className="mt-16 mb-8">
+              <h2 className="mb-4 text-center text-3xl font-bold text-gray-900">
+                Display Widgets
+              </h2>
+              <p className="mb-8 text-center text-gray-600">
+                These widgets display information sent from the server (marked
+                as &quot;simple widget needs to send from server&quot;)
               </p>
             </div>
-            <div className="flex justify-center">
-              <StandaloneFlightOptionsWidget />
-            </div>
-          </section>
 
-          {/* Display Widgets Section */}
-          <div className="mt-16 mb-8">
-            <h2 className="mb-4 text-center text-3xl font-bold text-gray-900">
-              Display Widgets
-            </h2>
-            <p className="mb-8 text-center text-gray-600">
-              These widgets display information sent from the server (marked as
-              &quot;simple widget needs to send from server&quot;)
-            </p>
+            {/* Flight Status Widget */}
+            <section className="rounded-lg bg-white p-6 shadow-md">
+              <div className="mb-6">
+                <h3 className="mb-2 text-2xl font-semibold text-gray-800">
+                  Flight Status Widget
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Display-only widget showing flight status information.
+                </p>
+              </div>
+              <div className="flex justify-center">
+                <FlightStatusWidget />
+              </div>
+            </section>
+
+            {/* Lounge Widget */}
+            <section className="rounded-lg bg-white p-6 shadow-md">
+              <div className="mb-6">
+                <h3 className="mb-2 text-2xl font-semibold text-gray-800">
+                  Lounge Widget
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Display-only widget showing airport lounge options.
+                </p>
+              </div>
+              <div className="flex justify-center">
+                <LoungeWidget />
+              </div>
+            </section>
+
+            {/* Weather Widget */}
+            <section className="rounded-lg bg-white p-6 shadow-md">
+              <div className="mb-6">
+                <h3 className="mb-2 text-2xl font-semibold text-gray-800">
+                  Weather Widget
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Display-only widget showing weather information with hourly
+                  forecast.
+                </p>
+              </div>
+              <div className="flex justify-center">
+                <WeatherWidget />
+              </div>
+            </section>
+
+            {/* Review Widget */}
+            <section className="rounded-lg bg-white p-6 shadow-md">
+              <div className="mb-6">
+                <h3 className="mb-2 text-2xl font-semibold text-gray-800">
+                  Review Widget
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Comprehensive flight booking review page with collapsible
+                  sections, form validation, and responsive design.
+                </p>
+              </div>
+              <div className="w-full">
+                <StandaloneReviewWidget />
+              </div>
+            </section>
           </div>
 
-          {/* Flight Status Widget */}
-          <section className="rounded-lg bg-white p-6 shadow-md">
-            <div className="mb-6">
-              <h3 className="mb-2 text-2xl font-semibold text-gray-800">
-                Flight Status Widget
-              </h3>
-              <p className="text-sm text-gray-600">
-                Display-only widget showing flight status information.
+          {/* Footer */}
+          <div className="mt-16 text-center">
+            <div className="mx-auto max-w-4xl rounded-lg bg-blue-50 p-6">
+              <h4 className="mb-2 text-lg font-semibold text-blue-900">
+                How These Widgets Are Used in Chat
+              </h4>
+              <p className="mb-4 text-sm text-blue-800">
+                These widgets are rendered in chat conversations through the
+                LangGraph interrupt system. The server sends widget data via
+                interrupts, and the client renders the appropriate widget based
+                on the type.
               </p>
-            </div>
-            <div className="flex justify-center">
-              <FlightStatusWidget />
-            </div>
-          </section>
-
-          {/* Lounge Widget */}
-          <section className="rounded-lg bg-white p-6 shadow-md">
-            <div className="mb-6">
-              <h3 className="mb-2 text-2xl font-semibold text-gray-800">
-                Lounge Widget
-              </h3>
-              <p className="text-sm text-gray-600">
-                Display-only widget showing airport lounge options.
-              </p>
-            </div>
-            <div className="flex justify-center">
-              <LoungeWidget />
-            </div>
-          </section>
-
-          {/* Weather Widget */}
-          <section className="rounded-lg bg-white p-6 shadow-md">
-            <div className="mb-6">
-              <h3 className="mb-2 text-2xl font-semibold text-gray-800">
-                Weather Widget
-              </h3>
-              <p className="text-sm text-gray-600">
-                Display-only widget showing weather information with hourly
-                forecast.
-              </p>
-            </div>
-            <div className="flex justify-center">
-              <WeatherWidget />
-            </div>
-          </section>
-
-          {/* Review Widget */}
-          <section className="rounded-lg bg-white p-6 shadow-md">
-            <div className="mb-6">
-              <h3 className="mb-2 text-2xl font-semibold text-gray-800">
-                Review Widget
-              </h3>
-              <p className="text-sm text-gray-600">
-                Comprehensive flight booking review page with collapsible
-                sections, form validation, and responsive design.
-              </p>
-            </div>
-            <div className="w-full">
-              <StandaloneReviewWidget />
-            </div>
-          </section>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-16 text-center">
-          <div className="mx-auto max-w-4xl rounded-lg bg-blue-50 p-6">
-            <h4 className="mb-2 text-lg font-semibold text-blue-900">
-              How These Widgets Are Used in Chat
-            </h4>
-            <p className="mb-4 text-sm text-blue-800">
-              These widgets are rendered in chat conversations through the
-              LangGraph interrupt system. The server sends widget data via
-              interrupts, and the client renders the appropriate widget based on
-              the type.
-            </p>
-            <div className="text-left text-sm text-blue-700">
-              <p className="mb-2">
-                <strong>Interactive widgets</strong> collect user input and send
-                responses back to continue the conversation.
-              </p>
-              <p>
-                <strong>Display widgets</strong> show information sent from the
-                server without requiring user interaction.
-              </p>
+              <div className="text-left text-sm text-blue-700">
+                <p className="mb-2">
+                  <strong>Interactive widgets</strong> collect user input and
+                  send responses back to continue the conversation.
+                </p>
+                <p>
+                  <strong>Display widgets</strong> show information sent from
+                  the server without requiring user interaction.
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </TabProvider>
   );
 }
