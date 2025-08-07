@@ -34,6 +34,9 @@ import {
   type TransactionVerifyResponse,
 } from "@/services/paymentService";
 import { useNonAgentFlow } from "@/providers/NonAgentFlowContext";
+import { useStreamContext } from "@/providers/Stream";
+import { useTabContext } from "@/providers/TabContext";
+import { submitInterruptResponse } from "@/components/widgets/util";
 
 interface NonAgentFlowWidgetProps {
   tripId: string;
@@ -122,6 +125,7 @@ const NonAgentFlowBottomSheet: React.FC<NonAgentFlowWidgetProps> = (props) => {
             tripId={extractedTripId}
             onClose={handleClose}
             setIsOpen={setIsOpen}
+            apiData={props.apiData}
           />
         </div>
       </SheetContent>
@@ -134,8 +138,13 @@ const NonAgentFlowWidgetContent: React.FC<
     onClose: () => void;
     setIsOpen: (isOpen: boolean) => void;
   }
-> = ({ tripId, onClose, setIsOpen, onPaymentSuccess, onPaymentFailure }) => {
+> = ({ tripId, onClose, setIsOpen, onPaymentSuccess, onPaymentFailure, apiData }) => {
   const { closeWidget } = useNonAgentFlow();
+  const thread = useStreamContext();
+  const { switchToChat } = useTabContext();
+
+  // Check if this is an interrupt-triggered widget
+  const isInterruptWidget = !!apiData;
   const [paymentState, setPaymentState] = useState<PaymentState>({
     status: "idle",
   });
@@ -217,6 +226,35 @@ const NonAgentFlowWidgetContent: React.FC<
               // Show success message
               if (isPaymentAndBookingSuccessful(verificationResponse)) {
                 toast.success("Payment and booking completed successfully!");
+
+                // If this is an interrupt widget, solve the interrupt and send response back to server
+                if (isInterruptWidget) {
+                  try {
+                    const responseData = {
+                      status: 'completed',
+                      paymentStatus: verificationResponse.data.paymentStatus,
+                      bookingStatus: verificationResponse.data.bookingStatus,
+                      tripId,
+                      transactionData: {
+                        paymentStatus: verificationResponse.data.paymentStatus,
+                        bookingStatus: verificationResponse.data.bookingStatus,
+                        transactionId: prepaymentResponse.data.transaction.transaction_id,
+                        bookingError: verificationResponse.data.bookingError,
+                        // Add booking data structure - this would typically come from the server response
+                        bookingData: null, // Will be populated by server with actual booking details
+                      },
+                    };
+
+                    await submitInterruptResponse(thread, "response", responseData);
+
+                    // Switch to chat tab immediately after successful interrupt resolution
+                    console.log("Switching to chat tab after successful payment");
+                    //switchToChat();
+                  } catch (error) {
+                    console.error("Error solving interrupt:", error);
+                  }
+                }
+
                 // Don't show reopen button on successful payment
                 closeWidget();
               } else {
@@ -226,15 +264,43 @@ const NonAgentFlowWidgetContent: React.FC<
               }
             } catch (error) {
               console.error("Transaction verification failed:", error);
+              const errorMessage = error instanceof Error ? error.message : "Verification failed";
+
               setPaymentState({
                 status: "failed",
                 prepaymentData: prepaymentResponse.data,
-                error:
-                  error instanceof Error ? error.message : "Verification failed",
+                error: errorMessage,
               });
-              onPaymentFailure?.(
-                error instanceof Error ? error.message : "Verification failed",
-              );
+
+              // If this is an interrupt widget, solve the interrupt with failure data
+              if (isInterruptWidget) {
+                try {
+                  const responseData = {
+                    status: 'failed',
+                    paymentStatus: "FAILED",
+                    bookingStatus: "FAILED",
+                    tripId,
+                    error: errorMessage,
+                    transactionData: {
+                      paymentStatus: "FAILED",
+                      bookingStatus: "FAILED",
+                      transactionId: prepaymentResponse.data.transaction.transaction_id,
+                      error: errorMessage,
+                      bookingData: null,
+                    },
+                  };
+
+                  await submitInterruptResponse(thread, "response", responseData);
+
+                  // Switch to chat tab after error interrupt resolution
+                  console.log("Switching to chat tab after payment verification error");
+                  // switchToChat();
+                } catch (interruptError) {
+                  console.error("Error solving interrupt:", interruptError);
+                }
+              }
+
+              onPaymentFailure?.(errorMessage);
               toast.error("Payment verification failed");
             }
           },
@@ -247,11 +313,45 @@ const NonAgentFlowWidgetContent: React.FC<
           },
           modal: {
             ondismiss: function () {
+              const errorMessage = "Payment cancelled by user";
+
               setPaymentState({
                 status: "failed",
-                error: "Payment cancelled by user",
+                error: errorMessage,
               });
-              onPaymentFailure?.("Payment cancelled by user");
+
+              // If this is an interrupt widget, solve the interrupt with cancellation data
+              if (isInterruptWidget) {
+                (async () => {
+                  try {
+                    const responseData = {
+                      status: 'cancelled',
+                      paymentStatus: "FAILED",
+                      bookingStatus: "FAILED",
+                      tripId,
+                      error: errorMessage,
+                      cancelled: true,
+                      transactionData: {
+                        paymentStatus: "FAILED",
+                        bookingStatus: "FAILED",
+                        error: errorMessage,
+                        cancelled: true,
+                        bookingData: null,
+                      },
+                    };
+
+                    await submitInterruptResponse(thread, "response", responseData);
+
+                    // Switch to chat tab after cancellation interrupt resolution
+                    console.log("Switching to chat tab after payment cancellation");
+                    // switchToChat();
+                  } catch (interruptError) {
+                    console.error("Error solving interrupt:", interruptError);
+                  }
+                })();
+              }
+
+              onPaymentFailure?.(errorMessage);
             },
           },
         };
@@ -260,31 +360,58 @@ const NonAgentFlowWidgetContent: React.FC<
         razorpay.open();
       } catch (error) {
         console.error("Payment initiation failed:", error);
+        const errorMessage = error instanceof Error ? error.message : "Payment initiation failed";
+
         setPaymentState({
           status: "failed",
-          error:
-            error instanceof Error ? error.message : "Payment initiation failed",
+          error: errorMessage,
         });
-        onPaymentFailure?.(
-          error instanceof Error ? error.message : "Payment initiation failed",
-        );
+
+        // If this is an interrupt widget, solve the interrupt with failure data
+        if (isInterruptWidget) {
+          try {
+            const responseData = {
+              status: 'failed',
+              paymentStatus: "FAILED",
+              bookingStatus: "FAILED",
+              tripId,
+              error: errorMessage,
+              transactionData: {
+                paymentStatus: "FAILED",
+                bookingStatus: "FAILED",
+                error: errorMessage,
+                bookingData: null,
+              },
+            };
+
+            await submitInterruptResponse(thread, "response", responseData);
+
+            // Switch to chat tab after payment initiation error interrupt resolution
+            console.log("Switching to chat tab after payment initiation error");
+            // switchToChat();
+          } catch (interruptError) {
+            console.error("Error solving interrupt:", interruptError);
+          }
+        }
+
+        onPaymentFailure?.(errorMessage);
         toast.error("Failed to initiate payment");
       }
     })();
   }, [tripId, onPaymentSuccess, onPaymentFailure, closeWidget]);
 
   // Countdown effect
-  useEffect(() => {
-    if (isCountdownActive && countdown > 0 && !hasUserClicked) {
-      const timer = setTimeout(() => {
-        setCountdown(countdown - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else if (isCountdownActive && countdown === 0 && !hasUserClicked) {
-      // Auto-trigger payment when countdown reaches 0
-      handlePaymentClick();
-    }
-  }, [countdown, isCountdownActive, hasUserClicked, handlePaymentClick]);
+  // useEffect(() => {
+  //   if (isCountdownActive && countdown > 0 && !hasUserClicked) {
+  //     const timer = setTimeout(() => {
+  //       setCountdown(countdown - 1);
+  //     }, 1000);
+  //     return () => clearTimeout(timer);
+  //   } else if (isCountdownActive && countdown === 0 && !hasUserClicked) {
+  //     // Auto-trigger payment when countdown reaches 0
+  //     handlePaymentClick();
+  //   }
+  // }, [countdown, isCountdownActive, hasUserClicked, handlePaymentClick]);
 
   // Start countdown when component mounts
   useEffect(() => {
@@ -549,6 +676,7 @@ const NonAgentFlowWidget: React.FC<NonAgentFlowWidgetProps> = (props) => {
           closeWidget();
         }}
         setIsOpen={() => {}}
+        apiData={props.apiData}
       />
     );
   }
