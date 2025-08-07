@@ -38,6 +38,27 @@ import { useStreamContext } from "@/providers/Stream";
 import { useTabContext } from "@/providers/TabContext";
 import { submitInterruptResponse } from "@/components/widgets/util";
 
+// Utility function to switch to chat tab with a small delay
+const switchToChatWithDelay = (
+  switchToChat: () => void,
+  hasSwitchedToChat: boolean,
+  setHasSwitchedToChat: (value: boolean) => void,
+) => {
+  if (hasSwitchedToChat) {
+    console.log("Tab switch already initiated, skipping...");
+    return;
+  }
+
+  setHasSwitchedToChat(true);
+  setTimeout(() => {
+    try {
+      switchToChat();
+    } catch (error) {
+      console.error("Failed to switch to chat tab:", error);
+    }
+  }, 2000); // Small delay to ensure interrupt response is processed
+};
+
 interface NonAgentFlowWidgetProps {
   tripId: string;
   flightItinerary?: {
@@ -138,7 +159,14 @@ const NonAgentFlowWidgetContent: React.FC<
     onClose: () => void;
     setIsOpen: (isOpen: boolean) => void;
   }
-> = ({ tripId, onClose, setIsOpen, onPaymentSuccess, onPaymentFailure, apiData }) => {
+> = ({
+  tripId,
+  onClose,
+  setIsOpen,
+  onPaymentSuccess,
+  onPaymentFailure,
+  apiData,
+}) => {
   const { closeWidget } = useNonAgentFlow();
   const thread = useStreamContext();
   const { switchToChat } = useTabContext();
@@ -151,6 +179,7 @@ const NonAgentFlowWidgetContent: React.FC<
   const [countdown, setCountdown] = useState(10);
   const [isCountdownActive, setIsCountdownActive] = useState(false);
   const [hasUserClicked, setHasUserClicked] = useState(false);
+  const [hasSwitchedToChat, setHasSwitchedToChat] = useState(false);
 
   // Load Razorpay script
   useEffect(() => {
@@ -168,6 +197,7 @@ const NonAgentFlowWidgetContent: React.FC<
   const handlePaymentClick = useCallback(() => {
     setHasUserClicked(true);
     setIsCountdownActive(false);
+    setHasSwitchedToChat(false); // Reset the flag when starting new payment
     // We'll call initiatePayment directly here to avoid dependency issues
     setPaymentState({ status: "loading" });
 
@@ -231,25 +261,36 @@ const NonAgentFlowWidgetContent: React.FC<
                 if (isInterruptWidget) {
                   try {
                     const responseData = {
-                      status: 'completed',
+                      status: "completed",
                       paymentStatus: verificationResponse.data.paymentStatus,
                       bookingStatus: verificationResponse.data.bookingStatus,
                       tripId,
                       transactionData: {
                         paymentStatus: verificationResponse.data.paymentStatus,
                         bookingStatus: verificationResponse.data.bookingStatus,
-                        transactionId: prepaymentResponse.data.transaction.transaction_id,
+                        transactionId:
+                          prepaymentResponse.data.transaction.transaction_id,
                         bookingError: verificationResponse.data.bookingError,
                         // Add booking data structure - this would typically come from the server response
                         bookingData: null, // Will be populated by server with actual booking details
                       },
                     };
 
-                    await submitInterruptResponse(thread, "response", responseData);
+                    await submitInterruptResponse(
+                      thread,
+                      "response",
+                      responseData,
+                    );
 
                     // Switch to chat tab immediately after successful interrupt resolution
-                    console.log("Switching to chat tab after successful payment");
-                    //switchToChat();
+                    console.log(
+                      "Switching to chat tab after successful payment",
+                    );
+                    switchToChatWithDelay(
+                      switchToChat,
+                      hasSwitchedToChat,
+                      setHasSwitchedToChat,
+                    );
                   } catch (error) {
                     console.error("Error solving interrupt:", error);
                   }
@@ -264,7 +305,8 @@ const NonAgentFlowWidgetContent: React.FC<
               }
             } catch (error) {
               console.error("Transaction verification failed:", error);
-              const errorMessage = error instanceof Error ? error.message : "Verification failed";
+              const errorMessage =
+                error instanceof Error ? error.message : "Verification failed";
 
               setPaymentState({
                 status: "failed",
@@ -276,7 +318,7 @@ const NonAgentFlowWidgetContent: React.FC<
               if (isInterruptWidget) {
                 try {
                   const responseData = {
-                    status: 'failed',
+                    status: "failed",
                     paymentStatus: "FAILED",
                     bookingStatus: "FAILED",
                     tripId,
@@ -284,17 +326,28 @@ const NonAgentFlowWidgetContent: React.FC<
                     transactionData: {
                       paymentStatus: "FAILED",
                       bookingStatus: "FAILED",
-                      transactionId: prepaymentResponse.data.transaction.transaction_id,
+                      transactionId:
+                        prepaymentResponse.data.transaction.transaction_id,
                       error: errorMessage,
                       bookingData: null,
                     },
                   };
 
-                  await submitInterruptResponse(thread, "response", responseData);
+                  await submitInterruptResponse(
+                    thread,
+                    "response",
+                    responseData,
+                  );
 
                   // Switch to chat tab after error interrupt resolution
-                  console.log("Switching to chat tab after payment verification error");
-                  // switchToChat();
+                  console.log(
+                    "Switching to chat tab after payment verification error",
+                  );
+                  switchToChatWithDelay(
+                    switchToChat,
+                    hasSwitchedToChat,
+                    setHasSwitchedToChat,
+                  );
                 } catch (interruptError) {
                   console.error("Error solving interrupt:", interruptError);
                 }
@@ -302,6 +355,13 @@ const NonAgentFlowWidgetContent: React.FC<
 
               onPaymentFailure?.(errorMessage);
               toast.error("Payment verification failed");
+            } finally {
+              setIsCountdownActive(false);
+              switchToChatWithDelay(
+                switchToChat,
+                hasSwitchedToChat,
+                setHasSwitchedToChat,
+              );
             }
           },
           prefill: {
@@ -325,7 +385,7 @@ const NonAgentFlowWidgetContent: React.FC<
                 (async () => {
                   try {
                     const responseData = {
-                      status: 'cancelled',
+                      status: "cancelled",
                       paymentStatus: "FAILED",
                       bookingStatus: "FAILED",
                       tripId,
@@ -340,11 +400,21 @@ const NonAgentFlowWidgetContent: React.FC<
                       },
                     };
 
-                    await submitInterruptResponse(thread, "response", responseData);
+                    await submitInterruptResponse(
+                      thread,
+                      "response",
+                      responseData,
+                    );
 
                     // Switch to chat tab after cancellation interrupt resolution
-                    console.log("Switching to chat tab after payment cancellation");
-                    // switchToChat();
+                    console.log(
+                      "Switching to chat tab after payment cancellation",
+                    );
+                    switchToChatWithDelay(
+                      switchToChat,
+                      hasSwitchedToChat,
+                      setHasSwitchedToChat,
+                    );
                   } catch (interruptError) {
                     console.error("Error solving interrupt:", interruptError);
                   }
@@ -360,7 +430,8 @@ const NonAgentFlowWidgetContent: React.FC<
         razorpay.open();
       } catch (error) {
         console.error("Payment initiation failed:", error);
-        const errorMessage = error instanceof Error ? error.message : "Payment initiation failed";
+        const errorMessage =
+          error instanceof Error ? error.message : "Payment initiation failed";
 
         setPaymentState({
           status: "failed",
@@ -371,7 +442,7 @@ const NonAgentFlowWidgetContent: React.FC<
         if (isInterruptWidget) {
           try {
             const responseData = {
-              status: 'failed',
+              status: "failed",
               paymentStatus: "FAILED",
               bookingStatus: "FAILED",
               tripId,
@@ -388,7 +459,11 @@ const NonAgentFlowWidgetContent: React.FC<
 
             // Switch to chat tab after payment initiation error interrupt resolution
             console.log("Switching to chat tab after payment initiation error");
-            // switchToChat();
+            switchToChatWithDelay(
+              switchToChat,
+              hasSwitchedToChat,
+              setHasSwitchedToChat,
+            );
           } catch (interruptError) {
             console.error("Error solving interrupt:", interruptError);
           }
@@ -398,7 +473,16 @@ const NonAgentFlowWidgetContent: React.FC<
         toast.error("Failed to initiate payment");
       }
     })();
-  }, [tripId, onPaymentSuccess, onPaymentFailure, closeWidget]);
+  }, [
+    tripId,
+    onPaymentSuccess,
+    onPaymentFailure,
+    closeWidget,
+    hasSwitchedToChat,
+    isInterruptWidget,
+    switchToChat,
+    thread,
+  ]);
 
   // Countdown effect
   // useEffect(() => {
@@ -420,8 +504,6 @@ const NonAgentFlowWidgetContent: React.FC<
     }
   }, [paymentState.status]);
 
-
-
   // Remove auto-start payment flow - now controlled by user interaction or countdown
 
   const retryPayment = useCallback(() => {
@@ -429,6 +511,7 @@ const NonAgentFlowWidgetContent: React.FC<
     setCountdown(10);
     setIsCountdownActive(true);
     setHasUserClicked(false);
+    setHasSwitchedToChat(false);
   }, []);
 
   const renderContent = () => {
@@ -542,7 +625,7 @@ const NonAgentFlowWidgetContent: React.FC<
             <div className="flex space-x-3">
               <Button
                 onClick={retryPayment}
-                className="flex-1 bg-black hover:bg-gray-800 text-white"
+                className="flex-1 bg-black text-white hover:bg-gray-800"
               >
                 <CreditCard className="mr-2 h-4 w-4" />
                 Retry Payment
@@ -564,11 +647,12 @@ const NonAgentFlowWidgetContent: React.FC<
           <div className="space-y-6">
             <div className="flex flex-col items-center space-y-4 py-8">
               <div className="text-center">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                <h3 className="mb-2 text-xl font-semibold text-gray-900">
                   Complete Your Payment
                 </h3>
                 <p className="text-sm text-gray-600">
-                  Your booking is ready. Complete the payment to confirm your flight.
+                  Your booking is ready. Complete the payment to confirm your
+                  flight.
                 </p>
               </div>
             </div>
@@ -576,7 +660,7 @@ const NonAgentFlowWidgetContent: React.FC<
             <div className="flex space-x-3">
               <Button
                 onClick={handlePaymentClick}
-                className="flex-1 bg-black hover:bg-gray-800 text-white relative overflow-hidden"
+                className="relative flex-1 overflow-hidden bg-black text-white hover:bg-gray-800"
                 disabled={hasUserClicked}
               >
                 {/* Countdown animation background */}
@@ -592,8 +676,7 @@ const NonAgentFlowWidgetContent: React.FC<
                   <CreditCard className="mr-2 h-4 w-4" />
                   {isCountdownActive && !hasUserClicked
                     ? `Make Payment (${countdown}s)`
-                    : "Make Payment"
-                  }
+                    : "Make Payment"}
                 </span>
               </Button>
               <Button

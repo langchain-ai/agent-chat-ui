@@ -187,8 +187,6 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
 
     try {
       await submitInterruptResponse(thread, "response", responseData);
-      // Switch back to Chat tab after successful submission since response will appear there
-      switchToChat();
     } catch (error: any) {
       console.error("Error submitting interrupt response:", error);
       // Optional: already handled inside the utility
