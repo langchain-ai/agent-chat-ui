@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { componentMap, ComponentType } from "@/components/widgets";
@@ -106,6 +106,9 @@ console.log("DynamicRendererProps interface defined - checking props:", {
   interrupt: "will be logged in component",
 });
 
+// Global tracking for switched widgets to persist across re-renders
+const globalSwitchedWidgets = new Set<string>();
+
 export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
   interruptType,
   interrupt,
@@ -116,10 +119,66 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
   const { switchToItinerary } = useTabContext();
   const { addWidget } = useItineraryWidget();
 
-  // Track which widgets have already triggered itinerary switch
-  const [switchedWidgets, setSwitchedWidgets] = useState<Set<string>>(
-    new Set(),
-  );
+  // Track which widgets have been processed to avoid duplicate processing
+  const processedWidgetsRef = useRef<Set<string>>(new Set());
+
+  // Handle widget processing for itinerary rendering
+  useEffect(() => {
+    if (
+      interruptType === "widget" &&
+      interrupt.value?.widget?.args?.renderingWindow === "itinerary"
+    ) {
+      const interruptId =
+        interrupt.value?.interrupt_id ||
+        interrupt.value?.widget?.args?.interrupt_id;
+      const argsHash = JSON.stringify(interrupt.value.widget.args || {});
+      const widgetId =
+        interruptId ||
+        `${interrupt.value.widget.type}-${btoa(argsHash).slice(0, 8)}`;
+
+      // Only process if not already processed
+      if (!processedWidgetsRef.current.has(widgetId)) {
+        processedWidgetsRef.current.add(widgetId);
+
+        // Create widget component
+        const Component =
+          componentMap[interrupt.value.widget.type as ComponentType];
+        let widgetComponent: React.ReactNode;
+
+        if (interrupt.value.widget.type === "TravelerDetailsWidget") {
+          widgetComponent = (
+            <TravelerDetailsBottomSheet
+              apiData={interrupt}
+              args={interrupt.value.widget.args}
+            />
+          );
+        } else if (interrupt.value.widget.type === "NonAgentFlowWidget") {
+          widgetComponent = (
+            <NonAgentFlowBottomSheet
+              apiData={interrupt}
+              args={interrupt.value.widget.args}
+            />
+          );
+        } else {
+          widgetComponent = <Component {...interrupt.value.widget.args} />;
+        }
+
+        // Add widget to itinerary
+        addWidget(widgetId, widgetComponent);
+
+        // Only switch to itinerary if we haven't already switched for this widget
+        if (!globalSwitchedWidgets.has(widgetId)) {
+          switchToItinerary();
+          globalSwitchedWidgets.add(widgetId);
+          console.log(`Switching to Itinerary for widget: ${widgetId}`);
+        } else {
+          console.log(
+            `Already switched to Itinerary for widget: ${widgetId}, skipping`,
+          );
+        }
+      }
+    }
+  }, [interruptType, interrupt, addWidget, switchToItinerary]);
 
   console.log("🔄 STREAMING DATA - DynamicRenderer received:", {
     interruptType,
@@ -256,7 +315,6 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
 
     // Handle rendering based on renderingWindow
     if (renderingWindow === "itinerary") {
-      // Add widget to itinerary section and switch to itinerary tab
       // Use interrupt_id if available, otherwise create a stable ID based on widget type and args
       const interruptId =
         interrupt.value?.interrupt_id ||
@@ -265,19 +323,6 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
       const widgetId =
         interruptId ||
         `${interrupt.value.widget.type}-${btoa(argsHash).slice(0, 8)}`;
-
-      addWidget(widgetId, widgetComponent);
-
-      // Only switch to itinerary if we haven't already switched for this widget
-      if (!switchedWidgets.has(widgetId)) {
-        switchToItinerary();
-        setSwitchedWidgets((prev) => new Set([...prev, widgetId]));
-        console.log(`Switching to Itinerary for widget: ${widgetId}`);
-      } else {
-        console.log(
-          `Already switched to Itinerary for widget: ${widgetId}, skipping`,
-        );
-      }
 
       // Return null for chat section since widget is rendered in itinerary
       return null;

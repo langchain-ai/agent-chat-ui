@@ -49,14 +49,24 @@ const switchToChatWithDelay = (
     return;
   }
 
+  console.log("Initiating tab switch to Chat...");
   setHasSwitchedToChat(true);
-  setTimeout(() => {
+
+  // Use a shorter delay and add error handling
+  const timeoutId = setTimeout(() => {
     try {
+      console.log("Executing switchToChat()...");
       switchToChat();
+      console.log("switchToChat() executed successfully");
     } catch (error) {
       console.error("Failed to switch to chat tab:", error);
+      // Reset the flag on error so it can be retried
+      setHasSwitchedToChat(false);
     }
-  }, 2000); // Small delay to ensure interrupt response is processed
+  }, 1000); // Reduced to 1 second
+
+  // Cleanup function to prevent memory leaks
+  return () => clearTimeout(timeoutId);
 };
 
 interface NonAgentFlowWidgetProps {
@@ -180,6 +190,7 @@ const NonAgentFlowWidgetContent: React.FC<
   const [isCountdownActive, setIsCountdownActive] = useState(false);
   const [hasUserClicked, setHasUserClicked] = useState(false);
   const [hasSwitchedToChat, setHasSwitchedToChat] = useState(false);
+  const [isSubmittingInterrupt, setIsSubmittingInterrupt] = useState(false);
 
   // Load Razorpay script
   useEffect(() => {
@@ -189,12 +200,25 @@ const NonAgentFlowWidgetContent: React.FC<
     document.body.appendChild(script);
 
     return () => {
-      document.body.removeChild(script);
+      try {
+        document.body.removeChild(script);
+      } catch (error) {
+        console.log("Script already removed");
+      }
     };
   }, []);
 
   // Define handlePaymentClick early so it can be used in useEffect
   const handlePaymentClick = useCallback(() => {
+    // Prevent multiple payment attempts
+    if (
+      paymentState.status === "loading" ||
+      paymentState.status === "processing"
+    ) {
+      console.log("Payment already in progress, ignoring click");
+      return;
+    }
+
     setHasUserClicked(true);
     setIsCountdownActive(false);
     setHasSwitchedToChat(false); // Reset the flag when starting new payment
@@ -293,28 +317,57 @@ const NonAgentFlowWidgetContent: React.FC<
                           prepaymentResponse.data.transaction.transaction_id,
                         bookingError: verificationResponse.data.bookingError,
                         // Add booking data structure - this would typically come from the server response
-                        bookingData: (verificationResponse.data as any)?.bookingData || null,
+                        bookingData: (verificationResponse.data as any)?.bookingData || null, // Will be populated by server with actual booking details
                       },
                     };
 
                     console.log("Sending interrupt response with PNR:", pnr || 'No PNR found');
                     console.log("Complete response data:", responseData);
 
-                    await submitInterruptResponse(
-                      thread,
-                      "response",
-                      responseData,
-                    );
+                    try {
+                      setIsSubmittingInterrupt(true);
 
-                    // Switch to chat tab immediately after successful interrupt resolution
-                    console.log(
-                      "Switching to chat tab after successful payment",
-                    );
-                    switchToChatWithDelay(
-                      switchToChat,
-                      hasSwitchedToChat,
-                      setHasSwitchedToChat,
-                    );
+                      // Add timeout to prevent hanging
+                      const interruptPromise = submitInterruptResponse(
+                        thread,
+                        "response",
+                        responseData,
+                      );
+
+                      const timeoutPromise = new Promise((_, reject) => {
+                        setTimeout(
+                          () =>
+                            reject(new Error("Interrupt submission timeout")),
+                          5000,
+                        );
+                      });
+
+                      await Promise.race([interruptPromise, timeoutPromise]);
+                      console.log("Interrupt response submitted successfully");
+
+                      // Switch to chat tab immediately after successful interrupt resolution
+                      console.log(
+                        "Switching to chat tab after successful payment",
+                      );
+                      switchToChatWithDelay(
+                        switchToChat,
+                        hasSwitchedToChat,
+                        setHasSwitchedToChat,
+                      );
+                    } catch (interruptError) {
+                      console.error(
+                        "Failed to submit interrupt response:",
+                        interruptError,
+                      );
+                      // Still try to switch to chat even if interrupt submission fails
+                      switchToChatWithDelay(
+                        switchToChat,
+                        hasSwitchedToChat,
+                        setHasSwitchedToChat,
+                      );
+                    } finally {
+                      setIsSubmittingInterrupt(false);
+                    }
                   } catch (error) {
                     console.error("Error solving interrupt:", error);
                   }
