@@ -592,28 +592,21 @@ export function useStream(options) {
     
     // Effect to update finalValues when dependencies change
     useEffect(() => {
-        // Get base values - prioritize stream but preserve history messages
-        let mergedValues = streamValues ?? historyValues;
-        
-        // If we have both stream and history, merge them properly
-        if (streamValues && historyValues) {
-            mergedValues = {
-                ...historyValues,
-                ...streamValues,
-                // Merge messages from both sources
-                messages: cacheManagerRef.current.mergeById(
-                    historyValues.messages || [],
-                    streamValues.messages || [],
-                    'id'
-                ),
-                // Merge UI widgets from both sources
-                ui: cacheManagerRef.current.mergeById(
-                    historyValues.ui || [],
-                    streamValues.ui || [],
-                    'id'
-                )
-            };
-        }
+        // Direct merge of both sources - always merge stream and history data
+        let mergedValues = {
+            // Merge messages from both sources
+            messages: cacheManagerRef.current.mergeById(
+                historyValues?.messages || [],
+                streamValues?.messages || [],
+                'id'
+            ),
+            // Merge UI widgets from both sources
+            ui: cacheManagerRef.current.mergeById(
+                historyValues?.ui || [],
+                streamValues?.ui || [],
+                'id'
+            )
+        };
         
         // Only use cache if we have a valid threadId and cache is loaded
         if (threadId && cacheLoaded) {
