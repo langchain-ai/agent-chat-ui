@@ -12,8 +12,8 @@ importers:
         specifier: ^0.3.66
         version: 0.3.66(openai@5.11.0(ws@8.18.2)(zod@3.24.4))
       '@langchain/langgraph':
-        specifier: ^0.2.72
-        version: 0.2.72(@langchain/core@0.3.66(openai@5.11.0(ws@8.18.2)(zod@3.24.4)))(react@19.1.0)(zod-to-json-schema@3.24.5(zod@3.24.4))
+        specifier: ^0.4.3
+        version: 0.4.3(@langchain/core@0.3.66(openai@5.11.0(ws@8.18.2)(zod@3.24.4)))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(zod-to-json-schema@3.24.5(zod@3.24.4))
       '@langchain/langgraph-sdk':
         specifier: ^0.0.73
         version: 0.0.73(@langchain/core@0.3.66(openai@5.11.0(ws@8.18.2)(zod@3.24.4)))(react@19.1.0)
@@ -608,11 +608,25 @@ packages:
     resolution: {integrity: sha512-d3SgSDOlgOjdIbReIXVQl9HaQzKqO/5+E+o3kJwoKXLGP9dxi7+lMyaII7yv7G8/aUxMWLwFES9zc1jFoeJEZw==}
     engines: {node: '>=18'}
 
-  '@langchain/langgraph-checkpoint@0.0.17':
-    resolution: {integrity: sha512-6b3CuVVYx+7x0uWLG+7YXz9j2iBa+tn2AXvkLxzEvaAsLE6Sij++8PPbS2BZzC+S/FPJdWsz6I5bsrqL0BYrCA==}
+  '@langchain/langgraph-checkpoint@0.1.0':
+    resolution: {integrity: sha512-7oY5b0VQSxcV3DgoHdXiCgBhEzml/ZjZfKNeuq6oZ3ggcdUICa/fzrIBbFju6gxPU8ly93s0OsjF4yURnHw70Q==}
     engines: {node: '>=18'}
     peerDependencies:
       '@langchain/core': '>=0.2.31 <0.4.0'
+
+  '@langchain/langgraph-sdk@0.0.105':
+    resolution: {integrity: sha512-3DD1W1wnbP48807qq+5gY248mFcwwNGqKdmZt05P3zeLpfP5Sfm6ELzVvqHGpr+qumP0yGRZs/7qArYGXRRfcQ==}
+    peerDependencies:
+      '@langchain/core': '>=0.2.31 <0.4.0'
+      react: ^18 || ^19
+      react-dom: ^18 || ^19
+    peerDependenciesMeta:
+      '@langchain/core':
+        optional: true
+      react:
+        optional: true
+      react-dom:
+        optional: true
 
   '@langchain/langgraph-sdk@0.0.73':
     resolution: {integrity: sha512-V3E7Bd1KNcTpnEglZqKpnQtth62WHf+Dxq5V+0CqMxbzPHnW9I4eynCO4c1/HSY/rHgEtvgj7fMvCAb6I5R+lQ==}
@@ -625,11 +639,11 @@ packages:
       react:
         optional: true
 
-  '@langchain/langgraph@0.2.72':
-    resolution: {integrity: sha512-2Rs79mLSx0Yxr/omiWOXBlaS+eywZ9KACe06pI6XkA3hT2hwqjMlXYMvbeD7mxZlKrPtLsQaHWvL9IO2VAa+lQ==}
+  '@langchain/langgraph@0.4.3':
+    resolution: {integrity: sha512-wYi0LsJ+VQMpOHradx0apZtDXR5iINLus9mtvaVwT2qS78wd9Ic/XWKHHpVUNGDpO2KalTkmJWWXVjYKW5C3Rw==}
     engines: {node: '>=18'}
     peerDependencies:
-      '@langchain/core': '>=0.2.36 <0.3.0 || >=0.3.40 < 0.4.0'
+      '@langchain/core': '>=0.3.58 < 0.4.0'
       zod-to-json-schema: ^3.x
     peerDependenciesMeta:
       zod-to-json-schema:
@@ -4257,10 +4271,21 @@ snapshots:
       - '@opentelemetry/sdk-trace-base'
       - openai
 
-  '@langchain/langgraph-checkpoint@0.0.17(@langchain/core@0.3.66(openai@5.11.0(ws@8.18.2)(zod@3.24.4)))':
+  '@langchain/langgraph-checkpoint@0.1.0(@langchain/core@0.3.66(openai@5.11.0(ws@8.18.2)(zod@3.24.4)))':
     dependencies:
       '@langchain/core': 0.3.66(openai@5.11.0(ws@8.18.2)(zod@3.24.4))
       uuid: 10.0.0
+
+  '@langchain/langgraph-sdk@0.0.105(@langchain/core@0.3.66(openai@5.11.0(ws@8.18.2)(zod@3.24.4)))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
+    dependencies:
+      '@types/json-schema': 7.0.15
+      p-queue: 6.6.2
+      p-retry: 4.6.2
+      uuid: 9.0.1
+    optionalDependencies:
+      '@langchain/core': 0.3.66(openai@5.11.0(ws@8.18.2)(zod@3.24.4))
+      react: 19.1.0
+      react-dom: 19.1.0(react@19.1.0)
 
   '@langchain/langgraph-sdk@0.0.73(@langchain/core@0.3.66(openai@5.11.0(ws@8.18.2)(zod@3.24.4)))(react@19.1.0)':
     dependencies:
@@ -4272,17 +4297,18 @@ snapshots:
       '@langchain/core': 0.3.66(openai@5.11.0(ws@8.18.2)(zod@3.24.4))
       react: 19.1.0
 
-  '@langchain/langgraph@0.2.72(@langchain/core@0.3.66(openai@5.11.0(ws@8.18.2)(zod@3.24.4)))(react@19.1.0)(zod-to-json-schema@3.24.5(zod@3.24.4))':
+  '@langchain/langgraph@0.4.3(@langchain/core@0.3.66(openai@5.11.0(ws@8.18.2)(zod@3.24.4)))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(zod-to-json-schema@3.24.5(zod@3.24.4))':
     dependencies:
       '@langchain/core': 0.3.66(openai@5.11.0(ws@8.18.2)(zod@3.24.4))
-      '@langchain/langgraph-checkpoint': 0.0.17(@langchain/core@0.3.66(openai@5.11.0(ws@8.18.2)(zod@3.24.4)))
-      '@langchain/langgraph-sdk': 0.0.73(@langchain/core@0.3.66(openai@5.11.0(ws@8.18.2)(zod@3.24.4)))(react@19.1.0)
+      '@langchain/langgraph-checkpoint': 0.1.0(@langchain/core@0.3.66(openai@5.11.0(ws@8.18.2)(zod@3.24.4)))
+      '@langchain/langgraph-sdk': 0.0.105(@langchain/core@0.3.66(openai@5.11.0(ws@8.18.2)(zod@3.24.4)))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       uuid: 10.0.0
-      zod: 3.24.4
+      zod: 3.25.76
     optionalDependencies:
       zod-to-json-schema: 3.24.5(zod@3.24.4)
     transitivePeerDependencies:
       - react
+      - react-dom
 
   '@langchain/openai@0.6.3(@langchain/core@0.3.66(openai@5.11.0(ws@8.18.2)(zod@3.24.4)))(ws@8.18.2)':
     dependencies:

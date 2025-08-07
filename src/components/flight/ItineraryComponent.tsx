@@ -6,6 +6,7 @@ import { Clock, Calendar, Plane, Users, Luggage, MapPin, ArrowRight } from "luci
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { useItineraryWidget } from "@/providers/ItineraryWidgetContext";
 
 interface ItineraryComponentProps {
   flightSearchCriteria?: FlightSearchCriteria;
@@ -16,6 +17,7 @@ export const ItineraryView: React.FC<ItineraryComponentProps> = ({
   flightSearchCriteria,
   streamData
 }) => {
+  const { widgets } = useItineraryWidget();
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "Not specified";
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -83,19 +85,28 @@ export const ItineraryView: React.FC<ItineraryComponentProps> = ({
   if (!flightSearchCriteria) {
     return (
       <div className="w-full space-y-4 p-4">
-        <Card>
-          <CardContent className="py-16">
-            <div className="flex flex-col items-center justify-center text-center">
-              <Calendar className="w-16 h-16 text-gray-300 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                No Itinerary Available
-              </h3>
-              <p className="text-gray-500 max-w-md">
-                Your travel itinerary will appear here once flight search criteria is available from the conversation.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Dynamic Widgets Section - Show even when no flight criteria */}
+        {widgets.length > 0 && (
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Plane className="w-5 h-5" />
+                  Interactive Components
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {widgets.map((widget) => (
+                    <div key={widget.id} className="border rounded-lg p-4">
+                      {widget.component}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     );
   }
@@ -105,7 +116,30 @@ export const ItineraryView: React.FC<ItineraryComponentProps> = ({
     : null;
 
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full space-y-6 p-4">
+      {/* Dynamic Widgets Section */}
+      {widgets.length > 0 && (
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Plane className="w-5 h-5" />
+                Interactive Components
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {widgets.map((widget) => (
+                  <div key={widget.id} className="border rounded-lg p-4">
+                    {widget.component}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Trip Overview */}
       <Card>
         <CardHeader>
