@@ -143,7 +143,259 @@ const POPULAR_COUNTRIES: Country[] = [
   { code: "NL", name: "Netherlands" },
   { code: "SG", name: "Singapore" },
   { code: "AE", name: "United Arab Emirates" },
+  { code: "AF", name: "Afghanistan" },
+  { code: "AL", name: "Albania" },
+  { code: "DZ", name: "Algeria" },
+  { code: "AD", name: "Andorra" },
+  { code: "AO", name: "Angola" },
+  { code: "AG", name: "Antigua and Barbuda" },
+  { code: "AR", name: "Argentina" },
+  { code: "AM", name: "Armenia" },
+  { code: "AT", name: "Austria" },
+  { code: "AZ", name: "Azerbaijan" },
+  { code: "BH", name: "Bahrain" },
+  { code: "BD", name: "Bangladesh" },
+  { code: "BY", name: "Belarus" },
+  { code: "BE", name: "Belgium" },
+  { code: "BZ", name: "Belize" },
+  { code: "BJ", name: "Benin" },
+  { code: "BT", name: "Bhutan" },
+  { code: "BO", name: "Bolivia" },
+  { code: "BA", name: "Bosnia and Herzegovina" },
+  { code: "BW", name: "Botswana" },
+  { code: "BG", name: "Bulgaria" },
+  { code: "BF", name: "Burkina Faso" },
+  { code: "BI", name: "Burundi" },
+  { code: "KH", name: "Cambodia" },
+  { code: "CM", name: "Cameroon" },
+  { code: "CV", name: "Cape Verde" },
+  { code: "CF", name: "Central African Republic" },
+  { code: "TD", name: "Chad" },
+  { code: "CL", name: "Chile" },
+  { code: "CO", name: "Colombia" },
+  { code: "KM", name: "Comoros" },
+  { code: "CG", name: "Congo" },
+  { code: "CR", name: "Costa Rica" },
+  { code: "CI", name: "Côte d'Ivoire" },
+  { code: "HR", name: "Croatia" },
+  { code: "CU", name: "Cuba" },
+  { code: "CY", name: "Cyprus" },
+  { code: "CZ", name: "Czech Republic" },
+  { code: "DK", name: "Denmark" },
+  { code: "DJ", name: "Djibouti" },
+  { code: "DM", name: "Dominica" },
+  { code: "DO", name: "Dominican Republic" },
+  { code: "EC", name: "Ecuador" },
+  { code: "EG", name: "Egypt" },
+  { code: "SV", name: "El Salvador" },
+  { code: "GQ", name: "Equatorial Guinea" },
+  { code: "ER", name: "Eritrea" },
+  { code: "EE", name: "Estonia" },
+  { code: "SZ", name: "Eswatini" },
+  { code: "ET", name: "Ethiopia" },
+  { code: "FJ", name: "Fiji" },
+  { code: "FI", name: "Finland" },
+  { code: "GA", name: "Gabon" },
+  { code: "GM", name: "Gambia" },
+  { code: "GE", name: "Georgia" },
+  { code: "GH", name: "Ghana" },
+  { code: "GR", name: "Greece" },
+  { code: "GD", name: "Grenada" },
+  { code: "GT", name: "Guatemala" },
+  { code: "GN", name: "Guinea" },
+  { code: "GW", name: "Guinea-Bissau" },
+  { code: "GY", name: "Guyana" },
+  { code: "HT", name: "Haiti" },
+  { code: "HN", name: "Honduras" },
+  { code: "HU", name: "Hungary" },
+  { code: "IS", name: "Iceland" },
+  { code: "ID", name: "Indonesia" },
+  { code: "IR", name: "Iran" },
+  { code: "IQ", name: "Iraq" },
+  { code: "IE", name: "Ireland" },
+  { code: "IL", name: "Israel" },
+  { code: "JM", name: "Jamaica" },
+  { code: "JO", name: "Jordan" },
+  { code: "KZ", name: "Kazakhstan" },
+  { code: "KE", name: "Kenya" },
+  { code: "KI", name: "Kiribati" },
+  { code: "KP", name: "North Korea" },
+  { code: "KR", name: "South Korea" },
+  { code: "KW", name: "Kuwait" },
+  { code: "KG", name: "Kyrgyzstan" },
+  { code: "LA", name: "Laos" },
+  { code: "LV", name: "Latvia" },
+  { code: "LB", name: "Lebanon" },
+  { code: "LS", name: "Lesotho" },
+  { code: "LR", name: "Liberia" },
+  { code: "LY", name: "Libya" },
+  { code: "LI", name: "Liechtenstein" },
+  { code: "LT", name: "Lithuania" },
+  { code: "LU", name: "Luxembourg" },
+  { code: "MG", name: "Madagascar" },
+  { code: "MW", name: "Malawi" },
+  { code: "MY", name: "Malaysia" },
+  { code: "MV", name: "Maldives" },
+  { code: "ML", name: "Mali" },
+  { code: "MT", name: "Malta" },
+  { code: "MH", name: "Marshall Islands" },
+  { code: "MR", name: "Mauritania" },
+  { code: "MU", name: "Mauritius" },
+  { code: "FM", name: "Micronesia" },
+  { code: "MD", name: "Moldova" },
+  { code: "MC", name: "Monaco" },
+  { code: "MN", name: "Mongolia" },
+  { code: "ME", name: "Montenegro" },
+  { code: "MA", name: "Morocco" },
+  { code: "MZ", name: "Mozambique" },
+  { code: "MM", name: "Myanmar" },
+  { code: "NA", name: "Namibia" },
+  { code: "NR", name: "Nauru" },
+  { code: "NP", name: "Nepal" },
+  { code: "NZ", name: "New Zealand" },
+  { code: "NI", name: "Nicaragua" },
+  { code: "NE", name: "Niger" },
+  { code: "NG", name: "Nigeria" },
+  { code: "MK", name: "North Macedonia" },
+  { code: "NO", name: "Norway" },
+  { code: "OM", name: "Oman" },
+  { code: "PK", name: "Pakistan" },
+  { code: "PW", name: "Palau" },
+  { code: "PS", name: "Palestine" },
+  { code: "PA", name: "Panama" },
+  { code: "PG", name: "Papua New Guinea" },
+  { code: "PY", name: "Paraguay" },
+  { code: "PE", name: "Peru" },
+  { code: "PH", name: "Philippines" },
+  { code: "PL", name: "Poland" },
+  { code: "PT", name: "Portugal" },
+  { code: "QA", name: "Qatar" },
+  { code: "RO", name: "Romania" },
+  { code: "RU", name: "Russia" },
+  { code: "RW", name: "Rwanda" },
+  { code: "KN", name: "Saint Kitts and Nevis" },
+  { code: "LC", name: "Saint Lucia" },
+  { code: "VC", name: "Saint Vincent and the Grenadines" },
+  { code: "WS", name: "Samoa" },
+  { code: "SM", name: "San Marino" },
+  { code: "ST", name: "São Tomé and Príncipe" },
+  { code: "SA", name: "Saudi Arabia" },
+  { code: "SN", name: "Senegal" },
+  { code: "RS", name: "Serbia" },
+  { code: "SC", name: "Seychelles" },
+  { code: "SL", name: "Sierra Leone" },
+  { code: "SK", name: "Slovakia" },
+  { code: "SI", name: "Slovenia" },
+  { code: "SB", name: "Solomon Islands" },
+  { code: "SO", name: "Somalia" },
+  { code: "ZA", name: "South Africa" },
+  { code: "SS", name: "South Sudan" },
+  { code: "LK", name: "Sri Lanka" },
+  { code: "SD", name: "Sudan" },
+  { code: "SR", name: "Suriname" },
+  { code: "SE", name: "Sweden" },
+  { code: "CH", name: "Switzerland" },
+  { code: "SY", name: "Syria" },
+  { code: "TW", name: "Taiwan" },
+  { code: "TJ", name: "Tajikistan" },
+  { code: "TZ", name: "Tanzania" },
+  { code: "TH", name: "Thailand" },
+  { code: "TL", name: "Timor-Leste" },
+  { code: "TG", name: "Togo" },
+  { code: "TO", name: "Tonga" },
+  { code: "TT", name: "Trinidad and Tobago" },
+  { code: "TN", name: "Tunisia" },
+  { code: "TR", name: "Turkey" },
+  { code: "TM", name: "Turkmenistan" },
+  { code: "TV", name: "Tuvalu" },
+  { code: "UG", name: "Uganda" },
+  { code: "UA", name: "Ukraine" },
+  { code: "UY", name: "Uruguay" },
+  { code: "UZ", name: "Uzbekistan" },
+  { code: "VU", name: "Vanuatu" },
+  { code: "VA", name: "Vatican City" },
+  { code: "VE", name: "Venezuela" },
+  { code: "VN", name: "Vietnam" },
+  { code: "YE", name: "Yemen" },
+  { code: "ZM", name: "Zambia" },
+  { code: "ZW", name: "Zimbabwe" },
+  // Add some additional/alternative country names for better matching
+  { code: "US", name: "USA" },
+  { code: "GB", name: "UK" },
+  { code: "KR", name: "Korea" },
+  { code: "RU", name: "Russian Federation" },
+  { code: "IR", name: "Islamic Republic of Iran" },
+  { code: "VE", name: "Bolivarian Republic of Venezuela" },
+  { code: "BO", name: "Plurinational State of Bolivia" },
+  { code: "TZ", name: "United Republic of Tanzania" },
+  { code: "MD", name: "Republic of Moldova" },
+  { code: "MK", name: "Former Yugoslav Republic of Macedonia" },
+  // Add test/fictional countries for demo purposes
+  { code: "EO", name: "Eolian" },
 ];
+
+// Utility functions for country code conversion
+const getCountryByNameOrCode = (input: string): Country | null => {
+  if (!input) return null;
+  return POPULAR_COUNTRIES.find(
+    (country) =>
+      country.name.toLowerCase() === input.toLowerCase() ||
+      country.code.toLowerCase() === input.toLowerCase()
+  ) || null;
+};
+
+const getCountryCode = (input: string): string => {
+  if (!input) return "";
+  const country = getCountryByNameOrCode(input);
+  if (country) {
+    return country.code;
+  }
+
+  // If not found, check if it's already a 2-letter code
+  if (input.length === 2 && /^[A-Z]{2}$/i.test(input)) {
+    return input.toUpperCase();
+  }
+
+  // For unknown countries, try to create a reasonable 2-letter code
+  // This is a fallback for test/fictional countries
+  const words = input.split(' ');
+  if (words.length >= 2) {
+    return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
+  } else {
+    return input.substring(0, 2).toUpperCase();
+  }
+};
+
+const getCountryName = (input: string): string => {
+  if (!input) return "";
+  const country = getCountryByNameOrCode(input);
+  return country ? country.name : input; // Return original if not found (might already be a name)
+};
+
+// Test function to verify country code conversion (can be removed in production)
+const testCountryConversion = () => {
+  const testCases = [
+    "India",
+    "IN",
+    "United States",
+    "US",
+    "France",
+    "FR",
+    "Antigua and Barbuda",
+    "AG",
+    "Eolian",
+    "Unknown Country"
+  ];
+
+  console.log("=== Country Code Conversion Test ===");
+  testCases.forEach(testCase => {
+    console.log(`"${testCase}" -> "${getCountryCode(testCase)}"`);
+  });
+  console.log("=== End Test ===");
+};
+
+// Uncomment the line below to run the test
+// testCountryConversion();
 
 interface CountryComboboxProps {
   value?: string;
@@ -163,10 +415,8 @@ const CountryCombobox = ({
 
   const selectedCountry = React.useMemo(() => {
     if (!value) return null;
-    const country = POPULAR_COUNTRIES.find(
-      (c) => c.name === value || c.code === value,
-    );
-    return country ? country.name : value;
+    // Use the utility function to get the country name for display
+    return getCountryName(value);
   }, [value]);
 
   const displayCountries = React.useMemo(() => {
@@ -223,7 +473,11 @@ const CountryCombobox = ({
                   key={country.value}
                   value={country.value}
                   onSelect={(currentValue) => {
-                    onValueChange?.(currentValue === value ? "" : currentValue);
+                    // Check if this country is already selected (by name or code)
+                    const isCurrentlySelected = value === currentValue ||
+                                              value === country.code ||
+                                              getCountryName(value || "") === currentValue;
+                    onValueChange?.(isCurrentlySelected ? "" : currentValue);
                     setOpen(false);
                     setSearchQuery("");
                   }}
@@ -237,7 +491,7 @@ const CountryCombobox = ({
                   <Check
                     className={cn(
                       "ml-auto h-4 w-4",
-                      value === country.value ? "opacity-100" : "opacity-0",
+                      (value === country.value || value === country.code) ? "opacity-100" : "opacity-0",
                     )}
                   />
                 </CommandItem>
@@ -764,7 +1018,7 @@ const mockData = {
     number: "A12345678",
     issuingCountry: "United States",
     expiryDate: "2029-01-11",
-    nationality: "American",
+    nationality: "United States",
     issuanceDate: "2015-04-14",
   },
   seatAllocation: {
@@ -932,31 +1186,25 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
     // Format document type to uppercase
     const formattedDocumentType = document?.type?.toUpperCase() || "PASSPORT";
 
-    // Get country codes for issuing country and nationality
-    const getCountryCode = (countryName: string) => {
-      const countryMap: { [key: string]: string } = {
-        "United States": "US",
-        India: "IN",
-        "United Kingdom": "GB",
-        Canada: "CA",
-        Australia: "AU",
-        Germany: "DE",
-        France: "FR",
-        Japan: "JP",
-        China: "CN",
-        Brazil: "BR",
-        Mexico: "MX",
-        Italy: "IT",
-        Spain: "ES",
-        Netherlands: "NL",
-        Singapore: "SG",
-        "United Arab Emirates": "AE",
-      };
-      return countryMap[countryName] || countryName;
-    };
-
+    // Get country codes for issuing country and nationality using the utility function
     const issuingCountryCode = getCountryCode(document?.issuingCountry || "");
     const nationalityCode = getCountryCode(document?.nationality || "");
+
+    // Log the conversion for debugging (can be removed in production)
+    console.log("Country conversion:", {
+      originalIssuingCountry: document?.issuingCountry,
+      convertedIssuingCountry: issuingCountryCode,
+      originalNationality: document?.nationality,
+      convertedNationality: nationalityCode,
+    });
+
+    // Additional validation - ensure we always have 2-letter codes
+    if (issuingCountryCode.length !== 2) {
+      console.warn("Warning: Issuing country code is not 2 letters:", issuingCountryCode);
+    }
+    if (nationalityCode.length !== 2) {
+      console.warn("Warning: Nationality code is not 2 letters:", nationalityCode);
+    }
 
     // Format date strings to YYYY-MM-DD
     const formatDate = (dateString: string) => {

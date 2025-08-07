@@ -306,7 +306,7 @@ export function Thread() {
 
   const chatStarted = !!threadId || !!messages.length;
   const hasNoAIOrToolMessages = !messages.find(
-    (m) => m.type === "ai" || m.type === "tool",
+    (m: any) => m.type === "ai" || m.type === "tool",
   );
 
   return (
@@ -430,7 +430,7 @@ export function Thread() {
                   <>
                     {messages
                       .filter(isDisplayableMessage)
-                      .flatMap((message, index) => {
+                      .flatMap((message: any, index: number) => {
                         const messageElement =
                           message.type === "human" ? (
                             <HumanMessage

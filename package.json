@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@langchain/core": "^0.3.66",
-    "@langchain/langgraph": "^0.2.72",
+    "@langchain/langgraph": "^0.4.3",
     "@langchain/langgraph-sdk": "^0.0.73",
     "@langchain/openai": "^0.6.3",
     "@radix-ui/react-avatar": "^1.1.3",
