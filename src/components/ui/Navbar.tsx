@@ -9,6 +9,7 @@ import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { Button } from "@/components/ui/button";
 import { FlyoLogoSVG } from "@/components/icons/langgraph";
 import { motion } from "framer-motion";
+import { TabsLayout } from "../thread/TabsLayout";
 
 export const Navbar = () => {
   const router = useRouter();

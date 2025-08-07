@@ -328,9 +328,61 @@ export function useStream(options) {
     const [streamError, setStreamError] = useState(undefined);
     const [streamValues, setStreamValues, getMutateFn] = useStreamValuesState();
     
-    // ENHANCED: Stream values cache for subgraph message persistence - thread-specific
+    // ENHANCED: Stream values cache for subgraph message persistence - thread-specific with localStorage persistence
     const streamValuesCacheRef = useRef(new Map()); // Map<threadId, cachedValues>
     
+    // Load cache from localStorage on mount
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            try {
+                const savedCache = localStorage.getItem("langgraph-stream-cache");
+                if (savedCache) {
+                    const parsedCache = JSON.parse(savedCache);
+                    const cacheMap = new Map();
+                    Object.entries(parsedCache).forEach(([threadId, cachedValues]) => {
+                        cacheMap.set(threadId, cachedValues);
+                    });
+                    streamValuesCacheRef.current = cacheMap;
+                    console.log("🔍 [CACHE DEBUG] Loaded cache from localStorage:", Object.keys(parsedCache));
+                }
+            } catch (error) {
+                console.warn("🔍 [CACHE DEBUG] Failed to load cache from localStorage:", error);
+            }
+        }
+    }, []);
+
+    // Helper function to save cache to localStorage
+    const saveCacheToStorage = useCallback(() => {
+        if (typeof window !== "undefined") {
+            try {
+                const cacheObject = {};
+                streamValuesCacheRef.current.forEach((value, key) => {
+                    cacheObject[key] = value;
+                });
+                localStorage.setItem("langgraph-stream-cache", JSON.stringify(cacheObject));
+                console.log("🔍 [CACHE DEBUG] Saved cache to localStorage:", Object.keys(cacheObject));
+            } catch (error) {
+                console.warn("🔍 [CACHE DEBUG] Failed to save cache to localStorage:", error);
+            }
+        }
+    }, []);
+
+    // Helper function to cleanup old cache entries (keep only last 10 threads)
+    const cleanupCache = useCallback(() => {
+        const cacheSize = streamValuesCacheRef.current.size;
+        if (cacheSize > 50) {
+            const entries = Array.from(streamValuesCacheRef.current.entries());
+            // Keep only the 50 most recent threads
+            const recentEntries = entries.slice(-50);
+            streamValuesCacheRef.current.clear();
+            recentEntries.forEach(([key, value]) => {
+                streamValuesCacheRef.current.set(key, value);
+            });
+            console.log("🔍 [CACHE DEBUG] Cleaned up cache, kept", recentEntries.length, "of", cacheSize, "entries");
+            saveCacheToStorage();
+        }
+    }, [saveCacheToStorage]);
+
     const messageManagerRef = useRef(new MessageTupleManager());
     const submittingRef = useRef(false);
     const abortRef = useRef(null);
@@ -698,7 +750,13 @@ export function useStream(options) {
                     content: m.content?.slice(0, 100) || 'no content'
                 })));
             }
-            
+            if (hasUI) {
+                console.log("🔍 [CACHE DEBUG] UI widgets to cache for thread:", threadId, ":", streamValues.ui.map(w => ({
+                    id: w.id,
+                    type: w.type || 'unknown'
+                })));
+            }
+
                         if (hasMessages || hasUI || hasInterrupt || hasOtherValues) {
                 // ENHANCED: Merge with existing cache instead of overwriting
                 // Only cache if we have a valid threadId
@@ -737,18 +795,45 @@ export function useStream(options) {
                         }
                     });
                     
+                    // Merge UI widgets similar to messages
+                    const allUI = [...(existingCache.ui || [])];
+                    let uiAddedCount = 0;
+                    let uiUpdatedCount = 0;
+
+                    if (streamValues.ui) {
+                        streamValues.ui.forEach(widget => {
+                            const existingIndex = allUI.findIndex(existing => existing.id === widget.id);
+                            if (existingIndex === -1) {
+                                allUI.push(widget);
+                                uiAddedCount++;
+                                console.log("🔍 [CACHE DEBUG] Added UI widget to cache:", widget.id, widget.type);
+                            } else {
+                                // Update existing UI widget
+                                allUI[existingIndex] = widget;
+                                uiUpdatedCount++;
+                                console.log("🔍 [CACHE DEBUG] Updated UI widget in cache:", widget.id, widget.type);
+                            }
+                        });
+                    }
+
                     // Create merged cache
                     const mergedCache = {
                         ...existingCache,
                         ...streamValues,
-                        messages: allMessages
+                        messages: allMessages,
+                        ui: allUI
                     };
                     
                     streamValuesCacheRef.current.set(threadId, mergedCache);
-                    console.log("🔍 [CACHE DEBUG] Merged cache - existing:", existingCache.messages?.length || 0, "new:", newMessages.length, "added:", addedCount, "updated:", updatedCount, "total:", allMessages.length);
+                    saveCacheToStorage(); // Save to localStorage
+                    cleanupCache(); // Cleanup old entries
+                    console.log("🔍 [CACHE DEBUG] Merged cache - messages: existing:", existingCache.messages?.length || 0, "new:", newMessages.length, "added:", addedCount, "updated:", updatedCount, "total:", allMessages.length);
+                    console.log("🔍 [CACHE DEBUG] Merged cache - UI widgets: existing:", existingCache.ui?.length || 0, "new:", streamValues.ui?.length || 0, "added:", uiAddedCount, "updated:", uiUpdatedCount, "total:", allUI.length);
                 } else {
                     // No existing cache, just store the new values
                     streamValuesCacheRef.current.set(threadId, streamValues);
+                    saveCacheToStorage(); // Save to localStorage
+                    cleanupCache(); // Cleanup old entries
                     console.log("🔍 [CACHE DEBUG] New cache created for thread:", threadId, Object.keys(streamValues), hasMessages ? `(${streamValues.messages.length} messages)` : "");
                 }
             } else {
@@ -771,11 +856,11 @@ export function useStream(options) {
                 historyMessagesCount: historyValues?.messages?.length || 0,
                 finalMessagesCount: finalValues?.messages?.length || 0
             });
-            
+
             // If we have cached values, always merge them with current values
             // Only use cache if we have a valid threadId
             const cached = threadId ? streamValuesCacheRef.current.get(threadId) : null;
-            
+
             // For new conversations (threadId is null), use current stream values directly
             if (!threadId) {
                 console.log("🆕 [NEW CONVERSATION] Using current stream values for new conversation");
@@ -793,22 +878,59 @@ export function useStream(options) {
                 console.log("🔍 [MERGE DEBUG] Current values keys:", Object.keys(current));
                 console.log("🔍 [MERGE DEBUG] Cached messages count:", cached.messages?.length || 0);
                 console.log("🔍 [MERGE DEBUG] Current messages count:", current.messages?.length || 0);
-                
-                // During active conversations, prioritize current messages over cached
-                if (current.messages && current.messages.length > 0) {
-                    // Use current messages as base, merge with cached if needed
-                    let allMessages = [...current.messages];
+                console.log("🔍 [MERGE DEBUG] Cached UI widgets count:", cached.ui?.length || 0);
+                console.log("🔍 [MERGE DEBUG] Current UI widgets count:", current.ui?.length || 0);
+
+                if (cached.messages) {
+                    console.log("🔍 [MERGE DEBUG] Cached messages content:", cached.messages.map(m => ({
+                        id: m.id,
+                        type: m.type,
+                        content: m.content?.slice(0, 100) || 'no content'
+                    })));
+                }
+                if (current.messages) {
+                    console.log("🔍 [MERGE DEBUG] Current messages content:", current.messages.map(m => ({
+                        id: m.id,
+                        type: m.type,
+                        content: m.content?.slice(0, 100) || 'no content'
+                    })));
+                }
+                if (cached.ui) {
+                    console.log("🔍 [MERGE DEBUG] Cached UI widgets:", cached.ui.map(w => ({
+                        id: w.id,
+                        type: w.type || 'unknown'
+                    })));
+                }
+                if (current.ui) {
+                    console.log("🔍 [MERGE DEBUG] Current UI widgets:", current.ui.map(w => ({
+                        id: w.id,
+                        type: w.type || 'unknown'
+                    })));
+                }
+
+                // Always merge ALL cached messages with current messages
+                if (cached.messages && current.messages) {
+                    // Combine cached and current messages, removing duplicates by ID
+                    const allMessages = [...cached.messages];
+                    console.log("🔍 [MERGE DEBUG] Starting with cached messages:", allMessages.length);
                     
-                    // Only merge cached messages that aren't already in current
-                    if (cached.messages) {
-                        cached.messages.forEach(cachedMsg => {
-                            const exists = allMessages.find(msg => msg.id === cachedMsg.id);
-                            if (!exists) {
-                                allMessages.push(cachedMsg);
-                                console.log("🔍 [MERGE DEBUG] Added cached message:", cachedMsg.id, cachedMsg.type);
-                            }
-                        });
-                    }
+                    let addedCount = 0;
+                    let updatedCount = 0;
+                    current.messages.forEach(msg => {
+                        const existingIndex = allMessages.findIndex(existing => existing.id === msg.id);
+                        if (existingIndex === -1) {
+                            allMessages.push(msg);
+                            addedCount++;
+                            console.log("🔍 [MERGE DEBUG] Added new message:", msg.id, msg.type, msg.content?.slice(0, 50));
+                        } else {
+                            // Update existing message with new content
+                            const existingMsg = allMessages[existingIndex];
+                            const oldContent = existingMsg.content;
+                            allMessages[existingIndex] = msg; // Replace with updated message
+                            updatedCount++;
+                            console.log("🔍 [MERGE DEBUG] Updated existing message:", msg.id, msg.type, "old content:", oldContent?.slice(0, 50), "new content:", msg.content?.slice(0, 50));
+                        }
+                    });
                     
                     finalValues = { ...finalValues, messages: allMessages };
                     console.log("🔍 [MERGE DEBUG] Using current messages as base, merged with cached. Total:", allMessages.length);
@@ -877,6 +999,7 @@ export function useStream(options) {
                 if (currentCache && error != null) {
                     console.log("🔍 [INTERRUPT DEBUG] Error detected - clearing stream values cache for thread:", threadId);
                     streamValuesCacheRef.current.delete(threadId);
+                    saveCacheToStorage(); // Save to localStorage
                 } else {
                     console.log("🔍 [INTERRUPT DEBUG] No interrupts active, cache preserved for thread:", threadId);
                 }
@@ -902,11 +1025,11 @@ export function useStream(options) {
                 historyMessagesCount: historyValues?.messages?.length || 0,
                 finalMessagesCount: finalValues?.messages?.length || 0
             });
-            
+
             // If we have cached values, always merge them with current values
             // Only use cache if we have a valid threadId
             const cached = threadId ? streamValuesCacheRef.current.get(threadId) : null;
-            
+
             // For new conversations (threadId is null), use current stream values directly
             if (!threadId) {
                 console.log("🆕 [NEW CONVERSATION] Using current stream messages for new conversation");
@@ -928,7 +1051,7 @@ export function useStream(options) {
                 if (current.messages && current.messages.length > 0) {
                     // Use current messages as base, merge with cached if needed
                     let allMessages = [...current.messages];
-                    
+
                     // Only merge cached messages that aren't already in current
                     if (cached.messages) {
                         cached.messages.forEach(cachedMsg => {
