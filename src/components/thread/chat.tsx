@@ -524,10 +524,7 @@ export function Thread() {
                         )}
                         {isLoading && <AssistantMessageLoading />}
                         {/* Always render the interrupt widget at the end if present */}
-                        {console.log(
-                          "🔍 Stream interrupt 1:",
-                          JSON.stringify(stream.values.ui),
-                        )}
+                        
                         {stream.interrupt && (
                           <GenericInterruptView
                             interrupt={stream.interrupt.value ?? {}}

@@ -40,8 +40,8 @@ export const UIWidgetPreserver: React.FC = () => {
   const stream = useStreamContext();
 
   useEffect(() => {
-    if (stream.values.ui) {
-      stream.values.ui.forEach((uiWidget: any) => {
+    if ((stream.values as any)?.ui) {
+      (stream.values as any).ui.forEach((uiWidget: any) => {
         // Preserve by both id and message_id
         if (uiWidget.id) {
           preservedUIWidgets.set(uiWidget.id, uiWidget);
@@ -56,7 +56,7 @@ export const UIWidgetPreserver: React.FC = () => {
         );
       });
     }
-  }, [stream.values.ui]);
+  }, [(stream.values as any)?.ui]);
 
   return null; // This component doesn't render anything
 };
@@ -139,7 +139,7 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
     if (attachmentId) {
 
       // First try to find in current UI widgets
-      let matchingUIWidget = stream.values.ui?.find(
+      let matchingUIWidget = (stream.values as any)?.ui?.find(
         (ui: any) =>
           ui.id === attachmentId || ui.metadata?.message_id === attachmentId,
       );
@@ -151,7 +151,7 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
         console.log("🔍 Found in preserved widgets:", matchingUIWidget);
       }
 
-      console.log("🔍 All UI widgets:", JSON.stringify(stream.values.ui));
+      console.log("🔍 All UI widgets:", JSON.stringify((stream.values as any)?.ui));
       console.log(
         "🔍 Preserved widgets:",
         Array.from(preservedUIWidgets.keys()),
