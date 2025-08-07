@@ -14,6 +14,11 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { ChevronDown } from "lucide-react";
+import isoCountries from "i18n-iso-countries";
+import cityTimezones from "city-timezones";
+
+// Initialize i18n-iso-countries with English locale
+isoCountries.registerLocale(require("i18n-iso-countries/langs/en.json"));
 
 interface NumberOfTravellers {
   adults: number;
@@ -29,6 +34,8 @@ interface Document {
   expiryDate: string;
   issuingDate: string;
   issuingCountry: string;
+  birthPlace?: string;
+  issuanceLocation?: string;
   documentUrl: string;
 }
 
@@ -116,6 +123,8 @@ interface NewPassenger {
   passportExpiry?: string;
   nationality?: string;
   issuingCountry?: string;
+  birthPlace?: string;
+  issuanceLocation?: string;
 }
 
 interface TravelerRequirement {
@@ -185,60 +194,346 @@ const countryCodes = [
   { code: '+60', country: 'Malaysia', flag: '🇲🇾' },
 ];
 
-// Countries list for nationality and issuing country
-const countries = [
-  { code: 'IN', name: 'India' },
-  { code: 'US', name: 'United States' },
-  { code: 'GB', name: 'United Kingdom' },
-  { code: 'CN', name: 'China' },
-  { code: 'JP', name: 'Japan' },
-  { code: 'DE', name: 'Germany' },
-  { code: 'FR', name: 'France' },
-  { code: 'IT', name: 'Italy' },
-  { code: 'RU', name: 'Russia' },
-  { code: 'BR', name: 'Brazil' },
-  { code: 'AU', name: 'Australia' },
-  { code: 'SG', name: 'Singapore' },
-  { code: 'AE', name: 'United Arab Emirates' },
-  { code: 'SA', name: 'Saudi Arabia' },
-  { code: 'MY', name: 'Malaysia' },
-  { code: 'CA', name: 'Canada' },
-  { code: 'MX', name: 'Mexico' },
-  { code: 'AR', name: 'Argentina' },
-  { code: 'ZA', name: 'South Africa' },
-  { code: 'EG', name: 'Egypt' },
-  { code: 'NG', name: 'Nigeria' },
-  { code: 'KE', name: 'Kenya' },
-  { code: 'TH', name: 'Thailand' },
-  { code: 'VN', name: 'Vietnam' },
-  { code: 'ID', name: 'Indonesia' },
-  { code: 'PH', name: 'Philippines' },
-  { code: 'KR', name: 'South Korea' },
-  { code: 'TR', name: 'Turkey' },
-  { code: 'ES', name: 'Spain' },
-  { code: 'NL', name: 'Netherlands' },
-  { code: 'BE', name: 'Belgium' },
-  { code: 'CH', name: 'Switzerland' },
-  { code: 'AT', name: 'Austria' },
-  { code: 'SE', name: 'Sweden' },
-  { code: 'NO', name: 'Norway' },
-  { code: 'DK', name: 'Denmark' },
-  { code: 'FI', name: 'Finland' },
-  { code: 'PL', name: 'Poland' },
-  { code: 'CZ', name: 'Czech Republic' },
-  { code: 'HU', name: 'Hungary' },
-  { code: 'GR', name: 'Greece' },
-  { code: 'PT', name: 'Portugal' },
-  { code: 'IE', name: 'Ireland' },
-  { code: 'NZ', name: 'New Zealand' },
-  { code: 'IL', name: 'Israel' },
-  { code: 'JO', name: 'Jordan' },
-  { code: 'LB', name: 'Lebanon' },
-  { code: 'QA', name: 'Qatar' },
-  { code: 'KW', name: 'Kuwait' },
-  { code: 'BH', name: 'Bahrain' },
-  { code: 'OM', name: 'Oman' },
-];
+// Helper function to get all countries for dropdown
+const getAllCountries = () => {
+  const countryObj = isoCountries.getNames('en');
+  return Object.entries(countryObj).map(([code, name]) => ({
+    code,
+    name
+  })).sort((a, b) => a.name.localeCompare(b.name));
+};
+
+// Helper function to convert country name to 2-letter code using i18n-iso-countries library
+const getCountryCode = (countryNameOrCode: string): string => {
+  if (!countryNameOrCode || typeof countryNameOrCode !== 'string') {
+    return 'IN'; // Default to India
+  }
+
+  const input = countryNameOrCode.trim();
+
+  // If it's already a 2-letter code, validate and return it
+  if (input.length === 2) {
+    const upperCode = input.toUpperCase();
+    const countryName = isoCountries.getName(upperCode, 'en');
+    return countryName ? upperCode : 'IN';
+  }
+
+  // Try to get country code by name (handles various formats and languages)
+  const countryCode = isoCountries.getAlpha2Code(input, 'en');
+  if (countryCode) {
+    return countryCode;
+  }
+
+  // Additional common name variations for edge cases
+  const nameVariations: { [key: string]: string } = {
+    'usa': 'US',
+    'america': 'US',
+    'uk': 'GB',
+    'britain': 'GB',
+    'great britain': 'GB',
+    'england': 'GB',
+    'uae': 'AE',
+    'emirates': 'AE',
+    'south korea': 'KR',
+    'korea': 'KR',
+  };
+
+  const lowerInput = input.toLowerCase();
+  if (nameVariations[lowerInput]) {
+    return nameVariations[lowerInput];
+  }
+
+  // Default fallback
+  return 'IN';
+};
+
+// Helper function to get cities from city-timezones library
+const getCitiesByQuery = (query: string): string[] => {
+  if (!query || query.length < 2) return [];
+
+  const lowerQuery = query.toLowerCase();
+  const cities = cityTimezones.findFromCityStateProvince(lowerQuery);
+
+  // Filter to get only proper city names (exclude districts, dates, etc.)
+  const filteredCities = cities
+    .map(city => city.city)
+    .filter(city => {
+      if (!city) return false;
+
+      const cityLower = city.toLowerCase();
+
+      // Exclude entries that don't look like proper city names
+      const excludePatterns = [
+        /^\d+/, // Starts with numbers (like "28 de noviembre")
+        /\d{4}/, // Contains 4-digit years
+        /^(district|zone|area|sector|ward|block)/i, // Administrative divisions
+        /^(north|south|east|west|central)\s/i, // Directional prefixes without city names
+        /^(new|old)\s*$/i, // Just "new" or "old" without city name
+        /[^\w\s\-'\.]/g, // Contains special characters except common ones
+      ];
+
+      // Check if city name matches exclude patterns
+      const shouldExclude = excludePatterns.some(pattern => pattern.test(cityLower));
+      if (shouldExclude) return false;
+
+      // Only include if it contains the search query
+      if (!cityLower.includes(lowerQuery)) return false;
+
+      // Prefer exact matches or matches at word boundaries
+      const words = cityLower.split(/\s+/);
+      const queryWords = lowerQuery.split(/\s+/);
+
+      // Check if any word in the city name starts with any word in the query
+      const hasWordMatch = words.some(word =>
+        queryWords.some(queryWord => word.startsWith(queryWord))
+      );
+
+      return hasWordMatch || cityLower.includes(lowerQuery);
+    });
+
+  // Get unique city names, prioritize exact matches, and limit results
+  const uniqueCities = Array.from(new Set(filteredCities));
+
+  // Sort by relevance: exact matches first, then starts with query, then contains query
+  const sortedCities = uniqueCities.sort((a, b) => {
+    const aLower = a.toLowerCase();
+    const bLower = b.toLowerCase();
+
+    // Exact match gets highest priority
+    if (aLower === lowerQuery && bLower !== lowerQuery) return -1;
+    if (bLower === lowerQuery && aLower !== lowerQuery) return 1;
+
+    // Starts with query gets second priority
+    if (aLower.startsWith(lowerQuery) && !bLower.startsWith(lowerQuery)) return -1;
+    if (bLower.startsWith(lowerQuery) && !aLower.startsWith(lowerQuery)) return 1;
+
+    // Alphabetical order for the rest
+    return a.localeCompare(b);
+  });
+
+  return sortedCities.slice(0, 8); // Limit to 8 results for better UX
+};
+
+// Countries list for nationality and issuing country - now using i18n-iso-countries
+const countries = getAllCountries();
+
+// Country Combobox Component with Search
+interface CountryComboboxProps {
+  value: string; // Country code
+  onChange: (countryCode: string) => void;
+  placeholder: string;
+  className?: string;
+}
+
+const CountryCombobox: React.FC<CountryComboboxProps> = ({
+  value,
+  onChange,
+  placeholder,
+  className
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Find the selected country by code
+  const selectedCountry = countries.find(c => c.code === value);
+
+  // Filter countries based on search query
+  const filteredCountries = countries.filter(country =>
+    country.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    country.code.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleCountrySelect = (countryCode: string) => {
+    onChange(countryCode);
+    setIsOpen(false);
+    setSearchQuery('');
+  };
+
+  const handleInputFocus = () => {
+    setIsOpen(true);
+  };
+
+  const handleInputBlur = () => {
+    // Delay closing to allow for country selection
+    setTimeout(() => {
+      setIsOpen(false);
+      setSearchQuery('');
+    }, 200);
+  };
+
+  return (
+    <div className="relative">
+      <div
+        className={cn(
+          "w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:border-black focus:ring-black cursor-pointer flex items-center justify-between",
+          className
+        )}
+        onClick={handleInputFocus}
+      >
+        <span className={selectedCountry ? "text-black" : "text-gray-500"}>
+          {selectedCountry ? `${selectedCountry.name} (${selectedCountry.code})` : placeholder}
+        </span>
+        <ChevronDown className="w-4 h-4 text-gray-400" />
+      </div>
+
+      {isOpen && (
+        <div className="absolute z-50 w-full mt-1 bg-white border-2 border-gray-200 rounded-xl shadow-lg max-h-80 overflow-hidden">
+          {/* Search Input */}
+          <div className="p-3 border-b border-gray-200">
+            <Input
+              type="text"
+              placeholder="Search countries..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onBlur={handleInputBlur}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              autoFocus
+            />
+          </div>
+
+          {/* Countries List */}
+          <div className="max-h-60 overflow-y-auto">
+            {filteredCountries.length > 0 ? (
+              filteredCountries.map((country) => (
+                <div
+                  key={country.code}
+                  className={cn(
+                    "p-3 hover:bg-gray-50 cursor-pointer text-sm border-b border-gray-100 last:border-b-0 flex items-center justify-between",
+                    value === country.code && "bg-blue-50 border-blue-200"
+                  )}
+                  onClick={() => handleCountrySelect(country.code)}
+                >
+                  <div>
+                    <span className="font-medium text-black">{country.name}</span>
+                    <span className="text-sm text-gray-500 ml-2">{country.code}</span>
+                  </div>
+                  {value === country.code && (
+                    <div className="w-4 h-4 rounded-full bg-black flex items-center justify-center">
+                      <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="p-3 text-sm text-gray-500 text-center">
+                No countries found
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// City Autocomplete Component
+interface CityAutocompleteProps {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  className?: string;
+}
+
+const CityAutocomplete: React.FC<CityAutocompleteProps> = ({
+  value,
+  onChange,
+  placeholder,
+  className
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(value);
+  const [cities, setCities] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Update search query when value changes externally
+  useEffect(() => {
+    setSearchQuery(value);
+  }, [value]);
+
+  // Debounced city search
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchQuery.length >= 2) {
+        setIsLoading(true);
+        try {
+          const foundCities = getCitiesByQuery(searchQuery);
+          setCities(foundCities);
+        } catch (error) {
+          console.error('Error searching cities:', error);
+          setCities([]);
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        setCities([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setSearchQuery(newValue);
+    onChange(newValue);
+    setIsOpen(true);
+  };
+
+  const handleCitySelect = (city: string) => {
+    setSearchQuery(city);
+    onChange(city);
+    setIsOpen(false);
+  };
+
+  const handleInputFocus = () => {
+    if (searchQuery.length >= 2) {
+      setIsOpen(true);
+    }
+  };
+
+  const handleInputBlur = () => {
+    // Delay closing to allow for city selection
+    setTimeout(() => setIsOpen(false), 200);
+  };
+
+  return (
+    <div className="relative">
+      <Input
+        type="text"
+        placeholder={placeholder}
+        value={searchQuery}
+        onChange={handleInputChange}
+        onFocus={handleInputFocus}
+        onBlur={handleInputBlur}
+        className={cn("w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:border-black focus:ring-black", className)}
+      />
+
+      {isOpen && (searchQuery.length >= 2) && (
+        <div className="absolute z-50 w-full mt-1 bg-white border-2 border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+          {isLoading ? (
+            <div className="p-3 text-sm text-gray-500 text-center">
+              Searching cities...
+            </div>
+          ) : cities.length > 0 ? (
+            cities.map((city, index) => (
+              <div
+                key={index}
+                className="p-3 hover:bg-gray-50 cursor-pointer text-sm border-b border-gray-100 last:border-b-0"
+                onClick={() => handleCitySelect(city)}
+              >
+                {city}
+              </div>
+            ))
+          ) : (
+            <div className="p-3 text-sm text-gray-500 text-center">
+              No cities found
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
   const thread = useStreamContext();
@@ -266,22 +561,20 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
     passportExpiry: '',
     nationality: '',
     issuingCountry: '',
+    birthPlace: '',
+    issuanceLocation: '',
   });
 
   const [selectedCountryCode, setSelectedCountryCode] = useState(countryCodes[0]); // Default to India
   const [showCountryCodeSheet, setShowCountryCodeSheet] = useState(false);
 
   // State for nationality and issuing country dropdowns
-  const [showNationalitySheet, setShowNationalitySheet] = useState(false);
-  const [showIssuingCountrySheet, setShowIssuingCountrySheet] = useState(false);
-  const [selectedNationality, setSelectedNationality] = useState(countries[0]);
-  const [selectedIssuingCountry, setSelectedIssuingCountry] = useState(countries[0]);
+  const [selectedNationality, setSelectedNationality] = useState('IN'); // Store country code instead of object
+  const [selectedIssuingCountry, setSelectedIssuingCountry] = useState('IN'); // Store country code instead of object
 
   // State for edit modal nationality and issuing country dropdowns
-  const [showEditNationalitySheet, setShowEditNationalitySheet] = useState(false);
-  const [showEditIssuingCountrySheet, setShowEditIssuingCountrySheet] = useState(false);
-  const [editSelectedNationality, setEditSelectedNationality] = useState(countries[0]);
-  const [editSelectedIssuingCountry, setEditSelectedIssuingCountry] = useState(countries[0]);
+  const [editSelectedNationality, setEditSelectedNationality] = useState('IN'); // Store country code instead of object
+  const [editSelectedIssuingCountry, setEditSelectedIssuingCountry] = useState('IN'); // Store country code instead of object
 
   const numberOfTravellers = args.numberOfTravellers || { adults: 4, children: 3, infants: 2 };
   const isInternational = args.isInternational || false;
@@ -427,7 +720,8 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
       isInternational ? ['documents'] : [];
     const allRequiredFields = [...requiredFields, ...internationalFields];
 
-    return allRequiredFields.some(field => {
+    // Check basic required fields
+    const hasBasicIncompleteInfo = allRequiredFields.some(field => {
       if (field === 'documents') {
         return !passenger.documents || passenger.documents.length === 0;
       }
@@ -435,6 +729,17 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
       // Check for null, undefined, empty string, or whitespace-only string
       return !value || (typeof value === 'string' && value.trim() === '');
     });
+
+    // Check document-specific fields if documents exist
+    if (passenger.documents && passenger.documents.length > 0 && (isInternational || isAnyDocumentRequired())) {
+      const doc = passenger.documents[0];
+      const hasDocumentIncompleteInfo = !doc?.birthPlace || !doc?.issuanceLocation ||
+        doc?.birthPlace?.trim() === '' || doc?.issuanceLocation?.trim() === '';
+
+      return hasBasicIncompleteInfo || hasDocumentIncompleteInfo;
+    }
+
+    return hasBasicIncompleteInfo;
   };
 
   const getPassengersByType = (type: 'adult' | 'child' | 'infant') => {
@@ -492,6 +797,8 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
       passportExpiry: '',
       nationality: '',
       issuingCountry: '',
+      birthPlace: '',
+      issuanceLocation: '',
     });
     setShowAddPassengerModal(true);
   };
@@ -509,14 +816,14 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
     // Initialize nationality and issuing country from passenger's documents if available
     if (passenger.documents && passenger.documents.length > 0) {
       const doc = passenger.documents[0];
-      const nationality = countries.find(c => c.code === doc.nationality) || countries[0];
-      const issuingCountry = countries.find(c => c.code === doc.issuingCountry) || countries[0];
-      setEditSelectedNationality(nationality);
-      setEditSelectedIssuingCountry(issuingCountry);
+      const nationalityCode = getCountryCode(doc.nationality) || 'IN';
+      const issuingCountryCode = getCountryCode(doc.issuingCountry) || 'IN';
+      setEditSelectedNationality(nationalityCode);
+      setEditSelectedIssuingCountry(issuingCountryCode);
     } else {
       // Reset to defaults if no documents
-      setEditSelectedNationality(countries[0]);
-      setEditSelectedIssuingCountry(countries[0]);
+      setEditSelectedNationality('IN');
+      setEditSelectedIssuingCountry('IN');
     }
 
     setShowEditModal(true);
@@ -569,6 +876,8 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
       passportExpiry: '',
       nationality: '',
       issuingCountry: '',
+      birthPlace: '',
+      issuanceLocation: '',
     });
   };
 
@@ -593,8 +902,8 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
     if (editingPassenger.documents && editingPassenger.documents.length > 0) {
       const updatedDocuments = editingPassenger.documents.map(doc => ({
         ...doc,
-        nationality: editSelectedNationality.code,
-        issuingCountry: editSelectedIssuingCountry.code,
+        nationality: editSelectedNationality,
+        issuingCountry: editSelectedIssuingCountry,
       }));
       updatedPassenger.documents = updatedDocuments;
     }
@@ -638,14 +947,37 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
         let documents: any[] = [];
         if (passenger.documents && passenger.documents.length > 0 && (documentRequired || isInternational)) {
           // Use existing document data
-          documents = passenger.documents.map(doc => ({
-            documentType: doc.documentType,
-            documentNumber: doc.documentNumber,
-            nationality: doc.nationality,
-            expiryDate: doc.expiryDate,
-            issuingDate: doc.issuingDate,
-            issuingCountry: doc.issuingCountry,
-          }));
+          documents = passenger.documents.map(doc => {
+            // Try to get issuance date from issuingDate field, fallback to a calculated date if needed
+            let issuanceDate = doc?.issuingDate || "";
+
+            // If issuingDate is empty and we have expiryDate, calculate a reasonable issuance date
+            // (typically passports are issued 10 years before expiry for adults)
+            if (!issuanceDate && doc?.expiryDate) {
+              try {
+                const expiryDate = new Date(doc.expiryDate);
+                const issuanceDateCalculated = new Date(expiryDate);
+                issuanceDateCalculated.setFullYear(expiryDate.getFullYear() - 10); // 10 years before expiry
+                issuanceDate = issuanceDateCalculated.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+              } catch (error) {
+                console.warn('Could not calculate issuance date from expiry date:', error);
+                issuanceDate = "";
+              }
+            }
+
+            return {
+              documentType: doc?.documentType?.toUpperCase() || "PASSPORT",
+              birthPlace: doc?.birthPlace || "",
+              issuanceLocation: doc?.issuanceLocation || "",
+              issuanceDate: issuanceDate,
+              number: doc?.documentNumber || "",
+              expiryDate: doc?.expiryDate || "",
+              issuanceCountry: getCountryCode(doc?.issuingCountry),
+              validityCountry: getCountryCode(doc?.issuingCountry),
+              nationality: getCountryCode(doc?.nationality),
+              holder: true,
+            };
+          });
         }
 
         return {
@@ -675,13 +1007,31 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
         // Build documents array for new passengers - include if passport info exists or if required
         let documents: any[] = [];
         if (passenger.passportNumber && (documentRequired || isInternational)) {
+          // Calculate issuance date from expiry date if available
+          let issuanceDate = "";
+          if (passenger.passportExpiry) {
+            try {
+              const expiryDate = new Date(passenger.passportExpiry);
+              const issuanceDateCalculated = new Date(expiryDate);
+              issuanceDateCalculated.setFullYear(expiryDate.getFullYear() - 10); // 10 years before expiry
+              issuanceDate = issuanceDateCalculated.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+            } catch (error) {
+              console.warn('Could not calculate issuance date from expiry date:', error);
+              issuanceDate = "";
+            }
+          }
+
           documents = [{
-            documentType: "passport",
-            documentNumber: passenger.passportNumber,
-            nationality: passenger.nationality || selectedNationality.code,
+            documentType: "PASSPORT",
+            birthPlace: passenger.birthPlace || "",
+            issuanceLocation: passenger.issuanceLocation || "",
+            issuanceDate: issuanceDate,
+            number: passenger.passportNumber,
             expiryDate: passenger.passportExpiry || "",
-            issuingDate: "", // Not collected in form
-            issuingCountry: passenger.issuingCountry || selectedIssuingCountry.code,
+            issuanceCountry: getCountryCode(passenger.issuingCountry || selectedIssuingCountry),
+            validityCountry: getCountryCode(passenger.issuingCountry || selectedIssuingCountry),
+            nationality: getCountryCode(passenger.nationality || selectedNationality),
+            holder: true,
           }];
         }
 
@@ -1156,17 +1506,14 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
             {(isInternational || isAnyDocumentRequired()) && (
               <>
                 {/* Nationality Dropdown */}
-                <div className="relative">
-                  <div
-                    className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:border-black focus:ring-black cursor-pointer flex items-center justify-between"
-                    onClick={() => setShowNationalitySheet(true)}
-                  >
-                    <span className={selectedNationality.name ? "text-black" : "text-gray-500"}>
-                      {selectedNationality.name || "Nationality"}
-                    </span>
-                    <ChevronDown className="w-4 h-4 text-gray-400" />
-                  </div>
-                </div>
+                <CountryCombobox
+                  value={selectedNationality}
+                  onChange={(countryCode) => {
+                    setSelectedNationality(countryCode);
+                    setNewPassengerForm(prev => ({ ...prev, nationality: countryCode }));
+                  }}
+                  placeholder="Select nationality"
+                />
 
                 <Input
                   placeholder="Passport number"
@@ -1176,18 +1523,27 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
                   required={isAnyDocumentRequired()}
                 />
 
+                <CityAutocomplete
+                  placeholder="Birth place"
+                  value={newPassengerForm.birthPlace || ''}
+                  onChange={(value) => setNewPassengerForm(prev => ({ ...prev, birthPlace: value }))}
+                />
+
+                <CityAutocomplete
+                  placeholder="Issuance location"
+                  value={newPassengerForm.issuanceLocation || ''}
+                  onChange={(value) => setNewPassengerForm(prev => ({ ...prev, issuanceLocation: value }))}
+                />
+
                 {/* Passport Issuing Country Dropdown */}
-                <div className="relative">
-                  <div
-                    className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:border-black focus:ring-black cursor-pointer flex items-center justify-between"
-                    onClick={() => setShowIssuingCountrySheet(true)}
-                  >
-                    <span className={selectedIssuingCountry.name ? "text-black" : "text-gray-500"}>
-                      {selectedIssuingCountry.name || "Passport issuing country"}
-                    </span>
-                    <ChevronDown className="w-4 h-4 text-gray-400" />
-                  </div>
-                </div>
+                <CountryCombobox
+                  value={selectedIssuingCountry}
+                  onChange={(countryCode) => {
+                    setSelectedIssuingCountry(countryCode);
+                    setNewPassengerForm(prev => ({ ...prev, issuingCountry: countryCode }));
+                  }}
+                  placeholder="Select passport issuing country"
+                />
 
                 <Input
                   type="date"
@@ -1276,17 +1632,11 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
                   <h4 className="text-lg font-semibold text-black">Passport Information</h4>
 
                   {/* Nationality Dropdown */}
-                  <div className="relative">
-                    <div
-                      className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:border-black focus:ring-black cursor-pointer flex items-center justify-between"
-                      onClick={() => setShowEditNationalitySheet(true)}
-                    >
-                      <span className={editSelectedNationality.name ? "text-black" : "text-gray-500"}>
-                        {editSelectedNationality.name || "Nationality"}
-                      </span>
-                      <ChevronDown className="w-4 h-4 text-gray-400" />
-                    </div>
-                  </div>
+                  <CountryCombobox
+                    value={editSelectedNationality}
+                    onChange={(countryCode) => setEditSelectedNationality(countryCode)}
+                    placeholder="Select nationality"
+                  />
 
                   <Input
                     placeholder="Passport number"
@@ -1296,10 +1646,12 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
                         documentId: 0,
                         documentType: 'passport',
                         documentNumber: '',
-                        nationality: editSelectedNationality.code,
+                        nationality: editSelectedNationality,
                         expiryDate: '',
                         issuingDate: '',
-                        issuingCountry: editSelectedIssuingCountry.code,
+                        issuingCountry: editSelectedIssuingCountry,
+                        birthPlace: '',
+                        issuanceLocation: '',
                         documentUrl: ''
                       }];
                       newDocuments[0] = { ...newDocuments[0], documentNumber: e.target.value };
@@ -1308,18 +1660,54 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
                     className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:border-black focus:ring-black"
                   />
 
+                  <CityAutocomplete
+                    placeholder="Birth place"
+                    value={editingPassenger.documents?.[0]?.birthPlace || ''}
+                    onChange={(value) => {
+                      const newDocuments = editingPassenger.documents ? [...editingPassenger.documents] : [{
+                        documentId: 0,
+                        documentType: 'passport',
+                        documentNumber: '',
+                        nationality: editSelectedNationality,
+                        expiryDate: '',
+                        issuingDate: '',
+                        issuingCountry: editSelectedIssuingCountry,
+                        birthPlace: '',
+                        issuanceLocation: '',
+                        documentUrl: ''
+                      }];
+                      newDocuments[0] = { ...newDocuments[0], birthPlace: value };
+                      setEditingPassenger(prev => prev ? { ...prev, documents: newDocuments } : null);
+                    }}
+                  />
+
+                  <CityAutocomplete
+                    placeholder="Issuance location"
+                    value={editingPassenger.documents?.[0]?.issuanceLocation || ''}
+                    onChange={(value) => {
+                      const newDocuments = editingPassenger.documents ? [...editingPassenger.documents] : [{
+                        documentId: 0,
+                        documentType: 'passport',
+                        documentNumber: '',
+                        nationality: editSelectedNationality,
+                        expiryDate: '',
+                        issuingDate: '',
+                        issuingCountry: editSelectedIssuingCountry,
+                        birthPlace: '',
+                        issuanceLocation: '',
+                        documentUrl: ''
+                      }];
+                      newDocuments[0] = { ...newDocuments[0], issuanceLocation: value };
+                      setEditingPassenger(prev => prev ? { ...prev, documents: newDocuments } : null);
+                    }}
+                  />
+
                   {/* Passport Issuing Country Dropdown */}
-                  <div className="relative">
-                    <div
-                      className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:border-black focus:ring-black cursor-pointer flex items-center justify-between"
-                      onClick={() => setShowEditIssuingCountrySheet(true)}
-                    >
-                      <span className={editSelectedIssuingCountry.name ? "text-black" : "text-gray-500"}>
-                        {editSelectedIssuingCountry.name || "Passport issuing country"}
-                      </span>
-                      <ChevronDown className="w-4 h-4 text-gray-400" />
-                    </div>
-                  </div>
+                  <CountryCombobox
+                    value={editSelectedIssuingCountry}
+                    onChange={(countryCode) => setEditSelectedIssuingCountry(countryCode)}
+                    placeholder="Select passport issuing country"
+                  />
 
                   <Input
                     type="date"
@@ -1330,10 +1718,12 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
                         documentId: 0,
                         documentType: 'passport',
                         documentNumber: '',
-                        nationality: editSelectedNationality.code,
+                        nationality: editSelectedNationality,
                         expiryDate: '',
                         issuingDate: '',
-                        issuingCountry: editSelectedIssuingCountry.code,
+                        issuingCountry: editSelectedIssuingCountry,
+                        birthPlace: '',
+                        issuanceLocation: '',
                         documentUrl: ''
                       }];
                       newDocuments[0] = { ...newDocuments[0], expiryDate: e.target.value };
@@ -1404,167 +1794,11 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
         </SheetContent>
       </Sheet>
 
-      {/* Nationality Selection Sheet */}
-      <Sheet open={showNationalitySheet} onOpenChange={setShowNationalitySheet}>
-        <SheetContent side="bottom" className="h-[60vh] rounded-t-3xl">
-          <SheetHeader className="pb-4 border-b border-gray-200">
-            <SheetTitle className="text-xl font-bold text-black">Select Nationality</SheetTitle>
-          </SheetHeader>
-          <div className="flex-1 overflow-auto py-4">
-            <div className="space-y-3">
-              {countries.map((country) => (
-                <div
-                  key={country.code}
-                  onClick={() => {
-                    setSelectedNationality(country);
-                    setNewPassengerForm(prev => ({ ...prev, nationality: country.code }));
-                    setShowNationalitySheet(false);
-                  }}
-                  className={cn(
-                    "flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md",
-                    selectedNationality.code === country.code
-                      ? "border-black bg-gray-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  )}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div>
-                      <span className="font-medium text-black">{country.name}</span>
-                      <span className="text-sm text-gray-500 ml-2">{country.code}</span>
-                    </div>
-                  </div>
-                  {selectedNationality.code === country.code && (
-                    <div className="w-5 h-5 rounded-full bg-black flex items-center justify-center">
-                      <div className="w-2 h-2 bg-white rounded-full"></div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
 
-      {/* Issuing Country Selection Sheet */}
-      <Sheet open={showIssuingCountrySheet} onOpenChange={setShowIssuingCountrySheet}>
-        <SheetContent side="bottom" className="h-[60vh] rounded-t-3xl">
-          <SheetHeader className="pb-4 border-b border-gray-200">
-            <SheetTitle className="text-xl font-bold text-black">Select Passport Issuing Country</SheetTitle>
-          </SheetHeader>
-          <div className="flex-1 overflow-auto py-4">
-            <div className="space-y-3">
-              {countries.map((country) => (
-                <div
-                  key={country.code}
-                  onClick={() => {
-                    setSelectedIssuingCountry(country);
-                    setNewPassengerForm(prev => ({ ...prev, issuingCountry: country.code }));
-                    setShowIssuingCountrySheet(false);
-                  }}
-                  className={cn(
-                    "flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md",
-                    selectedIssuingCountry.code === country.code
-                      ? "border-black bg-gray-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  )}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div>
-                      <span className="font-medium text-black">{country.name}</span>
-                      <span className="text-sm text-gray-500 ml-2">{country.code}</span>
-                    </div>
-                  </div>
-                  {selectedIssuingCountry.code === country.code && (
-                    <div className="w-5 h-5 rounded-full bg-black flex items-center justify-center">
-                      <div className="w-2 h-2 bg-white rounded-full"></div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
 
-      {/* Edit Modal - Nationality Selection Sheet */}
-      <Sheet open={showEditNationalitySheet} onOpenChange={setShowEditNationalitySheet}>
-        <SheetContent side="bottom" className="h-[60vh] rounded-t-3xl">
-          <SheetHeader className="pb-4 border-b border-gray-200">
-            <SheetTitle className="text-xl font-bold text-black">Select Nationality</SheetTitle>
-          </SheetHeader>
-          <div className="flex-1 overflow-auto py-4">
-            <div className="space-y-3">
-              {countries.map((country) => (
-                <div
-                  key={country.code}
-                  onClick={() => {
-                    setEditSelectedNationality(country);
-                    setShowEditNationalitySheet(false);
-                  }}
-                  className={cn(
-                    "flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md",
-                    editSelectedNationality.code === country.code
-                      ? "border-black bg-gray-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  )}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div>
-                      <span className="font-medium text-black">{country.name}</span>
-                      <span className="text-sm text-gray-500 ml-2">{country.code}</span>
-                    </div>
-                  </div>
-                  {editSelectedNationality.code === country.code && (
-                    <div className="w-5 h-5 rounded-full bg-black flex items-center justify-center">
-                      <div className="w-2 h-2 bg-white rounded-full"></div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
 
-      {/* Edit Modal - Issuing Country Selection Sheet */}
-      <Sheet open={showEditIssuingCountrySheet} onOpenChange={setShowEditIssuingCountrySheet}>
-        <SheetContent side="bottom" className="h-[60vh] rounded-t-3xl">
-          <SheetHeader className="pb-4 border-b border-gray-200">
-            <SheetTitle className="text-xl font-bold text-black">Select Passport Issuing Country</SheetTitle>
-          </SheetHeader>
-          <div className="flex-1 overflow-auto py-4">
-            <div className="space-y-3">
-              {countries.map((country) => (
-                <div
-                  key={country.code}
-                  onClick={() => {
-                    setEditSelectedIssuingCountry(country);
-                    setShowEditIssuingCountrySheet(false);
-                  }}
-                  className={cn(
-                    "flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md",
-                    editSelectedIssuingCountry.code === country.code
-                      ? "border-black bg-gray-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  )}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div>
-                      <span className="font-medium text-black">{country.name}</span>
-                      <span className="text-sm text-gray-500 ml-2">{country.code}</span>
-                    </div>
-                  </div>
-                  {editSelectedIssuingCountry.code === country.code && (
-                    <div className="w-5 h-5 rounded-full bg-black flex items-center justify-center">
-                      <div className="w-2 h-2 bg-white rounded-full"></div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+
+
       </div>
     </>
   );
