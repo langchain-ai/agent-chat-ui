@@ -763,10 +763,30 @@ export function useStream(options) {
             // ENHANCED: Smart merging of current and cached values to preserve all messages
             let finalValues = streamValues ?? historyValues;
             
+            console.log("🔍 [VALUES DEBUG]", {
+                threadId,
+                hasStreamValues: !!streamValues,
+                hasHistoryValues: !!historyValues,
+                streamMessagesCount: streamValues?.messages?.length || 0,
+                historyMessagesCount: historyValues?.messages?.length || 0,
+                finalMessagesCount: finalValues?.messages?.length || 0
+            });
+            
             // If we have cached values, always merge them with current values
             // Only use cache if we have a valid threadId
             const cached = threadId ? streamValuesCacheRef.current.get(threadId) : null;
-            if (cached && streamValues) {
+            
+            // For new conversations (threadId is null), use current stream values directly
+            if (!threadId) {
+                console.log("🆕 [NEW CONVERSATION] Using current stream values for new conversation");
+                finalValues = streamValues ?? historyValues;
+            } else if (cached && !streamValues) {
+                // If we have cached values and no current stream values (thread switch scenario)
+                console.log("🔄 [THREAD SWITCH] Using cached values for thread:", threadId);
+                finalValues = cached;
+            } else if (cached && streamValues) {
+                // During active conversations, prioritize current stream values
+                // Only merge if we have meaningful current data
                 const current = streamValues;
                 
                 console.log("🔍 [MERGE DEBUG] Cached values keys:", Object.keys(cached));
@@ -774,86 +794,57 @@ export function useStream(options) {
                 console.log("🔍 [MERGE DEBUG] Cached messages count:", cached.messages?.length || 0);
                 console.log("🔍 [MERGE DEBUG] Current messages count:", current.messages?.length || 0);
                 
-                if (cached.messages) {
-                    console.log("🔍 [MERGE DEBUG] Cached messages content:", cached.messages.map(m => ({
-                        id: m.id,
-                        type: m.type,
-                        content: m.content?.slice(0, 100) || 'no content'
-                    })));
-                }
-                if (current.messages) {
-                    console.log("🔍 [MERGE DEBUG] Current messages content:", current.messages.map(m => ({
-                        id: m.id,
-                        type: m.type,
-                        content: m.content?.slice(0, 100) || 'no content'
-                    })));
-                }
-                
-                // Always merge ALL cached messages with current messages
-                if (cached.messages && current.messages) {
-                    // Combine cached and current messages, removing duplicates by ID
-                    const allMessages = [...cached.messages];
-                    console.log("🔍 [MERGE DEBUG] Starting with cached messages:", allMessages.length);
+                // During active conversations, prioritize current messages over cached
+                if (current.messages && current.messages.length > 0) {
+                    // Use current messages as base, merge with cached if needed
+                    let allMessages = [...current.messages];
                     
-                    let addedCount = 0;
-                    let updatedCount = 0;
-                    current.messages.forEach(msg => {
-                        const existingIndex = allMessages.findIndex(existing => existing.id === msg.id);
-                        if (existingIndex === -1) {
-                            allMessages.push(msg);
-                            addedCount++;
-                            console.log("🔍 [MERGE DEBUG] Added new message:", msg.id, msg.type, msg.content?.slice(0, 50));
-                        } else {
-                            // Update existing message with new content
-                            const existingMsg = allMessages[existingIndex];
-                            const oldContent = existingMsg.content;
-                            allMessages[existingIndex] = msg; // Replace with updated message
-                            updatedCount++;
-                            console.log("🔍 [MERGE DEBUG] Updated existing message:", msg.id, msg.type, "old content:", oldContent?.slice(0, 50), "new content:", msg.content?.slice(0, 50));
-                        }
-                    });
+                    // Only merge cached messages that aren't already in current
+                    if (cached.messages) {
+                        cached.messages.forEach(cachedMsg => {
+                            const exists = allMessages.find(msg => msg.id === cachedMsg.id);
+                            if (!exists) {
+                                allMessages.push(cachedMsg);
+                                console.log("🔍 [MERGE DEBUG] Added cached message:", cachedMsg.id, cachedMsg.type);
+                            }
+                        });
+                    }
                     
                     finalValues = { ...finalValues, messages: allMessages };
-                    console.log("🔍 [MERGE DEBUG] Merged ALL cached messages:", cached.messages.length, "with current:", current.messages.length, "added:", addedCount, "updated:", updatedCount, "total:", allMessages.length);
-                    console.log("🔍 [MERGE DEBUG] Final merged message content:", allMessages.map(m => ({
-                        id: m.id,
-                        type: m.type,
-                        content: m.content?.slice(0, 100) || 'no content'
-                    })));
+                    console.log("🔍 [MERGE DEBUG] Using current messages as base, merged with cached. Total:", allMessages.length);
                 } else if (cached.messages) {
-                    // Use cached messages if no current messages
+                    // Fallback to cached messages if no current messages
                     finalValues = { ...finalValues, messages: cached.messages };
                     console.log("🔍 [MERGE DEBUG] Using cached messages (no current messages):", cached.messages.length);
                 }
                 
-                // Always merge ALL cached UI widgets with current UI widgets
+                // Merge UI widgets
                 if (cached.ui && current.ui) {
-                    // Combine cached and current UI widgets, removing duplicates by ID
-                    const allUI = [...cached.ui];
-                    current.ui.forEach(widget => {
+                    const allUI = [...current.ui];
+                    cached.ui.forEach(widget => {
                         if (!allUI.find(existing => existing.id === widget.id)) {
                             allUI.push(widget);
                         }
                     });
                     finalValues = { ...finalValues, ui: allUI };
-                    console.log("🔍 [MERGE DEBUG] Merged ALL cached UI widgets:", cached.ui.length, "with current:", current.ui.length, "total:", allUI.length);
-                } else if (cached.ui) {
-                    // Use cached UI widgets if no current UI widgets
+                } else if (cached.ui && !current.ui) {
                     finalValues = { ...finalValues, ui: cached.ui };
-                    console.log("🔍 [MERGE DEBUG] Using cached UI widgets (no current UI widgets):", cached.ui.length);
                 }
                 
                 // Preserve other cached values that might be missing in current
                 Object.keys(cached).forEach(key => {
                     if (key !== 'messages' && key !== 'ui' && !(key in finalValues)) {
                         finalValues[key] = cached[key];
-                        console.log("🔍 [MERGE DEBUG] Preserved cached value:", key);
                     }
                 });
-            } else if (cached && !streamValues) {
-                // Use cached values if no current values
-                finalValues = cached;
-                console.log("🔍 [MERGE DEBUG] Using cached values (no current values)");
+            } else {
+                // No cache, no threadId, or no streamValues - use what we have
+                console.log("🔍 [FALLBACK] Using fallback values:", {
+                    hasThreadId: !!threadId,
+                    hasCache: !!cached,
+                    hasStreamValues: !!streamValues,
+                    hasHistoryValues: !!historyValues
+                });
             }
             
             return finalValues;
@@ -903,10 +894,29 @@ export function useStream(options) {
             // Use the same smart merging logic as the values getter
             let finalValues = streamValues ?? historyValues;
             
+            console.log("🔍 [MESSAGES DEBUG]", {
+                threadId,
+                hasStreamValues: !!streamValues,
+                hasHistoryValues: !!historyValues,
+                streamMessagesCount: streamValues?.messages?.length || 0,
+                historyMessagesCount: historyValues?.messages?.length || 0,
+                finalMessagesCount: finalValues?.messages?.length || 0
+            });
+            
             // If we have cached values, always merge them with current values
             // Only use cache if we have a valid threadId
             const cached = threadId ? streamValuesCacheRef.current.get(threadId) : null;
-            if (cached && streamValues) {
+            
+            // For new conversations (threadId is null), use current stream values directly
+            if (!threadId) {
+                console.log("🆕 [NEW CONVERSATION] Using current stream messages for new conversation");
+                finalValues = streamValues ?? historyValues;
+            } else if (cached && !streamValues) {
+                // If we have cached values and no current stream values (thread switch scenario)
+                console.log("🔄 [THREAD SWITCH] Using cached messages for thread:", threadId);
+                finalValues = cached;
+            } else if (cached && streamValues) {
+                // During active conversations, prioritize current stream values
                 const current = streamValues;
                 
                 console.log("🔍 [MESSAGES MERGE DEBUG] Cached values keys:", Object.keys(cached));
@@ -914,86 +924,57 @@ export function useStream(options) {
                 console.log("🔍 [MESSAGES MERGE DEBUG] Cached messages count:", cached.messages?.length || 0);
                 console.log("🔍 [MESSAGES MERGE DEBUG] Current messages count:", current.messages?.length || 0);
                 
-                if (cached.messages) {
-                    console.log("🔍 [MESSAGES MERGE DEBUG] Cached messages content:", cached.messages.map(m => ({
-                        id: m.id,
-                        type: m.type,
-                        content: m.content?.slice(0, 100) || 'no content'
-                    })));
-                }
-                if (current.messages) {
-                    console.log("🔍 [MESSAGES MERGE DEBUG] Current messages content:", current.messages.map(m => ({
-                        id: m.id,
-                        type: m.type,
-                        content: m.content?.slice(0, 100) || 'no content'
-                    })));
-                }
-                
-                // Always merge ALL cached messages with current messages
-                if (cached.messages && current.messages) {
-                    // Combine cached and current messages, removing duplicates by ID
-                    const allMessages = [...cached.messages];
-                    console.log("🔍 [MESSAGES MERGE DEBUG] Starting with cached messages:", allMessages.length);
+                // During active conversations, prioritize current messages over cached
+                if (current.messages && current.messages.length > 0) {
+                    // Use current messages as base, merge with cached if needed
+                    let allMessages = [...current.messages];
                     
-                    let addedCount = 0;
-                    let updatedCount = 0;
-                    current.messages.forEach(msg => {
-                        const existingIndex = allMessages.findIndex(existing => existing.id === msg.id);
-                        if (existingIndex === -1) {
-                            allMessages.push(msg);
-                            addedCount++;
-                            console.log("🔍 [MESSAGES MERGE DEBUG] Added new message:", msg.id, msg.type, msg.content?.slice(0, 50));
-                        } else {
-                            // Update existing message with new content
-                            const existingMsg = allMessages[existingIndex];
-                            const oldContent = existingMsg.content;
-                            allMessages[existingIndex] = msg; // Replace with updated message
-                            updatedCount++;
-                            console.log("🔍 [MESSAGES MERGE DEBUG] Updated existing message:", msg.id, msg.type, "old content:", oldContent?.slice(0, 50), "new content:", msg.content?.slice(0, 50));
-                        }
-                    });
+                    // Only merge cached messages that aren't already in current
+                    if (cached.messages) {
+                        cached.messages.forEach(cachedMsg => {
+                            const exists = allMessages.find(msg => msg.id === cachedMsg.id);
+                            if (!exists) {
+                                allMessages.push(cachedMsg);
+                                console.log("🔍 [MESSAGES MERGE DEBUG] Added cached message:", cachedMsg.id, cachedMsg.type);
+                            }
+                        });
+                    }
                     
                     finalValues = { ...finalValues, messages: allMessages };
-                    console.log("🔍 [MESSAGES MERGE DEBUG] Merged ALL cached messages:", cached.messages.length, "with current:", current.messages.length, "added:", addedCount, "updated:", updatedCount, "total:", allMessages.length);
-                    console.log("🔍 [MESSAGES MERGE DEBUG] Final merged message content:", allMessages.map(m => ({
-                        id: m.id,
-                        type: m.type,
-                        content: m.content?.slice(0, 100) || 'no content'
-                    })));
+                    console.log("🔍 [MESSAGES MERGE DEBUG] Using current messages as base, merged with cached. Total:", allMessages.length);
                 } else if (cached.messages) {
-                    // Use cached messages if no current messages
+                    // Fallback to cached messages if no current messages
                     finalValues = { ...finalValues, messages: cached.messages };
                     console.log("🔍 [MESSAGES MERGE DEBUG] Using cached messages (no current messages):", cached.messages.length);
                 }
                 
-                // Always merge ALL cached UI widgets with current UI widgets
+                // Merge UI widgets
                 if (cached.ui && current.ui) {
-                    // Combine cached and current UI widgets, removing duplicates by ID
-                    const allUI = [...cached.ui];
-                    current.ui.forEach(widget => {
+                    const allUI = [...current.ui];
+                    cached.ui.forEach(widget => {
                         if (!allUI.find(existing => existing.id === widget.id)) {
                             allUI.push(widget);
                         }
                     });
                     finalValues = { ...finalValues, ui: allUI };
-                    console.log("🔍 [MESSAGES MERGE DEBUG] Merged ALL cached UI widgets:", cached.ui.length, "with current:", current.ui.length, "total:", allUI.length);
-                } else if (cached.ui) {
-                    // Use cached UI widgets if no current UI widgets
+                } else if (cached.ui && !current.ui) {
                     finalValues = { ...finalValues, ui: cached.ui };
-                    console.log("🔍 [MESSAGES MERGE DEBUG] Using cached UI widgets (no current UI widgets):", cached.ui.length);
                 }
                 
                 // Preserve other cached values that might be missing in current
                 Object.keys(cached).forEach(key => {
                     if (key !== 'messages' && key !== 'ui' && !(key in finalValues)) {
                         finalValues[key] = cached[key];
-                        console.log("🔍 [MESSAGES MERGE DEBUG] Preserved cached value:", key);
                     }
                 });
-            } else if (cached && !streamValues) {
-                // Use cached values if no current values
-                finalValues = cached;
-                console.log("🔍 [MESSAGES MERGE DEBUG] Using cached values (no current values)");
+            } else {
+                // No cache, no threadId, or no streamValues - use what we have
+                console.log("🔍 [MESSAGES FALLBACK] Using fallback values:", {
+                    hasThreadId: !!threadId,
+                    hasCache: !!cached,
+                    hasStreamValues: !!streamValues,
+                    hasHistoryValues: !!historyValues
+                });
             }
             
             return getMessages(finalValues);
@@ -1001,6 +982,31 @@ export function useStream(options) {
         getMessagesMetadata(message, index) {
             trackStreamMode("messages-tuple", "values");
             return messageMetadata?.find((m) => m.messageId === (message.id ?? index));
+        },
+        resetForThreadSwitch(newThreadId) {
+            console.log("🔄 [STREAM RESET] Resetting stream values for thread switch to:", newThreadId);
+            // Only clear stream values if we're actually switching threads
+            // Don't clear if we're continuing the same conversation
+            if (newThreadId && newThreadId !== threadId) {
+                console.log("🔄 [STREAM RESET] Actually switching threads, clearing stream values");
+                setStreamValues(null);
+                // Clear any ongoing operations
+                if (abortRef.current) {
+                    abortRef.current.abort();
+                    abortRef.current = null;
+                }
+                // Reset loading state
+                setIsLoading(false);
+                setStreamError(undefined);
+            } else {
+                console.log("🔄 [STREAM RESET] Not actually switching threads, preserving stream values");
+            }
+        },
+        clearThreadCache(threadIdToClear) {
+            console.log("🧹 [CACHE CLEAR] Clearing cache for thread:", threadIdToClear);
+            if (threadIdToClear) {
+                streamValuesCacheRef.current.delete(threadIdToClear);
+            }
         },
     };
 } 

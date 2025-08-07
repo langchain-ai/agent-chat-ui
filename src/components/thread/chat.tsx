@@ -143,17 +143,51 @@ export function Thread() {
   const isLoading = stream.isLoading;
 
   // Track the last threadId to reset displayMessages on thread switch
-  const lastThreadId = useRef<string | null>(threadId);
+  const lastThreadId = useRef<string | null>(null);
   useEffect(() => {
-    lastThreadId.current = threadId;
-  }, [threadId, messages]);
+    console.log("🔄 [THREAD DEBUG] threadId changed:", {
+      from: lastThreadId.current,
+      to: threadId,
+      hasStreamValues: !!stream.values,
+      streamMessagesCount: stream.messages?.length || 0,
+    });
 
-  // Optionally clear input and contentBlocks when threadId changes
+    // Handle different scenarios:
+    if (lastThreadId.current === null && threadId !== null) {
+      // New conversation started - threadId assigned for the first time
+      console.log("🆕 [NEW CONVERSATION] Thread ID assigned:", threadId);
+      // Don't reset stream values for new conversations - let them continue naturally
+    } else if (lastThreadId.current === threadId) {
+      // Same conversation continuing
+      console.log("🔄 [SAME CONVERSATION] Continuing same thread:", threadId);
+    } else if (lastThreadId.current !== null && threadId !== null) {
+      // Switching between existing threads
+      console.log(
+        "🔄 [THREAD SWITCH] Switching from",
+        lastThreadId.current,
+        "to",
+        threadId,
+      );
+
+      // Reset current stream values to force reload from cache/history
+      if (stream.resetForThreadSwitch) {
+        stream.resetForThreadSwitch(threadId);
+      }
+    }
+    lastThreadId.current = threadId;
+  }, [threadId, stream]);
+
+  // Clear input and contentBlocks when threadId changes
   useEffect(() => {
     setInput("");
     setContentBlocks([]);
+    setFirstTokenReceived(false);
+
+    // Reset any thread-specific UI state when switching threads
     if (threadId === null) {
-      // setDisplayMessages([]); // Remove this line //TODO: come back here
+      console.log("🔄 [THREAD SWITCH] New thread - clearing UI state");
+    } else {
+      console.log("🔄 [THREAD SWITCH] Switching to thread:", threadId);
     }
   }, [threadId, setContentBlocks]);
 
