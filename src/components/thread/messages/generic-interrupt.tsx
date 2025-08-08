@@ -122,6 +122,9 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
   // Track which widgets have been processed to avoid duplicate processing
   const processedWidgetsRef = useRef<Set<string>>(new Set());
 
+  // State to track when interruptWidget widgets are found
+  const [foundInterruptWidget, setFoundInterruptWidget] = useState<any>(null);
+
   // Handle widget processing for itinerary rendering
   useEffect(() => {
     if (
@@ -180,6 +183,97 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
     }
   }, [interruptType, interrupt, addWidget, switchToItinerary]);
 
+  // Handle interruptWidget processing with proper lifecycle management
+  useEffect(() => {
+    if (interruptType === "interruptWidget") {
+      const attachmentId = interrupt.value?.metadata?.attachmentId;
+
+      if (attachmentId) {
+        console.log(
+          `🔍 [INTERRUPT WIDGET] Processing attachmentId: ${attachmentId}`,
+        );
+
+        // Check if we've already processed this interruptWidget
+        const interruptWidgetId = `interruptWidget-${attachmentId}`;
+
+        if (!processedWidgetsRef.current.has(interruptWidgetId)) {
+          processedWidgetsRef.current.add(interruptWidgetId);
+
+          // Look for matching UI widget in current stream values
+          let matchingUIWidget = (stream.values as any)?.ui?.find(
+            (ui: any) =>
+              ui.id === attachmentId ||
+              ui.metadata?.message_id === attachmentId,
+          );
+
+          console.log(
+            `🔍 [INTERRUPT WIDGET] Current UI widgets:`,
+            (stream.values as any)?.ui,
+          );
+          console.log(
+            `🔍 [INTERRUPT WIDGET] Preserved widgets:`,
+            Array.from(preservedUIWidgets.keys()),
+          );
+          console.log(
+            `🔍 [INTERRUPT WIDGET] Looking for attachmentId:`,
+            attachmentId,
+          );
+          console.log(
+            `🔍 [INTERRUPT WIDGET] Matching widget found:`,
+            matchingUIWidget,
+          );
+
+          // If not found in current UI widgets, try preserved widgets
+          if (!matchingUIWidget) {
+            matchingUIWidget = preservedUIWidgets.get(attachmentId);
+            console.log(
+              "🔍 [INTERRUPT WIDGET] Checking preserved widgets for:",
+              attachmentId,
+            );
+            console.log(
+              "🔍 [INTERRUPT WIDGET] Found in preserved widgets:",
+              matchingUIWidget,
+            );
+          }
+
+          if (matchingUIWidget) {
+            console.log(
+              `🔍 [INTERRUPT WIDGET] Successfully found widget for: ${attachmentId}`,
+            );
+            debugLog("interruptWidget UI widget found", {
+              attachmentId,
+              uiWidget: matchingUIWidget,
+            });
+            // Set the found widget in state to trigger re-render
+            setFoundInterruptWidget(matchingUIWidget);
+          } else {
+            console.log(
+              `🔍 [INTERRUPT WIDGET] No widget found for: ${attachmentId}`,
+            );
+            debugLog("No interruptWidget UI widget found", {
+              attachmentId,
+              interrupt,
+            });
+            // Clear the found widget state
+            setFoundInterruptWidget(null);
+          }
+        } else {
+          console.log(
+            `🔍 [INTERRUPT WIDGET] Already processed: ${attachmentId}`,
+          );
+        }
+      } else {
+        console.log(
+          `🔍 [INTERRUPT WIDGET] No attachmentId found in interrupt:`,
+          interrupt,
+        );
+        debugLog("No attachmentId found in interruptWidget interrupt", {
+          interrupt,
+        });
+      }
+    }
+  }, [interruptType, interrupt, stream.values]);
+
   console.log("🔄 STREAMING DATA - DynamicRenderer received:", {
     interruptType,
     interrupt,
@@ -196,61 +290,42 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
     isWidgetTypeInMap: interrupt.value?.widget?.type in componentMap,
   });
 
-  // Handle widgetFromBE interrupt type
-  if (interruptType === "widgetFromBE") {
+  // Handle interruptWidget interrupt type
+  if (interruptType === "interruptWidget") {
     const attachmentId = interrupt.value?.metadata?.attachmentId;
 
     if (attachmentId) {
-      // First try to find in current UI widgets
-      let matchingUIWidget = (stream.values as any)?.ui?.find(
-        (ui: any) =>
-          ui.id === attachmentId || ui.metadata?.message_id === attachmentId,
-      );
+      console.log(`--> AttachmentId: ${attachmentId}`);
 
-      // If not found in current UI widgets, try preserved widgets
-      if (!matchingUIWidget) {
-        matchingUIWidget = preservedUIWidgets.get(attachmentId);
-        console.log("🔍 Checking preserved widgets for:", attachmentId);
-        console.log("🔍 Found in preserved widgets:", matchingUIWidget);
-      }
-
-      console.log(
-        "🔍 All UI widgets:",
-        JSON.stringify((stream.values as any)?.ui),
-      );
-      console.log(
-        "🔍 Preserved widgets:",
-        Array.from(preservedUIWidgets.keys()),
-      );
-      console.log("🔍 Looking for attachmentId:", attachmentId);
-      console.log("🔍 Matching widget found:", matchingUIWidget);
-
-      if (matchingUIWidget) {
-        debugLog("WidgetFromBE UI widget found", {
+      // Use the state-managed widget if found
+      if (foundInterruptWidget) {
+        debugLog("interruptWidget UI widget found", {
           attachmentId,
-          uiWidget: matchingUIWidget,
+          uiWidget: foundInterruptWidget,
         });
 
         return (
           <LoadExternalComponent
-            key={matchingUIWidget.id}
+            key={foundInterruptWidget.id}
             stream={stream as any}
-            message={matchingUIWidget}
-            meta={{ ui: matchingUIWidget, artifact }}
+            message={foundInterruptWidget}
+            meta={{ ui: foundInterruptWidget, artifact }}
           />
         );
       }
 
-      debugLog("No widgetFromBE UI widget found", { attachmentId, interrupt });
+      // If no widget found yet, show loading or return null
       console.log(
-        `No widgetFromBE UI widget found for attachmentId: ${attachmentId} and interrupt: ${JSON.stringify(interrupt)}`,
+        `🔍 [INTERRUPT WIDGET] Widget not found yet for: ${attachmentId}`,
       );
       return null;
     }
 
-    debugLog("No attachmentId found in widgetFromBE interrupt", { interrupt });
+    debugLog("No attachmentId found in interruptWidget interrupt", {
+      interrupt,
+    });
     console.log(
-      `No attachmentId found in widgetFromBE interrupt: ${JSON.stringify(interrupt)}`,
+      `No attachmentId found in interruptWidget interrupt: ${JSON.stringify(interrupt)}`,
     );
     return null;
   }

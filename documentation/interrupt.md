@@ -77,16 +77,16 @@ await thread.submit(
 
 ---
 
-## 🎯 New: widgetFromBE Interrupt Type
+## 🎯 New: interruptWidget Interrupt Type
 
-The `widgetFromBE` interrupt type allows rendering UI widgets that are sent from the backend via the typed stream. This is useful for dynamic, configurable widgets.
+The `interruptWidget` interrupt type allows rendering UI widgets that are sent from the backend via the typed stream. This is useful for dynamic, configurable widgets.
 
-### ✅ Server Side: Sending widgetFromBE Interrupt
+### ✅ Server Side: Sending interruptWidget Interrupt
 
 ```ts
 const response = interrupt({
   value: {
-    type: "widgetFromBE",
+    type: "interruptWidget",
     metadata: {
       attachmentId: uiWidget.id, // This should match a UI widget ID in the typed stream
     },
@@ -94,7 +94,7 @@ const response = interrupt({
 });
 ```
 
-### ✅ Client Side: Handling widgetFromBE Interrupt
+### ✅ Client Side: Handling interruptWidget Interrupt
 
 The system automatically:
 

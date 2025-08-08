@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, } from "react";
 import { coerceMessageLikeToMessage, convertToChunk, isBaseMessageChunk, } from "@langchain/core/messages";
 import { Client } from "@langchain/langgraph-sdk";
+import { uiMessageReducer, isUIMessage, isRemoveUIMessage } from "@langchain/langgraph-sdk/react-ui";
 // import { getClientConfigHash } from "@langchain/langgraph-sdk/client";
 
 class StreamError extends Error {
@@ -445,6 +446,10 @@ export function useStream(options) {
     // State to track the final merged values for React re-rendering
     const [finalValues, setFinalValues] = useState(null);
     
+    // UI event queue to prevent race conditions
+    const uiEventQueueRef = useRef(new Map());
+    const processingUIEventsRef = useRef(false);
+    
     // Load cache from localStorage on mount
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -501,6 +506,8 @@ export function useStream(options) {
             await saveCacheToStorage();
         }
     }, [saveCacheToStorage]);
+
+
 
     const messageManagerRef = useRef(new MessageTupleManager());
     const submittingRef = useRef(false);
@@ -566,6 +573,73 @@ export function useStream(options) {
     const { history: flatHistory, branchByCheckpoint } = getBranchView(rootSequence, paths, branch);
     const threadHead = flatHistory.at(-1);
     const historyValues = useMemo(() => threadHead?.values ?? options.initialValues ?? {}, [threadHead?.values, options.initialValues]);
+    
+    // Helper function to process UI events in order - defined after historyValues
+    const processUIEvent = useCallback(async (threadId, data) => {
+        if (!threadId) return;
+        
+        // Add event to queue
+        const eventId = Date.now() + Math.random();
+        uiEventQueueRef.current.set(eventId, { threadId, data });
+        
+        // If already processing, wait with timeout
+        if (processingUIEventsRef.current) {
+            // Set a timeout to prevent infinite waiting
+            setTimeout(() => {
+                if (processingUIEventsRef.current) {
+                    console.warn("🔍 [UI EVENT QUEUE] Processing timeout, forcing reset");
+                    processingUIEventsRef.current = false;
+                    // Retry processing
+                    processUIEvent(threadId, data);
+                }
+            }, 5000); // 5 second timeout
+            return;
+        }
+        
+        processingUIEventsRef.current = true;
+        
+        try {
+            // Process all queued events in order
+            const events = Array.from(uiEventQueueRef.current.entries()).sort(([a], [b]) => a - b);
+            uiEventQueueRef.current.clear();
+            
+            for (const [eventId, { threadId: eventThreadId, data: eventData }] of events) {
+                console.log(`🔍 [UI EVENT QUEUE] Processing event ${eventId} for thread ${eventThreadId}`);
+                
+                await cacheManagerRef.current.withMutex(eventThreadId, async () => {
+                    const currentValues = cacheManagerRef.current.get(eventThreadId) || {};
+                    
+                    setStreamValues((currentStreamValues) => {
+                        const values = { ...historyValues, ...currentStreamValues, ...currentValues };
+                        const ui = uiMessageReducer(values.ui ?? [], eventData);
+                        
+                        const updatedValues = { ...values, ui };
+                        
+                        console.log(`🔍 [UI EVENT QUEUE] Thread-safe UI update:`, {
+                            eventId,
+                            threadId: eventThreadId,
+                            previousUICount: values.ui?.length || 0,
+                            newUICount: ui.length,
+                            uiValues: ui.map(u => ({ id: u.id, type: u.type, name: u.name }))
+                        });
+                        
+                        // Update cache with thread-safe operation
+                        cacheManagerRef.current.set(eventThreadId, updatedValues).then(() => {
+                            saveCacheToStorage();
+                        }).catch(error => {
+                            console.warn("🔍 [UI EVENT QUEUE] Cache update failed:", error);
+                        });
+                        
+                        return updatedValues;
+                    });
+                });
+            }
+        } catch (error) {
+            console.warn("🔍 [UI EVENT QUEUE] Processing failed:", error);
+        } finally {
+            processingUIEventsRef.current = false;
+        }
+    }, [historyValues, saveCacheToStorage]);
     
     // Consistent merging function for both values and messages - defined outside useEffect
     const mergeValuesWithCache = useCallback((currentValues, cachedValues) => {
@@ -638,6 +712,7 @@ export function useStream(options) {
             // Complete logging of final messages and UI values
             finalMessages: mergedValues?.messages || [],
             finalUIValues: mergedValues?.ui || [],
+            finalUIValuesCount: mergedValues?.ui?.length || 0,
             // Detailed UI value analysis
             uiValueDetails: mergedValues?.ui?.map((ui) => ({
                 id: ui.id,
@@ -647,6 +722,13 @@ export function useStream(options) {
                 hasAssociatedMessage: mergedValues?.messages?.some((m) => m.id === ui.metadata?.message_id) || false,
                 associatedMessageContent: mergedValues?.messages?.find((m) => m.id === ui.metadata?.message_id)?.content || 'NO MESSAGE FOUND'
             })) || [],
+            // UI values summary
+            uiValuesSummary: {
+                totalUIValues: mergedValues?.ui?.length || 0,
+                uiTypes: [...new Set(mergedValues?.ui?.map(u => u.type) || [])],
+                uiNames: [...new Set(mergedValues?.ui?.map(u => u.name) || [])],
+                uiWithMessages: mergedValues?.ui?.filter(u => u.metadata?.message_id && mergedValues?.messages?.some(m => m.id === u.metadata?.message_id)).length || 0
+            },
             // Message comparison analysis
             messageComparison: {
                 historyMessageIds: historyValues?.messages?.map(m => m.id) || [],
@@ -740,10 +822,66 @@ export function useStream(options) {
                 if (event === "custom" ||
                     // if `streamSubgraphs: true`, then we also want
                     // to also receive custom events from subgraphs
-                    event.startsWith("custom|"))
+                    event.startsWith("custom|")) {
+                        console.log("🔍 [CUSTOM EVENT] Got custom event: ", JSON.stringify(data));
+                    // Handle UI messages specifically with thread-safe operations 
+                    if (isUIMessage(data) || isRemoveUIMessage(data)) {
+                        console.log(`🔍 [UI EVENT] Got UI event: ${JSON.stringify(data)}`);
+                        
+                        // Thread-safe UI event processing
+                        if (threadId) {
+                            cacheManagerRef.current.withMutex(threadId, async () => {
+                                // Get current state atomically
+                                const currentValues = cacheManagerRef.current.get(threadId) || {};
+                                
+                                // Use setStreamValues to get the current stream values
+                                setStreamValues((currentStreamValues) => {
+                                    // Merge current values
+                                    const values = { ...historyValues, ...currentStreamValues, ...currentValues };
+                                    const ui = uiMessageReducer(values.ui ?? [], data);
+                                    
+                                    const updatedValues = { ...values, ui };
+                                    
+                                    console.log(`🔍 [UI EVENT] Thread-safe UI update:`, {
+                                        threadId,
+                                        previousUICount: values.ui?.length || 0,
+                                        newUICount: ui.length,
+                                        uiValues: ui.map(u => ({ id: u.id, type: u.type, name: u.name }))
+                                    });
+                                    
+                                    // Update cache with thread-safe operation
+                                    cacheManagerRef.current.set(threadId, updatedValues).then(() => {
+                                        saveCacheToStorage();
+                                    }).catch(error => {
+                                        console.warn("🔍 [UI EVENT] Cache update failed:", error);
+                                    });
+                                    
+                                    return updatedValues;
+                                });
+                            }).catch(error => {
+                                console.warn("🔍 [UI EVENT] Thread-safe operation failed:", error);
+                                // Fallback to direct update if thread-safe operation fails
+                                setStreamValues((streamValues) => {
+                                    const values = { ...historyValues, ...streamValues };
+                                    const ui = uiMessageReducer(values.ui ?? [], data);
+                                    return { ...values, ui };
+                                });
+                            });
+                        } else {
+                            // Fallback for when threadId is not available
+                            setStreamValues((streamValues) => {
+                                const values = { ...historyValues, ...streamValues };
+                                const ui = uiMessageReducer(values.ui ?? [], data);
+                                return { ...values, ui };
+                            });
+                        }
+                    }
+                    
+                    // Call the custom event handler
                     options.onCustomEvent?.(data, {
                         mutate: getMutateFn("stream", historyValues),
                     });
+                }
                 if (event === "metadata")
                     options.onMetadataEvent?.(data);
                 if (event === "events")
@@ -965,8 +1103,10 @@ export function useStream(options) {
                 uiValues: streamValues.ui?.map((ui) => ({
                     id: ui.id,
                     type: ui.type,
+                    name: ui.name,
                     message_id: ui.metadata?.message_id
-                })) || []
+                })) || [],
+                uiValuesCount: streamValues.ui?.length || 0
             });
             
             if (hasMessages || hasUI || hasInterrupt || hasOtherValues) {
@@ -1062,6 +1202,9 @@ export function useStream(options) {
                 // Reset loading state
                 setIsLoading(false);
                 setStreamError(undefined);
+                // Clear UI event queue for the old thread
+                uiEventQueueRef.current.clear();
+                processingUIEventsRef.current = false;
             } else {
                 console.log("🔄 [STREAM RESET] Not actually switching threads, preserving stream values");
             }
