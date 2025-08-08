@@ -9,10 +9,19 @@ import WeatherWidget from "@/components/widgets/weather.widget";
 import SearchCriteriaWidget from "@/components/widgets/searchCriteria.widget";
 import FlightOptionsWidget from "@/components/widgets/flightOptions.widget";
 import ReviewWidget from "@/components/widgets/review.widget";
+import PaymentWidget from "@/components/widgets/payment.widget";
+import SeatPreferenceWidget from "@/components/widgets/seatPreference.widget";
+import SeatSelectionWidget from "@/components/widgets/seatSelection.widget";
+import SeatPaymentWidget from "@/components/widgets/seatPayment.widget";
+import SeatCombinedWidget from "@/components/widgets/seatCombined.widget";
+import AddBaggageWidget from "@/components/widgets/addBaggage.widget";
+import WhosTravellingWidget from "@/components/widgets/whosTravelling.widget";
+import ReviewWidgetDemo from "@/components/widgets/review-widget-demo";
 
 // Import the StreamProvider to wrap our widgets
 import { StreamProvider } from "@/providers/Stream";
 import { ThreadProvider } from "@/providers/Thread";
+import { TabProvider } from "@/providers/TabContext";
 
 // Mock data for SearchCriteriaWidget
 const mockSearchCriteriaData = {
@@ -623,14 +632,112 @@ const mockFlightOptionsData = {
   flightOffers: mockFlights,
 };
 
+// Mock data for PaymentWidget
+const mockPaymentData = {
+  transaction_id: "TXN123456789",
+  reference_id: "REF987654321",
+  razorpay_order_id: "order_123456789",
+  amount: 30225, // Amount in paise (₹302.25)
+  currency: "INR",
+  razorpayKey: "rzp_test_1234567890",
+  name: "Flight Booking Payment",
+  description: "Payment for flight booking from Delhi to Mumbai",
+};
+
+
+
+// Mock data for WhosTravellingWidget
+const mockWhosTravellingData = {
+  numberOfTravellers: { adults: 2, children: 1, infants: 0 },
+  totalAmount: 25500,
+  currency: "INR",
+  isInternational: false,
+  savedTravellers: [
+    {
+      travellerId: 1,
+      firstName: "John",
+      lastName: "Doe",
+      gender: "Male",
+      dateOfBirth: "1990-01-15",
+      nationality: "Indian",
+      email: "john.doe@example.com",
+      phone: [{ countryCode: "+91", number: "9876543210" }],
+      numberOfFlights: 5,
+      isPrimaryTraveller: true,
+      documents: [
+        {
+          documentId: 1,
+          documentType: "passport",
+          documentNumber: "A12345678",
+          nationality: "Indian",
+          expiryDate: "2029-01-11",
+          issuingCountry: "India",
+          issuingDate: "2019-01-11",
+          documentUrl: "",
+        },
+      ],
+    },
+    {
+      travellerId: 2,
+      firstName: "Jane",
+      lastName: "Smith",
+      gender: "Female",
+      dateOfBirth: "1985-03-22",
+      nationality: "Indian",
+      email: "jane.smith@example.com",
+      phone: [{ countryCode: "+91", number: "9876543211" }],
+      numberOfFlights: 3,
+      isPrimaryTraveller: false,
+      documents: [
+        {
+          documentId: 2,
+          documentType: "passport",
+          documentNumber: "B87654321",
+          nationality: "Indian",
+          expiryDate: "2028-05-15",
+          issuingCountry: "India",
+          issuingDate: "2018-05-15",
+          documentUrl: "",
+        },
+      ],
+    },
+  ],
+  userDetails: {
+    travellerId: 1,
+    firstName: "John",
+    lastName: "Doe",
+    gender: "Male",
+    dateOfBirth: "1990-01-15",
+    nationality: "Indian",
+    email: "john.doe@example.com",
+    phone: [{ countryCode: "+91", number: "9876543210" }],
+    numberOfFlights: 5,
+    isPrimaryTraveller: true,
+    documents: [
+      {
+        documentId: 1,
+        documentType: "passport",
+        documentNumber: "A12345678",
+        nationality: "Indian",
+        expiryDate: "2029-01-11",
+        issuingCountry: "India",
+        issuingDate: "2019-01-11",
+        documentUrl: "",
+      },
+    ],
+  },
+};
+
 // Wrapper component for SearchCriteriaWidget
 const StandaloneSearchCriteriaWidget = () => {
   return (
     <ThreadProvider>
       <StreamProvider>
-        <div className="w-full">
-          <SearchCriteriaWidget {...mockSearchCriteriaData} />
-        </div>
+        <TabProvider>
+          <div className="w-full">
+            <SearchCriteriaWidget {...mockSearchCriteriaData} />
+          </div>
+        </TabProvider>
       </StreamProvider>
     </ThreadProvider>
   );
@@ -656,6 +763,152 @@ const StandaloneReviewWidget = () => {
       <StreamProvider>
         <div className="w-full">
           <ReviewWidget />
+        </div>
+      </StreamProvider>
+    </ThreadProvider>
+  );
+};
+
+// Wrapper component for PaymentWidget
+const StandalonePaymentWidget = () => {
+  return (
+    <ThreadProvider>
+      <StreamProvider>
+        <div className="w-full">
+          <PaymentWidget {...mockPaymentData} />
+        </div>
+      </StreamProvider>
+    </ThreadProvider>
+  );
+};
+
+// Simple demo component for NonAgentFlowWidget (avoiding context issues)
+const StandaloneNonAgentFlowWidget = () => {
+  return (
+    <ThreadProvider>
+      <StreamProvider>
+        <div className="w-full">
+          <div className="rounded-lg border border-gray-200 bg-white p-6">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600">
+                <span className="text-white font-semibold">F</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Non-Agent Flow Payment</h3>
+                <p className="text-sm text-gray-600">Complete your booking with secure payment</p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div className="rounded-lg bg-gray-50 p-4">
+                <h4 className="font-medium text-gray-900 mb-2">Trip Details</h4>
+                <p className="text-sm text-gray-600">Trip ID: trip_123456789</p>
+                <p className="text-sm text-gray-600">Flight: Delhi to Mumbai</p>
+                <p className="text-sm text-gray-600">Amount: ₹8,500</p>
+              </div>
+              <div className="flex gap-3">
+                <button className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-white font-medium hover:bg-blue-700">
+                  Proceed to Payment
+                </button>
+                <button className="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50">
+                  Cancel
+                </button>
+              </div>
+            </div>
+            <div className="mt-4 text-xs text-gray-500">
+              Note: This is a demo version. The actual widget requires NonAgentFlowProvider context.
+            </div>
+          </div>
+        </div>
+      </StreamProvider>
+    </ThreadProvider>
+  );
+};
+
+// Wrapper component for WhosTravellingWidget
+const StandaloneWhosTravellingWidget = () => {
+  return (
+    <ThreadProvider>
+      <StreamProvider>
+        <div className="w-full">
+          <WhosTravellingWidget {...mockWhosTravellingData} />
+        </div>
+      </StreamProvider>
+    </ThreadProvider>
+  );
+};
+
+// Wrapper component for AddBaggageWidget
+const StandaloneAddBaggageWidget = () => {
+  return (
+    <ThreadProvider>
+      <StreamProvider>
+        <div className="w-full">
+          <AddBaggageWidget />
+        </div>
+      </StreamProvider>
+    </ThreadProvider>
+  );
+};
+
+// Wrapper component for SeatPreferenceWidget
+const StandaloneSeatPreferenceWidget = () => {
+  return (
+    <ThreadProvider>
+      <StreamProvider>
+        <div className="w-full">
+          <SeatPreferenceWidget />
+        </div>
+      </StreamProvider>
+    </ThreadProvider>
+  );
+};
+
+// Wrapper component for SeatSelectionWidget
+const StandaloneSeatSelectionWidget = () => {
+  return (
+    <ThreadProvider>
+      <StreamProvider>
+        <div className="w-full">
+          <SeatSelectionWidget />
+        </div>
+      </StreamProvider>
+    </ThreadProvider>
+  );
+};
+
+// Wrapper component for SeatPaymentWidget
+const StandaloneSeatPaymentWidget = () => {
+  return (
+    <ThreadProvider>
+      <StreamProvider>
+        <div className="w-full">
+          <SeatPaymentWidget />
+        </div>
+      </StreamProvider>
+    </ThreadProvider>
+  );
+};
+
+// Wrapper component for SeatCombinedWidget
+const StandaloneSeatCombinedWidget = () => {
+  return (
+    <ThreadProvider>
+      <StreamProvider>
+        <div className="w-full">
+          <SeatCombinedWidget />
+        </div>
+      </StreamProvider>
+    </ThreadProvider>
+  );
+};
+
+// Wrapper component for ReviewWidgetDemo
+const StandaloneReviewWidgetDemo = () => {
+  return (
+    <ThreadProvider>
+      <StreamProvider>
+        <div className="w-full">
+          <ReviewWidgetDemo />
         </div>
       </StreamProvider>
     </ThreadProvider>
@@ -789,6 +1042,171 @@ export default function WidgetsPage(): React.ReactNode {
             </div>
             <div className="w-full">
               <StandaloneReviewWidget />
+            </div>
+          </section>
+
+          {/* Review Widget Demo */}
+          <section className="rounded-lg bg-white p-6 shadow-md">
+            <div className="mb-6">
+              <h3 className="mb-2 text-2xl font-semibold text-gray-800">
+                Review Widget Demo
+              </h3>
+              <p className="text-sm text-gray-600">
+                Demo version of the Review Widget with real API data examples and bottom sheet functionality.
+              </p>
+            </div>
+            <div className="w-full">
+              <StandaloneReviewWidgetDemo />
+            </div>
+          </section>
+
+          {/* Booking & Payment Widgets Section */}
+          <div className="mt-16 mb-8">
+            <h2 className="mb-4 text-center text-3xl font-bold text-gray-900">
+              Booking & Payment Widgets
+            </h2>
+            <p className="mb-8 text-center text-gray-600">
+              These widgets handle passenger details, payments, and booking flow
+            </p>
+          </div>
+
+          {/* Who's Travelling Widget */}
+          <section className="rounded-lg bg-white p-6 shadow-md">
+            <div className="mb-6">
+              <h3 className="mb-2 text-2xl font-semibold text-gray-800">
+                Who&apos;s Travelling Widget
+              </h3>
+              <p className="text-sm text-gray-600">
+                Passenger selection and details widget for booking. Allows users to select from saved passengers or add new ones.
+              </p>
+            </div>
+            <div className="w-full">
+              <StandaloneWhosTravellingWidget />
+            </div>
+          </section>
+
+          {/* Payment Widget */}
+          <section className="rounded-lg bg-white p-6 shadow-md">
+            <div className="mb-6">
+              <h3 className="mb-2 text-2xl font-semibold text-gray-800">
+                Payment Widget
+              </h3>
+              <p className="text-sm text-gray-600">
+                Razorpay payment integration widget for processing flight bookings.
+              </p>
+            </div>
+            <div className="w-full">
+              <StandalonePaymentWidget />
+            </div>
+          </section>
+
+          {/* Non-Agent Flow Widget */}
+          <section className="rounded-lg bg-white p-6 shadow-md">
+            <div className="mb-6">
+              <h3 className="mb-2 text-2xl font-semibold text-gray-800">
+                Non-Agent Flow Widget
+              </h3>
+              <p className="text-sm text-gray-600">
+                Non-agent flow payment widget with bottom sheet for direct booking flow.
+              </p>
+            </div>
+            <div className="w-full">
+              <StandaloneNonAgentFlowWidget />
+            </div>
+          </section>
+
+          {/* Seat Selection Widgets Section */}
+          <div className="mt-16 mb-8">
+            <h2 className="mb-4 text-center text-3xl font-bold text-gray-900">
+              Seat Selection Widgets
+            </h2>
+            <p className="mb-8 text-center text-gray-600">
+              These widgets handle seat preferences, selection, and payment
+            </p>
+          </div>
+
+          {/* Seat Preference Widget */}
+          <section className="rounded-lg bg-white p-6 shadow-md">
+            <div className="mb-6">
+              <h3 className="mb-2 text-2xl font-semibold text-gray-800">
+                Seat Preference Widget
+              </h3>
+              <p className="text-sm text-gray-600">
+                Seat preference selection widget for choosing seat types and preferences.
+              </p>
+            </div>
+            <div className="w-full">
+              <StandaloneSeatPreferenceWidget />
+            </div>
+          </section>
+
+          {/* Seat Selection Widget */}
+          <section className="rounded-lg bg-white p-6 shadow-md">
+            <div className="mb-6">
+              <h3 className="mb-2 text-2xl font-semibold text-gray-800">
+                Seat Selection Widget
+              </h3>
+              <p className="text-sm text-gray-600">
+                Visual seat map selection widget for choosing specific seats on the aircraft.
+              </p>
+            </div>
+            <div className="w-full">
+              <StandaloneSeatSelectionWidget />
+            </div>
+          </section>
+
+          {/* Seat Payment Widget */}
+          <section className="rounded-lg bg-white p-6 shadow-md">
+            <div className="mb-6">
+              <h3 className="mb-2 text-2xl font-semibold text-gray-800">
+                Seat Payment Widget
+              </h3>
+              <p className="text-sm text-gray-600">
+                Seat payment confirmation widget for processing seat upgrade payments.
+              </p>
+            </div>
+            <div className="w-full">
+              <StandaloneSeatPaymentWidget />
+            </div>
+          </section>
+
+          {/* Seat Combined Widget */}
+          <section className="rounded-lg bg-white p-6 shadow-md">
+            <div className="mb-6">
+              <h3 className="mb-2 text-2xl font-semibold text-gray-800">
+                Seat Combined Widget
+              </h3>
+              <p className="text-sm text-gray-600">
+                Combined seat selection widget with all seat options and preferences in one interface.
+              </p>
+            </div>
+            <div className="w-full">
+              <StandaloneSeatCombinedWidget />
+            </div>
+          </section>
+
+          {/* Add-ons Widgets Section */}
+          <div className="mt-16 mb-8">
+            <h2 className="mb-4 text-center text-3xl font-bold text-gray-900">
+              Add-ons Widgets
+            </h2>
+            <p className="mb-8 text-center text-gray-600">
+              These widgets handle additional services like baggage
+            </p>
+          </div>
+
+          {/* Add Baggage Widget */}
+          <section className="rounded-lg bg-white p-6 shadow-md">
+            <div className="mb-6">
+              <h3 className="mb-2 text-2xl font-semibold text-gray-800">
+                Add Baggage Widget
+              </h3>
+              <p className="text-sm text-gray-600">
+                Baggage selection widget with weight and price options for adding extra baggage.
+              </p>
+            </div>
+            <div className="w-full">
+              <StandaloneAddBaggageWidget />
             </div>
           </section>
         </div>

@@ -4,10 +4,19 @@
  */
 
 export function enforceImageSizes() {
-  // Function to resize an image element
+  // Function to resize an image element (but exclude airline logos)
   const resizeImage = (img: HTMLImageElement) => {
+    // Skip airline logos
+    if (img.alt && img.alt.toLowerCase().includes('logo')) {
+      return;
+    }
+    // Also skip images with airline-logo class
+    if (img.classList && img.classList.contains('airline-logo')) {
+      return;
+    }
+
     const maxHeight = window.innerWidth <= 480 ? 160 : window.innerWidth <= 768 ? 224 : 288;
-    
+
     // Apply styles directly to the element
     img.style.setProperty('max-width', '100%', 'important');
     img.style.setProperty('width', 'auto', 'important');

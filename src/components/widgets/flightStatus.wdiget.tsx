@@ -123,7 +123,7 @@ const AirlineLogo = ({
           alt={`${airlineName} logo`}
           width={size === 'sm' ? 20 : size === 'md' ? 24 : 32}
           height={size === 'sm' ? 20 : size === 'md' ? 24 : 32}
-          className="object-contain rounded-full"
+          className="airline-logo object-contain rounded-full"
           onError={(e) => {
             // Fallback to gray circle if image fails to load
             const target = e.target as HTMLImageElement;
