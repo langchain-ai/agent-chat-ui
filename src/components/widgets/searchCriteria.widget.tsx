@@ -106,14 +106,38 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
   const [toAirport, setToAirport] = useState<string>(
     flightSearchCriteria.destinationAirport || "",
   );
-  const [departureDate, setDepartureDate] = useState<Date | undefined>(
-    flightSearchCriteria.departureDate
-      ? new Date(flightSearchCriteria.departureDate)
-      : undefined,
-  );
-  const [returnDate, setReturnDate] = useState<Date | undefined>(
-    flightSearchCriteria.returnDate ? new Date(flightSearchCriteria.returnDate) : undefined,
-  );
+  // Helper function to get tomorrow's date
+  const getTomorrowDate = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    return tomorrow;
+  };
+
+  // Helper function to check if a date is in the past
+  const isDateInPast = (date: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date < today;
+  };
+
+  const [departureDate, setDepartureDate] = useState<Date | undefined>(() => {
+    if (flightSearchCriteria.departureDate) {
+      const serverDate = new Date(flightSearchCriteria.departureDate);
+      // If server date is in the past, use tomorrow's date instead
+      return isDateInPast(serverDate) ? getTomorrowDate() : serverDate;
+    }
+    return undefined;
+  });
+
+  const [returnDate, setReturnDate] = useState<Date | undefined>(() => {
+    if (flightSearchCriteria.returnDate) {
+      const serverDate = new Date(flightSearchCriteria.returnDate);
+      // If server date is in the past, use tomorrow's date instead
+      return isDateInPast(serverDate) ? getTomorrowDate() : serverDate;
+    }
+    return undefined;
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [showTravellerDropdown, setShowTravellerDropdown] = useState(false);
 
@@ -168,14 +192,26 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
     e.preventDefault();
     setIsLoading(true);
 
+    // Ensure departure date is not in the past
+    let finalDepartureDate = departureDate;
+    if (finalDepartureDate && isDateInPast(finalDepartureDate)) {
+      finalDepartureDate = getTomorrowDate();
+    }
+
+    // Ensure return date is not in the past
+    let finalReturnDate = returnDate;
+    if (finalReturnDate && isDateInPast(finalReturnDate)) {
+      finalReturnDate = getTomorrowDate();
+    }
+
     const responseData = {
       flightSearchCriteria: {
         adults,
         children,
         infants,
         class: flightClass.toLowerCase(),
-        departureDate: departureDate?.toISOString().split("T")[0],
-        returnDate: returnDate?.toISOString().split("T")[0],
+        departureDate: finalDepartureDate?.toISOString().split("T")[0],
+        returnDate: finalReturnDate?.toISOString().split("T")[0],
         destinationAirport: toAirport,
         originAirport: fromAirport,
         isRoundTrip: tripType === "round",

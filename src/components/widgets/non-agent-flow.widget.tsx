@@ -273,17 +273,28 @@ const NonAgentFlowWidgetContent: React.FC<
               // Safely extract PNR with error handling
               const extractPNR = (response: any): string => {
                 try {
-                  const pnr = response?.data?.bookingData?.associatedRecords?.[0]?.reference;
-                  if (pnr && typeof pnr === 'string' && pnr.trim() !== '') {
+                  const associatedRecords =
+                    response?.data?.bookingData?.associatedRecords;
+                  const recordIndex =
+                    Array.isArray(associatedRecords) &&
+                    associatedRecords.length > 1
+                      ? 1
+                      : 0;
+                  const pnr = associatedRecords?.[recordIndex]?.reference;
+
+                  if (pnr && typeof pnr === "string" && pnr.trim() !== "") {
                     console.log("PNR extracted successfully:", pnr);
                     return pnr.trim();
                   } else {
-                    console.warn("PNR not found or invalid in response:", response?.data?.bookingData);
-                    return '';
+                    console.warn(
+                      "PNR not found or invalid in response:",
+                      associatedRecords,
+                    );
+                    return "";
                   }
                 } catch (error) {
                   console.error("Error extracting PNR from response:", error);
-                  return '';
+                  return "";
                 }
               };
 
@@ -309,7 +320,7 @@ const NonAgentFlowWidgetContent: React.FC<
                       paymentStatus: verificationResponse.data.paymentStatus,
                       bookingStatus: verificationResponse.data.bookingStatus,
                       tripId,
-                      pnr: pnr || '', // Ensure PNR is always a string (empty if not found)
+                      pnr: pnr || "", // Ensure PNR is always a string (empty if not found)
                       transactionData: {
                         paymentStatus: verificationResponse.data.paymentStatus,
                         bookingStatus: verificationResponse.data.bookingStatus,
@@ -321,7 +332,10 @@ const NonAgentFlowWidgetContent: React.FC<
                       },
                     };
 
-                    console.log("Sending interrupt response with PNR:", pnr || 'No PNR found');
+                    console.log(
+                      "Sending interrupt response with PNR:",
+                      pnr || "No PNR found",
+                    );
                     console.log("Complete response data:", responseData);
 
                     try {
@@ -399,7 +413,7 @@ const NonAgentFlowWidgetContent: React.FC<
                     paymentStatus: "FAILED",
                     bookingStatus: "FAILED",
                     tripId,
-                    pnr: '', // No PNR available on verification failure
+                    pnr: "", // No PNR available on verification failure
                     error: errorMessage,
                     transactionData: {
                       paymentStatus: "FAILED",
@@ -467,7 +481,7 @@ const NonAgentFlowWidgetContent: React.FC<
                       paymentStatus: "FAILED",
                       bookingStatus: "FAILED",
                       tripId,
-                      pnr: '', // No PNR available on cancellation
+                      pnr: "", // No PNR available on cancellation
                       error: errorMessage,
                       cancelled: true,
                       transactionData: {
@@ -525,7 +539,7 @@ const NonAgentFlowWidgetContent: React.FC<
               paymentStatus: "FAILED",
               bookingStatus: "FAILED",
               tripId,
-              pnr: '', // No PNR available on payment initiation failure
+              pnr: "", // No PNR available on payment initiation failure
               error: errorMessage,
               transactionData: {
                 paymentStatus: "FAILED",

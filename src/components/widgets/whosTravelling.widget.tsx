@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/common/ui/button";
 import { Input } from "@/components/common/ui/input";
 import { useStreamContext } from "@/providers/Stream";
@@ -337,49 +337,94 @@ const DateInput: React.FC<DateInputProps> = ({
   required = false,
   className
 }) => {
-  const [isFocused, setIsFocused] = useState(false);
-  const [inputType, setInputType] = useState<'text' | 'date'>('text');
+  const [showDateInput, setShowDateInput] = useState(false);
+  const hiddenDateInputRef = useRef<HTMLInputElement>(null);
+  const displayInputRef = useRef<HTMLInputElement>(null);
 
-  // Show date input when focused or when there's a value
-  const shouldShowDateInput = isFocused || value;
+  const handleClick = () => {
+    // Show the date input and immediately trigger the date picker
+    setShowDateInput(true);
+    setTimeout(() => {
+      if (hiddenDateInputRef.current) {
+        hiddenDateInputRef.current.focus();
+        if (hiddenDateInputRef.current.showPicker) {
+          try {
+            hiddenDateInputRef.current.showPicker();
+          } catch (error) {
+            // Fallback for browsers that don't support showPicker
+            hiddenDateInputRef.current.click();
+          }
+        }
+      }
+    }, 0);
+  };
 
-  const handleFocus = () => {
-    setIsFocused(true);
-    setInputType('date');
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(e.target.value);
+    setShowDateInput(!!e.target.value); // Keep showing date input if there's a value
   };
 
   const handleBlur = () => {
-    setIsFocused(false);
-    // Keep as date input if there's a value, otherwise switch back to text
+    // Hide date input if there's no value
     if (!value) {
-      setInputType('text');
+      setShowDateInput(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(e.target.value);
+  const formatDisplayValue = (dateValue: string) => {
+    if (!dateValue) return '';
+    try {
+      const date = new Date(dateValue);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch {
+      return dateValue;
+    }
   };
 
   return (
     <div className="relative">
-      <Input
-        type={shouldShowDateInput ? 'date' : 'text'}
-        value={shouldShowDateInput ? value : ''}
-        placeholder={shouldShowDateInput ? undefined : placeholder}
-        onChange={handleChange}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        min={min}
-        max={max}
-        required={required}
-        className={cn(
-          "w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:border-black focus:ring-black",
-          !shouldShowDateInput && !value && "text-gray-500",
-          className
-        )}
-      />
-      {/* Helper text for better UX */}
-      {!shouldShowDateInput && !value && (
+      {/* Display input - shows placeholder or formatted date */}
+      {!showDateInput && (
+        <Input
+          ref={displayInputRef}
+          type="text"
+          value={value ? formatDisplayValue(value) : ''}
+          placeholder={placeholder}
+          onClick={handleClick}
+          readOnly
+          className={cn(
+            "w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:border-black focus:ring-black cursor-pointer",
+            !value && "text-gray-500",
+            className
+          )}
+        />
+      )}
+
+      {/* Actual date input - hidden until clicked */}
+      {showDateInput && (
+        <Input
+          ref={hiddenDateInputRef}
+          type="date"
+          value={value}
+          onChange={handleDateChange}
+          onBlur={handleBlur}
+          min={min}
+          max={max}
+          required={required}
+          className={cn(
+            "w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:border-black focus:ring-black",
+            className
+          )}
+          autoFocus
+        />
+      )}
+
+      {/* Calendar icon */}
+      {!showDateInput && !value && (
         <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm pointer-events-none">
           📅
         </div>
@@ -617,6 +662,59 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
   const [contactEmail, setContactEmail] = useState("");
   const [contactPhoneNumber, setContactPhoneNumber] = useState<string>("");
 
+  // Validation states
+  const [emailError, setEmailError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
+
+  // Modal states
+  const [showModal, setShowModal] = useState(false);
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalMessage, setModalMessage] = useState("");
+
+  // Helper function to show modal
+  const showModalMessage = (title: string, message: string) => {
+    setModalTitle(title);
+    setModalMessage(message);
+    setShowModal(true);
+  };
+
+  // Email validation function
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Phone number validation function
+  const validatePhoneNumber = (phone: string): boolean => {
+    // Remove any non-digit characters for validation
+    const cleanPhone = phone.replace(/\D/g, '');
+    // Check if it's between 7-15 digits (international standard)
+    return cleanPhone.length >= 7 && cleanPhone.length <= 15;
+  };
+
+  // Handle email change with validation
+  const handleEmailChange = (value: string) => {
+    setContactEmail(value);
+    if (value && !validateEmail(value)) {
+      setEmailError("Please enter a valid email address");
+    } else {
+      setEmailError("");
+    }
+  };
+
+  // Handle phone change with validation
+  const handlePhoneChange = (value: string) => {
+    // Allow only digits, spaces, hyphens, and parentheses
+    const cleanValue = value.replace(/[^\d\s\-\(\)]/g, '');
+    setContactPhoneNumber(cleanValue);
+
+    if (cleanValue && !validatePhoneNumber(cleanValue)) {
+      setPhoneError("Please enter a valid phone number (7-15 digits)");
+    } else {
+      setPhoneError("");
+    }
+  };
+
   const [isLoading, setIsLoading] = useState(false);
   const [showAddPassengerModal, setShowAddPassengerModal] = useState(false);
   const [addPassengerType, setAddPassengerType] = useState<'adult' | 'child' | 'infant'>('adult');
@@ -843,7 +941,10 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
                                             passenger.type === 'child' ? 'children' : 'infants'];
 
         if (currentCount >= maxCount) {
-          alert(`Maximum ${maxCount} ${passenger.type || 'adult'}${maxCount > 1 ? 's' : ''} allowed`);
+          showModalMessage(
+            "Passenger Limit Reached",
+            `Maximum ${maxCount} ${passenger.type || 'adult'}${maxCount > 1 ? 's' : ''} allowed`
+          );
           return prev;
         }
 
@@ -914,7 +1015,10 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
 
   const handleSaveNewPassenger = () => {
     if (!newPassengerForm.firstName || !newPassengerForm.lastName) {
-      alert('Please fill in first name and last name');
+      showModalMessage(
+        "Required Information Missing",
+        "Please fill in first name and last name"
+      );
       return;
     }
 
@@ -924,7 +1028,10 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
                                         newPassengerForm.type === 'child' ? 'children' : 'infants'];
 
     if (currentCount >= maxCount) {
-      alert(`Maximum ${maxCount} ${newPassengerForm.type}${maxCount > 1 ? 's' : ''} allowed`);
+      showModalMessage(
+        "Passenger Limit Reached",
+        `Maximum ${maxCount} ${newPassengerForm.type}${maxCount > 1 ? 's' : ''} allowed`
+      );
       return;
     }
 
@@ -988,19 +1095,36 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
   };
 
   const handleSubmit = async () => {
+    // Validate email and phone before proceeding
+    if (contactEmail && !validateEmail(contactEmail)) {
+      setEmailError("Please enter a valid email address");
+      return;
+    }
+
+    if (contactPhoneNumber && !validatePhoneNumber(contactPhoneNumber)) {
+      setPhoneError("Please enter a valid phone number (7-15 digits)");
+      return;
+    }
+
     // Validate that all required passengers are selected
     const totalSelected = Object.keys(selectedPassengers).length + Object.keys(newPassengers).length;
     const totalRequired = numberOfTravellers.adults + numberOfTravellers.children + numberOfTravellers.infants;
 
     if (totalSelected < totalRequired) {
-      alert(`Please select ${totalRequired} passengers (${totalSelected} selected)`);
+      showModalMessage(
+        "Incomplete Passenger Selection",
+        `Please select ${totalRequired} passengers (${totalSelected} selected)`
+      );
       return;
     }
 
     // Check for incomplete passenger information
     const incompletePassengers = Object.values(selectedPassengers).filter(hasIncompleteInfo);
     if (incompletePassengers.length > 0) {
-      alert('Some selected passengers have incomplete information. Please edit them to continue.');
+      showModalMessage(
+        "Incomplete Passenger Information",
+        "Some selected passengers have incomplete information. Please edit them to continue."
+      );
       return;
     }
 
@@ -1456,30 +1580,50 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
         <h3 className="text-base font-bold text-black mb-2">Contact Information</h3>
         <p className="text-xs text-gray-600 mb-3">Booking updates will be shared here</p>
         <div className="space-y-3">
-          <Input
-            type="email"
-            placeholder="Email Address"
-            value={contactEmail}
-            onChange={(e) => setContactEmail(e.target.value)}
-            className="w-full rounded-xl border-2 border-gray-200 px-3 py-2 text-sm focus:border-black focus:ring-black"
-          />
-
-          <div className="relative">
-            <div
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 flex items-center cursor-pointer z-10"
-              onClick={() => setShowCountryCodeSheet(true)}
-            >
-              <span className="text-sm mr-1">{selectedCountryCode.flag}</span>
-              <span className="text-xs text-gray-600 mr-1">{selectedCountryCode.code}</span>
-              <ChevronDown className="w-3 h-3 text-gray-400" />
-            </div>
+          <div>
             <Input
-              type="tel"
-              placeholder="Enter phone number"
-              value={contactPhoneNumber}
-              onChange={(e) => setContactPhoneNumber(e.target.value)}
-              className="w-full rounded-xl border-2 border-gray-200 pl-16 pr-3 py-2 text-sm focus:border-black focus:ring-black"
+              type="email"
+              placeholder="Email Address"
+              value={contactEmail}
+              onChange={(e) => handleEmailChange(e.target.value)}
+              className={cn(
+                "w-full rounded-xl border-2 px-3 py-2 text-sm focus:ring-black",
+                emailError
+                  ? "border-red-500 focus:border-red-500"
+                  : "border-gray-200 focus:border-black"
+              )}
             />
+            {emailError && (
+              <p className="text-xs text-red-500 mt-1">{emailError}</p>
+            )}
+          </div>
+
+          <div>
+            <div className="relative">
+              <div
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 flex items-center cursor-pointer z-10"
+                onClick={() => setShowCountryCodeSheet(true)}
+              >
+                <span className="text-sm mr-1">{selectedCountryCode.flag}</span>
+                <span className="text-xs text-gray-600 mr-1">{selectedCountryCode.code}</span>
+                <ChevronDown className="w-3 h-3 text-gray-400" />
+              </div>
+              <Input
+                type="tel"
+                placeholder="Enter phone number"
+                value={contactPhoneNumber}
+                onChange={(e) => handlePhoneChange(e.target.value)}
+                className={cn(
+                  "w-full rounded-xl border-2 pl-16 pr-3 py-2 text-sm focus:ring-black",
+                  phoneError
+                    ? "border-red-500 focus:border-red-500"
+                    : "border-gray-200 focus:border-black"
+                )}
+              />
+            </div>
+            {phoneError && (
+              <p className="text-xs text-red-500 mt-1">{phoneError}</p>
+            )}
           </div>
         </div>
       </div>
@@ -1856,6 +2000,44 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
           </div>
         </SheetContent>
       </Sheet>
+      {/* Beautiful Modal for Messages */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center animate-in fade-in duration-200">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black bg-opacity-50 transition-opacity animate-in fade-in duration-300"
+            onClick={() => setShowModal(false)}
+          />
+
+          {/* Modal Content */}
+          <div className="relative bg-white rounded-2xl shadow-2xl max-w-sm mx-4 w-full transform transition-all animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
+            <div className="p-6 text-center">
+              {/* Icon */}
+              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-gray-100 mb-4 animate-in zoom-in-50 duration-500 delay-150">
+                <AlertCircle className="h-8 w-8 text-gray-600" />
+              </div>
+
+              {/* Title */}
+              <h3 className="text-lg font-bold text-black mb-2 animate-in slide-in-from-top-2 duration-400 delay-200">
+                {modalTitle}
+              </h3>
+
+              {/* Message */}
+              <p className="text-sm text-gray-600 mb-6 leading-relaxed animate-in slide-in-from-top-2 duration-400 delay-300">
+                {modalMessage}
+              </p>
+
+              {/* Button */}
+              <Button
+                onClick={() => setShowModal(false)}
+                className="w-full bg-black hover:bg-gray-800 text-white font-semibold py-3 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 animate-in slide-in-from-bottom-2 duration-400 delay-400"
+              >
+                Got it
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
 
 
