@@ -242,14 +242,60 @@ const NonAgentFlowWidgetContent: React.FC<
 
   // Check if this is an interrupt-triggered widget
   const isInterruptWidget = !!apiData;
-  const [paymentState, setPaymentState] = useState<PaymentState>({
-    status: "idle",
-  });
+
+  // Initialize payment state with localStorage persistence
+  const initializePaymentState = (): PaymentState => {
+    try {
+      const savedState = localStorage.getItem(`payment_state_${tripId}`);
+      if (savedState) {
+        const parsedState = JSON.parse(savedState);
+        // Only restore if the state is success to maintain booking/payment success across refreshes
+        if (parsedState.status === "success" && parsedState.verificationResponse) {
+          console.log("Restored payment state from localStorage for tripId:", tripId);
+          return parsedState;
+        }
+      }
+    } catch (error) {
+      console.error("Error loading payment state from localStorage:", error);
+    }
+    return { status: "idle" };
+  };
+
+  const [paymentState, setPaymentState] = useState<PaymentState>(initializePaymentState);
   const [countdown, setCountdown] = useState(10);
   const [isCountdownActive, setIsCountdownActive] = useState(false);
   const [hasUserClicked, setHasUserClicked] = useState(false);
   const [hasSwitchedToChat, setHasSwitchedToChat] = useState(false);
   const [isSubmittingInterrupt, setIsSubmittingInterrupt] = useState(false);
+
+  // Function to save payment state to localStorage
+  const savePaymentState = useCallback((state: PaymentState) => {
+    try {
+      // Only save success states to localStorage for persistence across refreshes
+      if (state.status === "success" && state.verificationResponse) {
+        localStorage.setItem(`payment_state_${tripId}`, JSON.stringify(state));
+        console.log("Saved payment state to localStorage for tripId:", tripId);
+      }
+    } catch (error) {
+      console.error("Error saving payment state to localStorage:", error);
+    }
+  }, [tripId]);
+
+  // Enhanced setPaymentState that also saves to localStorage
+  const updatePaymentState = useCallback((state: PaymentState) => {
+    setPaymentState(state);
+    savePaymentState(state);
+  }, [savePaymentState]);
+
+  // Function to clear payment state from localStorage
+  const clearPaymentState = useCallback(() => {
+    try {
+      localStorage.removeItem(`payment_state_${tripId}`);
+      console.log("Cleared payment state from localStorage for tripId:", tripId);
+    } catch (error) {
+      console.error("Error clearing payment state from localStorage:", error);
+    }
+  }, [tripId]);
 
   // Load Razorpay script
   useEffect(() => {
@@ -281,6 +327,7 @@ const NonAgentFlowWidgetContent: React.FC<
     setHasUserClicked(true);
     setIsCountdownActive(false);
     setHasSwitchedToChat(false); // Reset the flag when starting new payment
+    clearPaymentState(); // Clear any existing localStorage state when starting new payment
     // We'll call initiatePayment directly here to avoid dependency issues
     setPaymentState({ status: "loading" });
 
@@ -361,7 +408,7 @@ const NonAgentFlowWidgetContent: React.FC<
 
               const pnr = extractPNR(verificationResponse);
 
-              setPaymentState({
+              updatePaymentState({
                 status: "success",
                 prepaymentData: prepaymentResponse.data,
                 verificationResponse,
@@ -681,20 +728,23 @@ const NonAgentFlowWidgetContent: React.FC<
     isInterruptWidget,
     switchToChat,
     thread,
+    clearPaymentState,
+    paymentState.status,
+    updatePaymentState,
   ]);
 
   // Countdown effect
-  useEffect(() => {
-    if (isCountdownActive && countdown > 0 && !hasUserClicked) {
-      const timer = setTimeout(() => {
-        setCountdown(countdown - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else if (isCountdownActive && countdown === 0 && !hasUserClicked) {
-      // Auto-trigger payment when countdown reaches 0
-      handlePaymentClick();
-    }
-  }, [countdown, isCountdownActive, hasUserClicked, handlePaymentClick]);
+  // useEffect(() => {
+  //   if (isCountdownActive && countdown > 0 && !hasUserClicked) {
+  //     const timer = setTimeout(() => {
+  //       setCountdown(countdown - 1);
+  //     }, 1000);
+  //     return () => clearTimeout(timer);
+  //   } else if (isCountdownActive && countdown === 0 && !hasUserClicked) {
+  //     // Auto-trigger payment when countdown reaches 0
+  //     handlePaymentClick();
+  //   }
+  // }, [countdown, isCountdownActive, hasUserClicked, handlePaymentClick]);
 
   // Start countdown when component mounts
   useEffect(() => {
@@ -706,12 +756,13 @@ const NonAgentFlowWidgetContent: React.FC<
   // Remove auto-start payment flow - now controlled by user interaction or countdown
 
   const retryPayment = useCallback(() => {
+    clearPaymentState(); // Clear localStorage when retrying payment
     setPaymentState({ status: "idle" });
     setCountdown(10);
     setIsCountdownActive(true);
     setHasUserClicked(false);
     setHasSwitchedToChat(false);
-  }, []);
+  }, [clearPaymentState]);
 
   const renderContent = () => {
     switch (paymentState.status) {
@@ -941,7 +992,7 @@ const NonAgentFlowWidgetContent: React.FC<
                 <span className="relative z-10 flex items-center justify-center">
                   <CreditCard className="mr-2 h-4 w-4" />
                   {isCountdownActive && !hasUserClicked
-                    ? `Make Payment (${countdown}s)`
+                    ? `Make Payment`
                     : "Make Payment"}
                 </span>
               </Button>

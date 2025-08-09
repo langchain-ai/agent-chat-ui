@@ -263,7 +263,7 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
           onSubmit={handleSubmit}
         >
           {/* Trip Type - Horizontal tabs */}
-          <div className="flex gap-2">
+          {/* <div className="flex gap-2">
             <button
               type="button"
               onClick={() => setTripType("oneway")}
@@ -288,7 +288,8 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
             >
               Round trip
             </button>
-          </div>
+           
+          </div> */}
 
           {/* Flight Details - From/To */}
           <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">

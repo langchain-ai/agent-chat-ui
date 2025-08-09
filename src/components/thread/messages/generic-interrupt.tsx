@@ -116,7 +116,7 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
   // Always call hooks at the top level
   const stream = useStreamContext();
   const artifact = useArtifact();
-  const { switchToItinerary } = useTabContext();
+  const { switchToReview } = useTabContext();
   const { addWidget } = useItineraryWidget();
 
   // Track which widgets have been processed to avoid duplicate processing
@@ -124,10 +124,18 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
 
   // Handle widget processing for itinerary rendering
   useEffect(() => {
+    console.log("🔍 DynamicRenderer useEffect triggered:", {
+      interruptType,
+      renderingWindow: interrupt.value?.widget?.args?.renderingWindow,
+      widgetType: interrupt.value?.widget?.type,
+    });
+
     if (
       interruptType === "widget" &&
       interrupt.value?.widget?.args?.renderingWindow === "itinerary"
     ) {
+      console.log("✅ Itinerary rendering condition met, processing widget...");
+
       const interruptId =
         interrupt.value?.interrupt_id ||
         interrupt.value?.widget?.args?.interrupt_id;
@@ -136,8 +144,11 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
         interruptId ||
         `${interrupt.value.widget.type}-${btoa(argsHash).slice(0, 8)}`;
 
+      console.log("📝 Widget ID generated:", widgetId);
+
       // Only process if not already processed
       if (!processedWidgetsRef.current.has(widgetId)) {
+        console.log("🆕 Processing new widget for itinerary...");
         processedWidgetsRef.current.add(widgetId);
 
         // Create widget component
@@ -164,21 +175,31 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
         }
 
         // Add widget to itinerary
+        console.log("📋 Adding widget to itinerary context...");
         addWidget(widgetId, widgetComponent);
 
-        // Only switch to itinerary if we haven't already switched for this widget
+        // Only switch to review if we haven't already switched for this widget
         if (!globalSwitchedWidgets.has(widgetId)) {
-          switchToItinerary();
-          globalSwitchedWidgets.add(widgetId);
-          console.log(`Switching to Itinerary for widget: ${widgetId}`);
+          console.log("🔄 Attempting to switch to Review tab...");
+          try {
+            switchToReview();
+            globalSwitchedWidgets.add(widgetId);
+            console.log(`✅ Successfully switched to Review for widget: ${widgetId}`);
+          } catch (error) {
+            console.error("❌ Error switching to Review tab:", error);
+          }
         } else {
           console.log(
-            `Already switched to Itinerary for widget: ${widgetId}, skipping`,
+            `⏭️ Already switched to Review for widget: ${widgetId}, skipping`,
           );
         }
+      } else {
+        console.log("⏭️ Widget already processed, skipping...");
       }
+    } else {
+      console.log("❌ Itinerary rendering condition not met");
     }
-  }, [interruptType, interrupt, addWidget, switchToItinerary]);
+  }, [interruptType, interrupt, addWidget, switchToReview]);
 
   console.log("🔄 STREAMING DATA - DynamicRenderer received:", {
     interruptType,
