@@ -1,14 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { componentMap, ComponentType } from "@/components/widgets";
 import { DebugPanel } from "@/components/debug/DebugPanel";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { useStreamContext } from "@/providers/Stream";
 import { LoadExternalComponent } from "@langchain/langgraph-sdk/react-ui";
 import { useArtifact } from "../artifact";
@@ -22,7 +16,6 @@ const debugLog = (message: string, data?: any) => {
     if (data !== undefined) {
       console.log(data);
     }
-    console.trace();
     console.groupEnd();
   }
 };
@@ -32,47 +25,15 @@ interface DynamicRendererProps {
   interrupt: Record<string, any>;
 }
 
-// State to preserve UI widgets during interrupt processing
-const preservedUIWidgets = new Map<string, any>();
-
-// Component to monitor and preserve UI widgets
-export const UIWidgetPreserver: React.FC = () => {
-  const stream = useStreamContext();
-
-  useEffect(() => {
-    if ((stream.values as any)?.ui) {
-      (stream.values as any).ui.forEach((uiWidget: any) => {
-        // Preserve by both id and message_id
-        if (uiWidget.id) {
-          preservedUIWidgets.set(uiWidget.id, uiWidget);
-        }
-        if (uiWidget.metadata?.message_id) {
-          preservedUIWidgets.set(uiWidget.metadata.message_id, uiWidget);
-        }
-        console.log(
-          "🔍 Preserved UI widget:",
-          uiWidget.id,
-          uiWidget.metadata?.message_id,
-        );
-      });
-    }
-  }, [(stream.values as any)?.ui]);
-
-  return null; // This component doesn't render anything
-};
-
 // Wrapper component for TravelerDetailsWidget with bottom sheet
 const TravelerDetailsBottomSheet: React.FC<{ apiData: any; args: any }> = ({
   apiData,
   args,
 }) => {
-  console.log("args:", JSON.stringify(args.bookingRequirements, null, 2));
   const [isOpen, setIsOpen] = useState(true);
 
-  // Get the actual ReviewWidget component
   const ReviewWidget = componentMap.TravelerDetailsWidget;
 
-  // Function to close the bottom sheet
   const handleClose = () => {
     setIsOpen(false);
   };
@@ -90,7 +51,6 @@ const NonAgentFlowBottomSheet: React.FC<{ apiData: any; args: any }> = ({
   apiData,
   args,
 }) => {
-  // Get the actual NonAgentFlowWidget component
   const NonAgentFlowWidget = componentMap.NonAgentFlowWidget;
 
   return (
@@ -101,11 +61,6 @@ const NonAgentFlowBottomSheet: React.FC<{ apiData: any; args: any }> = ({
   );
 };
 
-console.log("DynamicRendererProps interface defined - checking props:", {
-  interruptType: "will be logged in component",
-  interrupt: "will be logged in component",
-});
-
 // Global tracking for switched widgets to persist across re-renders
 const globalSwitchedWidgets = new Set<string>();
 
@@ -113,19 +68,42 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
   interruptType,
   interrupt,
 }) => {
-  // Always call hooks at the top level
   const stream = useStreamContext();
   const artifact = useArtifact();
   const { switchToItinerary } = useTabContext();
   const { addWidget } = useItineraryWidget();
 
-  // Track which widgets have been processed to avoid duplicate processing
   const processedWidgetsRef = useRef<Set<string>>(new Set());
-
-  // State to track when interruptWidget widgets are found
   const [foundInterruptWidget, setFoundInterruptWidget] = useState<any>(null);
 
-  // Handle widget processing for itinerary rendering
+  // Stable key for ui list
+  const uiKey = useMemo(() => {
+    const ui = (stream.values as any)?.ui as any[] | undefined;
+    return Array.isArray(ui) ? ui.map((u) => u.id).join("|") : "";
+  }, [(stream.values as any)?.ui]);
+
+  console.log("[INTERRUPT] UI BEFORE --> ", JSON.stringify(stream.values));
+
+  // Robustly resolve interrupt shape (it can be nested under value.value)
+  const rawVal = interrupt?.value;
+  const nestedVal =
+    rawVal && typeof rawVal === "object" ? (rawVal as any).value : undefined;
+  const resolvedType: string | undefined =
+    (interrupt as any)?.type || rawVal?.type || nestedVal?.type;
+  const attachmentIdFromInterrupt: string | undefined =
+    rawVal?.metadata?.attachmentId || nestedVal?.metadata?.attachmentId;
+  const isAttachmentInterrupt = !!attachmentIdFromInterrupt;
+
+  if (process.env.NODE_ENV === "development") {
+    console.log("[INTERRUPT RESOLVE]", {
+      incomingType: interruptType,
+      resolvedType,
+      attachmentIdFromInterrupt,
+      rawVal,
+      nestedVal,
+    });
+  }
+
   useEffect(() => {
     if (
       interruptType === "widget" &&
@@ -139,11 +117,9 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
         interruptId ||
         `${interrupt.value.widget.type}-${btoa(argsHash).slice(0, 8)}`;
 
-      // Only process if not already processed
       if (!processedWidgetsRef.current.has(widgetId)) {
         processedWidgetsRef.current.add(widgetId);
 
-        // Create widget component
         const Component =
           componentMap[interrupt.value.widget.type as ComponentType];
         let widgetComponent: React.ReactNode;
@@ -166,144 +142,79 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
           widgetComponent = <Component {...interrupt.value.widget.args} />;
         }
 
-        // Add widget to itinerary
         addWidget(widgetId, widgetComponent);
 
-        // Only switch to itinerary if we haven't already switched for this widget
         if (!globalSwitchedWidgets.has(widgetId)) {
           switchToItinerary();
           globalSwitchedWidgets.add(widgetId);
-          console.log(`Switching to Itinerary for widget: ${widgetId}`);
-        } else {
-          console.log(
-            `Already switched to Itinerary for widget: ${widgetId}, skipping`,
-          );
+          if (process.env.NODE_ENV === "development") {
+            console.log(`Switching to Itinerary for widget: ${widgetId}`);
+          }
         }
       }
     }
   }, [interruptType, interrupt, addWidget, switchToItinerary]);
 
-  // Handle interruptWidget processing with proper lifecycle management
+  // Handle interruptWidget processing looking up matching UI widget (no preservation)
   useEffect(() => {
-    if (interruptType === "interruptWidget") {
-      const attachmentId = interrupt.value?.metadata?.attachmentId;
+    if (!isAttachmentInterrupt) return;
 
-      if (attachmentId) {
-        console.log(
-          `🔍 [INTERRUPT WIDGET] Processing attachmentId: ${attachmentId}`,
-        );
+    const attachmentId = attachmentIdFromInterrupt as string;
+    const interruptWidgetId = `interruptWidget-${attachmentId}`;
 
-        // Check if we've already processed this interruptWidget
-        const interruptWidgetId = `interruptWidget-${attachmentId}`;
+    const currentUi: any[] = ((stream.values as any)?.ui as any[]) || [];
 
-        if (!processedWidgetsRef.current.has(interruptWidgetId)) {
-          processedWidgetsRef.current.add(interruptWidgetId);
-
-          // Look for matching UI widget in current stream values
-          let matchingUIWidget = (stream.values as any)?.ui?.find(
-            (ui: any) =>
-              ui.id === attachmentId ||
-              ui.metadata?.message_id === attachmentId,
-          );
-
-          console.log(
-            `🔍 [INTERRUPT WIDGET] Current UI widgets:`,
-            (stream.values as any)?.ui,
-          );
-          console.log(
-            `🔍 [INTERRUPT WIDGET] Preserved widgets:`,
-            Array.from(preservedUIWidgets.keys()),
-          );
-          console.log(
-            `🔍 [INTERRUPT WIDGET] Looking for attachmentId:`,
-            attachmentId,
-          );
-          console.log(
-            `🔍 [INTERRUPT WIDGET] Matching widget found:`,
-            matchingUIWidget,
-          );
-
-          // If not found in current UI widgets, try preserved widgets
-          if (!matchingUIWidget) {
-            matchingUIWidget = preservedUIWidgets.get(attachmentId);
-            console.log(
-              "🔍 [INTERRUPT WIDGET] Checking preserved widgets for:",
-              attachmentId,
-            );
-            console.log(
-              "🔍 [INTERRUPT WIDGET] Found in preserved widgets:",
-              matchingUIWidget,
-            );
-          }
-
-          if (matchingUIWidget) {
-            console.log(
-              `🔍 [INTERRUPT WIDGET] Successfully found widget for: ${attachmentId}`,
-            );
-            debugLog("interruptWidget UI widget found", {
-              attachmentId,
-              uiWidget: matchingUIWidget,
-            });
-            // Set the found widget in state to trigger re-render
-            setFoundInterruptWidget(matchingUIWidget);
-          } else {
-            console.log(
-              `🔍 [INTERRUPT WIDGET] No widget found for: ${attachmentId}`,
-            );
-            debugLog("No interruptWidget UI widget found", {
-              attachmentId,
-              interrupt,
-            });
-            // Clear the found widget state
-            setFoundInterruptWidget(null);
-          }
-        } else {
-          console.log(
-            `🔍 [INTERRUPT WIDGET] Already processed: ${attachmentId}`,
-          );
-        }
-      } else {
-        console.log(
-          `🔍 [INTERRUPT WIDGET] No attachmentId found in interrupt:`,
-          interrupt,
-        );
-        debugLog("No attachmentId found in interruptWidget interrupt", {
-          interrupt,
-        });
-      }
+    // Detailed debug of current UI entries
+    if (process.env.NODE_ENV === "development") {
+      console.log("[INTERRUPT WIDGET] scanning UI entries", {
+        attachmentId,
+        uiCount: currentUi.length,
+        uiSummaries: currentUi.map((u) => ({
+          id: u?.id,
+          name: u?.name,
+          metaMsgId: u?.metadata?.message_id,
+          metaAttach: u?.metadata?.attachmentId ?? u?.metadata?.attachment_id,
+          propsAttach: u?.props?.attachmentId ?? u?.props?.attachment_id,
+        })),
+      });
     }
-  }, [interruptType, interrupt, stream.values]);
 
-  console.log("🔄 STREAMING DATA - DynamicRenderer received:", {
-    interruptType,
-    interrupt,
-    timestamp: new Date().toISOString(),
-  });
+    const matchesAttachment = (ui: any, id: string) => {
+      return (
+        ui?.id === id ||
+        ui?.metadata?.message_id === id ||
+        ui?.metadata?.attachmentId === id ||
+        ui?.metadata?.attachment_id === id ||
+        ui?.props?.attachmentId === id ||
+        ui?.props?.attachment_id === id ||
+        ui?.props?.metadata?.attachmentId === id
+      );
+    };
+
+    const matchingUIWidget = currentUi.find((ui) =>
+      matchesAttachment(ui, attachmentId),
+    );
+
+    if (process.env.NODE_ENV === "development") {
+      console.log("[INTERRUPT WIDGET] match result", {
+        found: !!matchingUIWidget,
+        matchingUIWidget,
+      });
+    }
+
+    if (matchingUIWidget) {
+      setFoundInterruptWidget(matchingUIWidget);
+      processedWidgetsRef.current.add(interruptWidgetId);
+    }
+  }, [isAttachmentInterrupt, attachmentIdFromInterrupt, uiKey, stream.values]);
+
   debugLog("DynamicRenderer called", { interruptType, interrupt });
 
-  // Additional debugging for widget type checking
-  console.log("🔍 Widget type check:", {
-    interruptType,
-    widgetType: interrupt.value?.widget?.type,
-    attachmentId: interrupt.value?.metadata?.attachmentId,
-    availableWidgets: Object.keys(componentMap),
-    isWidgetTypeInMap: interrupt.value?.widget?.type in componentMap,
-  });
-
-  // Handle interruptWidget interrupt type
-  if (interruptType === "interruptWidget") {
-    const attachmentId = interrupt.value?.metadata?.attachmentId;
+  if (isAttachmentInterrupt) {
+    const attachmentId = attachmentIdFromInterrupt as string;
 
     if (attachmentId) {
-      console.log(`--> AttachmentId: ${attachmentId}`);
-
-      // Use the state-managed widget if found
       if (foundInterruptWidget) {
-        debugLog("interruptWidget UI widget found", {
-          attachmentId,
-          uiWidget: foundInterruptWidget,
-        });
-
         return (
           <LoadExternalComponent
             key={foundInterruptWidget.id}
@@ -313,48 +224,28 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
           />
         );
       }
-
-      // If no widget found yet, show loading or return null
-      console.log(
-        `🔍 [INTERRUPT WIDGET] Widget not found yet for: ${attachmentId}`,
-      );
       return null;
     }
 
     debugLog("No attachmentId found in interruptWidget interrupt", {
       interrupt,
     });
-    console.log(
-      `No attachmentId found in interruptWidget interrupt: ${JSON.stringify(interrupt)}`,
-    );
     return null;
   }
 
-  // Check if the type exists in componentMap (existing logic for "widget" type)
   if (
     interruptType === "widget" &&
     interrupt.value.widget.type in componentMap
   ) {
     const Component =
       componentMap[interrupt.value.widget.type as ComponentType];
-    debugLog("Widget component found", {
-      componentType: interrupt.value.widget.type,
-      args: interrupt.value.widget.args,
-    });
 
-    // Check for renderingWindow to determine where to render the widget
     const renderingWindow =
       interrupt.value.widget.args?.renderingWindow || "chat";
 
-    // Create the widget component
     let widgetComponent: React.ReactNode;
 
-    // For TravelerDetailsWidget, render in bottom sheet
     if (interrupt.value.widget.type === "TravelerDetailsWidget") {
-      console.log(
-        "interrupt: ",
-        JSON.stringify(interrupt.value.widget.args, null, 2),
-      );
       widgetComponent = (
         <TravelerDetailsBottomSheet
           apiData={interrupt}
@@ -366,7 +257,6 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
     } else if (interrupt.value.widget.type === "AddBaggageWidget") {
       widgetComponent = <Component {...interrupt.value.widget.args} />;
     } else if (interrupt.value.widget.type === "NonAgentFlowWidget") {
-      // For NonAgentFlowWidget, render in bottom sheet
       widgetComponent = (
         <NonAgentFlowBottomSheet
           apiData={interrupt}
@@ -381,16 +271,12 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
         "SeatCombinedWidget",
       ].includes(interrupt.value.widget.type)
     ) {
-      // For seat-related widgets, render directly without bottom sheet
       widgetComponent = <Component {...interrupt.value.widget.args} />;
     } else {
-      // For other widgets, pass the args object directly to the component
       widgetComponent = <Component {...interrupt.value.widget.args} />;
     }
 
-    // Handle rendering based on renderingWindow
     if (renderingWindow === "itinerary") {
-      // Use interrupt_id if available, otherwise create a stable ID based on widget type and args
       const interruptId =
         interrupt.value?.interrupt_id ||
         interrupt.value?.widget?.args?.interrupt_id;
@@ -398,19 +284,13 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
       const widgetId =
         interruptId ||
         `${interrupt.value.widget.type}-${btoa(argsHash).slice(0, 8)}`;
-
-      // Return null for chat section since widget is rendered in itinerary
       return null;
     }
 
-    // Default: render in chat section
     return widgetComponent;
   }
 
   debugLog("No widget found", { interruptType, interrupt });
-  console.log(
-    `No widget found for interruptType: ${interruptType} and interrupt: ${JSON.stringify(interrupt)}`,
-  );
   return null;
 };
 
@@ -423,11 +303,6 @@ export function GenericInterruptView({
 }: {
   interrupt: Record<string, any> | Record<string, any>[];
 }) {
-  console.log("🔄 STREAMING DATA - GenericInterruptView received:", {
-    interrupt,
-    isArray: Array.isArray(interrupt),
-    timestamp: new Date().toISOString(),
-  });
   debugLog("GenericInterruptView rendered", { interrupt });
 
   const [isExpanded, setIsExpanded] = useState(false);
@@ -436,18 +311,9 @@ export function GenericInterruptView({
   const contentLines = contentStr.split("\n");
   const shouldTruncate = contentLines.length > 4 || contentStr.length > 500;
 
-  // Extract interrupt object and type
   const interruptObj = Array.isArray(interrupt) ? interrupt[0] : interrupt;
   const interruptType = interruptObj.type || interruptObj.value?.type;
 
-  debugLog("Interrupt processing", {
-    interruptObj,
-    interruptType,
-    shouldTruncate,
-    contentLines: contentLines.length,
-  });
-
-  // Try to render dynamic widget first
   const dynamicWidget = interruptType ? (
     <DynamicRenderer
       interruptType={interruptType}
@@ -455,12 +321,10 @@ export function GenericInterruptView({
     />
   ) : null;
 
-  // If dynamic widget exists, render it instead of generic view
   if (dynamicWidget) {
     return dynamicWidget;
   }
 
-  // Function to truncate long string values
   const truncateValue = (value: any): any => {
     if (typeof value === "string" && value.length > 100) {
       return value.substring(0, 100) + "...";
@@ -473,7 +337,6 @@ export function GenericInterruptView({
     if (isComplexValue(value) && !isExpanded) {
       const strValue = JSON.stringify(value, null, 2);
       if (strValue.length > 100) {
-        // Return plain text for truncated content instead of a JSON object
         return `Truncated ${strValue.length} characters...`;
       }
     }
@@ -481,14 +344,12 @@ export function GenericInterruptView({
     return value;
   };
 
-  // Process entries based on expanded state
   const processEntries = () => {
     if (Array.isArray(interrupt)) {
       return isExpanded ? interrupt : interrupt.slice(0, 5);
     } else {
       const entries = Object.entries(interrupt);
       if (!isExpanded && shouldTruncate) {
-        // When collapsed, process each value to potentially truncate it
         return entries.map(([key, value]) => [key, truncateValue(value)]);
       }
       return entries;

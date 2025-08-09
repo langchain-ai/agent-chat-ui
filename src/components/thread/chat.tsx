@@ -42,10 +42,7 @@ import { updateThreadWithMessage } from "@/utils/thread-storage";
 import { InterruptManager } from "./messages/interrupt-manager";
 import { PersistentInterruptList } from "./messages/persistent-interrupt";
 import { useInterruptPersistenceContext } from "@/providers/InterruptPersistenceContext";
-import {
-  GenericInterruptView,
-  UIWidgetPreserver,
-} from "./messages/generic-interrupt";
+import { GenericInterruptView } from "./messages/generic-interrupt";
 import { NonAgentFlowReopenButton } from "./NonAgentFlowReopenButton";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 
@@ -142,6 +139,16 @@ export function Thread() {
   const messages = stream.messages;
   const isLoading = stream.isLoading;
 
+  // Force rerender when message count changes (defensive against identity reuse)
+  const [, forceTick] = useState(0);
+  const prevCountRef = useRef(0);
+  useEffect(() => {
+    if ((messages?.length || 0) !== prevCountRef.current) {
+      prevCountRef.current = messages?.length || 0;
+      forceTick((x) => x + 1);
+    }
+  }, [messages?.length]);
+
   // Track the last threadId to reset displayMessages on thread switch
   const lastThreadId = useRef<string | null>(null);
   useEffect(() => {
@@ -229,19 +236,19 @@ export function Thread() {
     }
   }, [stream.error]);
 
-  // TODO: this should be part of the useStream hook
+  // Track first AI token to gate loader
   const prevMessageLength = useRef(0);
   useEffect(() => {
-    if (
+    const hasNewAi =
       messages.length !== prevMessageLength.current &&
-      messages?.length &&
-      messages[messages.length - 1].type === "ai"
-    ) {
-      setFirstTokenReceived(true);
-    }
+      messages?.length > 0 &&
+      messages[messages.length - 1].type === "ai";
+
+    if (hasNewAi) setFirstTokenReceived(true);
+    if (!isLoading) setFirstTokenReceived(true);
 
     prevMessageLength.current = messages.length;
-  }, [messages]);
+  }, [isLoading, messages.length]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -355,7 +362,6 @@ export function Thread() {
 
   return (
     <InterruptManager>
-      <UIWidgetPreserver />
       <div className="flex h-full w-full overflow-hidden">
         <div
           className={cn(
@@ -522,7 +528,9 @@ export function Thread() {
                             handleRegenerate={handleRegenerate}
                           />
                         )}
-                        {isLoading && <AssistantMessageLoading />}
+                        {isLoading && !firstTokenReceived && (
+                          <AssistantMessageLoading />
+                        )}
                         {/* Always render the interrupt widget at the end if present */}
 
                         {stream.interrupt && (
@@ -572,7 +580,7 @@ export function Thread() {
                                   form?.requestSubmit();
                                 }
                               }}
-                              placeholder="Type your message..."
+                              placeholder="Type your message...."
                               className="field-sizing-content resize-none border-none bg-transparent p-3.5 pb-0 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none"
                             />
 
