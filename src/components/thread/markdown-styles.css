@@ -44,8 +44,8 @@
   background-color: #f9f9f9;
 }
 
-/* Image styling - small circular icons */
-.markdown-content img {
+/* Image styling - small circular icons, but exclude airline logos */
+.markdown-content img:not([alt*="logo"]) {
   max-width: 48px;
   width: 48px;
   height: 48px;
@@ -57,9 +57,9 @@
   object-fit: cover;
 }
 
-/* Responsive image sizing for smaller screens */
+/* Responsive image sizing for smaller screens, but exclude airline logos */
 @media (max-width: 768px) {
-  .markdown-content img {
+  .markdown-content img:not([alt*="logo"]) {
     max-width: 40px;
     width: 40px;
     height: 40px;
@@ -68,7 +68,7 @@
 }
 
 @media (max-width: 480px) {
-  .markdown-content img {
+  .markdown-content img:not([alt*="logo"]) {
     max-width: 32px;
     width: 32px;
     height: 32px;
@@ -76,10 +76,10 @@
   }
 }
 
-/* Additional image controls for any missed cases */
-.markdown-content [data-image],
-.markdown-content picture,
-.markdown-content figure img {
+/* Additional image controls for any missed cases, but exclude airline logos */
+.markdown-content [data-image]:not([alt*="logo"]),
+.markdown-content picture:not([alt*="logo"]),
+.markdown-content figure img:not([alt*="logo"]) {
   max-width: 48px;
   width: 48px;
   height: 48px;
@@ -91,11 +91,11 @@
   display: inline-block;
 }
 
-/* Responsive sizing for additional image elements */
+/* Responsive sizing for additional image elements, but exclude airline logos */
 @media (max-width: 768px) {
-  .markdown-content [data-image],
-  .markdown-content picture,
-  .markdown-content figure img {
+  .markdown-content [data-image]:not([alt*="logo"]),
+  .markdown-content picture:not([alt*="logo"]),
+  .markdown-content figure img:not([alt*="logo"]) {
     max-width: 40px;
     width: 40px;
     height: 40px;
@@ -104,12 +104,22 @@
 }
 
 @media (max-width: 480px) {
-  .markdown-content [data-image],
-  .markdown-content picture,
-  .markdown-content figure img {
+  .markdown-content [data-image]:not([alt*="logo"]),
+  .markdown-content picture:not([alt*="logo"]),
+  .markdown-content figure img:not([alt*="logo"]) {
     max-width: 32px;
     width: 32px;
     height: 32px;
     max-height: 32px;
   }
+}
+
+/* Ensure airline logos in markdown content maintain object-contain */
+.markdown-content img[alt*="logo"],
+.markdown-content [data-image][alt*="logo"],
+.markdown-content picture img[alt*="logo"],
+.markdown-content figure img[alt*="logo"] {
+  object-fit: contain !important;
+  margin: 0 !important;
+  box-shadow: none !important;
 }

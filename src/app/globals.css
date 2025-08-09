@@ -181,11 +181,11 @@
   }
 
   /* ULTRA AGGRESSIVE IMAGE SIZE CONTROL - SMALL CIRCULAR ICONS */
-  /* This will override ANY image styling */
-  html body * img,
-  html body img,
-  img,
-  [src*="data:image"] {
+  /* This will override ANY image styling, but exclude airline logos */
+  html body * img:not([alt*="logo"]),
+  html body img:not([alt*="logo"]),
+  img:not([alt*="logo"]),
+  [src*="data:image"]:not([alt*="logo"]) {
     max-width: 48px !important;
     width: 48px !important;
     height: 48px !important;
@@ -197,17 +197,17 @@
     margin: 0.5rem !important;
   }
 
-  /* Even more specific selectors for stubborn images */
-  div img,
-  span img,
-  p img,
-  article img,
-  section img,
-  main img,
-  .markdown-content img,
-  [class*="message"] img,
-  [class*="content"] img,
-  [class*="thread"] img {
+  /* Even more specific selectors for stubborn images, but exclude airline logos */
+  div img:not([alt*="logo"]),
+  span img:not([alt*="logo"]),
+  p img:not([alt*="logo"]),
+  article img:not([alt*="logo"]),
+  section img:not([alt*="logo"]),
+  main img:not([alt*="logo"]),
+  .markdown-content img:not([alt*="logo"]),
+  [class*="message"] img:not([alt*="logo"]),
+  [class*="content"] img:not([alt*="logo"]),
+  [class*="thread"] img:not([alt*="logo"]) {
     max-width: 48px !important;
     width: 48px !important;
     height: 48px !important;
@@ -219,13 +219,13 @@
     margin: 0.5rem !important;
   }
 
-  /* Target Next.js Image components specifically */
-  img[src*="data:"],
-  img[src*="http"],
-  img[src*="blob:"],
-  img[src*="/"],
-  span[style*="position"] img,
-  div[style*="position"] img {
+  /* Target Next.js Image components specifically, but exclude airline logos */
+  img[src*="data:"]:not([alt*="logo"]),
+  img[src*="http"]:not([alt*="logo"]),
+  img[src*="blob:"]:not([alt*="logo"]),
+  img[src*="/"]:not([alt*="logo"]),
+  span[style*="position"] img:not([alt*="logo"]),
+  div[style*="position"] img:not([alt*="logo"]) {
     max-width: 48px !important;
     width: 48px !important;
     height: 48px !important;
@@ -234,14 +234,14 @@
     border-radius: 50% !important;
   }
 
-  /* Responsive sizing with higher specificity - smaller on mobile */
+  /* Responsive sizing with higher specificity - smaller on mobile, but exclude airline logos */
   @media (max-width: 768px) {
-    html body * img,
-    html body img,
-    img,
-    div img,
-    span img,
-    p img {
+    html body * img:not([alt*="logo"]),
+    html body img:not([alt*="logo"]),
+    img:not([alt*="logo"]),
+    div img:not([alt*="logo"]),
+    span img:not([alt*="logo"]),
+    p img:not([alt*="logo"]) {
       max-width: 40px !important;
       width: 40px !important;
       height: 40px !important;
@@ -250,12 +250,12 @@
   }
 
   @media (max-width: 480px) {
-    html body * img,
-    html body img,
-    img,
-    div img,
-    span img,
-    p img {
+    html body * img:not([alt*="logo"]),
+    html body img:not([alt*="logo"]),
+    img:not([alt*="logo"]),
+    div img:not([alt*="logo"]),
+    span img:not([alt*="logo"]),
+    p img:not([alt*="logo"]) {
       max-width: 32px !important;
       width: 32px !important;
       height: 32px !important;
@@ -263,8 +263,8 @@
     }
   }
 
-  /* Override any inline styles */
-  img[style] {
+  /* Override any inline styles, but exclude airline logos */
+  img[style]:not([alt*="logo"]) {
     max-width: 48px !important;
     width: 48px !important;
     height: 48px !important;
@@ -274,7 +274,7 @@
   }
 
   @media (max-width: 768px) {
-    img[style] {
+    img[style]:not([alt*="logo"]) {
       max-width: 40px !important;
       width: 40px !important;
       height: 40px !important;
@@ -283,11 +283,83 @@
   }
 
   @media (max-width: 480px) {
-    img[style] {
+    img[style]:not([alt*="logo"]) {
       max-width: 32px !important;
       width: 32px !important;
       height: 32px !important;
       max-height: 32px !important;
     }
+  }
+
+  /* Ensure airline logos maintain object-contain and proper sizing with high specificity */
+  html body * img[alt*="logo"],
+  html body img[alt*="logo"],
+  img[alt*="logo"],
+  div img[alt*="logo"],
+  span img[alt*="logo"] {
+    object-fit: contain !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border-radius: 50% !important;
+  }
+
+  /* Additional specificity for airline logos in containers */
+  .rounded-full img[alt*="logo"],
+  [class*="rounded"] img[alt*="logo"] {
+    object-fit: contain !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* Extra specificity for desktop airline logos */
+  @media (min-width: 640px) {
+    html body * img[alt*="logo"],
+    html body img[alt*="logo"],
+    img[alt*="logo"],
+    div img[alt*="logo"],
+    span img[alt*="logo"],
+    .rounded-full img[alt*="logo"],
+    [class*="rounded"] img[alt*="logo"] {
+      object-fit: contain !important;
+      margin: 0 !important;
+      box-shadow: none !important;
+      border-radius: 50% !important;
+      width: 100% !important;
+      height: 100% !important;
+    }
+  }
+
+  /* Nuclear option - extremely specific selectors for airline logos */
+  html body div.rounded-full img[alt*="logo"],
+  html body div[class*="rounded"] img[alt*="logo"],
+  html body span.rounded-full img[alt*="logo"],
+  html body span[class*="rounded"] img[alt*="logo"],
+  html body .flex img[alt*="logo"],
+  html body .items-center img[alt*="logo"],
+  html body .justify-center img[alt*="logo"] {
+    object-fit: contain !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border-radius: 50% !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+  }
+
+  /* Ultimate specificity - target airline-logo class directly */
+  html body * img.airline-logo,
+  html body img.airline-logo,
+  img.airline-logo,
+  .airline-logo {
+    object-fit: contain !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border-radius: 50% !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    display: block !important;
   }
 }

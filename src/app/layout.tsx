@@ -27,9 +27,18 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              // Image Size Enforcer - Inline for immediate execution
+              // Image Size Enforcer - Inline for immediate execution (exclude airline logos)
               (function() {
                 function resizeImage(img) {
+                  // Skip airline logos
+                  if (img.alt && img.alt.toLowerCase().includes('logo')) {
+                    return;
+                  }
+                  // Also skip images with airline-logo class
+                  if (img.classList && img.classList.contains('airline-logo')) {
+                    return;
+                  }
+
                   const size = window.innerWidth <= 480 ? 32 : window.innerWidth <= 768 ? 40 : 48;
                   img.style.setProperty('max-width', size + 'px', 'important');
                   img.style.setProperty('width', size + 'px', 'important');
