@@ -915,7 +915,7 @@ const NonAgentFlowWidgetContent: React.FC<
                   {convenienceFee && convenienceFee > 0 && (
                     <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
                       <p className="text-xs text-green-800 text-center">
-                        🎉 Great news! We're waiving the convenience fee for you. Save {currency === 'INR' ? '₹' : currency}{convenienceFee.toLocaleString()}!
+                        🎉 Great news! We&apos;re waiving the convenience fee for you. Save {currency === 'INR' ? '₹' : currency}{convenienceFee.toLocaleString()}!
                       </p>
                     </div>
                   )}
@@ -1036,7 +1036,7 @@ const NonAgentFlowWidgetContent: React.FC<
                 {priceBreakdown.convenienceFee && priceBreakdown.convenienceFee > 0 && (
                   <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
                     <p className="text-xs text-green-800">
-                      🎉 Great news! We're waiving the convenience fee for you. Save ₹{priceBreakdown.convenienceFee.toLocaleString()}!
+                      🎉 Great news! We&apos;re waiving the convenience fee for you. Save ₹{priceBreakdown.convenienceFee.toLocaleString()}!
                     </p>
                   </div>
                 )}
