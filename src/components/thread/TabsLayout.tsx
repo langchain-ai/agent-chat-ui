@@ -14,6 +14,7 @@ import { motion } from "framer-motion";
 import { parseAsBoolean } from "nuqs";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import ThreadHistory from "./history";
+import { useTabContext } from "@/providers/TabContext";
 
 const tabs = [
   { name: "Map", component: <MapView /> },
@@ -29,6 +30,7 @@ export const TabsLayout = () => {
   );
   const router = useRouter();
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
+  const { activeTab, setActiveTab } = useTabContext();
 
   return (
     <div className="flex h-full w-full overflow-hidden">
@@ -77,7 +79,10 @@ export const TabsLayout = () => {
         }
       >
         <Tabs
-          defaultValue="Chat"
+          value={activeTab}
+          onValueChange={(value) =>
+            setActiveTab(value as "Chat" | "Map" | "Itinerary")
+          }
           className="flex h-full w-full flex-col"
         >
           <div className="flex items-center justify-between p-2">

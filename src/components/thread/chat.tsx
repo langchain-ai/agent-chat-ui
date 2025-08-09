@@ -466,7 +466,7 @@ export function Thread() {
                       "absolute inset-0 overflow-y-scroll px-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent",
                       chatStarted && "grid grid-rows-[1fr_auto]",
                     )}
-                    contentClassName="pt-8 pb-16  max-w-3xl mx-auto flex flex-col gap-4 w-full"
+                    contentClassName="pt-8 pb-24 max-w-3xl mx-auto flex flex-col gap-4 w-full"
                     content={
                       <>
                         {messages
@@ -524,10 +524,7 @@ export function Thread() {
                         )}
                         {isLoading && <AssistantMessageLoading />}
                         {/* Always render the interrupt widget at the end if present */}
-                        {console.log(
-                          "🔍 Stream interrupt 1:",
-                          JSON.stringify(stream.values.ui),
-                        )}
+
                         {stream.interrupt && (
                           <GenericInterruptView
                             interrupt={stream.interrupt.value ?? {}}
@@ -536,13 +533,13 @@ export function Thread() {
                       </>
                     }
                     footer={
-                      <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-white">
+                      <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-gradient-to-t from-white/80 via-white/40 to-transparent pt-8">
                         <ScrollToBottom className="animate-in fade-in-0 zoom-in-95 absolute bottom-full left-1/2 mb-4 -translate-x-1/2" />
 
                         <div
                           ref={dropRef}
                           className={cn(
-                            "bg-muted relative z-10 mx-auto mb-8 w-full max-w-3xl rounded-2xl shadow-xs transition-all",
+                            "relative z-10 mx-auto mb-8 w-full max-w-3xl rounded-2xl border border-gray-200/50 bg-white/95 shadow-xl backdrop-blur-md transition-all",
                             dragOver
                               ? "border-primary border-2 border-dotted"
                               : "border border-solid",

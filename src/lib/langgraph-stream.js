@@ -293,6 +293,114 @@ function useStreamValuesState() {
     return [values?.[0] ?? null, setStreamValues, mutate];
 }
 
+// Thread-safe cache manager with consistent merging logic
+class ThreadSafeCacheManager {
+    constructor() {
+        this.cache = new Map();
+        this.mutex = new Map(); // Thread-specific mutex for operations
+    }
+
+    // Get mutex for a specific thread
+    getMutex(threadId) {
+        if (!this.mutex.has(threadId)) {
+            this.mutex.set(threadId, Promise.resolve());
+        }
+        return this.mutex.get(threadId);
+    }
+
+    // Set mutex for a specific thread
+    setMutex(threadId, promise) {
+        this.mutex.set(threadId, promise);
+    }
+
+    // Thread-safe cache operation
+    async withMutex(threadId, operation) {
+        const currentMutex = this.getMutex(threadId);
+        const newMutex = currentMutex.then(operation);
+        this.setMutex(threadId, newMutex);
+        return newMutex;
+    }
+
+    // Consistent merging logic for both messages and UI widgets
+    mergeById(existing, incoming, idField = 'id') {
+        if (!existing || !Array.isArray(existing)) {
+            return incoming || [];
+        }
+        if (!incoming || !Array.isArray(incoming)) {
+            return existing;
+        }
+
+        const result = [...existing];
+        const existingIds = new Set(existing.map(item => item[idField]));
+
+        incoming.forEach(newItem => {
+            const existingIndex = result.findIndex(item => item[idField] === newItem[idField]);
+            if (existingIndex === -1) {
+                // New item - append
+                result.push(newItem);
+            } else {
+                // Existing item - update with new data
+                result[existingIndex] = newItem;
+            }
+        });
+
+        return result;
+    }
+
+    // Get cached values for a thread
+    get(threadId) {
+        return this.cache.get(threadId);
+    }
+
+    // Set cached values for a thread with merging
+    async set(threadId, newValues) {
+        return this.withMutex(threadId, async () => {
+            const existing = this.cache.get(threadId);
+            
+            if (!existing) {
+                // No existing cache, just store new values
+                this.cache.set(threadId, newValues);
+                return newValues;
+            }
+
+            // Merge with existing cache using consistent logic
+            const merged = {
+                ...existing,
+                ...newValues,
+                // Merge messages consistently
+                messages: this.mergeById(existing.messages, newValues.messages, 'id'),
+                // Merge UI widgets consistently
+                ui: this.mergeById(existing.ui, newValues.ui, 'id')
+            };
+
+            this.cache.set(threadId, merged);
+            return merged;
+        });
+    }
+
+    // Delete cache for a thread
+    delete(threadId) {
+        this.cache.delete(threadId);
+        this.mutex.delete(threadId);
+    }
+
+    // Clear all cache
+    clear() {
+        this.cache.clear();
+        this.mutex.clear();
+    }
+
+    // Get cache size
+    size() {
+        return this.cache.size;
+    }
+
+    // Get all entries
+    entries() {
+        return this.cache.entries();
+    }
+}
+
 export function useStream(options) {
     let { messagesKey } = options;
     const { assistantId, fetchStateHistory } = options;
@@ -328,8 +436,14 @@ export function useStream(options) {
     const [streamError, setStreamError] = useState(undefined);
     const [streamValues, setStreamValues, getMutateFn] = useStreamValuesState();
     
-    // ENHANCED: Stream values cache for subgraph message persistence - thread-specific with localStorage persistence
-    const streamValuesCacheRef = useRef(new Map()); // Map<threadId, cachedValues>
+    // Thread-safe cache manager
+    const cacheManagerRef = useRef(new ThreadSafeCacheManager());
+    
+    // State to track cache loading and trigger re-renders
+    const [cacheLoaded, setCacheLoaded] = useState(false);
+    
+    // State to track the final merged values for React re-rendering
+    const [finalValues, setFinalValues] = useState(null);
     
     // Load cache from localStorage on mount
     useEffect(() => {
@@ -338,27 +452,32 @@ export function useStream(options) {
                 const savedCache = localStorage.getItem("langgraph-stream-cache");
                 if (savedCache) {
                     const parsedCache = JSON.parse(savedCache);
-                    const cacheMap = new Map();
                     Object.entries(parsedCache).forEach(([threadId, cachedValues]) => {
-                        cacheMap.set(threadId, cachedValues);
+                        cacheManagerRef.current.cache.set(threadId, cachedValues);
                     });
-                    streamValuesCacheRef.current = cacheMap;
                     console.log("🔍 [CACHE DEBUG] Loaded cache from localStorage:", Object.keys(parsedCache));
+                    // Trigger re-render after cache is loaded
+                    setCacheLoaded(true);
+                } else {
+                    setCacheLoaded(true);
                 }
             } catch (error) {
                 console.warn("🔍 [CACHE DEBUG] Failed to load cache from localStorage:", error);
+                setCacheLoaded(true);
             }
+        } else {
+            setCacheLoaded(true);
         }
     }, []);
 
     // Helper function to save cache to localStorage
-    const saveCacheToStorage = useCallback(() => {
+    const saveCacheToStorage = useCallback(async () => {
         if (typeof window !== "undefined") {
             try {
                 const cacheObject = {};
-                streamValuesCacheRef.current.forEach((value, key) => {
-                    cacheObject[key] = value;
-                });
+                for (const [threadId, cachedValues] of cacheManagerRef.current.cache.entries()) {
+                    cacheObject[threadId] = cachedValues;
+                }
                 localStorage.setItem("langgraph-stream-cache", JSON.stringify(cacheObject));
                 console.log("🔍 [CACHE DEBUG] Saved cache to localStorage:", Object.keys(cacheObject));
             } catch (error) {
@@ -367,19 +486,19 @@ export function useStream(options) {
         }
     }, []);
 
-    // Helper function to cleanup old cache entries (keep only last 10 threads)
-    const cleanupCache = useCallback(() => {
-        const cacheSize = streamValuesCacheRef.current.size;
+    // Helper function to cleanup old cache entries (keep only last 50 threads)
+    const cleanupCache = useCallback(async () => {
+        const cacheSize = cacheManagerRef.current.size();
         if (cacheSize > 50) {
-            const entries = Array.from(streamValuesCacheRef.current.entries());
+            const entries = Array.from(cacheManagerRef.current.cache.entries());
             // Keep only the 50 most recent threads
             const recentEntries = entries.slice(-50);
-            streamValuesCacheRef.current.clear();
+            cacheManagerRef.current.clear();
             recentEntries.forEach(([key, value]) => {
-                streamValuesCacheRef.current.set(key, value);
+                cacheManagerRef.current.cache.set(key, value);
             });
             console.log("🔍 [CACHE DEBUG] Cleaned up cache, kept", recentEntries.length, "of", cacheSize, "entries");
-            saveCacheToStorage();
+            await saveCacheToStorage();
         }
     }, [saveCacheToStorage]);
 
@@ -436,14 +555,111 @@ export function useStream(options) {
         : fetchStateHistory ?? true;
     const history = useThreadHistory(threadId, client, historyLimit, clearCallbackRef, submittingRef, onErrorRef);
     const getMessages = useMemo(() => {
-        return (value) => Array.isArray(value[messagesKey])
-            ? value[messagesKey]
-            : [];
+        return (value) => {
+            if (!value || !Array.isArray(value[messagesKey])) {
+                return [];
+            }
+            return value[messagesKey];
+        };
     }, [messagesKey]);
     const { rootSequence, paths } = getBranchSequence(history.data ?? []);
     const { history: flatHistory, branchByCheckpoint } = getBranchView(rootSequence, paths, branch);
     const threadHead = flatHistory.at(-1);
-    const historyValues = threadHead?.values ?? options.initialValues ?? {};
+    const historyValues = useMemo(() => threadHead?.values ?? options.initialValues ?? {}, [threadHead?.values, options.initialValues]);
+    
+    // Consistent merging function for both values and messages - defined outside useEffect
+    const mergeValuesWithCache = useCallback((currentValues, cachedValues) => {
+        if (!cachedValues) {
+            return currentValues;
+        }
+        
+        if (!currentValues) {
+            return cachedValues;
+        }
+        
+        // Use the same merging logic for both messages and UI widgets
+        const merged = {
+            ...cachedValues,
+            ...currentValues,
+            // Merge messages consistently
+            messages: cacheManagerRef.current.mergeById(cachedValues.messages, currentValues.messages, 'id'),
+            // Merge UI widgets consistently
+            ui: cacheManagerRef.current.mergeById(cachedValues.ui, currentValues.ui, 'id')
+        };
+        
+        return merged;
+    }, []);
+    
+    // Effect to update finalValues when dependencies change
+    useEffect(() => {
+        // Direct merge of both sources - always merge stream and history data
+        let mergedValues = {
+            // Merge messages from both sources
+            messages: cacheManagerRef.current.mergeById(
+                historyValues?.messages || [],
+                streamValues?.messages || [],
+                'id'
+            ),
+            // Merge UI widgets from both sources
+            ui: cacheManagerRef.current.mergeById(
+                historyValues?.ui || [],
+                streamValues?.ui || [],
+                'id'
+            )
+        };
+        
+        // Only use cache if we have a valid threadId and cache is loaded
+        if (threadId && cacheLoaded) {
+            const cached = cacheManagerRef.current.get(threadId);
+            if (cached) {
+                mergedValues = mergeValuesWithCache(mergedValues, cached);
+            }
+        }
+        
+        console.log("🔍 [VALUES DEBUG]", {
+            threadId,
+            cacheLoaded,
+            hasStreamValues: !!streamValues,
+            hasHistoryValues: !!historyValues,
+            streamMessagesCount: streamValues?.messages?.length || 0,
+            historyMessagesCount: historyValues?.messages?.length || 0,
+            finalMessagesCount: mergedValues?.messages?.length || 0,
+            finalUICount: mergedValues?.ui?.length || 0,
+            // Complete logging of stream values
+            streamMessages: streamValues?.messages || [],
+            streamUIValues: streamValues?.ui || [],
+            // Complete logging of history values
+            historyMessages: historyValues?.messages || [],
+            historyUIValues: historyValues?.ui || [],
+            // Cache information
+            hasCache: !!cacheManagerRef.current.get(threadId),
+            cachedMessages: cacheManagerRef.current.get(threadId)?.messages || [],
+            cachedUIValues: cacheManagerRef.current.get(threadId)?.ui || [],
+            // Complete logging of final messages and UI values
+            finalMessages: mergedValues?.messages || [],
+            finalUIValues: mergedValues?.ui || [],
+            // Detailed UI value analysis
+            uiValueDetails: mergedValues?.ui?.map((ui) => ({
+                id: ui.id,
+                type: ui.type,
+                name: ui.name,
+                message_id: ui.metadata?.message_id,
+                hasAssociatedMessage: mergedValues?.messages?.some((m) => m.id === ui.metadata?.message_id) || false,
+                associatedMessageContent: mergedValues?.messages?.find((m) => m.id === ui.metadata?.message_id)?.content || 'NO MESSAGE FOUND'
+            })) || [],
+            // Message comparison analysis
+            messageComparison: {
+                historyMessageIds: historyValues?.messages?.map(m => m.id) || [],
+                streamMessageIds: streamValues?.messages?.map(m => m.id) || [],
+                finalMessageIds: mergedValues?.messages?.map(m => m.id) || [],
+                missingFromStream: historyValues?.messages?.filter(m => !streamValues?.messages?.some(sm => sm.id === m.id)) || [],
+                missingFromHistory: streamValues?.messages?.filter(m => !historyValues?.messages?.some(hm => hm.id === m.id)) || []
+            }
+        });
+        
+        setFinalValues(mergedValues);
+    }, [streamValues, historyValues, threadId, cacheLoaded]);
+    
     const historyValueError = (() => {
         const error = threadHead?.tasks?.at(-1)?.error;
         if (error == null)
@@ -464,9 +680,12 @@ export function useStream(options) {
         const alreadyShown = new Set();
         return getMessages(historyValues).map((message, idx) => {
             const messageId = message.id ?? idx;
-            const firstSeenIdx = findLastIndex(history.data ?? [], (state) => getMessages(state.values)
-                .map((m, idx) => m.id ?? idx)
-                .includes(messageId));
+            const firstSeenIdx = findLastIndex(history.data ?? [], (state) => {
+                if (!state?.values) return false;
+                return getMessages(state.values)
+                    .map((m, idx) => m.id ?? idx)
+                    .includes(messageId);
+            });
             const firstSeen = history.data?.[firstSeenIdx];
             const checkpointId = firstSeen?.checkpoint?.checkpoint_id;
             let branch = firstSeen && checkpointId != null
@@ -727,249 +946,46 @@ export function useStream(options) {
     }, [reconnectKey]);
     const error = streamError ?? historyValueError ?? history.error;
     
-    // ENHANCED: Cache stream values when they are available, preserving all messages
+    // Thread-safe cache stream values when they are available
     useEffect(() => {
-        // Clear cache when threadId changes to prevent cross-contamination
-        if (threadId) {
-            console.log("🔍 [CACHE DEBUG] Thread changed to:", threadId);
-        }
-        
-        if (streamValues) {
-            // Cache if we have any messages, UI widgets, or interrupt data
+        if (streamValues && threadId) {
+            // Cache if we have any meaningful values
             const hasMessages = streamValues.messages?.length > 0;
             const hasUI = streamValues.ui?.length > 0;
             const hasInterrupt = streamValues.__interrupt__;
             const hasOtherValues = Object.keys(streamValues).length > 0;
             
-            console.log("🔍 [CACHE DEBUG] streamValues changed for thread:", threadId, "- hasMessages:", hasMessages, "hasUI:", hasUI, "hasInterrupt:", hasInterrupt, "hasOtherValues:", hasOtherValues);
-            console.log("🔍 [CACHE DEBUG] streamValues keys:", Object.keys(streamValues));
-            if (hasMessages) {
-                console.log("🔍 [CACHE DEBUG] Messages to cache for thread:", threadId, ":", streamValues.messages.map(m => ({
-                    id: m.id,
-                    type: m.type,
-                    content: m.content?.slice(0, 100) || 'no content'
-                })));
-            }
-            if (hasUI) {
-                console.log("🔍 [CACHE DEBUG] UI widgets to cache for thread:", threadId, ":", streamValues.ui.map(w => ({
-                    id: w.id,
-                    type: w.type || 'unknown'
-                })));
-            }
-
-                        if (hasMessages || hasUI || hasInterrupt || hasOtherValues) {
-                // ENHANCED: Merge with existing cache instead of overwriting
-                // Only cache if we have a valid threadId
-                if (!threadId) {
-                    console.log("🔍 [CACHE DEBUG] Skipping cache - no valid threadId");
-                    return;
-                }
-                const currentCache = streamValuesCacheRef.current.get(threadId);
-                if (currentCache && streamValues.messages) {
-                const existingCache = currentCache;
-                const newMessages = streamValues.messages;
-                    
-                    console.log("🔍 [CACHE DEBUG] Merging cache - existing messages:", existingCache.messages?.length || 0, "new messages:", newMessages.length);
-                    if (existingCache.messages) {
-                        console.log("🔍 [CACHE DEBUG] Existing message IDs:", existingCache.messages.map(m => m.id));
-                    }
-                    console.log("🔍 [CACHE DEBUG] New message IDs:", newMessages.map(m => m.id));
-                    
-                    // Combine existing cached messages with new messages, removing duplicates
-                    const allMessages = [...(existingCache.messages || [])];
-                    let addedCount = 0;
-                    let updatedCount = 0;
-                    newMessages.forEach(msg => {
-                        const existingIndex = allMessages.findIndex(existing => existing.id === msg.id);
-                        if (existingIndex === -1) {
-                            allMessages.push(msg);
-                            addedCount++;
-                            console.log("🔍 [CACHE DEBUG] Added to cache:", msg.id, msg.type, msg.content?.slice(0, 50));
-                        } else {
-                            // Update existing message with new content
-                            const existingMsg = allMessages[existingIndex];
-                            const oldContent = existingMsg.content;
-                            allMessages[existingIndex] = msg; // Replace with updated message
-                            updatedCount++;
-                            console.log("🔍 [CACHE DEBUG] Updated in cache:", msg.id, msg.type, "old content:", oldContent?.slice(0, 50), "new content:", msg.content?.slice(0, 50));
-                        }
-                    });
-                    
-                    // Merge UI widgets similar to messages
-                    const allUI = [...(existingCache.ui || [])];
-                    let uiAddedCount = 0;
-                    let uiUpdatedCount = 0;
-
-                    if (streamValues.ui) {
-                        streamValues.ui.forEach(widget => {
-                            const existingIndex = allUI.findIndex(existing => existing.id === widget.id);
-                            if (existingIndex === -1) {
-                                allUI.push(widget);
-                                uiAddedCount++;
-                                console.log("🔍 [CACHE DEBUG] Added UI widget to cache:", widget.id, widget.type);
-                            } else {
-                                // Update existing UI widget
-                                allUI[existingIndex] = widget;
-                                uiUpdatedCount++;
-                                console.log("🔍 [CACHE DEBUG] Updated UI widget in cache:", widget.id, widget.type);
-                            }
-                        });
-                    }
-
-                    // Create merged cache
-                    const mergedCache = {
-                        ...existingCache,
-                        ...streamValues,
-                        messages: allMessages,
-                        ui: allUI
-                    };
-                    
-                    streamValuesCacheRef.current.set(threadId, mergedCache);
-                    saveCacheToStorage(); // Save to localStorage
-                    cleanupCache(); // Cleanup old entries
-                    console.log("🔍 [CACHE DEBUG] Merged cache - messages: existing:", existingCache.messages?.length || 0, "new:", newMessages.length, "added:", addedCount, "updated:", updatedCount, "total:", allMessages.length);
-                    console.log("🔍 [CACHE DEBUG] Merged cache - UI widgets: existing:", existingCache.ui?.length || 0, "new:", streamValues.ui?.length || 0, "added:", uiAddedCount, "updated:", uiUpdatedCount, "total:", allUI.length);
-                } else {
-                    // No existing cache, just store the new values
-                    streamValuesCacheRef.current.set(threadId, streamValues);
-                    saveCacheToStorage(); // Save to localStorage
-                    cleanupCache(); // Cleanup old entries
-                    console.log("🔍 [CACHE DEBUG] New cache created for thread:", threadId, Object.keys(streamValues), hasMessages ? `(${streamValues.messages.length} messages)` : "");
-                }
-            } else {
-                console.log("🔍 [CACHE DEBUG] Skipping cache - no meaningful values to cache");
+            console.log("🔍 [CACHE STORAGE DEBUG]", {
+                threadId,
+                hasMessages,
+                hasUI,
+                hasInterrupt,
+                hasOtherValues,
+                streamValuesKeys: Object.keys(streamValues),
+                uiValues: streamValues.ui?.map((ui) => ({
+                    id: ui.id,
+                    type: ui.type,
+                    message_id: ui.metadata?.message_id
+                })) || []
+            });
+            
+            if (hasMessages || hasUI || hasInterrupt || hasOtherValues) {
+                // Thread-safe cache operation
+                cacheManagerRef.current.set(threadId, streamValues).then(() => {
+                    saveCacheToStorage();
+                    cleanupCache();
+                    // Don't toggle cacheLoaded - it's already true and should stay true
+                }).catch(error => {
+                    console.warn("🔍 [CACHE DEBUG] Failed to cache values:", error);
+                });
             }
         }
-    }, [streamValues]);
+    }, [streamValues, threadId, saveCacheToStorage, cleanupCache]);
     
     return {
         get values() {
             trackStreamMode("values");
-            // ENHANCED: Smart merging of current and cached values to preserve all messages
-            let finalValues = streamValues ?? historyValues;
-            
-            console.log("🔍 [VALUES DEBUG]", {
-                threadId,
-                hasStreamValues: !!streamValues,
-                hasHistoryValues: !!historyValues,
-                streamMessagesCount: streamValues?.messages?.length || 0,
-                historyMessagesCount: historyValues?.messages?.length || 0,
-                finalMessagesCount: finalValues?.messages?.length || 0
-            });
-
-            // If we have cached values, always merge them with current values
-            // Only use cache if we have a valid threadId
-            const cached = threadId ? streamValuesCacheRef.current.get(threadId) : null;
-
-            // For new conversations (threadId is null), use current stream values directly
-            if (!threadId) {
-                console.log("🆕 [NEW CONVERSATION] Using current stream values for new conversation");
-                finalValues = streamValues ?? historyValues;
-            } else if (cached && !streamValues) {
-                // If we have cached values and no current stream values (thread switch scenario)
-                console.log("🔄 [THREAD SWITCH] Using cached values for thread:", threadId);
-                finalValues = cached;
-            } else if (cached && streamValues) {
-                // During active conversations, prioritize current stream values
-                // Only merge if we have meaningful current data
-                const current = streamValues;
-                
-                console.log("🔍 [MERGE DEBUG] Cached values keys:", Object.keys(cached));
-                console.log("🔍 [MERGE DEBUG] Current values keys:", Object.keys(current));
-                console.log("🔍 [MERGE DEBUG] Cached messages count:", cached.messages?.length || 0);
-                console.log("🔍 [MERGE DEBUG] Current messages count:", current.messages?.length || 0);
-                console.log("🔍 [MERGE DEBUG] Cached UI widgets count:", cached.ui?.length || 0);
-                console.log("🔍 [MERGE DEBUG] Current UI widgets count:", current.ui?.length || 0);
-
-                if (cached.messages) {
-                    console.log("🔍 [MERGE DEBUG] Cached messages content:", cached.messages.map(m => ({
-                        id: m.id,
-                        type: m.type,
-                        content: m.content?.slice(0, 100) || 'no content'
-                    })));
-                }
-                if (current.messages) {
-                    console.log("🔍 [MERGE DEBUG] Current messages content:", current.messages.map(m => ({
-                        id: m.id,
-                        type: m.type,
-                        content: m.content?.slice(0, 100) || 'no content'
-                    })));
-                }
-                if (cached.ui) {
-                    console.log("🔍 [MERGE DEBUG] Cached UI widgets:", cached.ui.map(w => ({
-                        id: w.id,
-                        type: w.type || 'unknown'
-                    })));
-                }
-                if (current.ui) {
-                    console.log("🔍 [MERGE DEBUG] Current UI widgets:", current.ui.map(w => ({
-                        id: w.id,
-                        type: w.type || 'unknown'
-                    })));
-                }
-
-                // Always merge ALL cached messages with current messages
-                if (cached.messages && current.messages) {
-                    // Combine cached and current messages, removing duplicates by ID
-                    const allMessages = [...cached.messages];
-                    console.log("🔍 [MERGE DEBUG] Starting with cached messages:", allMessages.length);
-                    
-                    let addedCount = 0;
-                    let updatedCount = 0;
-                    current.messages.forEach(msg => {
-                        const existingIndex = allMessages.findIndex(existing => existing.id === msg.id);
-                        if (existingIndex === -1) {
-                            allMessages.push(msg);
-                            addedCount++;
-                            console.log("🔍 [MERGE DEBUG] Added new message:", msg.id, msg.type, msg.content?.slice(0, 50));
-                        } else {
-                            // Update existing message with new content
-                            const existingMsg = allMessages[existingIndex];
-                            const oldContent = existingMsg.content;
-                            allMessages[existingIndex] = msg; // Replace with updated message
-                            updatedCount++;
-                            console.log("🔍 [MERGE DEBUG] Updated existing message:", msg.id, msg.type, "old content:", oldContent?.slice(0, 50), "new content:", msg.content?.slice(0, 50));
-                        }
-                    });
-                    
-                    finalValues = { ...finalValues, messages: allMessages };
-                    console.log("🔍 [MERGE DEBUG] Using current messages as base, merged with cached. Total:", allMessages.length);
-                } else if (cached.messages) {
-                    // Fallback to cached messages if no current messages
-                    finalValues = { ...finalValues, messages: cached.messages };
-                    console.log("🔍 [MERGE DEBUG] Using cached messages (no current messages):", cached.messages.length);
-                }
-                
-                // Merge UI widgets
-                if (cached.ui && current.ui) {
-                    const allUI = [...current.ui];
-                    cached.ui.forEach(widget => {
-                        if (!allUI.find(existing => existing.id === widget.id)) {
-                            allUI.push(widget);
-                        }
-                    });
-                    finalValues = { ...finalValues, ui: allUI };
-                } else if (cached.ui && !current.ui) {
-                    finalValues = { ...finalValues, ui: cached.ui };
-                }
-                
-                // Preserve other cached values that might be missing in current
-                Object.keys(cached).forEach(key => {
-                    if (key !== 'messages' && key !== 'ui' && !(key in finalValues)) {
-                        finalValues[key] = cached[key];
-                    }
-                });
-            } else {
-                // No cache, no threadId, or no streamValues - use what we have
-                console.log("🔍 [FALLBACK] Using fallback values:", {
-                    hasThreadId: !!threadId,
-                    hasCache: !!cached,
-                    hasStreamValues: !!streamValues,
-                    hasHistoryValues: !!historyValues
-                });
-            }
-            
-            return finalValues;
+            return finalValues || {};
         },
         client,
         assistantId,
@@ -994,12 +1010,11 @@ export function useStream(options) {
                 return undefined;
             const interrupts = threadHead?.tasks?.at(-1)?.interrupts;
             if (interrupts == null || interrupts.length === 0) {
-                // ENHANCED: Only clear cache if there's an error - preserve all messages
-                const currentCache = streamValuesCacheRef.current.get(threadId);
-                if (currentCache && error != null) {
-                    console.log("🔍 [INTERRUPT DEBUG] Error detected - clearing stream values cache for thread:", threadId);
-                    streamValuesCacheRef.current.delete(threadId);
-                    saveCacheToStorage(); // Save to localStorage
+                // Only clear cache if there's an error
+                if (error != null && threadId) {
+                    console.log("🔍 [INTERRUPT DEBUG] Error detected - clearing cache for thread:", threadId);
+                    cacheManagerRef.current.delete(threadId);
+                    saveCacheToStorage();
                 } else {
                     console.log("🔍 [INTERRUPT DEBUG] No interrupts active, cache preserved for thread:", threadId);
                 }
@@ -1014,91 +1029,18 @@ export function useStream(options) {
         },
         get messages() {
             trackStreamMode("messages-tuple", "values");
-            // Use the same smart merging logic as the values getter
-            let finalValues = streamValues ?? historyValues;
             
             console.log("🔍 [MESSAGES DEBUG]", {
                 threadId,
+                cacheLoaded,
                 hasStreamValues: !!streamValues,
                 hasHistoryValues: !!historyValues,
                 streamMessagesCount: streamValues?.messages?.length || 0,
                 historyMessagesCount: historyValues?.messages?.length || 0,
-                finalMessagesCount: finalValues?.messages?.length || 0
+                finalMessagesCount: finalValues?.messages?.length || 0,
+                // Complete logging of final messages
+                finalMessages: finalValues?.messages || []
             });
-
-            // If we have cached values, always merge them with current values
-            // Only use cache if we have a valid threadId
-            const cached = threadId ? streamValuesCacheRef.current.get(threadId) : null;
-
-            // For new conversations (threadId is null), use current stream values directly
-            if (!threadId) {
-                console.log("🆕 [NEW CONVERSATION] Using current stream messages for new conversation");
-                finalValues = streamValues ?? historyValues;
-            } else if (cached && !streamValues) {
-                // If we have cached values and no current stream values (thread switch scenario)
-                console.log("🔄 [THREAD SWITCH] Using cached messages for thread:", threadId);
-                finalValues = cached;
-            } else if (cached && streamValues) {
-                // During active conversations, prioritize current stream values
-                const current = streamValues;
-                
-                console.log("🔍 [MESSAGES MERGE DEBUG] Cached values keys:", Object.keys(cached));
-                console.log("🔍 [MESSAGES MERGE DEBUG] Current values keys:", Object.keys(current));
-                console.log("🔍 [MESSAGES MERGE DEBUG] Cached messages count:", cached.messages?.length || 0);
-                console.log("🔍 [MESSAGES MERGE DEBUG] Current messages count:", current.messages?.length || 0);
-                
-                // During active conversations, prioritize current messages over cached
-                if (current.messages && current.messages.length > 0) {
-                    // Use current messages as base, merge with cached if needed
-                    let allMessages = [...current.messages];
-
-                    // Only merge cached messages that aren't already in current
-                    if (cached.messages) {
-                        cached.messages.forEach(cachedMsg => {
-                            const exists = allMessages.find(msg => msg.id === cachedMsg.id);
-                            if (!exists) {
-                                allMessages.push(cachedMsg);
-                                console.log("🔍 [MESSAGES MERGE DEBUG] Added cached message:", cachedMsg.id, cachedMsg.type);
-                            }
-                        });
-                    }
-                    
-                    finalValues = { ...finalValues, messages: allMessages };
-                    console.log("🔍 [MESSAGES MERGE DEBUG] Using current messages as base, merged with cached. Total:", allMessages.length);
-                } else if (cached.messages) {
-                    // Fallback to cached messages if no current messages
-                    finalValues = { ...finalValues, messages: cached.messages };
-                    console.log("🔍 [MESSAGES MERGE DEBUG] Using cached messages (no current messages):", cached.messages.length);
-                }
-                
-                // Merge UI widgets
-                if (cached.ui && current.ui) {
-                    const allUI = [...current.ui];
-                    cached.ui.forEach(widget => {
-                        if (!allUI.find(existing => existing.id === widget.id)) {
-                            allUI.push(widget);
-                        }
-                    });
-                    finalValues = { ...finalValues, ui: allUI };
-                } else if (cached.ui && !current.ui) {
-                    finalValues = { ...finalValues, ui: cached.ui };
-                }
-                
-                // Preserve other cached values that might be missing in current
-                Object.keys(cached).forEach(key => {
-                    if (key !== 'messages' && key !== 'ui' && !(key in finalValues)) {
-                        finalValues[key] = cached[key];
-                    }
-                });
-            } else {
-                // No cache, no threadId, or no streamValues - use what we have
-                console.log("🔍 [MESSAGES FALLBACK] Using fallback values:", {
-                    hasThreadId: !!threadId,
-                    hasCache: !!cached,
-                    hasStreamValues: !!streamValues,
-                    hasHistoryValues: !!historyValues
-                });
-            }
             
             return getMessages(finalValues);
         },
@@ -1109,7 +1051,6 @@ export function useStream(options) {
         resetForThreadSwitch(newThreadId) {
             console.log("🔄 [STREAM RESET] Resetting stream values for thread switch to:", newThreadId);
             // Only clear stream values if we're actually switching threads
-            // Don't clear if we're continuing the same conversation
             if (newThreadId && newThreadId !== threadId) {
                 console.log("🔄 [STREAM RESET] Actually switching threads, clearing stream values");
                 setStreamValues(null);
@@ -1128,7 +1069,7 @@ export function useStream(options) {
         clearThreadCache(threadIdToClear) {
             console.log("🧹 [CACHE CLEAR] Clearing cache for thread:", threadIdToClear);
             if (threadIdToClear) {
-                streamValuesCacheRef.current.delete(threadIdToClear);
+                cacheManagerRef.current.delete(threadIdToClear);
             }
         },
     };

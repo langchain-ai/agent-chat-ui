@@ -16,8 +16,14 @@ const TabContext = createContext<TabContextType | undefined>(undefined);
 export function TabProvider({ children }: { children: ReactNode }) {
   const [activeTab, setActiveTab] = useState<TabName>("Chat");
 
-  const switchToItinerary = () => setActiveTab("Itinerary");
-  const switchToChat = () => setActiveTab("Chat");
+  const switchToItinerary = () => {
+    console.log("TabContext: Switching to Itinerary");
+    setActiveTab("Itinerary");
+  };
+  const switchToChat = () => {
+    console.log("TabContext: Switching to Chat");
+    setActiveTab("Chat");
+  };
 
   const value: TabContextType = {
     activeTab,

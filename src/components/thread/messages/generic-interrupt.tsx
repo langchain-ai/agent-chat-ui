@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { componentMap, ComponentType } from "@/components/widgets";
@@ -40,8 +40,8 @@ export const UIWidgetPreserver: React.FC = () => {
   const stream = useStreamContext();
 
   useEffect(() => {
-    if (stream.values.ui) {
-      stream.values.ui.forEach((uiWidget: any) => {
+    if ((stream.values as any)?.ui) {
+      (stream.values as any).ui.forEach((uiWidget: any) => {
         // Preserve by both id and message_id
         if (uiWidget.id) {
           preservedUIWidgets.set(uiWidget.id, uiWidget);
@@ -56,7 +56,7 @@ export const UIWidgetPreserver: React.FC = () => {
         );
       });
     }
-  }, [stream.values.ui]);
+  }, [(stream.values as any)?.ui]);
 
   return null; // This component doesn't render anything
 };
@@ -66,7 +66,7 @@ const TravelerDetailsBottomSheet: React.FC<{ apiData: any; args: any }> = ({
   apiData,
   args,
 }) => {
-  console.log('args:', JSON.stringify(args.bookingRequirements,null,2));
+  console.log("args:", JSON.stringify(args.bookingRequirements, null, 2));
   const [isOpen, setIsOpen] = useState(true);
 
   // Get the actual ReviewWidget component
@@ -78,10 +78,10 @@ const TravelerDetailsBottomSheet: React.FC<{ apiData: any; args: any }> = ({
   };
 
   return (
-          <ReviewWidget
-            apiData={apiData}
-            {...args}
-          />
+    <ReviewWidget
+      apiData={apiData}
+      {...args}
+    />
   );
 };
 
@@ -94,10 +94,10 @@ const NonAgentFlowBottomSheet: React.FC<{ apiData: any; args: any }> = ({
   const NonAgentFlowWidget = componentMap.NonAgentFlowWidget;
 
   return (
-          <NonAgentFlowWidget
-            apiData={apiData}
-            {...args}
-          />
+    <NonAgentFlowWidget
+      apiData={apiData}
+      {...args}
+    />
   );
 };
 
@@ -105,6 +105,9 @@ console.log("DynamicRendererProps interface defined - checking props:", {
   interruptType: "will be logged in component",
   interrupt: "will be logged in component",
 });
+
+// Global tracking for switched widgets to persist across re-renders
+const globalSwitchedWidgets = new Set<string>();
 
 export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
   interruptType,
@@ -115,6 +118,67 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
   const artifact = useArtifact();
   const { switchToItinerary } = useTabContext();
   const { addWidget } = useItineraryWidget();
+
+  // Track which widgets have been processed to avoid duplicate processing
+  const processedWidgetsRef = useRef<Set<string>>(new Set());
+
+  // Handle widget processing for itinerary rendering
+  useEffect(() => {
+    if (
+      interruptType === "widget" &&
+      interrupt.value?.widget?.args?.renderingWindow === "itinerary"
+    ) {
+      const interruptId =
+        interrupt.value?.interrupt_id ||
+        interrupt.value?.widget?.args?.interrupt_id;
+      const argsHash = JSON.stringify(interrupt.value.widget.args || {});
+      const widgetId =
+        interruptId ||
+        `${interrupt.value.widget.type}-${btoa(argsHash).slice(0, 8)}`;
+
+      // Only process if not already processed
+      if (!processedWidgetsRef.current.has(widgetId)) {
+        processedWidgetsRef.current.add(widgetId);
+
+        // Create widget component
+        const Component =
+          componentMap[interrupt.value.widget.type as ComponentType];
+        let widgetComponent: React.ReactNode;
+
+        if (interrupt.value.widget.type === "TravelerDetailsWidget") {
+          widgetComponent = (
+            <TravelerDetailsBottomSheet
+              apiData={interrupt}
+              args={interrupt.value.widget.args}
+            />
+          );
+        } else if (interrupt.value.widget.type === "NonAgentFlowWidget") {
+          widgetComponent = (
+            <NonAgentFlowBottomSheet
+              apiData={interrupt}
+              args={interrupt.value.widget.args}
+            />
+          );
+        } else {
+          widgetComponent = <Component {...interrupt.value.widget.args} />;
+        }
+
+        // Add widget to itinerary
+        addWidget(widgetId, widgetComponent);
+
+        // Only switch to itinerary if we haven't already switched for this widget
+        if (!globalSwitchedWidgets.has(widgetId)) {
+          switchToItinerary();
+          globalSwitchedWidgets.add(widgetId);
+          console.log(`Switching to Itinerary for widget: ${widgetId}`);
+        } else {
+          console.log(
+            `Already switched to Itinerary for widget: ${widgetId}, skipping`,
+          );
+        }
+      }
+    }
+  }, [interruptType, interrupt, addWidget, switchToItinerary]);
 
   console.log("🔄 STREAMING DATA - DynamicRenderer received:", {
     interruptType,
@@ -137,9 +201,8 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
     const attachmentId = interrupt.value?.metadata?.attachmentId;
 
     if (attachmentId) {
-
       // First try to find in current UI widgets
-      let matchingUIWidget = stream.values.ui?.find(
+      let matchingUIWidget = (stream.values as any)?.ui?.find(
         (ui: any) =>
           ui.id === attachmentId || ui.metadata?.message_id === attachmentId,
       );
@@ -151,7 +214,10 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
         console.log("🔍 Found in preserved widgets:", matchingUIWidget);
       }
 
-      console.log("🔍 All UI widgets:", JSON.stringify(stream.values.ui));
+      console.log(
+        "🔍 All UI widgets:",
+        JSON.stringify((stream.values as any)?.ui),
+      );
       console.log(
         "🔍 Preserved widgets:",
         Array.from(preservedUIWidgets.keys()),
@@ -202,14 +268,18 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
     });
 
     // Check for renderingWindow to determine where to render the widget
-    const renderingWindow = interrupt.value.widget.args?.renderingWindow || "chat";
+    const renderingWindow =
+      interrupt.value.widget.args?.renderingWindow || "chat";
 
     // Create the widget component
     let widgetComponent: React.ReactNode;
 
     // For TravelerDetailsWidget, render in bottom sheet
     if (interrupt.value.widget.type === "TravelerDetailsWidget") {
-      console.log('interrupt: ',JSON.stringify(interrupt.value.widget.args, null, 2));
+      console.log(
+        "interrupt: ",
+        JSON.stringify(interrupt.value.widget.args, null, 2),
+      );
       widgetComponent = (
         <TravelerDetailsBottomSheet
           apiData={interrupt}
@@ -228,7 +298,14 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
           args={interrupt.value.widget.args}
         />
       );
-    } else if (["SeatPreferenceWidget", "SeatSelectionWidget", "SeatMapWidget", "SeatCombinedWidget"].includes(interrupt.value.widget.type)) {
+    } else if (
+      [
+        "SeatPreferenceWidget",
+        "SeatSelectionWidget",
+        "SeatMapWidget",
+        "SeatCombinedWidget",
+      ].includes(interrupt.value.widget.type)
+    ) {
       // For seat-related widgets, render directly without bottom sheet
       widgetComponent = <Component {...interrupt.value.widget.args} />;
     } else {
@@ -238,14 +315,14 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
 
     // Handle rendering based on renderingWindow
     if (renderingWindow === "itinerary") {
-      // Add widget to itinerary section and switch to itinerary tab
       // Use interrupt_id if available, otherwise create a stable ID based on widget type and args
-      const interruptId = interrupt.value?.interrupt_id || interrupt.value?.widget?.args?.interrupt_id;
+      const interruptId =
+        interrupt.value?.interrupt_id ||
+        interrupt.value?.widget?.args?.interrupt_id;
       const argsHash = JSON.stringify(interrupt.value.widget.args || {});
-      const widgetId = interruptId || `${interrupt.value.widget.type}-${btoa(argsHash).slice(0, 8)}`;
-
-      addWidget(widgetId, widgetComponent);
-      switchToItinerary();
+      const widgetId =
+        interruptId ||
+        `${interrupt.value.widget.type}-${btoa(argsHash).slice(0, 8)}`;
 
       // Return null for chat section since widget is rendered in itinerary
       return null;
