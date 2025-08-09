@@ -75,6 +75,11 @@ interface NonAgentFlowWidgetProps {
     userContext: {
       userDetails: any;
       userId: string;
+      contactDetails?: {
+        countryCode: string;
+        mobileNumber: string;
+        email: string;
+      };
     };
     selectionContext: {
       selectedFlightOffers:  Array<{
@@ -239,6 +244,30 @@ const NonAgentFlowWidgetContent: React.FC<
   };
 
   const priceBreakdown = getPriceBreakdown();
+
+  // Extract contact details from flightItinerary or apiData
+  const getContactDetails = () => {
+    // First try to get from flightItinerary prop
+    if (flightItinerary?.userContext?.contactDetails) {
+      return flightItinerary.userContext.contactDetails;
+    }
+
+    // Try to get from apiData (interrupt data)
+    const interruptData = apiData?.value?.widget?.args || apiData;
+    const contactDetails = interruptData?.flightItinerary?.userContext?.contactDetails;
+
+    if (contactDetails) {
+      return contactDetails;
+    }
+
+    // Return null if no contact details found
+    return null;
+  };
+
+  const contactDetails = getContactDetails();
+
+  // Log contact details for debugging
+  console.log("📞 NonAgentFlow - Contact Details:", contactDetails);
 
   // Check if this is an interrupt-triggered widget
   const isInterruptWidget = !!apiData;
@@ -580,7 +609,8 @@ const NonAgentFlowWidgetContent: React.FC<
           },
           prefill: {
             name: "Customer Name",
-            email: "customer@example.com",
+            email: contactDetails?.email || "customer@example.com",
+            contact: contactDetails?.mobileNumber ? `+${contactDetails.countryCode || "91"}${contactDetails.mobileNumber}` : undefined,
           },
           theme: {
             color: "#3B82F6",
@@ -1028,6 +1058,29 @@ const NonAgentFlowWidgetContent: React.FC<
                 </span>
                 <span className="text-sm text-gray-900">{tripId}</span>
               </div>
+
+              {/* Contact Information */}
+              {contactDetails && (
+                <div className="space-y-2 border-t border-gray-200 pt-3">
+                  <h4 className="text-sm font-semibold text-black">Contact Information</h4>
+
+                  {contactDetails.email && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-700">Email</span>
+                      <span className="text-sm text-black">{contactDetails.email}</span>
+                    </div>
+                  )}
+
+                  {contactDetails.mobileNumber && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-700">Mobile</span>
+                      <span className="text-sm text-black">
+                        +{contactDetails.countryCode || "91"} {contactDetails.mobileNumber}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Price Breakdown */}
               <div className="space-y-2 border-t border-gray-200 pt-3">
