@@ -6,7 +6,7 @@ import { Input } from "@/components/common/ui/input";
 import { useStreamContext } from "@/providers/Stream";
 import { submitInterruptResponse } from "./util";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, Edit, AlertCircle } from "lucide-react";
+import { Edit, AlertCircle } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -163,6 +163,7 @@ interface WhosTravellingWidgetProps {
       userDetails?: UserDetails;
       savedTravellers?: SavedTraveller[];
       contactDetails?: {
+        countryCode?: string;
         mobileNumber: string;
         email: string;
       };
@@ -952,25 +953,53 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
     const contactDetails = args.flightItinerary?.userContext?.contactDetails;
 
     if (contactDetails) {
+      console.log("📞 Processing contactDetails:", contactDetails);
+
+      // Set email
       setContactEmail(contactDetails.email || "");
 
-      // Extract phone number from mobileNumber (format: "919737332299")
+      // Handle mobile number and country code
       if (contactDetails.mobileNumber) {
         const mobileNumber = contactDetails.mobileNumber;
-        // Extract country code and number
-        if (mobileNumber.startsWith("91")) {
-          // Indian number
-          setContactPhoneNumber(mobileNumber.substring(2)); // Remove "91" prefix
-          const indiaCountryCode = countryCodes.find(cc => cc.code === "+91");
-          if (indiaCountryCode) {
-            setSelectedCountryCode(indiaCountryCode);
+        const countryCode = contactDetails.countryCode;
+
+        console.log("📱 Mobile number:", mobileNumber, "Country code:", countryCode);
+
+        // Set the mobile number directly (without country code prefix)
+        setContactPhoneNumber(mobileNumber);
+
+        // Map country code to country dropdown
+        if (countryCode) {
+          // Find matching country code in our list
+          const matchingCountryCode = countryCodes.find(cc =>
+            cc.code === `+${countryCode}` || cc.code.replace("+", "") === countryCode
+          );
+
+          if (matchingCountryCode) {
+            console.log("✅ Found matching country:", matchingCountryCode);
+            setSelectedCountryCode(matchingCountryCode);
+          } else {
+            console.log("❌ No matching country found for code:", countryCode);
+            // Default to India if no match found
+            const defaultCountry = countryCodes.find(cc => cc.code === "+91");
+            if (defaultCountry) {
+              setSelectedCountryCode(defaultCountry);
+            }
           }
         } else {
-          // For other countries, you might need more logic
-          setContactPhoneNumber(mobileNumber);
+          // Legacy handling: try to extract country code from mobile number
+          if (mobileNumber.startsWith("91")) {
+            // Indian number
+            setContactPhoneNumber(mobileNumber.substring(2)); // Remove "91" prefix
+            const indiaCountryCode = countryCodes.find(cc => cc.code === "+91");
+            if (indiaCountryCode) {
+              setSelectedCountryCode(indiaCountryCode);
+            }
+          }
         }
       }
     } else if (userDetails) {
+      console.log("📞 Fallback to userDetails:", userDetails);
       // Fallback to userDetails if contactDetails not available
       setContactEmail(userDetails.email || "");
       setContactPhoneNumber(userDetails.phone?.[0]?.number || "");
@@ -988,7 +1017,8 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
   // Validation function to check if passenger has missing required fields
   const hasIncompleteInfo = (passenger: SavedPassenger): boolean => {
     // Core required fields - gender is derived automatically so not strictly required for validation
-    const requiredFields = ["firstName", "lastName", "dateOfBirth"];
+    // dateOfBirth is now optional
+    const requiredFields = ["firstName", "lastName"];
     const internationalFields =
       isInternational && passenger.documents?.length
         ? []
@@ -1327,7 +1357,7 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
         }
 
         return {
-          dateOfBirth: passenger.dateOfBirth,
+          dateOfBirth: passenger.dateOfBirth || null,
           gender: passenger.gender.toUpperCase(),
           name: {
             firstName: passenger.firstName.toUpperCase(),
@@ -1396,7 +1426,7 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
         }
 
         return {
-          dateOfBirth: passenger.dateOfBirth || "",
+          dateOfBirth: passenger.dateOfBirth || null,
           gender:
             passenger.title === "Ms." || passenger.title === "Mrs."
               ? "FEMALE"
@@ -1461,7 +1491,6 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
       <div className="mx-auto mt-2 w-full max-w-md rounded-2xl border border-gray-200 bg-white p-4 font-sans shadow-lg">
         {/* Header */}
         <div className="mb-4 flex items-center space-x-2">
-          <ArrowLeft className="h-5 w-5 cursor-pointer text-black" />
           <h1 className="text-lg font-bold text-black">
             Who&apos;s travelling?
           </h1>
@@ -2025,7 +2054,7 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
                 />
 
                 {/* Date of Birth (Optional) */}
-                <DateInput
+                {/* <DateInput
                   placeholder="Date of Birth"
                   value={formatDateForInput(newPassengerForm.dateOfBirth)}
                   onChange={(value) =>
@@ -2036,7 +2065,7 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
                   }
                   min={getDateLimits(addPassengerType).min}
                   max={getDateLimits(addPassengerType).max}
-                />
+                /> */}
 
                 {/* Document Fields - Show when document is required or for international flights */}
                 {(isInternational || isAnyDocumentRequired()) && (

@@ -604,7 +604,8 @@ const FlightCard = ({
   const isJourneyBased = flight.journey && flight.journey.length > 0;
   const isRoundTrip = isJourneyBased && flight.journey!.length === 2;
 
-  // Generate personalized flight highlights
+  // Generate personalized flight highlights - Commented out since highlights rendering is disabled
+  /*
   const getFlightHighlights = (flight: FlightOption) => {
     const highlights = [];
 
@@ -643,6 +644,7 @@ const FlightCard = ({
     // Return max 3 highlights
     return highlights.slice(0, 3);
   };
+  */
 
   //Todo: @Khalid, this is very critical and hacky, please verify the actual flight timings with what we are showing.
   const formatTime = (isoString: string) => {
@@ -891,7 +893,8 @@ const FlightCard = ({
         {/* Baggage Information - only show for legacy format or if baggage data is available */}
         {(!isJourneyBased || flight.baggage) && <BaggageDisplay flight={flight} />}
 
-      {/* Flight Highlights with Clean Black Border */}
+      {/* Flight Highlights with Clean Black Border - Commented out for now, can be easily restored */}
+      {/*
       {(() => {
         const highlights = getFlightHighlights(flight);
         return highlights.length > 0 && (
@@ -912,6 +915,7 @@ const FlightCard = ({
           </div>
         );
       })()}
+      */}
       </div>
 
       {/* Minimal spacer for button alignment */}
