@@ -634,9 +634,8 @@ const FlightCard = ({
     return highlights.slice(0, 3);
   };
 
-  // Check if this is a journey-based flight (round trip)
+  // Check if this is a journey-based flight
   const isJourneyBased = flight.journey && flight.journey.length > 0;
-  const isRoundTrip = isJourneyBased && flight.journey!.length === 2;
 
   //Todo: @Khalid, this is very critical and hacky, please verify the actual flight timings with what we are showing.
   const formatTime = (isoString: string) => {
@@ -1411,7 +1410,7 @@ const FlightListItem = ({
 
   // Get intermediate stop IATA codes for connecting flights
   const getStopIataCodes = (flight: FlightOption) => {
-    if (flight.segments.length <= 1) return [];
+    if (!flight.segments || flight.segments.length <= 1) return [];
 
     // For connecting flights, intermediate stops are the arrival airports of all segments except the last one
     return flight.segments.slice(0, -1).map(segment => segment.arrival.airportIata);
@@ -1461,7 +1460,7 @@ const FlightListItem = ({
             {/* Departure */}
             <div className="text-center">
               <div className="text-sm text-gray-900" style={{ fontSize: '14px' }}>
-                {formatTime(departureInfo.date)}
+                {departureInfo ? formatTime(departureInfo.date) : "N/A"}
               </div>
             </div>
 
@@ -1472,7 +1471,7 @@ const FlightListItem = ({
               </div>
               <div className="relative">
                 <div className="border-t border-gray-300 w-full"></div>
-                {flight.segments.length > 1 && (
+                {flight.segments && flight.segments.length > 1 && (
                   <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 transform rounded-full bg-orange-400"></div>
                 )}
               </div>
@@ -1504,7 +1503,7 @@ const FlightListItem = ({
             {/* Arrival */}
             <div className="text-center">
               <div className="text-sm text-gray-900" style={{ fontSize: '14px' }}>
-                {formatTime(arrivalInfo.date)}
+                {arrivalInfo ? formatTime(arrivalInfo.date) : "N/A"}
               </div>
             </div>
           </div>
@@ -1546,9 +1545,9 @@ const FlightListItem = ({
         {/* Center-Left: Departure Time */}
         <div className="text-center" style={{ width: '80px' }}>
           <div className="text-lg font-bold text-gray-900">
-            {formatTime(departureInfo.date)}
+            {departureInfo ? formatTime(departureInfo.date) : "N/A"}
           </div>
-          <div className="text-xs text-gray-500">{departureInfo.airportIata}</div>
+          <div className="text-xs text-gray-500">{departureInfo?.airportIata || "N/A"}</div>
         </div>
 
         {/* Center: Duration & Stops */}
@@ -1595,9 +1594,9 @@ const FlightListItem = ({
         {/* Center-Right: Arrival Time */}
         <div className="text-center" style={{ width: '80px' }}>
           <div className="text-lg font-bold text-gray-900">
-            {formatTime(arrivalInfo.date)}
+            {arrivalInfo ? formatTime(arrivalInfo.date) : "N/A"}
           </div>
-          <div className="text-xs text-gray-500">{arrivalInfo.airportIata}</div>
+          <div className="text-xs text-gray-500">{arrivalInfo?.airportIata || "N/A"}</div>
         </div>
 
         {/* Right: Price */}
@@ -1876,13 +1875,9 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
     setRefundableFilter(false);
   };
 
-  // Check if we have any flights with the mandatory tags
-  const hasRecommended = allFlightTuples.some((flight: any) => flight.tags?.includes('recommended'));
-  const hasCheapest = allFlightTuples.some((flight: any) => flight.tags?.includes('cheapest'));
-  const hasFastest = allFlightTuples.some((flight: any) => flight.tags?.includes('fastest'));
 
-  // Show loading state if no mandatory tags are present (unless no flights at all)
-  const shouldShowLoading = allFlightTuples.length > 0 && (!hasRecommended || !hasCheapest || !hasFastest);
+
+
 
   return (
     <>
