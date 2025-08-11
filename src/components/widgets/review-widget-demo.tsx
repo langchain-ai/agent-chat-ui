@@ -196,10 +196,19 @@ const exampleApiDataWithTravelDocs = {
         ...exampleApiData.value.widget.args,
         bookingRequirements: {
           ...exampleApiData.value.widget.args.bookingRequirements,
-          travelerRequirements: {
-            documentRequired: true,
-            passportRequired: true
-          }
+          travelerRequirements: [
+            {
+              travelerId: "27912",
+              genderRequired: false,
+              documentRequired: true,
+              documentIssuanceCityRequired: false,
+              dateOfBirthRequired: true,
+              redressRequiredIfAny: false,
+              airFranceDiscountRequired: false,
+              spanishResidentDiscountRequired: false,
+              residenceRequired: false
+            }
+          ]
         }
       }
     }
