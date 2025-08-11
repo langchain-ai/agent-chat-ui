@@ -801,10 +801,6 @@ interface ReviewWidgetProps {
   onSubmit?: (data: any) => void;
   // New API response prop
   apiData?: ApiResponse;
-  // Bottom sheet mode
-  isInBottomSheet?: boolean;
-  // Function to close the bottom sheet
-  onClose?: () => void;
   // Loading state management
   isSubmitting?: boolean;
   onSubmittingChange?: (isSubmitting: boolean) => void;
@@ -1250,8 +1246,6 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
   paymentSummary,
   onSubmit,
   apiData,
-  isInBottomSheet = false,
-  onClose,
   isSubmitting: externalIsSubmitting,
   onSubmittingChange,
 }) => {
@@ -1796,12 +1790,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
   };
 
   return (
-    <div
-      className={cn(
-        isInBottomSheet ? "bg-white" : "min-h-screen bg-gray-50",
-        "relative",
-      )}
-    >
+    <div className="relative min-h-screen bg-gray-50">
       {/* Loading Overlay */}
       {isSubmitting && (
         <div className="bg-opacity-75 absolute inset-0 z-50 flex items-center justify-center bg-white">
@@ -1816,18 +1805,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
           </div>
         </div>
       )}
-      <div
-        className={cn(
-          "mx-auto max-w-4xl",
-          isInBottomSheet ? "p-4 pb-4" : "p-3 pb-20 sm:p-4 sm:pb-4",
-        )}
-      >
-        {/* Header - Only show if not in bottom sheet (title is in sheet header) */}
-        {!isInBottomSheet && (
-          <h1 className="mb-4 text-2xl font-bold text-gray-900 sm:text-3xl">
-            Review Your Booking
-          </h1>
-        )}
+      <div className="mx-auto max-w-4xl p-3 pb-4 sm:p-4 sm:pb-4">
 
         {/* Desktop Two-Column Layout */}
         <div className="hidden lg:grid lg:grid-cols-2 lg:gap-6">
@@ -2729,58 +2707,12 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
               )}
             </div>
 
-            {/* Desktop Action Buttons */}
-            {!isBookingSubmitted ? (
-              <div className="flex flex-col space-y-3">
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={onClose}
-                  disabled={isSubmitting}
-                >
-                  Back
-                </Button>
-                <Button
-                  onClick={handleSubmit}
-                  disabled={!isFormValid || isSubmitting}
-                  className={cn(
-                    "w-full py-3 text-base",
-                    isFormValid && !isSubmitting
-                      ? "bg-blue-600 hover:bg-blue-700"
-                      : "cursor-not-allowed bg-gray-400",
-                  )}
-                >
-                  {isSubmitting ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                      <span>Submitting...</span>
-                    </div>
-                  ) : (
-                    "Confirm Booking"
-                  )}
-                </Button>
-              </div>
-            ) : (
-              <div className="text-center py-4">
-                <div className="flex items-center justify-center space-x-2 text-green-600">
-                  <div className="h-5 w-5 rounded-full bg-green-100 flex items-center justify-center">
-                    <svg className="h-3 w-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                  <span className="text-sm font-medium">Booking submitted successfully!</span>
-                </div>
-              </div>
-            )}
+
           </div>
         </div>
 
         {/* Mobile/Tablet Single Column Layout */}
-        <div className={cn(
-          "space-y-3 lg:hidden",
-          // Add bottom padding when not in bottom sheet to account for fixed button
-          !isInBottomSheet && !isBookingSubmitted ? "pb-20" : "pb-4"
-        )}>
+        <div className="space-y-3 lg:hidden pb-4">
           {/* Flight Details */}
           <div className="rounded-lg bg-white p-4 shadow">
             <div
@@ -3549,92 +3481,40 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
         </div>
 
         {/* Action Buttons */}
-        {isInBottomSheet ? (
-          // Bottom sheet buttons - always sticky at bottom
-          <div className="sticky bottom-0 -mx-4 mt-6 border-t bg-white p-4">
-            {!isBookingSubmitted ? (
-              <div className="flex space-x-3">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={onClose}
-                  disabled={isSubmitting}
-                >
-                  Back
-                </Button>
-                <Button
-                  onClick={handleSubmit}
-                  disabled={!isFormValid || isSubmitting}
-                  className={cn(
-                    "flex-1",
-                    isFormValid && !isSubmitting
-                      ? "bg-blue-600 hover:bg-blue-700"
-                      : "cursor-not-allowed bg-gray-400",
-                  )}
-                >
-                  {isSubmitting ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                      <span>Submitting...</span>
-                    </div>
-                  ) : (
-                    "Confirm Booking"
-                  )}
-                </Button>
-              </div>
-            ) : (
-              <div className="text-center py-2">
-                <div className="flex items-center justify-center space-x-2 text-green-600">
-                  <div className="h-5 w-5 rounded-full bg-green-100 flex items-center justify-center">
-                    <svg className="h-3 w-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                  <span className="text-sm font-medium">Booking submitted successfully!</span>
+        <div className="mt-6">
+          {!isBookingSubmitted ? (
+            <Button
+              onClick={handleSubmit}
+              disabled={!isFormValid || isSubmitting}
+              className={cn(
+                "w-full py-3 text-base font-medium",
+                isFormValid && !isSubmitting
+                  ? "bg-blue-600 hover:bg-blue-700 text-white"
+                  : "cursor-not-allowed bg-gray-400 text-white",
+              )}
+            >
+              {isSubmitting ? (
+                <div className="flex items-center space-x-2">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                  <span>Submitting...</span>
                 </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          // Mobile/Tablet Sticky Button (Desktop buttons are in the right column)
-          // Only show on mobile/tablet, hidden on desktop (lg and above)
-          <div className="lg:hidden">
-            {!isBookingSubmitted ? (
-              <div className="fixed right-0 bottom-0 left-0 z-[60] border-t bg-white p-4 shadow-lg min-h-[80px] flex items-center safe-area-inset-bottom">
-                <Button
-                  onClick={handleSubmit}
-                  disabled={!isFormValid || isSubmitting}
-                  className={cn(
-                    "w-full py-3 text-base font-medium",
-                    isFormValid && !isSubmitting
-                      ? "bg-blue-600 hover:bg-blue-700 text-white"
-                      : "cursor-not-allowed bg-gray-400 text-white",
-                  )}
-                >
-                  {isSubmitting ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                      <span>Submitting...</span>
-                    </div>
-                  ) : (
-                    "Confirm Booking"
-                  )}
-                </Button>
-              </div>
-            ) : (
-              <div className="fixed right-0 bottom-0 left-0 z-[60] border-t bg-white p-4 shadow-lg min-h-[80px] flex items-center justify-center safe-area-inset-bottom">
-                <div className="flex items-center space-x-2 text-green-600">
-                  <div className="h-5 w-5 rounded-full bg-green-100 flex items-center justify-center">
-                    <svg className="h-3 w-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                  <span className="text-sm font-medium">Booking submitted successfully!</span>
+              ) : (
+                "Confirm Booking"
+              )}
+            </Button>
+          ) : (
+            <div className="text-center py-4">
+              <div className="flex items-center justify-center space-x-2 text-green-600">
+                <div className="h-5 w-5 rounded-full bg-green-100 flex items-center justify-center">
+                  <svg className="h-3 w-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
                 </div>
+                <span className="text-sm font-medium">Booking submitted successfully!</span>
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

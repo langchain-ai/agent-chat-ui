@@ -1,14 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import ReviewWidget from "./review.widget";
-import { Button } from "@/components/common/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 
 // Example API response data
 const exampleApiData = {
@@ -216,8 +209,6 @@ const exampleApiDataWithTravelDocs = {
 };
 
 const ReviewWidgetDemo: React.FC = () => {
-  const [showBottomSheet, setShowBottomSheet] = useState(false);
-
   const handleSubmit = (data: any) => {
     console.log("Booking data submitted:", data);
     alert("Booking submitted successfully!");
@@ -226,35 +217,6 @@ const ReviewWidgetDemo: React.FC = () => {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Review Widget Demo</h1>
-
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-2">Bottom Sheet Mode (No Travel Docs - travelerRequirements: null)</h2>
-        <Button onClick={() => setShowBottomSheet(true)}>
-          Open Review Widget in Bottom Sheet
-        </Button>
-
-        <Sheet open={showBottomSheet} onOpenChange={setShowBottomSheet}>
-          <SheetContent
-            side="bottom"
-            className="h-[90vh] sm:h-[85vh] flex flex-col overflow-hidden p-0"
-          >
-            <SheetHeader className="flex-shrink-0 px-6 py-4 border-b border-gray-200">
-              <SheetTitle className="text-xl font-semibold">
-                Review Your Booking
-              </SheetTitle>
-            </SheetHeader>
-
-            <div className="flex-1 overflow-auto">
-              <ReviewWidget
-                apiData={exampleApiData}
-                onSubmit={handleSubmit}
-                isInBottomSheet={true}
-                onClose={() => setShowBottomSheet(false)}
-              />
-            </div>
-          </SheetContent>
-        </Sheet>
-      </div>
 
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-2">With Travel Documents (travelerRequirements: not null)</h2>

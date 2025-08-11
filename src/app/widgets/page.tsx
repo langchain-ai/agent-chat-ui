@@ -17,6 +17,7 @@ import SeatCombinedWidget from "@/components/widgets/seatCombined.widget";
 import AddBaggageWidget from "@/components/widgets/addBaggage.widget";
 import WhosTravellingWidget from "@/components/widgets/whosTravelling.widget";
 import ReviewWidgetDemo from "@/components/widgets/review-widget-demo";
+import BookingStatusWidget from "@/components/widgets/bookingStatus";
 
 // Import the StreamProvider to wrap our widgets
 import { StreamProvider } from "@/providers/Stream";
@@ -1208,6 +1209,31 @@ export default function WidgetsPage(): React.ReactNode {
             </div>
             <div className="w-full">
               <StandaloneAddBaggageWidget />
+            </div>
+          </section>
+
+          {/* Confirmation Widgets Section */}
+          <div className="mt-16 mb-8">
+            <h2 className="mb-4 text-center text-3xl font-bold text-gray-900">
+              Confirmation Widgets
+            </h2>
+            <p className="mb-8 text-center text-gray-600">
+              These widgets display booking confirmations and status information
+            </p>
+          </div>
+
+          {/* Booking Status Widget */}
+          <section className="rounded-lg bg-white p-6 shadow-md">
+            <div className="mb-6">
+              <h3 className="mb-2 text-2xl font-semibold text-gray-800">
+                Booking Status Widget (Ticket Confirmation)
+              </h3>
+              <p className="text-sm text-gray-600">
+                Complete booking confirmation widget built from scratch using Uber Move font. Shows booking status with PNR at the top, expandable flight details (like review widget), passenger information, contact details, and payment summary. Professional design with proper font weights and tabular numbers.
+              </p>
+            </div>
+            <div className="flex justify-center">
+              <BookingStatusWidget />
             </div>
           </section>
         </div>
