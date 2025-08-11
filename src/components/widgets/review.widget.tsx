@@ -2468,19 +2468,19 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                   <div className="sm:hidden">
                     <div className="mb-3 flex items-center justify-between">
                       <div className="text-center">
-                        <div className="text-base font-bold">
+                        <div className="text-sm font-bold">
                           {finalFlightDetails.departure.code}
                         </div>
-                        <div className="text-base font-bold">
+                        <div className="text-sm font-bold">
                           {finalFlightDetails.departure.time}
                         </div>
                       </div>
                       <ArrowRight className="h-4 w-4 text-gray-400" />
                       <div className="text-center">
-                        <div className="text-base font-bold">
+                        <div className="text-sm font-bold">
                           {finalFlightDetails.arrival.code}
                         </div>
-                        <div className="text-base font-bold">
+                        <div className="text-sm font-bold">
                           {finalFlightDetails.arrival.time}
                         </div>
                       </div>
@@ -2545,7 +2545,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                   {/* Departure */}
                   <div className="text-left">
                     <div className="mb-1 text-sm text-gray-600">Departure</div>
-                    <div className="text-base font-bold">
+                    <div className="text-sm font-bold">
                       {finalFlightDetails.departure.time}
                     </div>
                     <div className="text-sm text-gray-900">
@@ -2571,7 +2571,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                   {/* Arrival */}
                   <div className="text-right">
                     <div className="mb-1 text-sm text-gray-600">Arrival</div>
-                    <div className="text-base font-bold">
+                    <div className="text-sm font-bold">
                       {finalFlightDetails.arrival.time}
                     </div>
                     <div className="text-sm text-gray-900">

@@ -413,14 +413,14 @@ const BaggageDisplay = ({ flight }: { flight: FlightOption }) => {
       <div className="flex items-center gap-2 flex-1">
         <Luggage className="h-4 w-4 text-black flex-shrink-0" />
         <div className="min-w-0">
-          <div className="text-xs font-medium text-black">Check-in</div>
+          <div className="text-xs font-normal text-black">Check-in</div>
           {checkInInfo.hasData ? (
             <div className="text-xs text-gray-700">
               {checkInInfo.weight}
             </div>
           ) : (
             <div className="flex items-center justify-center">
-              <X className="h-4 w-4 text-black" />
+              <X className="h-4 w-4 text-red-500" />
             </div>
           )}
         </div>
@@ -433,14 +433,14 @@ const BaggageDisplay = ({ flight }: { flight: FlightOption }) => {
       <div className="flex items-center gap-2 flex-1">
         <Briefcase className="h-4 w-4 text-black flex-shrink-0" />
         <div className="min-w-0">
-          <div className="text-xs font-medium text-black">Carry-on</div>
+          <div className="text-xs font-normal text-black">Carry-on</div>
           {cabinInfo.hasData ? (
             <div className="text-xs text-gray-700">
               {cabinInfo.weight}
             </div>
           ) : (
             <div className="flex items-center justify-center">
-              <X className="h-4 w-4 text-black" />
+              <X className="h-4 w-4 text-red-500" />
             </div>
           )}
         </div>
@@ -527,16 +527,16 @@ const JourneyDisplay = ({ journey, journeyIndex, totalJourneys }: {
           <div className="font-bold text-black text-sm">
             {formatTime(journey.departure.date)}
           </div>
-          <div className="text-xs text-gray-700">{journey.departure.airportIata}</div>
+          <div className="text-xs text-gray-700" style={{ fontSize: '12px' }}>{journey.departure.airportIata}</div>
         </div>
 
         {/* Duration and Stops */}
         <div className="mx-2 flex-1 text-center min-w-0">
           <div className="flex items-center justify-center gap-1 mb-1">
-            <Clock className="h-3 w-3 text-black" />
-            <span className="text-xs text-black">{duration}</span>
+            <Clock className="h-3 w-3 text-gray-400" />
+            <span className="text-xs text-gray-500" style={{ fontSize: '11px' }}>{duration}</span>
           </div>
-          <div className="relative border-t border-black mx-2">
+          <div className="relative border-t border-gray-300 mx-2" style={{ borderWidth: '0.5px' }}>
             {journey.segments && journey.segments.length === 2 && (
               <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-600"></div>
             )}
@@ -547,7 +547,7 @@ const JourneyDisplay = ({ journey, journeyIndex, totalJourneys }: {
               </>
             )}
           </div>
-          <div className="text-xs text-gray-700 mt-1">
+          <div className="text-xs text-gray-500 mt-1" style={{ fontSize: '10px' }}>
             {journey.segments && journey.segments.length === 1
               ? "Non-stop"
               : journey.segments
@@ -561,7 +561,7 @@ const JourneyDisplay = ({ journey, journeyIndex, totalJourneys }: {
           <div className="font-bold text-black text-sm">
             {formatTime(journey.arrival.date)}
           </div>
-          <div className="text-xs text-gray-700">{journey.arrival.airportIata}</div>
+          <div className="text-xs text-gray-700" style={{ fontSize: '12px' }}>{journey.arrival.airportIata}</div>
         </div>
       </div>
 
@@ -803,15 +803,15 @@ const FlightCard = ({
               <div className="font-bold text-gray-900 truncate" style={{ fontSize: '14px' }}>
                 {formatTime(departureInfo.date)}
               </div>
-              <div className="text-xs sm:text-sm text-gray-600 truncate">{departureInfo.airportIata}</div>
+              <div className="text-xs text-gray-600 truncate" style={{ fontSize: '12px' }}>{departureInfo.airportIata}</div>
             </div>
 
             <div className="mx-1 sm:mx-2 flex-1 text-center min-w-0 max-w-[40%]">
               <div className="mb-1 flex items-center justify-center gap-1">
-                <Clock className="h-3 w-3 text-black flex-shrink-0" />
-                <span className="text-xs text-black truncate">{duration}</span>
+                <Clock className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                <span className="text-xs text-gray-500 truncate" style={{ fontSize: '11px' }}>{duration}</span>
               </div>
-              <div className="relative border-t border-black mx-2">
+              <div className="relative border-t border-gray-300 mx-2" style={{ borderWidth: '0.5px' }}>
                 {/* Stop dots based on number of stops */}
                 {(() => {
                   // Handle journey-based flights
@@ -861,7 +861,7 @@ const FlightCard = ({
                   return null;
                 })()}
               </div>
-              <div className="mt-1 text-xs text-gray-700 truncate">
+              <div className="mt-1 text-xs text-gray-500 truncate" style={{ fontSize: '10px' }}>
                 {(() => {
                   // Handle journey-based flights
                   if (flight.journey && flight.journey.length > 0) {
@@ -884,7 +884,7 @@ const FlightCard = ({
               <div className="font-bold text-gray-900 truncate" style={{ fontSize: '14px' }}>
                 {formatTime(arrivalInfo.date)}
               </div>
-              <div className="text-xs sm:text-sm text-gray-600 truncate">{arrivalInfo.airportIata}</div>
+              <div className="text-xs text-gray-600 truncate" style={{ fontSize: '12px' }}>{arrivalInfo.airportIata}</div>
             </div>
           </div>
         )}
@@ -892,23 +892,25 @@ const FlightCard = ({
         {/* Baggage Information - only show for legacy format or if baggage data is available */}
         {(!isJourneyBased || flight.baggage) && <BaggageDisplay flight={flight} />}
 
-      {/* Flight Highlights with Clean Black Border */}
+      {/* Flight Highlights with Gradient Border */}
       {(() => {
         const highlights = getFlightHighlights(flight);
         return highlights.length > 0 && (
           <div className="mb-4">
-            <div className="rounded-lg border-2 border-black bg-white p-3">
-              <ul className="space-y-1">
-                {highlights.map((highlight, index) => (
-                  <li
-                    key={index}
-                    className="flex items-start gap-2 text-sm text-black font-medium"
-                  >
-                    <span className="mt-1 text-black">•</span>
-                    <span>{highlight}</span>
-                  </li>
-                ))}
-              </ul>
+            <div className="rounded-lg bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 p-[1px]">
+              <div className="rounded-lg bg-white p-3">
+                <ul className="space-y-1">
+                  {highlights.map((highlight, index) => (
+                    <li
+                      key={index}
+                      className="flex items-start gap-2 text-sm text-black font-normal"
+                    >
+                      <span className="mt-1 text-black">•</span>
+                      <span>{highlight}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
         );
@@ -922,7 +924,7 @@ const FlightCard = ({
       <Button
         onClick={() => onSelect(flight.flightOfferId)}
         disabled={isLoading}
-        className="w-full bg-black text-white border border-black py-3 transition-colors duration-200 hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 mt-1"
+        className="w-full bg-white text-black border border-gray-300 py-3 transition-colors duration-200 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 mt-1"
       >
         <span className="flex items-center justify-center gap-2">
           <span className="font-normal">{isLoading ? "Selecting..." : "Select Flight"}</span>
@@ -1083,7 +1085,7 @@ const ResponsiveCarousel = ({
           {[...Array(3)].map((_, index) => (
             <div
               key={index}
-              className="flex-shrink-0 w-[280px] sm:w-auto"
+              className="flex-shrink-0 w-[252px] sm:w-auto"
               style={{
                 scrollSnapAlign: 'start',
               }}
@@ -1145,7 +1147,7 @@ const ResponsiveCarousel = ({
           // Calculate card width more conservatively to prevent overflow
           const gapSize = cardsPerView >= 2 ? 16 : 12;
           const totalGaps = (cardsPerView - 1) * gapSize;
-          const availableWidth = 100; // percentage
+          const availableWidth = 90; // percentage - reduced by 10%
           const cardWidth = (availableWidth / cardsPerView) - (totalGaps / cardsPerView);
 
           return (
@@ -1153,10 +1155,10 @@ const ResponsiveCarousel = ({
               key={flight.flightOfferId || `flight-${index}`}
               className="flex-shrink-0"
               style={{
-                width: `${Math.max(cardWidth, 20)}%`, // Ensure minimum width and use percentage
+                width: `${Math.max(cardWidth, 18)}%`, // Ensure minimum width and use percentage - reduced by 10%
                 scrollSnapAlign: 'start',
-                minWidth: '280px', // Minimum card width for readability
-                maxWidth: cardsPerView === 1 ? '100%' : `${cardWidth}%`,
+                minWidth: '252px', // Minimum card width for readability - reduced by 10%
+                maxWidth: cardsPerView === 1 ? '90%' : `${cardWidth}%`, // reduced by 10%
                 minHeight: '420px', // Ensure consistent card height
               }}
             >
