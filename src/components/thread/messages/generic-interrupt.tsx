@@ -29,7 +29,7 @@ function renderValue(value: any): React.ReactNode {
         href={value}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-blue-600 hover:text-blue-800 underline break-all"
+        className="break-all text-blue-600 underline hover:text-blue-800"
       >
         {value}
       </a>
