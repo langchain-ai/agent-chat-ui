@@ -19,7 +19,7 @@ export const componentMap = {
   FlightStatusWidget, /// simple widget needs to send from server
   LoungeWidget, ///  simple widget needs to send from server
   weatherWidget, ///  simple widget needs to send from server
-  TravelerDetailsWidget: WhosTravellingWidget, /// Flight booking review widget
+  TravelerDetailsWidget: ReviewWidget, /// Flight booking review widget
   PaymentWidget, /// Razorpay payment widget
   NonAgentFlowWidget, /// Non-agent flow payment widget with bottom sheet
   SeatPreferenceWidget, /// Seat preference selection widget

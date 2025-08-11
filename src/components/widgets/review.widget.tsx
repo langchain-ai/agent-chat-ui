@@ -397,6 +397,53 @@ const testCountryConversion = () => {
 // Uncomment the line below to run the test
 // testCountryConversion();
 
+// Helper function to get country code from country name (matching whosTravelling widget)
+const getCountryCodeFromName = (countryName: string): string => {
+  if (!countryName) return "IN"; // Default to India
+
+  const input = countryName.trim();
+
+  // Check if it's already a 2-letter code
+  if (input.length === 2 && /^[A-Z]{2}$/i.test(input)) {
+    return input.toUpperCase();
+  }
+
+  // Common name variations for edge cases (same as whosTravelling)
+  const nameVariations: { [key: string]: string } = {
+    usa: "US",
+    america: "US",
+    "united states": "US",
+    uk: "GB",
+    britain: "GB",
+    "great britain": "GB",
+    england: "GB",
+    uae: "AE",
+    emirates: "AE",
+    "united arab emirates": "AE",
+    "south korea": "KR",
+    korea: "KR",
+    russia: "RU",
+    "russian federation": "RU",
+  };
+
+  const lowerInput = input.toLowerCase();
+  if (nameVariations[lowerInput]) {
+    return nameVariations[lowerInput];
+  }
+
+  // Try to find in POPULAR_COUNTRIES list
+  const country = POPULAR_COUNTRIES.find(
+    (c) => c.name.toLowerCase() === lowerInput || c.code.toLowerCase() === lowerInput
+  );
+
+  if (country) {
+    return country.code;
+  }
+
+  // Default fallback
+  return "IN";
+};
+
 interface CountryComboboxProps {
   value?: string;
   onValueChange?: (value: string) => void;
@@ -504,7 +551,7 @@ const CountryCombobox = ({
   );
 };
 
-// TypeScript Interfaces for API Response
+// TypeScript Interfaces for API Response (matching whosTravelling widget)
 interface ApiPhone {
   countryCode: string;
   number: string;
@@ -519,6 +566,8 @@ interface ApiDocument {
   issuingDate: string;
   issuingCountry: string;
   documentUrl: string;
+  birthPlace?: string;
+  issuanceLocation?: string;
 }
 
 interface ApiTraveller {
@@ -564,29 +613,64 @@ interface ApiFlightOffer {
   totalEmissionUnit: string;
   currency: string;
   totalAmount: number;
-  duration: string;
-  departure: {
+  tax?: number;
+  baseAmount?: number;
+  serviceFee?: number;
+  convenienceFee?: number;
+  duration?: string;
+  // New journey structure
+  journey?: Array<{
+    id: string;
+    duration: string;
+    departure: {
+      date: string;
+      airportIata: string;
+      airportName: string;
+      cityCode: string;
+      countryCode: string;
+    };
+    arrival: {
+      date: string;
+      airportIata: string;
+      airportName: string;
+      cityCode: string;
+      countryCode: string;
+    };
+    segments: ApiFlightSegment[];
+  }>;
+  // Legacy structure (for backward compatibility)
+  departure?: {
     date: string;
     airportIata: string;
     airportName: string;
     cityCode: string;
     countryCode: string;
   };
-  arrival: {
+  arrival?: {
     date: string;
     airportIata: string;
     airportName: string;
     cityCode: string;
     countryCode: string;
   };
-  segments: ApiFlightSegment[];
-  offerRules: {
+  segments?: ApiFlightSegment[];
+  baggage?: {
+    check_in_baggage: {
+      weight: number;
+      weightUnit: string;
+    };
+    cabin_baggage: {
+      weight: number;
+      weightUnit: string;
+    };
+  };
+  offerRules?: {
     isRefundable: boolean;
   };
-  rankingScore: number;
-  pros: string[];
-  cons: string[];
-  tags: string[];
+  rankingScore?: number;
+  pros?: string[];
+  cons?: string[];
+  tags?: string[];
 }
 
 interface ApiBookingRequirements {
@@ -605,6 +689,11 @@ interface ApiWidgetArgs {
     userContext: {
       userDetails: ApiTraveller;
       savedTravellers: ApiTraveller[];
+      contactDetails?: {
+        countryCode?: string;
+        mobileNumber: string;
+        email: string;
+      };
     };
     selectionContext: {
       selectedFlightOffers: ApiFlightOffer[];
@@ -710,18 +799,35 @@ interface ReviewWidgetProps {
 
 // Utility functions to transform API data
 const formatDateTime = (isoString: string) => {
-  const date = new Date(isoString);
-  const dateStr = date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-  const timeStr = date.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
-  return { date: dateStr, time: timeStr };
+  if (!isoString) {
+    console.warn("formatDateTime: Empty or undefined date string provided");
+    return { date: "N/A", time: "N/A" };
+  }
+
+  try {
+    const date = new Date(isoString);
+
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      console.warn("formatDateTime: Invalid date string provided:", isoString);
+      return { date: "Invalid Date", time: "Invalid Time" };
+    }
+
+    const dateStr = date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+    const timeStr = date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+    return { date: dateStr, time: timeStr };
+  } catch (error) {
+    console.error("formatDateTime: Error formatting date:", isoString, error);
+    return { date: "Error", time: "Error" };
+  }
 };
 
 const parseDuration = (duration: string) => {
@@ -807,37 +913,65 @@ const transformApiDataToFlightDetails = (
       .selectedFlightOffers[0];
   if (!flightOffer) return null;
 
-  const departure = formatDateTime(flightOffer.departure.date);
-  const arrival = formatDateTime(flightOffer.arrival.date);
+  // Handle new journey structure or legacy structure
+  let departureData, arrivalData, segments, duration;
+
+  if (flightOffer.journey && flightOffer.journey.length > 0) {
+    // New journey structure
+    const journey = flightOffer.journey[0];
+    departureData = journey.departure;
+    arrivalData = journey.arrival;
+    segments = journey.segments || [];
+    duration = journey.duration;
+  } else {
+    // Legacy structure (backward compatibility)
+    departureData = flightOffer.departure;
+    arrivalData = flightOffer.arrival;
+    segments = flightOffer.segments || [];
+    duration = flightOffer.duration;
+  }
+
+  // Safety check for required data
+  if (!departureData || !arrivalData || !departureData.date || !arrivalData.date) {
+    console.warn("Missing departure or arrival data in flight offer:", flightOffer);
+    return null;
+  }
+
+  const departure = formatDateTime(departureData.date);
+  const arrival = formatDateTime(arrivalData.date);
 
   // Get airline info from first segment
-  const firstSegment = flightOffer.segments[0];
+  const firstSegment = segments[0];
 
   return {
     departure: {
-      city: flightOffer.departure.cityCode,
-      airport:
-        flightOffer.departure.airportName || flightOffer.departure.airportIata,
-      code: flightOffer.departure.airportIata,
+      city: departureData.cityCode || departureData.airportIata,
+      airport: departureData.airportName || departureData.airportIata,
+      code: departureData.airportIata,
       date: departure.date,
       time: departure.time,
     },
     arrival: {
-      city: flightOffer.arrival.cityCode,
-      airport:
-        flightOffer.arrival.airportName || flightOffer.arrival.airportIata,
-      code: flightOffer.arrival.airportIata,
+      city: arrivalData.cityCode || arrivalData.airportIata,
+      airport: arrivalData.airportName || arrivalData.airportIata,
+      code: arrivalData.airportIata,
       date: arrival.date,
       time: arrival.time,
     },
-    airline: {
+    airline: firstSegment ? {
       name: firstSegment.airlineName || firstSegment.airlineIata,
       flightNumber: `${firstSegment.airlineIata} ${firstSegment.flightNumber}`,
       cabinClass: "Economy", // Default as not provided in API
       aircraftType: firstSegment.aircraftType,
       iataCode: firstSegment.airlineIata,
+    } : {
+      name: "Unknown Airline",
+      flightNumber: "N/A",
+      cabinClass: "Economy",
+      aircraftType: "Unknown",
+      iataCode: "XX",
     },
-    duration: parseDuration(flightOffer.duration),
+    duration: parseDuration(duration || ""),
   };
 };
 
@@ -865,13 +999,29 @@ const transformApiDataToPassengerDetails = (
 const transformApiDataToContactInfo = (
   apiData: ApiResponse,
 ): ContactInformation | null => {
-  const userDetails =
-    apiData.value.widget.args.flightItinerary.userContext.userDetails;
+  // First try to get contact details from contactDetails (matching whosTravelling logic)
+  const contactDetails = apiData.value.widget.args.flightItinerary.userContext.contactDetails;
+
+  if (contactDetails) {
+    console.log("📞 Review Widget - Processing contactDetails:", contactDetails);
+
+    // Format phone number with country code
+    const countryCode = contactDetails.countryCode || "91";
+    const formattedPhone = `+${countryCode} ${contactDetails.mobileNumber}`;
+
+    return {
+      phone: formattedPhone,
+      email: contactDetails.email,
+    };
+  }
+
+  // Fallback to userDetails if contactDetails not available
+  const userDetails = apiData.value.widget.args.flightItinerary.userContext.userDetails;
   if (!userDetails) return null;
 
   const phone =
     userDetails.phone && userDetails.phone.length > 0
-      ? userDetails.phone[0].number
+      ? `+${userDetails.phone[0].countryCode} ${userDetails.phone[0].number}`
       : "";
 
   return {
@@ -913,11 +1063,13 @@ const transformApiDataToPaymentSummary = (
       .selectedFlightOffers[0];
   if (!flightOffer) return null;
 
-  // Since detailed breakdown is not provided in API, we'll estimate
+  // Use actual breakdown if available, otherwise estimate
   const total = flightOffer.totalAmount;
-  const baseFare = Math.round(total * 0.75); // Estimate 75% as base fare
-  const taxes = Math.round(total * 0.2); // Estimate 20% as taxes
-  const fees = Math.round(total * 0.05); // Estimate 5% as fees
+  const baseFare = flightOffer.baseAmount || Math.round(total * 0.75);
+  const taxes = flightOffer.tax || Math.round(total * 0.2);
+  const serviceFee = flightOffer.serviceFee || 0;
+  const convenienceFee = flightOffer.convenienceFee || 0;
+  const fees = serviceFee + convenienceFee || Math.round(total * 0.05);
 
   return {
     baseFare: baseFare,
@@ -935,13 +1087,16 @@ const transformApiDataToSavedPassengers = (apiData: ApiResponse) => {
     apiData.value.widget.args.flightItinerary.userContext.savedTravellers;
   if (!savedTravellers) return [];
 
-  return savedTravellers.map((traveller, index) => ({
-    id: traveller.travellerId.toString(),
-    firstName: traveller.firstName,
-    lastName: traveller.lastName,
-    gender: traveller.gender,
-    dateOfBirth: traveller.dateOfBirth,
-  }));
+  return savedTravellers
+    .map((traveller) => ({
+      id: traveller.travellerId.toString(),
+      firstName: traveller.firstName,
+      lastName: traveller.lastName,
+      gender: traveller.gender,
+      dateOfBirth: traveller.dateOfBirth,
+      numberOfFlights: traveller.numberOfFlights,
+    }))
+    .sort((a, b) => (b.numberOfFlights || 0) - (a.numberOfFlights || 0)); // Sort by numberOfFlights descending (frequent flyers first)
 };
 
 // Mock saved passengers data (fallback)
@@ -1162,81 +1317,88 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
       : null,
   );
 
+  // Populate data from contactDetails when component mounts (matching whosTravelling logic)
+  React.useEffect(() => {
+    if (apiData) {
+      const contactDetails = apiData.value.widget.args.flightItinerary.userContext.contactDetails;
+
+      if (contactDetails) {
+        console.log("📞 Review Widget - Processing contactDetails on mount:", contactDetails);
+
+        // Update contact state with contactDetails data
+        const countryCode = contactDetails.countryCode || "91";
+        const formattedPhone = `+${countryCode} ${contactDetails.mobileNumber}`;
+
+        setContact(prevContact => ({
+          ...prevContact,
+          email: contactDetails.email || prevContact.email,
+          phone: formattedPhone,
+        }));
+      }
+    }
+  }, [apiData]);
+
   // Validation state
   const [validationErrors, setValidationErrors] = useState<{
     [key: string]: boolean;
   }>({});
 
-  // Data transformation function to format data according to backend requirements
+  // Data transformation function to format data according to backend requirements (matching whosTravelling widget)
   const transformDataForBackend = () => {
-    // Extract phone number and country code from contact.phone
+    // Extract phone number and country code from contact.phone (same logic as whosTravelling)
     let phoneCountryCode = "91"; // Default to India
     let phoneNumber = contact.phone;
 
     // Try to parse phone number format like "+1 (555) 123-4567" or "+91 8448549215"
-    const phoneMatch = contact.phone.match(/\+(\d+)\s*[\(\)\s]*(\d+)/);
+    const phoneMatch = contact.phone.match(/\+(\d+)\s*[\(\)\s-]*(.+)/);
     if (phoneMatch) {
       phoneCountryCode = phoneMatch[1];
-      phoneNumber = phoneMatch[2].replace(/[\(\)\s]/g, "");
+      phoneNumber = phoneMatch[2].replace(/[\(\)\s-]/g, "");
     }
 
-    // Format gender to uppercase
+    // Format gender to uppercase (same as whosTravelling)
     const formattedGender = passenger.gender?.toUpperCase() || "MALE";
 
-    // Format document type to uppercase
+    // Format document type to uppercase (same as whosTravelling)
     const formattedDocumentType = document?.type?.toUpperCase() || "PASSPORT";
 
     // Get country codes for issuing country and nationality using the utility function
-    const issuingCountryCode = getCountryCode(document?.issuingCountry || "");
-    const nationalityCode = getCountryCode(document?.nationality || "");
+    const issuingCountryCode = getCountryCodeFromName(document?.issuingCountry || "");
+    const nationalityCode = getCountryCodeFromName(document?.nationality || "");
 
-    // Log the conversion for debugging (can be removed in production)
-    console.log("Country conversion:", {
-      originalIssuingCountry: document?.issuingCountry,
-      convertedIssuingCountry: issuingCountryCode,
-      originalNationality: document?.nationality,
-      convertedNationality: nationalityCode,
-    });
-
-    // Additional validation - ensure we always have 2-letter codes
-    if (issuingCountryCode.length !== 2) {
-      console.warn("Warning: Issuing country code is not 2 letters:", issuingCountryCode);
-    }
-    if (nationalityCode.length !== 2) {
-      console.warn("Warning: Nationality code is not 2 letters:", nationalityCode);
-    }
-
-    // Format date strings to YYYY-MM-DD
+    // Format date strings to YYYY-MM-DD (same as whosTravelling)
     const formatDate = (dateString: string) => {
       if (!dateString) return "";
       const date = new Date(dateString);
       return date.toISOString().split("T")[0];
     };
 
+    // Build documents array (matching whosTravelling structure exactly)
+    const documents = document ? [
+      {
+        documentType: formattedDocumentType,
+        birthPlace: document.issuingCountry || "", // Using issuing country as birth place
+        issuanceLocation: document.issuingCountry || "",
+        issuanceDate: formatDate(document.issuanceDate || "2015-04-14"), // Default if not provided
+        number: document.number || "",
+        expiryDate: formatDate(document.expiryDate),
+        issuanceCountry: issuingCountryCode,
+        validityCountry: issuingCountryCode, // Same as issuanceCountry
+        nationality: nationalityCode,
+        holder: true,
+      },
+    ] : [];
+
     const travellersDetail = [
       {
-        id: "1",
-        dateOfBirth: formatDate(passenger.dateOfBirth),
+        id: 1, // Use number instead of string (matching whosTravelling)
+        dateOfBirth: passenger.dateOfBirth ? formatDate(passenger.dateOfBirth) : null,
         gender: formattedGender,
         name: {
           firstName: passenger.firstName?.toUpperCase() || "",
           lastName: passenger.lastName?.toUpperCase() || "",
         },
-        documents: document
-          ? [
-              {
-                number: document.number || "",
-                issuanceDate: formatDate(document.issuanceDate || "2015-04-14"), // Default if not provided
-                expiryDate: formatDate(document.expiryDate),
-                issuanceCountry: issuingCountryCode,
-                issuanceLocation: document.issuingCountry || "",
-                nationality: nationalityCode,
-                birthPlace: document.issuingCountry || "", // Using issuing country as birth place if not provided
-                documentType: formattedDocumentType,
-                holder: true,
-              },
-            ]
-          : [],
+        documents: documents,
         contact: {
           purpose: "STANDARD",
           phones: [
@@ -1449,9 +1611,25 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
     setIsSubmitting(true);
 
     try {
-      // Transform data according to backend requirements
+      // Transform data according to backend requirements (matching whosTravelling format)
       const formattedData = transformDataForBackend();
-      await submitInterruptResponse(thread, "response", formattedData);
+
+      // Create response in exact same format as whosTravelling widget
+      const responseData = [
+        {
+          type: "response",
+          data: formattedData,
+        },
+      ];
+
+      console.log("📤 Review Widget - Submitting response:", responseData);
+
+      // Submit using the same pattern as whosTravelling widget
+      await submitInterruptResponse(
+        thread,
+        responseData[0].type,
+        responseData[0].data,
+      );
     } catch (error) {
       console.error("Error submitting booking:", error);
     } finally {

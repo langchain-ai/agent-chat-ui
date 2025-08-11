@@ -90,6 +90,74 @@ interface NonAgentFlowWidgetProps {
         serviceFee: number;
         convenienceFee: number;
         currency: string;
+        journey?: Array<{
+          id: string;
+          duration: string;
+          departure: {
+            date: string;
+            airportIata: string;
+            airportName: string;
+            cityCode: string;
+            countryCode: string;
+          };
+          arrival: {
+            date: string;
+            airportIata: string;
+            airportName: string;
+            cityCode: string;
+            countryCode: string;
+          };
+          segments: Array<{
+            id: string;
+            airlineIata: string;
+            flightNumber: string;
+            duration: string;
+            aircraftType: string;
+            airlineName: string;
+            departure: {
+              date: string;
+              airportIata: string;
+              airportName: string;
+              cityCode: string;
+              countryCode: string;
+            };
+            arrival: {
+              date: string;
+              airportIata: string;
+              airportName: string;
+              cityCode: string;
+              countryCode: string;
+            };
+          }>;
+        }>;
+        baggage?: {
+          check_in_baggage: {
+            weight: number;
+            weightUnit: string;
+          };
+          cabin_baggage: {
+            weight: number;
+            weightUnit: string;
+          };
+        };
+        offerRules?: {
+          isRefundable: boolean;
+        };
+        // Legacy fields for backward compatibility
+        departure?: {
+          date: string;
+          airportIata: string;
+          airportName: string;
+          cityCode: string;
+          countryCode: string;
+        };
+        arrival?: {
+          date: string;
+          airportIata: string;
+          airportName: string;
+          cityCode: string;
+          countryCode: string;
+        };
         [key: string]: any;
       }>;
     };
@@ -204,7 +272,7 @@ const NonAgentFlowWidgetContent: React.FC<
   const serviceFee = flightItinerary?.selectionContext?.selectedFlightOffers?.[0]?.serviceFee;
   const convenienceFee = flightItinerary?.selectionContext?.selectedFlightOffers?.[0]?.convenienceFee;
 
-  // Extract price breakdown from selectedFlightOffers
+  // Extract price breakdown from selectedFlightOffers (updated for new structure)
   const getPriceBreakdown = () => {
     // First try to get from flightItinerary prop
     if (flightItinerary?.selectionContext?.selectedFlightOffers && flightItinerary.selectionContext.selectedFlightOffers.length > 0) {
@@ -214,7 +282,8 @@ const NonAgentFlowWidgetContent: React.FC<
         tax: offer.tax || 0,
         baseAmount: offer.baseAmount || 0,
         serviceFee: offer.serviceFee || 0,
-        convenienceFee: offer.convenienceFee || 0
+        convenienceFee: offer.convenienceFee || 0,
+        currency: offer.currency || "INR",
       };
     }
 
@@ -229,17 +298,19 @@ const NonAgentFlowWidgetContent: React.FC<
         tax: offer.tax || 0,
         baseAmount: offer.baseAmount || 0,
         serviceFee: offer.serviceFee || 0,
-        convenienceFee: offer.convenienceFee || 0
+        convenienceFee: offer.convenienceFee || 0,
+        currency: offer.currency || "INR",
       };
     }
 
-    // Fallback to default values
+    // Fallback to extracted values
     return {
-      totalAmount: 0,
-      tax: 0,
-      baseAmount: 0,
-      serviceFee: 0,
-      convenienceFee: 0
+      totalAmount: totalAmount || 0,
+      tax: tax || 0,
+      baseAmount: baseAmount || 0,
+      serviceFee: serviceFee || 0,
+      convenienceFee: convenienceFee || 0,
+      currency: currency || "INR",
     };
   };
 
@@ -269,6 +340,75 @@ const NonAgentFlowWidgetContent: React.FC<
   // Log contact details for debugging
   console.log("📞 NonAgentFlow - Contact Details:", contactDetails);
 
+  // Helper function to extract flight data from new journey structure or legacy structure
+  const getFlightData = (offer: any) => {
+    if (!offer) return null;
+
+    // Try new journey structure first
+    if (offer.journey && offer.journey.length > 0) {
+      const journey = offer.journey[0]; // Take first journey
+      return {
+        departure: journey.departure || {},
+        arrival: journey.arrival || {},
+        segments: journey.segments || [],
+        duration: journey.duration || "",
+      };
+    }
+
+    // Fallback to legacy structure
+    if (offer.departure && offer.arrival) {
+      return {
+        departure: offer.departure || {},
+        arrival: offer.arrival || {},
+        segments: offer.segments || [],
+        duration: offer.duration || "",
+      };
+    }
+
+    return null;
+  };
+
+  // Helper function to safely format date and time
+  const formatDateTime = (dateString: string) => {
+    if (!dateString) return { date: "", time: "" };
+
+    try {
+      const date = new Date(dateString);
+      const dateStr = date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+      const timeStr = date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      });
+      return { date: dateStr, time: timeStr };
+    } catch (error) {
+      console.error("Error formatting date:", dateString, error);
+      return { date: "", time: "" };
+    }
+  };
+
+  // Get flight data for display
+  const flightData = (() => {
+    // First try to get from flightItinerary prop
+    if (flightItinerary?.selectionContext?.selectedFlightOffers && flightItinerary.selectionContext.selectedFlightOffers.length > 0) {
+      return getFlightData(flightItinerary.selectionContext.selectedFlightOffers[0]);
+    }
+
+    // Try to get from apiData (interrupt data)
+    const interruptData = apiData?.value?.widget?.args || apiData;
+    const selectedFlightOffers = interruptData?.flightItinerary?.selectionContext?.selectedFlightOffers;
+
+    if (selectedFlightOffers && selectedFlightOffers.length > 0) {
+      return getFlightData(selectedFlightOffers[0]);
+    }
+
+    return null;
+  })();
+
   // Check if this is an interrupt-triggered widget
   const isInterruptWidget = !!apiData;
 
@@ -276,17 +416,24 @@ const NonAgentFlowWidgetContent: React.FC<
   const initializePaymentState = (): PaymentState => {
     try {
       const savedState = localStorage.getItem(`payment_state_${tripId}`);
+      console.log(`🔍 Checking localStorage for tripId ${tripId}:`, savedState);
+
       if (savedState) {
         const parsedState = JSON.parse(savedState);
         // Only restore if the state is success to maintain booking/payment success across refreshes
         if (parsedState.status === "success" && parsedState.verificationResponse) {
-          console.log("Restored payment state from localStorage for tripId:", tripId);
+          console.log("✅ Restored SUCCESS payment state from localStorage for tripId:", tripId);
           return parsedState;
+        } else {
+          console.log("❌ Found saved state but not success or missing verification response:", parsedState.status);
         }
+      } else {
+        console.log("📭 No saved payment state found in localStorage");
       }
     } catch (error) {
       console.error("Error loading payment state from localStorage:", error);
     }
+    console.log("🆕 Initializing with idle payment state");
     return { status: "idle" };
   };
 
@@ -312,9 +459,10 @@ const NonAgentFlowWidgetContent: React.FC<
 
   // Enhanced setPaymentState that also saves to localStorage
   const updatePaymentState = useCallback((state: PaymentState) => {
+    console.log(`💳 Payment state transition: ${paymentState.status} → ${state.status}`);
     setPaymentState(state);
     savePaymentState(state);
-  }, [savePaymentState]);
+  }, [savePaymentState, paymentState.status]);
 
   // Function to clear payment state from localStorage
   const clearPaymentState = useCallback(() => {
@@ -344,12 +492,13 @@ const NonAgentFlowWidgetContent: React.FC<
 
   // Define handlePaymentClick early so it can be used in useEffect
   const handlePaymentClick = useCallback(() => {
-    // Prevent multiple payment attempts
+    // Prevent multiple payment attempts or re-triggering when payment is already successful
     if (
       paymentState.status === "loading" ||
-      paymentState.status === "processing"
+      paymentState.status === "processing" ||
+      paymentState.status === "success"
     ) {
-      console.log("Payment already in progress, ignoring click");
+      console.log(`Payment already in ${paymentState.status} state, ignoring click`);
       return;
     }
 
@@ -358,6 +507,7 @@ const NonAgentFlowWidgetContent: React.FC<
     setHasSwitchedToChat(false); // Reset the flag when starting new payment
     clearPaymentState(); // Clear any existing localStorage state when starting new payment
     // We'll call initiatePayment directly here to avoid dependency issues
+    console.log("💳 Setting payment state to loading");
     setPaymentState({ status: "loading" });
 
     // Trigger payment initiation
@@ -378,6 +528,7 @@ const NonAgentFlowWidgetContent: React.FC<
           throw new Error(prepaymentResponse.message || "Prepayment failed");
         }
 
+        console.log("💳 Setting payment state to processing");
         setPaymentState({
           status: "processing",
           prepaymentData: prepaymentResponse.data,
@@ -763,18 +914,28 @@ const NonAgentFlowWidgetContent: React.FC<
     updatePaymentState,
   ]);
 
-  // Countdown effect
-  // useEffect(() => {
-  //   if (isCountdownActive && countdown > 0 && !hasUserClicked) {
-  //     const timer = setTimeout(() => {
-  //       setCountdown(countdown - 1);
-  //     }, 1000);
-  //     return () => clearTimeout(timer);
-  //   } else if (isCountdownActive && countdown === 0 && !hasUserClicked) {
-  //     // Auto-trigger payment when countdown reaches 0
-  //     handlePaymentClick();
-  //   }
-  // }, [countdown, isCountdownActive, hasUserClicked, handlePaymentClick]);
+  // Auto-trigger payment effect - only when payment state is idle
+  useEffect(() => {
+    // Only trigger payment if the state is idle (not success, failed, loading, or processing)
+    if (paymentState.status === "idle" && !hasUserClicked) {
+      console.log("🚀 Auto-triggering payment for idle state");
+      handlePaymentClick();
+    }
+  }, [paymentState.status, hasUserClicked, handlePaymentClick]);
+
+  // Countdown effect (currently disabled but preserved for future use)
+  useEffect(() => {
+    // Countdown logic is commented out but preserved
+    // if (isCountdownActive && countdown > 0 && !hasUserClicked) {
+    //   const timer = setTimeout(() => {
+    //     setCountdown(countdown - 1);
+    //   }, 1000);
+    //   return () => clearTimeout(timer);
+    // } else if (isCountdownActive && countdown === 0 && !hasUserClicked) {
+    //   // Auto-trigger payment when countdown reaches 0
+    //   handlePaymentClick();
+    // }
+  }, [countdown, isCountdownActive, hasUserClicked]);
 
   // Start countdown when component mounts
   useEffect(() => {
@@ -786,6 +947,7 @@ const NonAgentFlowWidgetContent: React.FC<
   // Remove auto-start payment flow - now controlled by user interaction or countdown
 
   const retryPayment = useCallback(() => {
+    console.log("🔄 Retrying payment - resetting state to idle");
     clearPaymentState(); // Clear localStorage when retrying payment
     setPaymentState({ status: "idle" });
     setCountdown(10);

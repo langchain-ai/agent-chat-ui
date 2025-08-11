@@ -101,7 +101,7 @@ export const TabsLayout = () => {
               </Button>
             </div>
 
-            <TabsList className="bg-muted mx-4 flex max-w-[300px] flex-grow justify-center rounded-md p-1">
+            {/* <TabsList className="bg-muted mx-4 flex max-w-[300px] flex-grow justify-center rounded-md p-1">
               {tabs.map((tab) => (
                 <TabsTrigger
                   key={tab.name}
@@ -111,7 +111,7 @@ export const TabsLayout = () => {
                   {tab.name}
                 </TabsTrigger>
               ))}
-            </TabsList>
+            </TabsList> */}
 
             <Button
               size="lg"
