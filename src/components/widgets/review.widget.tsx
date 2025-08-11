@@ -1082,31 +1082,57 @@ const transformApiDataToPaymentSummary = (
   };
 };
 
-const transformApiDataToSavedPassengers = (apiData: ApiResponse) => {
+const transformApiDataToSavedPassengers = (apiData: ApiResponse): SavedPassenger[] => {
   const savedTravellers =
     apiData.value.widget.args.flightItinerary.userContext.savedTravellers;
   if (!savedTravellers) return [];
 
+  console.log("📋 Review Widget - Transforming saved travellers:", savedTravellers);
+
   return savedTravellers
-    .map((traveller) => ({
-      id: traveller.travellerId.toString(),
-      firstName: traveller.firstName,
-      lastName: traveller.lastName,
-      gender: traveller.gender,
-      dateOfBirth: traveller.dateOfBirth,
-      numberOfFlights: traveller.numberOfFlights,
-    }))
+    .map((traveller): SavedPassenger => {
+      const transformedPassenger = {
+        id: traveller.travellerId.toString(),
+        firstName: traveller.firstName,
+        lastName: traveller.lastName,
+        gender: traveller.gender,
+        dateOfBirth: traveller.dateOfBirth,
+        numberOfFlights: traveller.numberOfFlights,
+        documents: traveller.documents || [], // Include document information
+        email: traveller.email,
+        nationality: traveller.nationality,
+      };
+
+      console.log("📋 Review Widget - Transformed passenger:", transformedPassenger);
+      return transformedPassenger;
+    })
     .sort((a, b) => (b.numberOfFlights || 0) - (a.numberOfFlights || 0)); // Sort by numberOfFlights descending (frequent flyers first)
 };
 
+// Type definition for saved passengers
+interface SavedPassenger {
+  id: string;
+  firstName: string;
+  lastName: string;
+  gender: string;
+  dateOfBirth: string;
+  numberOfFlights?: number;
+  documents?: ApiDocument[];
+  email?: string;
+  nationality?: string;
+}
+
 // Mock saved passengers data (fallback)
-const mockSavedPassengers = [
+const mockSavedPassengers: SavedPassenger[] = [
   {
     id: "1",
     firstName: "John",
     lastName: "Doe",
     gender: "Male",
     dateOfBirth: "1990-01-15",
+    numberOfFlights: 5,
+    documents: [],
+    nationality: "IN",
   },
   {
     id: "2",
@@ -1114,6 +1140,9 @@ const mockSavedPassengers = [
     lastName: "Smith",
     gender: "Female",
     dateOfBirth: "1985-03-22",
+    numberOfFlights: 3,
+    documents: [],
+    nationality: "IN",
   },
   {
     id: "3",
@@ -1121,6 +1150,9 @@ const mockSavedPassengers = [
     lastName: "Johnson",
     gender: "Male",
     dateOfBirth: "1992-07-08",
+    numberOfFlights: 2,
+    documents: [],
+    nationality: "IN",
   },
   {
     id: "4",
@@ -1128,6 +1160,9 @@ const mockSavedPassengers = [
     lastName: "Williams",
     gender: "Female",
     dateOfBirth: "1988-11-30",
+    numberOfFlights: 1,
+    documents: [],
+    nationality: "IN",
   },
 ];
 
@@ -1584,15 +1619,50 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
 
   // Handle selecting a saved passenger
   const handleSelectSavedPassenger = (
-    savedPassenger: (typeof savedPassengers)[0],
+    savedPassenger: SavedPassenger,
   ) => {
+    // Update passenger details
     setPassenger({
       firstName: savedPassenger.firstName,
       lastName: savedPassenger.lastName,
       gender: savedPassenger.gender,
       dateOfBirth: savedPassenger.dateOfBirth,
-      title: passenger.title, // Keep existing title if any
+      title: savedPassenger.gender === "Female" ? "Ms." : "Mr.", // Set title based on gender
     });
+
+    // Update document information if available
+    if (savedPassenger.documents && savedPassenger.documents.length > 0 && showTravelDocuments) {
+      const savedDocument = savedPassenger.documents[0]; // Use first document
+      console.log("📄 Review Widget - Populating document from saved passenger:", savedDocument);
+
+      setDocument({
+        type: savedDocument.documentType?.charAt(0).toUpperCase() + savedDocument.documentType?.slice(1).toLowerCase() || "Passport",
+        number: savedDocument.documentNumber || "",
+        issuingCountry: savedDocument.issuingCountry || "",
+        expiryDate: savedDocument.expiryDate || "",
+        nationality: savedDocument.nationality || savedPassenger.nationality || "",
+        issuanceDate: savedDocument.issuingDate || "",
+      });
+    } else {
+      console.log("📄 Review Widget - No documents found for saved passenger or travel docs disabled:", {
+        hasDocuments: savedPassenger.documents && savedPassenger.documents.length > 0,
+        showTravelDocuments,
+        savedPassenger
+      });
+
+      // Clear document if no documents available
+      if (showTravelDocuments) {
+        setDocument({
+          type: "Passport",
+          number: "",
+          issuingCountry: "",
+          expiryDate: "",
+          nationality: savedPassenger.nationality || "",
+          issuanceDate: "",
+        });
+      }
+    }
+
     setIsSavedPassengersExpanded(false); // Collapse the section after selection
   };
 
