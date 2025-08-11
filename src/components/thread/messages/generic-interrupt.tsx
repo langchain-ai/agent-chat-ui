@@ -6,6 +6,39 @@ function isComplexValue(value: any): boolean {
   return Array.isArray(value) || (typeof value === "object" && value !== null);
 }
 
+function isUrl(value: any): boolean {
+  if (typeof value !== "string") return false;
+  try {
+    new URL(value);
+    return value.startsWith("http://") || value.startsWith("https://");
+  } catch {
+    return false;
+  }
+}
+
+function renderValue(value: any): React.ReactNode {
+  if (isComplexValue(value)) {
+    return (
+      <code className="rounded bg-gray-50 px-2 py-1 font-mono text-sm">
+        {JSON.stringify(value, null, 2)}
+      </code>
+    );
+  } else if (isUrl(value)) {
+    return (
+      <a
+        href={value}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-600 hover:text-blue-800 underline break-all"
+      >
+        {value}
+      </a>
+    );
+  } else {
+    return String(value);
+  }
+}
+
 export function GenericInterruptView({
   interrupt,
 }: {
@@ -17,9 +50,13 @@ export function GenericInterruptView({
   const contentLines = contentStr.split("\n");
   const shouldTruncate = contentLines.length > 4 || contentStr.length > 500;
 
-  // Function to truncate long string values
+  // Function to truncate long string values (but preserve URLs)
   const truncateValue = (value: any): any => {
     if (typeof value === "string" && value.length > 100) {
+      // Don't truncate URLs so they remain clickable
+      if (isUrl(value)) {
+        return value;
+      }
       return value.substring(0, 100) + "...";
     }
 
@@ -95,13 +132,7 @@ export function GenericInterruptView({
                           {key}
                         </td>
                         <td className="px-4 py-2 text-sm text-gray-500">
-                          {isComplexValue(value) ? (
-                            <code className="rounded bg-gray-50 px-2 py-1 font-mono text-sm">
-                              {JSON.stringify(value, null, 2)}
-                            </code>
-                          ) : (
-                            String(value)
-                          )}
+                          {renderValue(value)}
                         </td>
                       </tr>
                     );
