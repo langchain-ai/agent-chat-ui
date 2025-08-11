@@ -33,10 +33,14 @@ interface FlightOption {
   totalEmissionUnit: string;
   currency: string;
   totalAmount: number;
-  duration: string;
-  departure: FlightEndpoint;
-  arrival: FlightEndpoint;
-  segments: FlightSegment[];
+  tax?: number;
+  baseAmount?: number;
+  serviceFee?: number;
+  convenienceFee?: number;
+  duration?: string;
+  departure?: FlightEndpoint;
+  arrival?: FlightEndpoint;
+  segments?: FlightSegment[];
   offerRules: FlightOfferRules;
   rankingScore: number;
   pros: string[];
@@ -47,21 +51,11 @@ interface FlightOption {
 }
 
 interface FlightJourney {
-  flightOfferId: string;
-  totalEmission: number;
-  totalEmissionUnit: string;
-  currency: string;
-  totalAmount: number;
+  id: string;
   duration: string;
   departure: FlightEndpoint;
   arrival: FlightEndpoint;
   segments: FlightSegment[];
-  offerRules: FlightOfferRules;
-  rankingScore: number;
-  pros: string[];
-  cons: string[];
-  tags: string[];
-  baggage?: BaggageInfo;
 }
 
 interface FlightEndpoint {
@@ -517,9 +511,7 @@ const JourneyDisplay = ({ journey, journeyIndex, totalJourneys }: {
             {formatDate(journey.departure.date)}
           </span>
         </div>
-        {journey.offerRules?.isRefundable && (
-          <span className="text-xs text-black font-medium">Refundable</span>
-        )}
+
       </div>
 
       {/* Flight Route */}
@@ -618,11 +610,17 @@ const FlightCard = ({
       highlights.push("Fastest route to your destination");
     }
 
-    // Add additional contextual highlights
-    if (flight.segments && flight.segments.length === 1) {
+    // Add additional contextual highlights based on journey structure
+    const totalSegments = isJourneyBased
+      ? flight.journey!.reduce((total, j) => total + (j.segments?.length || 0), 0)
+      : flight.segments?.length || 0;
+
+    if (totalSegments === 1) {
       highlights.push("Direct flight - no hassle with connections");
-    } else if (flight.segments && flight.segments.length === 2) {
+    } else if (totalSegments === 2) {
       highlights.push("Single layover - good balance of time and price");
+    } else if (totalSegments > 2) {
+      highlights.push("Multiple stops - budget-friendly option");
     }
 
     // Add cancellation policy information
@@ -729,7 +727,11 @@ const FlightCard = ({
   // Use journey data if available, otherwise fall back to legacy format
   const departureInfo = isJourneyBased ? flight.journey![0].departure : flight.departure;
   const arrivalInfo = isJourneyBased ? flight.journey![flight.journey!.length - 1].arrival : flight.arrival;
-  const duration = flight.duration ? formatDuration(flight.duration) : "Unknown";
+  const duration = isJourneyBased
+    ? formatDuration(flight.journey![0].duration)
+    : flight.duration
+    ? formatDuration(flight.duration)
+    : "Unknown";
   const price = flight.totalAmount || 0;
   const currency = flight.currency || "USD";
   const currencySymbol = getCurrencySymbol(currency);
@@ -796,9 +798,9 @@ const FlightCard = ({
           <div className="mb-3 flex items-center justify-between overflow-hidden">
             <div className="text-left flex-1 min-w-0 max-w-[30%]">
               <div className="font-bold text-gray-900 truncate" style={{ fontSize: '14px' }}>
-                {formatTime(departureInfo.date)}
+                {departureInfo ? formatTime(departureInfo.date) : "N/A"}
               </div>
-              <div className="text-xs text-gray-600 truncate" style={{ fontSize: '12px' }}>{departureInfo.airportIata}</div>
+              <div className="text-xs text-gray-600 truncate" style={{ fontSize: '12px' }}>{departureInfo?.airportIata || "N/A"}</div>
             </div>
 
             <div className="mx-1 sm:mx-2 flex-1 text-center min-w-0 max-w-[40%]">
@@ -877,9 +879,9 @@ const FlightCard = ({
 
             <div className="text-right flex-1 min-w-0 max-w-[30%]">
               <div className="font-bold text-gray-900 truncate" style={{ fontSize: '14px' }}>
-                {formatTime(arrivalInfo.date)}
+                {arrivalInfo ? formatTime(arrivalInfo.date) : "N/A"}
               </div>
-              <div className="text-xs text-gray-600 truncate" style={{ fontSize: '12px' }}>{arrivalInfo.airportIata}</div>
+              <div className="text-xs text-gray-600 truncate" style={{ fontSize: '12px' }}>{arrivalInfo?.airportIata || "N/A"}</div>
             </div>
           </div>
         )}
