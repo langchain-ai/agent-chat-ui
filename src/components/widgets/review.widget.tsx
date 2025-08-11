@@ -674,6 +674,18 @@ interface ApiFlightOffer {
   tags?: string[];
 }
 
+interface ApiTravelerRequirement {
+  travelerId: string;
+  genderRequired: boolean;
+  documentRequired: boolean;
+  documentIssuanceCityRequired: boolean;
+  dateOfBirthRequired: boolean;
+  redressRequiredIfAny: boolean;
+  airFranceDiscountRequired: boolean;
+  spanishResidentDiscountRequired: boolean;
+  residenceRequired: boolean;
+}
+
 interface ApiBookingRequirements {
   emailAddressRequired: boolean;
   invoiceAddressRequired: boolean;
@@ -682,7 +694,7 @@ interface ApiBookingRequirements {
   mobilePhoneNumberRequired: boolean;
   phoneNumberRequired: boolean;
   postalCodeRequired: boolean;
-  travelerRequirements: any;
+  travelerRequirements: ApiTravelerRequirement[] | null;
 }
 
 interface ApiWidgetArgs {
@@ -1335,6 +1347,15 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
         .selectedFlightOffers[0]?.offerRules?.isRefundable ?? null
     : null;
 
+  // Extract booking requirements for dynamic field visibility
+  const bookingRequirements = apiData?.value.widget.args.bookingRequirements;
+  const travelerRequirement = bookingRequirements?.travelerRequirements?.[0]; // Get first traveler requirement
+
+  // Determine field visibility based on booking requirements
+  const isGenderRequired = travelerRequirement?.genderRequired ?? true; // Default to true for backward compatibility
+  const isDocumentRequired = travelerRequirement?.documentRequired ?? true; // Default to true for backward compatibility
+  const isDateOfBirthRequired = travelerRequirement?.dateOfBirthRequired ?? true; // Default to true for backward compatibility
+
   // Determine if travel documents component should be shown
   // Hide if travelerRequirements is null in API data
   const showTravelDocuments = apiData
@@ -1553,14 +1574,16 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
       errors.lastName = true;
       isValid = false;
     }
-    if (!passenger.gender?.trim()) {
+    // Only validate gender if required
+    if (isGenderRequired && !passenger.gender?.trim()) {
       errors.gender = true;
       isValid = false;
     }
-    // Only validate Date of Birth if travel documents are shown and expanded
+    // Only validate Date of Birth if required and travel documents are shown and expanded
     if (
       showTravelDocuments &&
       isTravelDocsExpanded &&
+      isDateOfBirthRequired &&
       !passenger.dateOfBirth?.trim()
     ) {
       errors.dateOfBirth = true;
@@ -1580,8 +1603,8 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
       isValid = false;
     }
 
-    // Validate travel documents (only if shown)
-    if (showTravelDocuments) {
+    // Validate travel documents (only if shown and document is required)
+    if (showTravelDocuments && isDocumentRequired) {
       if (!document || !document.type?.trim()) {
         errors.documentType = true;
         isValid = false;
@@ -1614,7 +1637,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
     if (
       !passenger.firstName?.trim() ||
       !passenger.lastName?.trim() ||
-      !passenger.gender?.trim()
+      (isGenderRequired && !passenger.gender?.trim())
     ) {
       return false;
     }
@@ -1639,8 +1662,8 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
       return false;
     }
 
-    // Check travel documents (only if shown)
-    if (showTravelDocuments) {
+    // Check travel documents (only if shown and document is required)
+    if (showTravelDocuments && isDocumentRequired) {
       if (
         !document ||
         !document.type?.trim() ||
@@ -1653,8 +1676,13 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
       }
     }
 
+    // Check date of birth (only if required)
+    if (showTravelDocuments && isDateOfBirthRequired && !passenger.dateOfBirth?.trim()) {
+      return false;
+    }
+
     return true;
-  }, [passenger, contact, document, showTravelDocuments, isTravelDocsExpanded]);
+  }, [passenger, contact, document, showTravelDocuments, isTravelDocsExpanded, isGenderRequired, isDocumentRequired, isDateOfBirthRequired]);
 
   // Calculate total with seat selection
   const calculateTotal = () => {
@@ -1870,26 +1898,13 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
               {/* Expanded View */}
               {isFlightExpanded && (
                 <div className="mt-3 border-t pt-4">
-                  {/* Airline Info */}
-                  <div className="mb-3 flex items-center space-x-3">
-                    <AirlineLogo
-                      airlineIata={finalFlightDetails.airline.iataCode || ""}
-                      airlineName={finalFlightDetails.airline.name}
-                      size="sm"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs font-medium">
-                          {finalFlightDetails.airline.name}
-                        </span>
-                      </div>
-                      <div className="mt-1 flex items-center space-x-2">
-                        <span className="text-xs text-gray-600">
-                          Aircraft:{" "}
-                          {finalFlightDetails.airline.aircraftType ||
-                            "Not specified"}
-                        </span>
-                      </div>
+                  {/* Additional Flight Info */}
+                  <div className="mb-3">
+                    <div className="text-xs text-gray-600">
+                      Aircraft: {finalFlightDetails.airline.aircraftType || "Not specified"}
+                    </div>
+                    <div className="text-xs text-gray-600">
+                      Flight: {finalFlightDetails.airline.flightNumber}
                     </div>
                   </div>
 
@@ -2008,42 +2023,44 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                   )}
                 </div>
 
-                {/* Gender */}
-                <div>
-                  <Label
-                    htmlFor="gender"
-                    className="mb-0.5 text-xs font-medium text-gray-700"
-                  >
-                    Gender *
-                  </Label>
-                  <Select
-                    value={passenger.gender}
-                    onValueChange={(value) => {
-                      setPassenger({ ...passenger, gender: value });
-                      validateField(value, "gender");
-                    }}
-                  >
-                    <SelectTrigger
-                      className={cn(
-                        "h-9",
-                        validationErrors.gender
-                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                          : "",
-                      )}
+                {/* Gender - Only show if required */}
+                {isGenderRequired && (
+                  <div>
+                    <Label
+                      htmlFor="gender"
+                      className="mb-0.5 text-xs font-medium text-gray-700"
                     >
-                      <SelectValue placeholder="Select gender" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Male">Male</SelectItem>
-                      <SelectItem value="Female">Female</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {validationErrors.gender && (
-                    <p className="mt-1 text-xs text-red-500">
-                      Gender is required
-                    </p>
-                  )}
-                </div>
+                      Gender *
+                    </Label>
+                    <Select
+                      value={passenger.gender}
+                      onValueChange={(value) => {
+                        setPassenger({ ...passenger, gender: value });
+                        validateField(value, "gender");
+                      }}
+                    >
+                      <SelectTrigger
+                        className={cn(
+                          "h-9",
+                          validationErrors.gender
+                            ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                            : "",
+                        )}
+                      >
+                        <SelectValue placeholder="Select gender" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {validationErrors.gender && (
+                      <p className="mt-1 text-xs text-red-500">
+                        Gender is required
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Footer Note */}
@@ -2248,14 +2265,15 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 {isTravelDocsExpanded && (
                   <div className="mt-4 border-t pt-4">
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                      {/* Date of Birth */}
-                      <div>
-                        <Label
-                          htmlFor="dateOfBirth"
-                          className="mb-0.5 text-xs font-medium text-gray-700"
-                        >
-                          Date of Birth *
-                        </Label>
+                      {/* Date of Birth - Only show if required */}
+                      {isDateOfBirthRequired && (
+                        <div>
+                          <Label
+                            htmlFor="dateOfBirth"
+                            className="mb-0.5 text-xs font-medium text-gray-700"
+                          >
+                            Date of Birth *
+                          </Label>
                         <DateInput
                           date={
                             passenger.dateOfBirth
@@ -2280,21 +2298,25 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                               : "",
                           )}
                         />
-                        {validationErrors.dateOfBirth && (
-                          <p className="mt-1 text-xs text-red-500">
-                            Date of birth is required
-                          </p>
-                        )}
-                      </div>
+                          {validationErrors.dateOfBirth && (
+                            <p className="mt-1 text-xs text-red-500">
+                              Date of birth is required
+                            </p>
+                          )}
+                        </div>
+                      )}
 
-                      {/* Document Type */}
-                      <div>
-                        <Label
-                          htmlFor="documentType"
-                          className="mb-0.5 text-xs font-medium text-gray-700"
-                        >
-                          Document Type *
-                        </Label>
+                      {/* Document fields - Only show if documentRequired is true */}
+                      {isDocumentRequired && (
+                        <>
+                          {/* Document Type */}
+                          <div>
+                            <Label
+                              htmlFor="documentType"
+                              className="mb-0.5 text-xs font-medium text-gray-700"
+                            >
+                              Document Type *
+                            </Label>
                         <Select
                           value={document?.type || ""}
                           onValueChange={(value) => {
@@ -2487,7 +2509,9 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                           }
                           return null;
                         })()}
-                      </div>
+                          </div>
+                        </>
+                      )}
                     </div>
 
                     {/* Verification Status */}
@@ -2752,7 +2776,11 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
         </div>
 
         {/* Mobile/Tablet Single Column Layout */}
-        <div className="space-y-3 lg:hidden">
+        <div className={cn(
+          "space-y-3 lg:hidden",
+          // Add bottom padding when not in bottom sheet to account for fixed button
+          !isInBottomSheet && !isBookingSubmitted ? "pb-20" : "pb-4"
+        )}>
           {/* Flight Details */}
           <div className="rounded-lg bg-white p-4 shadow">
             <div
@@ -2853,26 +2881,13 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
             {/* Expanded View */}
             {isFlightExpanded && (
               <div className="mt-3 border-t pt-4">
-                {/* Airline Info */}
-                <div className="mb-4 flex items-center space-x-3">
-                  <AirlineLogo
-                    airlineIata={finalFlightDetails.airline.iataCode || ""}
-                    airlineName={finalFlightDetails.airline.name}
-                    size="md"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium">
-                        {finalFlightDetails.airline.name}
-                      </span>
-                    </div>
-                    <div className="mt-1 flex items-center space-x-2">
-                      <span className="text-xs text-gray-600">
-                        Aircraft:{" "}
-                        {finalFlightDetails.airline.aircraftType ||
-                          "Not specified"}
-                      </span>
-                    </div>
+                {/* Additional Flight Info */}
+                <div className="mb-4">
+                  <div className="text-xs text-gray-600">
+                    Aircraft: {finalFlightDetails.airline.aircraftType || "Not specified"}
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    Flight: {finalFlightDetails.airline.flightNumber}
                   </div>
                 </div>
 
@@ -2989,42 +3004,44 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 )}
               </div>
 
-              {/* Gender */}
-              <div>
-                <Label
-                  htmlFor="gender-mobile"
-                  className="mb-0.5 text-xs font-medium text-gray-700"
-                >
-                  Gender *
-                </Label>
-                <Select
-                  value={passenger.gender}
-                  onValueChange={(value) => {
-                    setPassenger({ ...passenger, gender: value });
-                    validateField(value, "gender");
-                  }}
-                >
-                  <SelectTrigger
-                    className={cn(
-                      "h-9",
-                      validationErrors.gender
-                        ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                        : "",
-                    )}
+              {/* Gender - Only show if required */}
+              {isGenderRequired && (
+                <div>
+                  <Label
+                    htmlFor="gender-mobile"
+                    className="mb-0.5 text-xs font-medium text-gray-700"
                   >
-                    <SelectValue placeholder="Select gender" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Male">Male</SelectItem>
-                    <SelectItem value="Female">Female</SelectItem>
-                  </SelectContent>
-                </Select>
-                {validationErrors.gender && (
-                  <p className="mt-1 text-xs text-red-500">
-                    Gender is required
-                  </p>
-                )}
-              </div>
+                    Gender *
+                  </Label>
+                  <Select
+                    value={passenger.gender}
+                    onValueChange={(value) => {
+                      setPassenger({ ...passenger, gender: value });
+                      validateField(value, "gender");
+                    }}
+                  >
+                    <SelectTrigger
+                      className={cn(
+                        "h-9",
+                        validationErrors.gender
+                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                          : "",
+                      )}
+                    >
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Male">Male</SelectItem>
+                      <SelectItem value="Female">Female</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {validationErrors.gender && (
+                    <p className="mt-1 text-xs text-red-500">
+                      Gender is required
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Footer Note */}
@@ -3225,14 +3242,15 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
               {isTravelDocsExpanded && (
                 <div className="mt-4 border-t pt-4">
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    {/* Date of Birth */}
-                    <div>
-                      <Label
-                        htmlFor="dateOfBirth-mobile"
-                        className="mb-0.5 text-xs font-medium text-gray-700"
-                      >
-                        Date of Birth *
-                      </Label>
+                    {/* Date of Birth - Only show if required */}
+                    {isDateOfBirthRequired && (
+                      <div>
+                        <Label
+                          htmlFor="dateOfBirth-mobile"
+                          className="mb-0.5 text-xs font-medium text-gray-700"
+                        >
+                          Date of Birth *
+                        </Label>
                       <DateInput
                         date={
                           passenger.dateOfBirth
@@ -3257,19 +3275,23 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                             : "",
                         )}
                       />
-                      {validationErrors.dateOfBirth && (
-                        <p className="mt-1 text-xs text-red-500">
-                          Date of birth is required
-                        </p>
-                      )}
-                    </div>
+                        {validationErrors.dateOfBirth && (
+                          <p className="mt-1 text-xs text-red-500">
+                            Date of birth is required
+                          </p>
+                        )}
+                      </div>
+                    )}
 
-                    {/* Document Type */}
-                    <div>
-                      <Label
-                        htmlFor="documentType-mobile"
-                        className="mb-0.5 text-xs font-medium text-gray-700"
-                      >
+                    {/* Document fields - Only show if documentRequired is true */}
+                    {isDocumentRequired && (
+                      <>
+                        {/* Document Type */}
+                        <div>
+                          <Label
+                            htmlFor="documentType-mobile"
+                            className="mb-0.5 text-xs font-medium text-gray-700"
+                          >
                         Document Type *
                       </Label>
                       <Select
@@ -3302,12 +3324,14 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                           </SelectItem>
                         </SelectContent>
                       </Select>
-                      {validationErrors.documentType && (
-                        <p className="mt-1 text-xs text-red-500">
-                          Document type is required
-                        </p>
-                      )}
-                    </div>
+                          {validationErrors.documentType && (
+                            <p className="mt-1 text-xs text-red-500">
+                              Document type is required
+                            </p>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {/* Verification Status */}
@@ -3574,29 +3598,42 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
         ) : (
           // Mobile/Tablet Sticky Button (Desktop buttons are in the right column)
           // Only show on mobile/tablet, hidden on desktop (lg and above)
-          !isBookingSubmitted && (
-            <div className="fixed right-0 bottom-0 left-0 z-50 block border-t bg-white p-4 lg:hidden">
-              <Button
-                onClick={handleSubmit}
-                disabled={!isFormValid || isSubmitting}
-                className={cn(
-                  "w-full py-3 text-base",
-                  isFormValid && !isSubmitting
-                    ? "bg-blue-600 hover:bg-blue-700"
-                    : "cursor-not-allowed bg-gray-400",
-                )}
-              >
-                {isSubmitting ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                    <span>Submitting...</span>
+          <div className="lg:hidden">
+            {!isBookingSubmitted ? (
+              <div className="fixed right-0 bottom-0 left-0 z-[60] border-t bg-white p-4 shadow-lg min-h-[80px] flex items-center safe-area-inset-bottom">
+                <Button
+                  onClick={handleSubmit}
+                  disabled={!isFormValid || isSubmitting}
+                  className={cn(
+                    "w-full py-3 text-base font-medium",
+                    isFormValid && !isSubmitting
+                      ? "bg-blue-600 hover:bg-blue-700 text-white"
+                      : "cursor-not-allowed bg-gray-400 text-white",
+                  )}
+                >
+                  {isSubmitting ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                      <span>Submitting...</span>
+                    </div>
+                  ) : (
+                    "Confirm Booking"
+                  )}
+                </Button>
+              </div>
+            ) : (
+              <div className="fixed right-0 bottom-0 left-0 z-[60] border-t bg-white p-4 shadow-lg min-h-[80px] flex items-center justify-center safe-area-inset-bottom">
+                <div className="flex items-center space-x-2 text-green-600">
+                  <div className="h-5 w-5 rounded-full bg-green-100 flex items-center justify-center">
+                    <svg className="h-3 w-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
                   </div>
-                ) : (
-                  "Confirm Booking"
-                )}
-              </Button>
-            </div>
-          )
+                  <span className="text-sm font-medium">Booking submitted successfully!</span>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>

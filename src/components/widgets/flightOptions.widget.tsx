@@ -42,6 +42,7 @@ interface FlightOption {
   rankingScore?: number;
   pros?: string[];
   cons?: string[];
+  reason?: string; // New field to control reason box display
   tags?: string[];
   // New fields for journey-based structure
   journey?: FlightJourney[]; // New field for journey array
@@ -67,6 +68,7 @@ interface FlightJourney {
   rankingScore: number;
   pros: string[];
   cons: string[];
+  reason?: string; // New field to control reason box display
   tags: string[];
   baggage?: BaggageInfo;
 }
@@ -415,7 +417,10 @@ const BaggageDisplay = ({ flight }: { flight: FlightOption }) => {
   const cabinInfo = getCabinBaggageInfo();
 
   return (
-    <div className="mb-4 flex items-center justify-between gap-4 px-3 py-2 bg-gray-100 rounded-lg border border-gray-200">
+    <div className={cn(
+      "flex items-center justify-between gap-4 px-3 py-2 bg-gray-100 rounded-lg border border-gray-200",
+      flight.reason ? "mb-4" : "mb-2"
+    )}>
       {/* Checked Baggage */}
       <div className="flex items-center gap-2 flex-1">
         <Luggage className="h-4 w-4 text-black flex-shrink-0" />
@@ -749,11 +754,17 @@ const FlightCard = ({
   const currencySymbol = getCurrencySymbol(currency);
 
   return (
-    <div className="w-full h-full rounded-lg border border-gray-200 bg-white p-3 sm:p-4 shadow-sm transition-shadow duration-200 hover:shadow-md flex flex-col">
+    <div className={cn(
+      "w-full rounded-lg border border-gray-200 bg-white shadow-sm transition-shadow duration-200 hover:shadow-md flex flex-col",
+      flight.reason ? "h-full p-3 sm:p-4" : "p-3 sm:p-4"
+    )}>
       {/* Content Area */}
       <div className="flex flex-col overflow-visible">
         {/* Top Row: Badges on left, Flight Info on right */}
-        <div className="mb-3 flex items-start justify-between gap-2">
+        <div className={cn(
+          "flex items-start justify-between gap-2",
+          flight.reason ? "mb-3" : "mb-2"
+        )}>
           {/* Badges */}
           <div className="flex flex-wrap gap-2 flex-1">
             {badgeConfigs.length > 0 && badgeConfigs.map((badgeConfig, index) => (
@@ -794,7 +805,10 @@ const FlightCard = ({
         </div>
 
         {/* Always use Legacy Flight Route Display for consistent design */}
-        <div className="mb-3 flex items-center justify-between overflow-hidden">
+        <div className={cn(
+          "flex items-center justify-between overflow-hidden",
+          flight.reason ? "mb-3" : "mb-2"
+        )}>
           <div className="text-left flex-1 min-w-0 max-w-[30%]">
             <div className="font-bold text-gray-900 truncate" style={{ fontSize: '14px' }}>
               {formatTime(departureInfo.date)}
@@ -889,8 +903,13 @@ const FlightCard = ({
         {/* Baggage Information - always show to match widgets page design */}
         <BaggageDisplay flight={flight} />
 
-      {/* Flight Highlights with Gradient Border */}
+      {/* Flight Highlights with Gradient Border - Only show if reason key exists */}
       {(() => {
+        // Only show the reason box if the flight has a reason field
+        if (!flight.reason) {
+          return null;
+        }
+
         const highlights = getFlightHighlights(flight);
         return highlights.length > 0 && (
           <div className="mb-4">
@@ -914,14 +933,17 @@ const FlightCard = ({
       })()}
       </div>
 
-      {/* Minimal spacer for button alignment */}
-      <div className="flex-grow min-h-[8px]"></div>
+      {/* Conditional spacer - only when reason box exists */}
+      {flight.reason && <div className="flex-grow min-h-[8px]"></div>}
 
-      {/* Select Button with Price - Pinned to bottom */}
+      {/* Select Button with Price - Natural positioning */}
       <Button
         onClick={() => onSelect(flight.flightOfferId)}
         disabled={isLoading}
-        className="w-full bg-white text-black border border-gray-300 py-3 transition-colors duration-200 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 mt-1"
+        className={cn(
+          "w-full bg-white text-black border border-gray-300 py-3 transition-colors duration-200 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50",
+          flight.reason ? "mt-1" : "mt-3"
+        )}
       >
         <span className="flex items-center justify-center gap-2">
           <span className="font-normal">{isLoading ? "Selecting..." : "Select Flight"}</span>
@@ -1170,11 +1192,8 @@ const ResponsiveCarousel = ({
           };
 
           const getMinHeight = () => {
-            if (typeof window === 'undefined') return '450px';
-            const width = window.innerWidth;
-            if (width >= 1024) return '480px'; // Desktop: taller cards
-            if (width >= 768) return '450px'; // Tablet: medium height
-            return '420px'; // Mobile: keep current height
+            // Remove fixed heights - let cards size naturally based on content
+            return 'auto';
           };
 
           return (
@@ -1719,7 +1738,7 @@ const FlightTabs = ({
       </div>
 
       {/* Tab Content */}
-      <div className="min-h-[400px]">
+      <div>
         {activeTabData && (
           <>
             {activeTabData.flights.length > 0 ? (
