@@ -740,9 +740,9 @@ const FlightCard = ({
   const currencySymbol = getCurrencySymbol(currency);
 
   return (
-    <div className="w-full h-full rounded-lg border border-gray-200 bg-white p-3 sm:p-4 shadow-sm transition-shadow duration-200 hover:shadow-md overflow-hidden flex flex-col">
+    <div className="w-full h-full rounded-lg border border-gray-200 bg-white p-3 sm:p-4 shadow-sm transition-shadow duration-200 hover:shadow-md flex flex-col">
       {/* Content Area */}
-      <div className="flex flex-col">
+      <div className="flex flex-col overflow-visible">
         {/* Top Row: Badges on left, Flight Info on right */}
         <div className="mb-3 flex items-start justify-between gap-2">
           {/* Badges */}
@@ -897,8 +897,8 @@ const FlightCard = ({
         const highlights = getFlightHighlights(flight);
         return highlights.length > 0 && (
           <div className="mb-4">
-            <div className="rounded-lg bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 p-[1px]">
-              <div className="rounded-lg bg-white p-3">
+            <div className="rounded-lg bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 p-[2px] overflow-visible">
+              <div className="rounded-[calc(0.5rem-2px)] bg-white p-3">
                 <ul className="space-y-1">
                   {highlights.map((highlight, index) => (
                     <li
@@ -938,7 +938,7 @@ const FlightCard = ({
 // Loading/Empty Flight Card Component
 const EmptyFlightCard = ({ isLoading = true }: { isLoading?: boolean }) => {
   return (
-    <div className="w-full h-full rounded-lg border border-gray-200 bg-white p-3 sm:p-4 shadow-sm overflow-hidden flex flex-col">
+    <div className="w-full h-full rounded-lg border border-gray-200 bg-white p-3 sm:p-4 shadow-sm flex flex-col">
       {isLoading ? (
         <>
           {/* Content Area - Flexible */}
@@ -1082,17 +1082,30 @@ const ResponsiveCarousel = ({
             scrollSnapType: 'x mandatory',
           }}
         >
-          {[...Array(3)].map((_, index) => (
-            <div
-              key={index}
-              className="flex-shrink-0 w-[252px] sm:w-auto"
-              style={{
-                scrollSnapAlign: 'start',
-              }}
-            >
-              <EmptyFlightCard isLoading={false} />
-            </div>
-          ))}
+          {[...Array(3)].map((_, index) => {
+            // Responsive sizing for empty cards to match regular cards
+            const getEmptyCardWidth = () => {
+              if (typeof window === 'undefined') return '280px';
+              const width = window.innerWidth;
+              if (width >= 1024) return '320px'; // Desktop: larger cards
+              if (width >= 768) return '280px'; // Tablet: medium cards
+              return '252px'; // Mobile: keep current size
+            };
+
+            return (
+              <div
+                key={index}
+                className="flex-shrink-0 sm:w-auto"
+                style={{
+                  scrollSnapAlign: 'start',
+                  width: typeof window !== 'undefined' && window.innerWidth < 640 ? getEmptyCardWidth() : 'auto',
+                  minWidth: getEmptyCardWidth(),
+                }}
+              >
+                <EmptyFlightCard isLoading={false} />
+              </div>
+            );
+          })}
         </div>
       </div>
     );
@@ -1150,6 +1163,23 @@ const ResponsiveCarousel = ({
           const availableWidth = 90; // percentage - reduced by 10%
           const cardWidth = (availableWidth / cardsPerView) - (totalGaps / cardsPerView);
 
+          // Responsive card sizing - larger for desktop, same for mobile
+          const getMinWidth = () => {
+            if (typeof window === 'undefined') return '280px';
+            const width = window.innerWidth;
+            if (width >= 1024) return '320px'; // Desktop: larger cards
+            if (width >= 768) return '280px'; // Tablet: medium cards
+            return '252px'; // Mobile: keep current size
+          };
+
+          const getMinHeight = () => {
+            if (typeof window === 'undefined') return '450px';
+            const width = window.innerWidth;
+            if (width >= 1024) return '480px'; // Desktop: taller cards
+            if (width >= 768) return '450px'; // Tablet: medium height
+            return '420px'; // Mobile: keep current height
+          };
+
           return (
             <div
               key={flight.flightOfferId || `flight-${index}`}
@@ -1157,9 +1187,9 @@ const ResponsiveCarousel = ({
               style={{
                 width: `${Math.max(cardWidth, 18)}%`, // Ensure minimum width and use percentage - reduced by 10%
                 scrollSnapAlign: 'start',
-                minWidth: '252px', // Minimum card width for readability - reduced by 10%
+                minWidth: getMinWidth(), // Responsive minimum width
                 maxWidth: cardsPerView === 1 ? '90%' : `${cardWidth}%`, // reduced by 10%
-                minHeight: '420px', // Ensure consistent card height
+                minHeight: getMinHeight(), // Responsive minimum height
               }}
             >
               <FlightCard
