@@ -1017,10 +1017,12 @@ const ResponsiveCarousel = ({
   flights,
   onSelect,
   isLoading,
+  isInChat = false,
 }: {
   flights: FlightOption[];
   onSelect: (flightOfferId: string) => void;
   isLoading: boolean;
+  isInChat?: boolean;
 }) => {
   const carouselRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -1181,13 +1183,13 @@ const ResponsiveCarousel = ({
           const availableWidth = 90; // percentage - reduced by 10%
           const cardWidth = (availableWidth / cardsPerView) - (totalGaps / cardsPerView);
 
-          // Responsive card sizing - larger for desktop, same for mobile
+          // Responsive card sizing - smaller in chat for better fit
           const getMinWidth = () => {
-            if (typeof window === 'undefined') return '280px';
+            if (typeof window === 'undefined') return isInChat ? '260px' : '280px';
             const width = window.innerWidth;
-            if (width >= 1024) return '320px'; // Desktop: larger cards
-            if (width >= 768) return '280px'; // Tablet: medium cards
-            return '252px'; // Mobile: keep current size
+            if (width >= 1024) return isInChat ? '280px' : '320px'; // Smaller in chat
+            if (width >= 768) return isInChat ? '260px' : '280px'; // Smaller in chat
+            return isInChat ? '240px' : '252px'; // Smaller in chat
           };
 
           const getMinHeight = () => {
@@ -1228,10 +1230,12 @@ const DirectFlightDisplay = ({
   flights,
   onSelect,
   isLoading,
+  isInChat = false,
 }: {
   flights: FlightOption[];
   onSelect: (flightOfferId: string) => void;
   isLoading: boolean;
+  isInChat?: boolean;
 }) => {
   // Helper function to get flights sorted by different criteria
   const getSortedFlights = (flights: FlightOption[], sortBy: 'price' | 'duration' | 'ranking') => {
@@ -1329,6 +1333,7 @@ const DirectFlightDisplay = ({
       flights={flightsToShow}
       onSelect={onSelect}
       isLoading={isLoading}
+      isInChat={isInChat}
     />
   );
 };
@@ -1763,6 +1768,22 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
   const [refundableFilter, setRefundableFilter] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
+  // Detect if we're in a constrained chat environment
+  const [isInChat, setIsInChat] = useState(false);
+
+  useEffect(() => {
+    // Check if we're in a constrained container (like chat)
+    const checkContainer = () => {
+      const container = document.querySelector('.max-w-3xl');
+      setIsInChat(!!container);
+    };
+
+    checkContainer();
+    // Also check on resize
+    window.addEventListener('resize', checkContainer);
+    return () => window.removeEventListener('resize', checkContainer);
+  }, []);
+
   const allFlightTuples = args.flightOffers || [];
 
   // Determine if we have journey-based flights and the journey type
@@ -1831,7 +1852,8 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
     return flights.filter(flight => {
       // Stops filter
       if (stopsFilter !== 'any') {
-        const stopCount = flight.segments.length - 1;
+        const segments = flight.segments || (flight.journey && flight.journey[0]?.segments) || [];
+        const stopCount = segments.length - 1;
         if (stopsFilter === 'nonstop' && stopCount > 0) return false;
         if (stopsFilter === '1stop' && stopCount > 1) return false;
         if (stopsFilter === '2+stops' && stopCount < 2) return false;
@@ -1839,7 +1861,9 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
 
       // Departure time filter
       if (departureTimeFilter !== 'any') {
-        const departureTime = new Date(flight.departure.date);
+        const departureInfo = flight.departure || (flight.journey && flight.journey[0]?.departure);
+        if (!departureInfo) return true; // Skip filter if no departure info
+        const departureTime = new Date(departureInfo.date);
         const hour = departureTime.getHours();
 
         if (departureTimeFilter === 'morning' && (hour < 6 || hour >= 12)) return false;
@@ -1882,10 +1906,13 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
   return (
     <>
       <div
-        className="mx-auto mt-4 w-full max-w-full rounded-2xl border border-gray-300 bg-white p-3 sm:mt-8 sm:p-6 overflow-hidden flight-carousel-container"
+        className={cn(
+          "mx-auto mt-4 w-full rounded-2xl border border-gray-300 bg-white p-3 sm:mt-8 sm:p-6 overflow-hidden flight-carousel-container",
+          isInChat ? "max-w-full" : "max-w-full"
+        )}
         style={{
           fontFamily: "Uber Move, Arial, Helvetica, sans-serif",
-          maxWidth: "min(100vw - 2rem, 1536px)" // Ensure it never exceeds viewport width minus padding
+          maxWidth: isInChat ? "100%" : "min(100vw - 2rem, 1536px)" // More compact in chat
         }}
       >
         <div className="mb-4 sm:mb-6">
@@ -1907,6 +1934,7 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
               flights={allFlightTuples}
               onSelect={handleSelectFlight}
               isLoading={isLoading}
+              isInChat={isInChat}
             />
           ) : (
             // Show loading state when no flights are available
