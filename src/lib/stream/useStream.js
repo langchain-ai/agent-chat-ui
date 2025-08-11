@@ -116,13 +116,6 @@ export function useStream(options) {
 
       const snap = storeRef.current.snapshot(tid);
       persistRef.current.saveThread(tid, snap);
-      if (process.env.NODE_ENV === "development") {
-        console.log("[STREAM] snapshot after", normalized.type, {
-          messages: JSON.stringify(snap.messages),
-          ui: JSON.stringify(snap.ui),
-          interrupt: JSON.stringify(interrupt),
-        });
-      }
       if (tid === threadId || threadId == null) {
         setValues({ messages: snap.messages, ui: snap.ui });
       }

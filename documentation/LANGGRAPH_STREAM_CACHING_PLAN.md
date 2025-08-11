@@ -268,3 +268,117 @@ actor.enqueue(threadId, async () => {
 - After refresh, the last session’s messages and ui-values per-thread are present and consistent.
 - No data mixing across different `threadId`s.
 - Public `useStream` remains generic and abstract; no downstream code changes required.
+
+## Upcoming Tasks
+
+### Event Naming Strategy: Align and Harden
+
+- What to do
+  - Align on the authoritative SDK event names: `messages`, `values`, `custom`, `metadata`, `events`, `debug`, `updates`.
+  - Do not rely on event-name suffixes for partials or metadata (e.g., `messages/partial`, `messages/metadata`). Treat partialness based on payload chunk types (`*MessageChunk`) and merge via LangChain chunk rules.
+  - Keep defensive normalization so we gracefully handle server variants:
+    - Strip subgraph namespaces: treat `messages|…` and `custom|…` as `messages`/`custom`.
+    - If suffixes like `/partial` or `/metadata` appear, map to internal `subtype` hints only; behavior must not depend on them.
+  - Maintain dev logging of raw event names to detect unexpected variants without breaking behavior.
+
+- How to do it
+  1. Router updates (`src/lib/stream/core/event-router.js`)
+     - Ensure base event extraction uses the portion before `|` and `/` to produce canonical names. Keep setting `subtype` as a non-authoritative hint when `/partial` or `/metadata` appears.
+     - Add/keep a small dev-only log for `[ROUTER]` showing the raw event and normalized type for observability.
+  2. Store behavior (`src/lib/stream/core/store.js`)
+     - Continue determining partial vs. base via `convertToChunk` and `isBaseMessageChunk` concatenation. Treat `subtype === "partial"` as a hint to replace the prior partial but do not depend on its presence for correctness.
+     - Verify message/UI ordering remains first-seen and stable; no reordering on subsequent updates.
+  3. Hook-level logging (`src/lib/stream/useStream.js`)
+     - Retain `[STREAM] event` logging in development to record raw names and payloads.
+     - Keep normalization + actor enqueue flow unchanged to preserve serialization semantics.
+  4. Tests
+     - Add unit tests for the router covering: plain `messages`, `values`, `custom`; piped (`messages|subgraph`), and slashed (`messages/partial`, `messages/metadata`) names mapping to canonical types.
+     - Add store tests to confirm: partial replacement, base concat, idempotency, first-seen order, and visibility gating (`append` vs `hold`).
+     - Add integration test simulating mixed `custom` + `messages` + `values` events with subgraph and suffix variations to validate snapshots and persistence are consistent.
+  5. Docs & notes
+     - Update developer docs to state the authoritative event set and the rationale for defensive normalization.
+     - Document how to enable verbose logs during rollout.
+
+- Why this is needed
+  - The SDK currently emits the base set of events and does not require suffixes; relying on suffixes is brittle.
+  - Defensive normalization makes us forward-compatible with server-side naming variations (subgraphs and suffixes) without breaking the UI.
+  - Payload-driven partial detection aligns with SDK semantics and ensures deterministic merges and stable ordering.
+  - Observability via dev logs shortens feedback loops when server behavior changes.
+
+- Acceptance
+  - Streams remain stable if the server includes `|subgraph` or `/partial`/`/metadata` in event names.
+  - Message/UI ordering and visibility are unchanged across variants.
+  - No regressions in persistence or hydration behavior; local cache reflects the same snapshots the UI sees.
+
+### Performance Mitigations for Persistence and Partials
+
+#### Throttle/Debounce Persistence Writes
+
+- Why
+  - Write-through on every event can cause main-thread jank on low-end devices when partial chunks arrive rapidly; JSON stringify + localStorage.setItem are synchronous.
+- What
+  - Introduce a short debounce (e.g., 50–100ms) or micro-batching so multiple quick mutations persist once per window without risking data loss.
+- How
+  - Buffer the latest snapshot per thread and schedule a write using `setTimeout(…, 50)` or `requestIdleCallback` (fallback to setTimeout). On subsequent events, replace the buffered snapshot and skip additional writes until the window elapses.
+  - Ensure a final flush on stream completion, unmount, or visibility change.
+- Where
+  - `src/lib/stream/core/persistence.js`: add a per-thread debounce map and `saveThreadDebounced(threadId, snapshot)`; keep `saveThread` for immediate writes (used by tests or critical paths).
+  - `src/lib/stream/useStream.js`: switch to debounced persistence after `store.snapshot()` in `applyNormalized`, gated by a flag.
+- Acceptance
+  - Noticeable reduction in write frequency under high-chunk streams with no stale UI; no lost updates across refresh.
+
+#### Persist on Meaningful Boundaries
+
+- Why
+  - Persisting every partial yields minimal recovery value and maximum write cost; persisting at logical milestones reduces overhead.
+- What
+  - Persist only when: a non-partial/base message arrives, a `values` event arrives, a UI array changes, or every N events (e.g., N=10) as a safety net.
+- How
+  - In `applyMessage`, mark partials vs non-partials. If subtype is `partial`, skip persistence; on base/metadata, persist.
+  - For `applyUI` and `applyValues`, persist immediately (UI changes are sparse; values are stateful milestones).
+  - Optionally, add a counter per thread; persist every N events regardless of type.
+- Where
+  - `src/lib/stream/useStream.js`: decide persistence policy based on normalized event type/subtype and a thread-local counter.
+- Acceptance
+  - Fewer writes during token streaming; identical recovery after refresh.
+
+#### Snapshot Size Management
+
+- Why
+  - Large snapshots increase stringify cost and storage size, compounding jank.
+- What
+  - Cap retained messages per thread (e.g., 200–500), drop oldest beyond cap; optionally compress long text fields (future).
+- How
+  - Before persisting, post-process snapshot to slice `messages` to last K by order and include all `ui`.
+  - Keep full in-memory state; apply cap only to the persisted payload.
+- Where
+  - `src/lib/stream/core/persistence.js`: add a shaping step before `setItem` to trim `messages` to K.
+- Acceptance
+  - Similar UI behavior; faster persistence and smaller localStorage footprint.
+
+#### Observability and A/B Toggle
+
+- Why
+  - Need to measure the trade-offs and guard for regressions.
+- What
+  - Add an env/config flag to enable/disable debouncing and boundary-based persistence; log metrics for time-to-first-visible-output and write frequency.
+- How
+  - Read a config from `useStream` options or `process.env.NEXT_PUBLIC_STREAM_PERSIST_MODE` with values: `immediate` | `debounced` | `milestones`.
+  - Add dev-only logs for `[PERSIST] scheduled`, `[PERSIST] flushed`, and counters.
+- Where
+  - `src/lib/stream/useStream.js` (option plumb-through), `src/lib/stream/core/persistence.js` (mode handling), and docs.
+- Acceptance
+  - Ability to switch modes without code changes; metrics confirm reduced writes with unchanged perceived latency (append) or intentional delay (hold).
+
+#### Partial Display Policy Notes
+
+- Why
+  - `hold` mode intentionally delays first visible output for smoother UX; needs clear guidance.
+- What
+  - Document the trade-off and default (`append`), and provide a per-hook option `partialDisplay: "hold" | "append"`.
+- How
+  - Already implemented via `Store.setPartialMode`; ensure docs and examples explain when to use each.
+- Where
+  - Docs: `documentation/LANGGRAPH_STREAM_CACHING_BEHAVIOR.md` and README usage snippets.
+- Acceptance
+  - Teams can pick mode per surface with predictable UX implications.
