@@ -41,6 +41,7 @@ import {
 import { cn } from "@/lib/utils";
 import { submitInterruptResponse } from "./util";
 import { useStreamContext } from "@/providers/Stream";
+
 import Image from "next/image";
 
 // DateInput component using shadcn Calendar (same as searchCriteria.widget.tsx)
@@ -1252,6 +1253,54 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
       ? externalIsSubmitting
       : internalIsSubmitting;
 
+  // Generate a unique key for this widget instance based on apiData
+  const widgetKey = React.useMemo(() => {
+    if (apiData) {
+      const argsHash = JSON.stringify(apiData.value?.widget?.args || {});
+      return `review-widget-submitted-${btoa(argsHash).slice(0, 12)}`;
+    }
+    return `review-widget-submitted-${Date.now()}`;
+  }, [apiData]);
+
+  // Check localStorage for submission state
+  const getSubmissionState = React.useCallback(() => {
+    try {
+      const stored = localStorage.getItem(widgetKey);
+      return stored === 'true';
+    } catch (error) {
+      console.error('Error reading from localStorage:', error);
+      return false;
+    }
+  }, [widgetKey]);
+
+  // Set submission state in localStorage
+  const setSubmissionState = React.useCallback((submitted: boolean) => {
+    try {
+      if (submitted) {
+        localStorage.setItem(widgetKey, 'true');
+      } else {
+        localStorage.removeItem(widgetKey);
+      }
+    } catch (error) {
+      console.error('Error writing to localStorage:', error);
+    }
+  }, [widgetKey]);
+
+  // Add state to track if booking has been submitted (to hide button)
+  const [isBookingSubmitted, setIsBookingSubmitted] = useState(() => getSubmissionState());
+
+  // Update localStorage when local state changes
+  React.useEffect(() => {
+    setSubmissionState(isBookingSubmitted);
+  }, [isBookingSubmitted, setSubmissionState]);
+
+  // Optional: Clear localStorage on component unmount (uncomment if needed)
+  // React.useEffect(() => {
+  //   return () => {
+  //     setSubmissionState(false);
+  //   };
+  // }, [setSubmissionState]);
+
   const setIsSubmitting = (value: boolean) => {
     if (onSubmittingChange) {
       onSubmittingChange(value);
@@ -1677,8 +1726,9 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
       return;
     }
 
-    // Set loading state
+    // Set loading state and mark as submitted
     setIsSubmitting(true);
+    setIsBookingSubmitted(true);
 
     try {
       // Transform data according to backend requirements (matching whosTravelling format)
@@ -1700,8 +1750,12 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
         responseData[0].type,
         responseData[0].data,
       );
+
+      // Booking submitted successfully - state is already saved in localStorage via useEffect
     } catch (error) {
       console.error("Error submitting booking:", error);
+      // Reset booking submitted state on error so user can retry
+      setIsBookingSubmitted(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -2631,35 +2685,48 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
             </div>
 
             {/* Desktop Action Buttons */}
-            <div className="flex flex-col space-y-3">
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={onClose}
-                disabled={isSubmitting}
-              >
-                Back
-              </Button>
-              <Button
-                onClick={handleSubmit}
-                disabled={!isFormValid || isSubmitting}
-                className={cn(
-                  "w-full py-3 text-base",
-                  isFormValid && !isSubmitting
-                    ? "bg-blue-600 hover:bg-blue-700"
-                    : "cursor-not-allowed bg-gray-400",
-                )}
-              >
-                {isSubmitting ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                    <span>Submitting...</span>
+            {!isBookingSubmitted ? (
+              <div className="flex flex-col space-y-3">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={onClose}
+                  disabled={isSubmitting}
+                >
+                  Back
+                </Button>
+                <Button
+                  onClick={handleSubmit}
+                  disabled={!isFormValid || isSubmitting}
+                  className={cn(
+                    "w-full py-3 text-base",
+                    isFormValid && !isSubmitting
+                      ? "bg-blue-600 hover:bg-blue-700"
+                      : "cursor-not-allowed bg-gray-400",
+                  )}
+                >
+                  {isSubmitting ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                      <span>Submitting...</span>
+                    </div>
+                  ) : (
+                    "Confirm Booking"
+                  )}
+                </Button>
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <div className="flex items-center justify-center space-x-2 text-green-600">
+                  <div className="h-5 w-5 rounded-full bg-green-100 flex items-center justify-center">
+                    <svg className="h-3 w-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
                   </div>
-                ) : (
-                  "Confirm Booking"
-                )}
-              </Button>
-            </div>
+                  <span className="text-sm font-medium">Booking submitted successfully!</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -3423,20 +3490,59 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
         {isInBottomSheet ? (
           // Bottom sheet buttons - always sticky at bottom
           <div className="sticky bottom-0 -mx-4 mt-6 border-t bg-white p-4">
-            <div className="flex space-x-3">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={onClose}
-                disabled={isSubmitting}
-              >
-                Back
-              </Button>
+            {!isBookingSubmitted ? (
+              <div className="flex space-x-3">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={onClose}
+                  disabled={isSubmitting}
+                >
+                  Back
+                </Button>
+                <Button
+                  onClick={handleSubmit}
+                  disabled={!isFormValid || isSubmitting}
+                  className={cn(
+                    "flex-1",
+                    isFormValid && !isSubmitting
+                      ? "bg-blue-600 hover:bg-blue-700"
+                      : "cursor-not-allowed bg-gray-400",
+                  )}
+                >
+                  {isSubmitting ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                      <span>Submitting...</span>
+                    </div>
+                  ) : (
+                    "Confirm Booking"
+                  )}
+                </Button>
+              </div>
+            ) : (
+              <div className="text-center py-2">
+                <div className="flex items-center justify-center space-x-2 text-green-600">
+                  <div className="h-5 w-5 rounded-full bg-green-100 flex items-center justify-center">
+                    <svg className="h-3 w-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <span className="text-sm font-medium">Booking submitted successfully!</span>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          // Mobile/Tablet Sticky Button (Desktop buttons are in the right column)
+          // Only show on mobile/tablet, hidden on desktop (lg and above)
+          !isBookingSubmitted && (
+            <div className="fixed right-0 bottom-0 left-0 z-50 block border-t bg-white p-4 lg:hidden">
               <Button
                 onClick={handleSubmit}
                 disabled={!isFormValid || isSubmitting}
                 className={cn(
-                  "flex-1",
+                  "w-full py-3 text-base",
                   isFormValid && !isSubmitting
                     ? "bg-blue-600 hover:bg-blue-700"
                     : "cursor-not-allowed bg-gray-400",
@@ -3452,31 +3558,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 )}
               </Button>
             </div>
-          </div>
-        ) : (
-          // Mobile/Tablet Sticky Button (Desktop buttons are in the right column)
-          // Only show on mobile/tablet, hidden on desktop (lg and above)
-          <div className="fixed right-0 bottom-0 left-0 z-50 block border-t bg-white p-4 lg:hidden">
-            <Button
-              onClick={handleSubmit}
-              disabled={!isFormValid || isSubmitting}
-              className={cn(
-                "w-full py-3 text-base",
-                isFormValid && !isSubmitting
-                  ? "bg-blue-600 hover:bg-blue-700"
-                  : "cursor-not-allowed bg-gray-400",
-              )}
-            >
-              {isSubmitting ? (
-                <div className="flex items-center space-x-2">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                  <span>Submitting...</span>
-                </div>
-              ) : (
-                "Confirm Booking"
-              )}
-            </Button>
-          </div>
+          )
         )}
       </div>
     </div>

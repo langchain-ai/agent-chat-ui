@@ -232,14 +232,16 @@ const NonAgentFlowBottomSheet: React.FC<NonAgentFlowWidgetProps> = (props) => {
           </div>
         </SheetHeader>
 
-        <div className="flex-1 overflow-auto p-6">
-          <NonAgentFlowWidgetContent
-            {...props}
-            tripId={extractedTripId}
-            onClose={handleClose}
-            setIsOpen={setIsOpen}
-            apiData={props.apiData}
-          />
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <div className="flex-1 overflow-auto p-6">
+            <NonAgentFlowWidgetContent
+              {...props}
+              tripId={extractedTripId}
+              onClose={handleClose}
+              setIsOpen={setIsOpen}
+              apiData={props.apiData}
+            />
+          </div>
         </div>
       </SheetContent>
     </Sheet>
@@ -1061,7 +1063,8 @@ const NonAgentFlowWidgetContent: React.FC<
               </div>
             </div>
 
-            <div className="flex space-x-3">
+            {/* Button container with mobile-friendly positioning */}
+            <div className="flex space-x-3 mt-6 sticky bottom-0 bg-white p-4 -mx-4 border-t border-gray-200 sm:static sm:bg-transparent sm:p-0 sm:mx-0 sm:border-t-0 sm:mt-4">
               <Button
                 onClick={retryPayment}
                 className="flex-1 bg-black text-white hover:bg-gray-800"
@@ -1166,7 +1169,8 @@ const NonAgentFlowWidgetContent: React.FC<
               </div>
             )}
 
-            <div className="flex space-x-3">
+            {/* Button container with mobile-friendly positioning */}
+            <div className="flex space-x-3 mt-6 sticky bottom-0 bg-white p-4 -mx-4 border-t border-gray-200 sm:static sm:bg-transparent sm:p-0 sm:mx-0 sm:border-t-0 sm:mt-4">
               <Button
                 onClick={handlePaymentClick}
                 className="relative flex-1 overflow-hidden bg-black text-white hover:bg-gray-800"
