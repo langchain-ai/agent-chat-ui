@@ -86,7 +86,7 @@ function Interrupt({
         )}
       {interruptValue &&
       !isAgentInboxInterruptSchema(interruptValue) &&
-      isLastMessage ? (
+      (isLastMessage || hasNoAIOrToolMessages) ? (
         <GenericInterruptView interrupt={interruptValue} />
       ) : null}
     </>
