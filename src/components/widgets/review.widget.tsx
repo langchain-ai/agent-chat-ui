@@ -1329,6 +1329,12 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
     ? transformApiDataToSavedPassengers(apiData)
     : mockSavedPassengers;
 
+  // Extract isRefundable from API data
+  const isRefundable = apiData
+    ? apiData.value.widget.args.flightItinerary.selectionContext
+        .selectedFlightOffers[0]?.offerRules?.isRefundable ?? null
+    : null;
+
   // Determine if travel documents component should be shown
   // Hide if travelerRequirements is null in API data
   const showTravelDocuments = apiData
@@ -2594,17 +2600,22 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 className="cursor-pointer"
                 onClick={() => setIsPaymentExpanded(!isPaymentExpanded)}
               >
-                <div className="flex items-center justify-between rounded-lg bg-gray-50 p-3">
-                  <div>
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
                     <h2 className="text-lg font-semibold">Payment Summary</h2>
-                    <div className="text-sm font-bold text-gray-900">
-                      Total:{" "}
-                      {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                      {calculateTotal().toFixed(2)}{" "}
-                      {finalPaymentSummary.currency}
-                    </div>
+                    {!isPaymentExpanded && (
+                      <div className="mt-1 text-sm text-gray-600">
+                        Total: {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
+                        {calculateTotal().toFixed(2)} {finalPaymentSummary.currency}
+                        {isRefundable !== null && (
+                          <span className={`ml-2 ${isRefundable ? 'text-green-600' : 'text-red-600'}`}>
+                            • {isRefundable ? 'Refundable' : 'Non-refundable'}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <div>
+                  <div className="ml-4">
                     {isPaymentExpanded ? (
                       <ChevronUp className="h-5 w-5 text-gray-400" />
                     ) : (
@@ -2665,6 +2676,16 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                       <span className="text-xs font-medium text-green-600">
                         -{finalPaymentSummary.currency === "INR" ? "₹" : "$"}
                         {finalPaymentSummary.discount.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Refundable Status */}
+                  {isRefundable !== null && (
+                    <div className="flex justify-between">
+                      <span className="text-xs text-gray-600">Ticket Status</span>
+                      <span className={`text-xs font-medium ${isRefundable ? 'text-green-600' : 'text-red-600'}`}>
+                        {isRefundable ? 'Refundable' : 'Non-refundable'}
                       </span>
                     </div>
                   )}
@@ -3397,15 +3418,22 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
               className="cursor-pointer"
               onClick={() => setIsPaymentExpanded(!isPaymentExpanded)}
             >
-              <div className="flex items-center justify-between rounded-lg bg-gray-50 p-3">
-                <div>
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
                   <h2 className="text-lg font-semibold">Payment Summary</h2>
-                  <div className="text-sm font-bold text-gray-900">
-                    Total: {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                    {calculateTotal().toFixed(2)} {finalPaymentSummary.currency}
-                  </div>
+                  {!isPaymentExpanded && (
+                    <div className="mt-1 text-sm text-gray-600">
+                      Total: {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
+                      {calculateTotal().toFixed(2)} {finalPaymentSummary.currency}
+                      {isRefundable !== null && (
+                        <span className={`ml-2 ${isRefundable ? 'text-green-600' : 'text-red-600'}`}>
+                          • {isRefundable ? 'Refundable' : 'Non-refundable'}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <div>
+                <div className="ml-4">
                   {isPaymentExpanded ? (
                     <ChevronUp className="h-5 w-5 text-gray-400" />
                   ) : (
@@ -3466,6 +3494,16 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                     <span className="text-xs font-medium text-green-600">
                       -{finalPaymentSummary.currency === "INR" ? "₹" : "$"}
                       {finalPaymentSummary.discount.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+
+                {/* Refundable Status */}
+                {isRefundable !== null && (
+                  <div className="flex justify-between">
+                    <span className="text-xs text-gray-600">Ticket Status</span>
+                    <span className={`text-xs font-medium ${isRefundable ? 'text-green-600' : 'text-red-600'}`}>
+                      {isRefundable ? 'Refundable' : 'Non-refundable'}
                     </span>
                   </div>
                 )}
