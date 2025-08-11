@@ -33,14 +33,10 @@ interface FlightOption {
   totalEmissionUnit: string;
   currency: string;
   totalAmount: number;
-  tax?: number;
-  baseAmount?: number;
-  serviceFee?: number;
-  convenienceFee?: number;
-  duration?: string;
-  departure?: FlightEndpoint;
-  arrival?: FlightEndpoint;
-  segments?: FlightSegment[];
+  duration: string;
+  departure: FlightEndpoint;
+  arrival: FlightEndpoint;
+  segments: FlightSegment[];
   offerRules: FlightOfferRules;
   rankingScore: number;
   pros: string[];
@@ -51,11 +47,21 @@ interface FlightOption {
 }
 
 interface FlightJourney {
-  id: string;
+  flightOfferId: string;
+  totalEmission: number;
+  totalEmissionUnit: string;
+  currency: string;
+  totalAmount: number;
   duration: string;
   departure: FlightEndpoint;
   arrival: FlightEndpoint;
   segments: FlightSegment[];
+  offerRules: FlightOfferRules;
+  rankingScore: number;
+  pros: string[];
+  cons: string[];
+  tags: string[];
+  baggage?: BaggageInfo;
 }
 
 interface FlightEndpoint {
@@ -279,33 +285,31 @@ const AirlineLogo = ({
 };
 
 const getBadgeConfigs = (tags: string[]) => {
-  const badges = [];
-
   // Priority order: recommended > cheapest > fastest
   // Only show one badge per flight
   if (tags.includes("recommended")) {
-    badges.push({
+    return [{
       emoji: "⭐",
-      text: "Recommended",
-      color: "bg-white text-gray-800 border-gray-200",
-    });
+      text: "Best",
+      color: "bg-black text-white border-black",
+    }];
   }
   if (tags.includes("cheapest")) {
-    badges.push({
+    return [{
       emoji: "💰",
       text: "Cheapest",
-      color: "bg-white text-gray-800 border-gray-200",
-    });
+      color: "bg-black text-white border-black",
+    }];
   }
   if (tags.includes("fastest")) {
-    badges.push({
+    return [{
       emoji: "⚡",
       text: "Fastest",
-      color: "bg-white text-gray-800 border-gray-200",
-    });
+      color: "bg-black text-white border-black",
+    }];
   }
 
-  return badges;
+  return [];
 };
 
 // Get baggage data from API or fallback to mock data
@@ -511,7 +515,9 @@ const JourneyDisplay = ({ journey, journeyIndex, totalJourneys }: {
             {formatDate(journey.departure.date)}
           </span>
         </div>
-
+        {journey.offerRules?.isRefundable && (
+          <span className="text-xs text-black font-medium">Refundable</span>
+        )}
       </div>
 
       {/* Flight Route */}
@@ -595,7 +601,7 @@ const FlightCard = ({
 }) => {
   const badgeConfigs = flight.tags && flight.tags.length > 0 ? getBadgeConfigs(flight.tags) : [];
 
-  // Generate personalized flight highlights
+  // Generate personalized flight highlights (consistent with widgets page)
   const getFlightHighlights = (flight: FlightOption) => {
     const highlights = [];
 
@@ -610,17 +616,15 @@ const FlightCard = ({
       highlights.push("Fastest route to your destination");
     }
 
-    // Add additional contextual highlights based on journey structure
-    const totalSegments = isJourneyBased
-      ? flight.journey!.reduce((total, j) => total + (j.segments?.length || 0), 0)
+    // Add flight-specific highlights based on segments (works for both journey and legacy data)
+    const totalSegments = flight.journey
+      ? flight.journey.reduce((total, j) => total + (j.segments?.length || 0), 0)
       : flight.segments?.length || 0;
 
     if (totalSegments === 1) {
       highlights.push("Direct flight - no hassle with connections");
     } else if (totalSegments === 2) {
       highlights.push("Single layover - good balance of time and price");
-    } else if (totalSegments > 2) {
-      highlights.push("Multiple stops - budget-friendly option");
     }
 
     // Add cancellation policy information
@@ -633,9 +637,6 @@ const FlightCard = ({
     // Return max 3 highlights
     return highlights.slice(0, 3);
   };
-
-  // Check if this is a journey-based flight
-  const isJourneyBased = flight.journey && flight.journey.length > 0;
 
   //Todo: @Khalid, this is very critical and hacky, please verify the actual flight timings with what we are showing.
   const formatTime = (isoString: string) => {
@@ -723,14 +724,13 @@ const FlightCard = ({
 
 
 
+  // Check if this is journey-based data for departure/arrival info extraction
+  const isJourneyBased = flight.journey && flight.journey.length > 0;
+
   // Use journey data if available, otherwise fall back to legacy format
   const departureInfo = isJourneyBased ? flight.journey![0].departure : flight.departure;
   const arrivalInfo = isJourneyBased ? flight.journey![flight.journey!.length - 1].arrival : flight.arrival;
-  const duration = isJourneyBased
-    ? formatDuration(flight.journey![0].duration)
-    : flight.duration
-    ? formatDuration(flight.duration)
-    : "Unknown";
+  const duration = flight.duration ? formatDuration(flight.duration) : "Unknown";
   const price = flight.totalAmount || 0;
   const currency = flight.currency || "USD";
   const currencySymbol = getCurrencySymbol(currency);
@@ -780,156 +780,120 @@ const FlightCard = ({
           </div>
         </div>
 
-        {/* Journey Display for Round Trip or Journey-based flights */}
-        {isJourneyBased ? (
-          <div className="mb-4">
-            {flight.journey!.map((journey, index) => (
-              <JourneyDisplay
-                key={`journey-${index}`}
-                journey={journey}
-                journeyIndex={index}
-                totalJourneys={flight.journey!.length}
-              />
-            ))}
-          </div>
-        ) : (
-          /* Legacy Flight Route Display */
-          <div className="mb-3 flex items-center justify-between overflow-hidden">
-            <div className="text-left flex-1 min-w-0 max-w-[30%]">
-              <div className="font-bold text-gray-900 truncate" style={{ fontSize: '14px' }}>
-                {departureInfo ? formatTime(departureInfo.date) : "N/A"}
-              </div>
-              <div className="text-xs text-gray-600 truncate" style={{ fontSize: '12px' }}>{departureInfo?.airportIata || "N/A"}</div>
+        {/* Always use Legacy Flight Route Display for consistent design */}
+        <div className="mb-3 flex items-center justify-between overflow-hidden">
+          <div className="text-left flex-1 min-w-0 max-w-[30%]">
+            <div className="font-bold text-gray-900 truncate" style={{ fontSize: '14px' }}>
+              {formatTime(departureInfo.date)}
             </div>
+            <div className="text-xs text-gray-600 truncate" style={{ fontSize: '12px' }}>{departureInfo.airportIata}</div>
+          </div>
 
-            <div className="mx-1 sm:mx-2 flex-1 text-center min-w-0 max-w-[40%]">
-              <div className="mb-1 flex items-center justify-center gap-1">
-                <Clock className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                <span className="text-xs text-gray-500 truncate" style={{ fontSize: '11px' }}>{duration}</span>
-              </div>
-              <div className="relative border-t border-gray-300 mx-2" style={{ borderWidth: '0.5px' }}>
-                {/* Stop dots based on number of stops */}
-                {(() => {
-                  // Handle journey-based flights
-                  if (flight.journey && flight.journey.length > 0) {
-                    const totalSegments = flight.journey.reduce((total, j) => total + (j.segments?.length || 0), 0);
-                    if (totalSegments === 2) {
-                      return <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-600"></div>;
-                    } else if (totalSegments === 3) {
-                      return (
-                        <>
-                          <div className="absolute -top-1 left-1/3 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-600"></div>
-                          <div className="absolute -top-1 left-2/3 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-600"></div>
-                        </>
-                      );
-                    } else if (totalSegments > 3) {
-                      return (
-                        <>
-                          <div className="absolute -top-1 left-1/4 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-600"></div>
-                          <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-600"></div>
-                          <div className="absolute -top-1 left-3/4 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-600"></div>
-                        </>
-                      );
-                    }
-                    return null;
-                  }
-                  // Handle legacy flights
-                  if (flight.segments && flight.segments.length > 0) {
-                    if (flight.segments.length === 2) {
-                      return <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-600"></div>;
-                    } else if (flight.segments.length === 3) {
-                      return (
-                        <>
-                          <div className="absolute -top-1 left-1/3 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-600"></div>
-                          <div className="absolute -top-1 left-2/3 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-600"></div>
-                        </>
-                      );
-                    } else if (flight.segments.length > 3) {
-                      return (
-                        <>
-                          <div className="absolute -top-1 left-1/4 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-600"></div>
-                          <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-600"></div>
-                          <div className="absolute -top-1 left-3/4 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-600"></div>
-                        </>
-                      );
-                    }
+          <div className="mx-1 sm:mx-2 flex-1 text-center min-w-0 max-w-[40%]">
+            <div className="mb-1 flex items-center justify-center gap-1">
+              <Clock className="h-3 w-3 text-gray-400 flex-shrink-0" />
+              <span className="text-xs text-gray-500 truncate" style={{ fontSize: '11px' }}>{duration}</span>
+            </div>
+            <div className="relative border-t border-gray-300 mx-2" style={{ borderWidth: '0.5px' }}>
+              {/* Stop dots based on number of stops */}
+              {(() => {
+                // Handle journey-based flights
+                if (flight.journey && flight.journey.length > 0) {
+                  const totalSegments = flight.journey.reduce((total, j) => total + (j.segments?.length || 0), 0);
+                  if (totalSegments === 2) {
+                    return <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-600"></div>;
+                  } else if (totalSegments === 3) {
+                    return (
+                      <>
+                        <div className="absolute -top-1 left-1/3 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-600"></div>
+                        <div className="absolute -top-1 left-2/3 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-600"></div>
+                      </>
+                    );
+                  } else if (totalSegments > 3) {
+                    return (
+                      <>
+                        <div className="absolute -top-1 left-1/4 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-600"></div>
+                        <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-600"></div>
+                        <div className="absolute -top-1 left-3/4 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-600"></div>
+                      </>
+                    );
                   }
                   return null;
-                })()}
-              </div>
-              <div className="mt-1 text-xs text-gray-500 truncate" style={{ fontSize: '10px' }}>
-                {(() => {
-                  // Handle journey-based flights
-                  if (flight.journey && flight.journey.length > 0) {
-                    const totalSegments = flight.journey.reduce((total, j) => total + (j.segments?.length || 0), 0);
-                    return totalSegments === 1 ? "Non-stop" : `${totalSegments - 1} stop${totalSegments - 1 > 1 ? "s" : ""}`;
+                }
+                // Handle legacy flights
+                if (flight.segments && flight.segments.length > 0) {
+                  if (flight.segments.length === 2) {
+                    return <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-600"></div>;
+                  } else if (flight.segments.length === 3) {
+                    return (
+                      <>
+                        <div className="absolute -top-1 left-1/3 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-600"></div>
+                        <div className="absolute -top-1 left-2/3 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-600"></div>
+                      </>
+                    );
+                  } else if (flight.segments.length > 3) {
+                    return (
+                      <>
+                        <div className="absolute -top-1 left-1/4 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-600"></div>
+                        <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-600"></div>
+                        <div className="absolute -top-1 left-3/4 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-600"></div>
+                      </>
+                    );
                   }
-                  // Handle legacy flights
-                  if (flight.segments && flight.segments.length > 0) {
-                    return flight.segments.length === 1
-                      ? "Non-stop"
-                      : `${flight.segments.length - 1} stop${flight.segments.length - 1 > 1 ? "s" : ""}`;
-                  }
-                  // Fallback
-                  return "Non-stop";
-                })()}
-              </div>
+                }
+                return null;
+              })()}
             </div>
-
-            <div className="text-right flex-1 min-w-0 max-w-[30%]">
-              <div className="font-bold text-gray-900 truncate" style={{ fontSize: '14px' }}>
-                {arrivalInfo ? formatTime(arrivalInfo.date) : "N/A"}
-              </div>
-              <div className="text-xs text-gray-600 truncate" style={{ fontSize: '12px' }}>{arrivalInfo?.airportIata || "N/A"}</div>
+            <div className="mt-1 text-xs text-gray-500 truncate" style={{ fontSize: '10px' }}>
+              {(() => {
+                // Handle journey-based flights
+                if (flight.journey && flight.journey.length > 0) {
+                  const totalSegments = flight.journey.reduce((total, j) => total + (j.segments?.length || 0), 0);
+                  return totalSegments === 1 ? "Non-stop" : `${totalSegments - 1} stop${totalSegments - 1 > 1 ? "s" : ""}`;
+                }
+                // Handle legacy flights
+                if (flight.segments && flight.segments.length > 0) {
+                  return flight.segments.length === 1
+                    ? "Non-stop"
+                    : `${flight.segments.length - 1} stop${flight.segments.length - 1 > 1 ? "s" : ""}`;
+                }
+                // Fallback
+                return "Non-stop";
+              })()}
             </div>
           </div>
-        )}
 
-        {/* Baggage Information - only show for legacy format or if baggage data is available */}
-        {(!isJourneyBased || flight.baggage) && <BaggageDisplay flight={flight} />}
+          <div className="text-right flex-1 min-w-0 max-w-[30%]">
+            <div className="font-bold text-gray-900 truncate" style={{ fontSize: '14px' }}>
+              {formatTime(arrivalInfo.date)}
+            </div>
+            <div className="text-xs text-gray-600 truncate" style={{ fontSize: '12px' }}>{arrivalInfo.airportIata}</div>
+          </div>
+        </div>
 
-      {/* Flight Highlights with Moving Gradient Border */}
+        {/* Baggage Information - always show to match widgets page design */}
+        <BaggageDisplay flight={flight} />
+
+      {/* Flight Highlights with Gradient Border */}
       {(() => {
         const highlights = getFlightHighlights(flight);
         return highlights.length > 0 && (
           <div className="mb-4">
-            <div
-              className="relative rounded-lg animate-gradient-border"
-              style={{
-                background: 'linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab)',
-                backgroundSize: '400% 400%',
-                padding: '2px', // Match button border thickness
-              }}
-            >
-              {/* Inner content with white background */}
-              <div className="bg-white rounded-lg p-3">
+            <div className="rounded-lg bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 p-[2px] overflow-visible">
+              <div className="rounded-[calc(0.5rem-2px)] bg-white p-3">
                 <ul className="space-y-1">
                   {highlights.map((highlight, index) => (
                     <li
                       key={index}
-                      className="flex items-start gap-2 text-sm text-gray-800 font-medium"
+                      className="flex items-start gap-2 text-sm text-black font-normal"
                     >
-                      <span className="mt-1 text-gray-600">•</span>
+                      <span className="mt-1 text-black">•</span>
                       <span>{highlight}</span>
                     </li>
                   ))}
                 </ul>
               </div>
             </div>
-
-            {/* Add the CSS animation styles */}
-            <style dangerouslySetInnerHTML={{
-              __html: `
-                @keyframes gradientShift {
-                  0% { background-position: 0% 50%; }
-                  50% { background-position: 100% 50%; }
-                  100% { background-position: 0% 50%; }
-                }
-                .animate-gradient-border {
-                  animation: gradientShift 15s ease infinite;
-                }
-              `
-            }} />
           </div>
         );
       })()}
@@ -942,7 +906,7 @@ const FlightCard = ({
       <Button
         onClick={() => onSelect(flight.flightOfferId)}
         disabled={isLoading}
-        className="w-full bg-white border border-gray-300 py-3 text-gray-900 transition-colors duration-200 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 mt-1"
+        className="w-full bg-white text-black border border-gray-300 py-3 transition-colors duration-200 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 mt-1"
       >
         <span className="flex items-center justify-center gap-2">
           <span className="font-normal">{isLoading ? "Selecting..." : "Select Flight"}</span>
@@ -1017,12 +981,10 @@ const ResponsiveCarousel = ({
   flights,
   onSelect,
   isLoading,
-  isInChat = false,
 }: {
   flights: FlightOption[];
   onSelect: (flightOfferId: string) => void;
   isLoading: boolean;
-  isInChat?: boolean;
 }) => {
   const carouselRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -1183,13 +1145,13 @@ const ResponsiveCarousel = ({
           const availableWidth = 90; // percentage - reduced by 10%
           const cardWidth = (availableWidth / cardsPerView) - (totalGaps / cardsPerView);
 
-          // Responsive card sizing - smaller in chat for better fit
+          // Responsive card sizing - larger for desktop, same for mobile
           const getMinWidth = () => {
-            if (typeof window === 'undefined') return isInChat ? '260px' : '280px';
+            if (typeof window === 'undefined') return '280px';
             const width = window.innerWidth;
-            if (width >= 1024) return isInChat ? '280px' : '320px'; // Smaller in chat
-            if (width >= 768) return isInChat ? '260px' : '280px'; // Smaller in chat
-            return isInChat ? '240px' : '252px'; // Smaller in chat
+            if (width >= 1024) return '320px'; // Desktop: larger cards
+            if (width >= 768) return '280px'; // Tablet: medium cards
+            return '252px'; // Mobile: keep current size
           };
 
           const getMinHeight = () => {
@@ -1230,12 +1192,10 @@ const DirectFlightDisplay = ({
   flights,
   onSelect,
   isLoading,
-  isInChat = false,
 }: {
   flights: FlightOption[];
   onSelect: (flightOfferId: string) => void;
   isLoading: boolean;
-  isInChat?: boolean;
 }) => {
   // Helper function to get flights sorted by different criteria
   const getSortedFlights = (flights: FlightOption[], sortBy: 'price' | 'duration' | 'ranking') => {
@@ -1333,7 +1293,6 @@ const DirectFlightDisplay = ({
       flights={flightsToShow}
       onSelect={onSelect}
       isLoading={isLoading}
-      isInChat={isInChat}
     />
   );
 };
@@ -1415,7 +1374,7 @@ const FlightListItem = ({
 
   // Get intermediate stop IATA codes for connecting flights
   const getStopIataCodes = (flight: FlightOption) => {
-    if (!flight.segments || flight.segments.length <= 1) return [];
+    if (flight.segments.length <= 1) return [];
 
     // For connecting flights, intermediate stops are the arrival airports of all segments except the last one
     return flight.segments.slice(0, -1).map(segment => segment.arrival.airportIata);
@@ -1465,7 +1424,7 @@ const FlightListItem = ({
             {/* Departure */}
             <div className="text-center">
               <div className="text-sm text-gray-900" style={{ fontSize: '14px' }}>
-                {departureInfo ? formatTime(departureInfo.date) : "N/A"}
+                {formatTime(departureInfo.date)}
               </div>
             </div>
 
@@ -1476,7 +1435,7 @@ const FlightListItem = ({
               </div>
               <div className="relative">
                 <div className="border-t border-gray-300 w-full"></div>
-                {flight.segments && flight.segments.length > 1 && (
+                {flight.segments.length > 1 && (
                   <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 transform rounded-full bg-orange-400"></div>
                 )}
               </div>
@@ -1508,7 +1467,7 @@ const FlightListItem = ({
             {/* Arrival */}
             <div className="text-center">
               <div className="text-sm text-gray-900" style={{ fontSize: '14px' }}>
-                {arrivalInfo ? formatTime(arrivalInfo.date) : "N/A"}
+                {formatTime(arrivalInfo.date)}
               </div>
             </div>
           </div>
@@ -1550,9 +1509,9 @@ const FlightListItem = ({
         {/* Center-Left: Departure Time */}
         <div className="text-center" style={{ width: '80px' }}>
           <div className="text-lg font-bold text-gray-900">
-            {departureInfo ? formatTime(departureInfo.date) : "N/A"}
+            {formatTime(departureInfo.date)}
           </div>
-          <div className="text-xs text-gray-500">{departureInfo?.airportIata || "N/A"}</div>
+          <div className="text-xs text-gray-500">{departureInfo.airportIata}</div>
         </div>
 
         {/* Center: Duration & Stops */}
@@ -1599,9 +1558,9 @@ const FlightListItem = ({
         {/* Center-Right: Arrival Time */}
         <div className="text-center" style={{ width: '80px' }}>
           <div className="text-lg font-bold text-gray-900">
-            {arrivalInfo ? formatTime(arrivalInfo.date) : "N/A"}
+            {formatTime(arrivalInfo.date)}
           </div>
-          <div className="text-xs text-gray-500">{arrivalInfo?.airportIata || "N/A"}</div>
+          <div className="text-xs text-gray-500">{arrivalInfo.airportIata}</div>
         </div>
 
         {/* Right: Price */}
@@ -1768,28 +1727,9 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
   const [refundableFilter, setRefundableFilter] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-  // Detect if we're in a constrained chat environment
-  const [isInChat, setIsInChat] = useState(false);
-
-  useEffect(() => {
-    // Check if we're in a constrained container (like chat)
-    const checkContainer = () => {
-      const container = document.querySelector('.max-w-3xl');
-      setIsInChat(!!container);
-    };
-
-    checkContainer();
-    // Also check on resize
-    window.addEventListener('resize', checkContainer);
-    return () => window.removeEventListener('resize', checkContainer);
-  }, []);
-
   const allFlightTuples = args.flightOffers || [];
 
-  // Determine if we have journey-based flights and the journey type
-  const hasJourneyBasedFlights = allFlightTuples.some((flight: any) => flight.journey && flight.journey.length > 0);
-  const isRoundTrip = hasJourneyBasedFlights && allFlightTuples.some((flight: any) => flight.journey && flight.journey.length === 2);
-  const journeyType = isRoundTrip ? "Round Trip" : hasJourneyBasedFlights ? "One-way" : "Available";
+  // Note: Removed journey type detection to match widgets page design
 
   // Debug: Log flight tags
   if (allFlightTuples.length > 0) {
@@ -1852,8 +1792,7 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
     return flights.filter(flight => {
       // Stops filter
       if (stopsFilter !== 'any') {
-        const segments = flight.segments || (flight.journey && flight.journey[0]?.segments) || [];
-        const stopCount = segments.length - 1;
+        const stopCount = flight.segments.length - 1;
         if (stopsFilter === 'nonstop' && stopCount > 0) return false;
         if (stopsFilter === '1stop' && stopCount > 1) return false;
         if (stopsFilter === '2+stops' && stopCount < 2) return false;
@@ -1861,9 +1800,7 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
 
       // Departure time filter
       if (departureTimeFilter !== 'any') {
-        const departureInfo = flight.departure || (flight.journey && flight.journey[0]?.departure);
-        if (!departureInfo) return true; // Skip filter if no departure info
-        const departureTime = new Date(departureInfo.date);
+        const departureTime = new Date(flight.departure.date);
         const hour = departureTime.getHours();
 
         if (departureTimeFilter === 'morning' && (hour < 6 || hour >= 12)) return false;
@@ -1899,31 +1836,23 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
     setRefundableFilter(false);
   };
 
-
-
-
+  // Note: Removed tag checking logic to match widgets page design
 
   return (
     <>
       <div
-        className={cn(
-          "mx-auto mt-4 w-full rounded-2xl border border-gray-300 bg-white p-3 sm:mt-8 sm:p-6 overflow-hidden flight-carousel-container",
-          isInChat ? "max-w-full" : "max-w-full"
-        )}
+        className="mx-auto mt-4 w-full max-w-full rounded-2xl border border-gray-300 bg-white p-3 sm:mt-8 sm:p-6 overflow-hidden flight-carousel-container"
         style={{
           fontFamily: "Uber Move, Arial, Helvetica, sans-serif",
-          maxWidth: isInChat ? "100%" : "min(100vw - 2rem, 1536px)" // More compact in chat
+          maxWidth: "min(100vw - 2rem, 1536px)" // Ensure it never exceeds viewport width minus padding
         }}
       >
         <div className="mb-4 sm:mb-6">
           <h2 className="mb-2 text-lg font-semibold text-gray-900 sm:text-xl">
-            {journeyType} Flights
+            Available Flights
           </h2>
           <p className="text-sm text-gray-600">
-            {isRoundTrip
-              ? "Choose your complete round trip journey"
-              : "Choose from the best options"
-            }
+            Choose from the best options
           </p>
         </div>
 
@@ -1934,7 +1863,6 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
               flights={allFlightTuples}
               onSelect={handleSelectFlight}
               isLoading={isLoading}
-              isInChat={isInChat}
             />
           ) : (
             // Show loading state when no flights are available
