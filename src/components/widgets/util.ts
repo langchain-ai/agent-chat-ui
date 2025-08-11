@@ -1,6 +1,7 @@
 // src/utils/submitInterruptResponse.ts
 
 import { toast } from "sonner";
+import { getCachedLocation } from "@/lib/location-cache";
 
 // Mock auth functions for development - replace with actual imports when authService is available
 const getJwtToken = (): string | null => {
@@ -32,20 +33,34 @@ export async function submitInterruptResponse(
     const jwtToken = getJwtToken();
     const userId = jwtToken ? GetUserId(jwtToken) : null;
 
-    await thread.submit(
-      { userId },
-      {
-        streamSubgraphs: true,
-        command: {
-          resume: [
-            {
-              type,
-              data,
-            },
-          ],
-        },
+    // Get location data from cache
+    const locationData = await getCachedLocation();
+
+    // Build submission data with userId and location
+    const submissionData: any = {};
+    if (userId) {
+      submissionData.userId = userId;
+    }
+    if (locationData) {
+      submissionData.userLocation = {
+        latitude: locationData.latitude,
+        longitude: locationData.longitude,
+        accuracy: locationData.accuracy,
+        timestamp: locationData.timestamp,
+      };
+    }
+
+    await thread.submit(submissionData, {
+      streamSubgraphs: true,
+      command: {
+        resume: [
+          {
+            type,
+            data,
+          },
+        ],
       },
-    );
+    });
   } catch (error) {
     console.error("Error submitting response:", error);
     toast.error("Error", {
