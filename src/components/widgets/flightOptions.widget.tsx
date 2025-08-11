@@ -33,17 +33,24 @@ interface FlightOption {
   totalEmissionUnit: string;
   currency: string;
   totalAmount: number;
-  duration: string;
-  departure: FlightEndpoint;
-  arrival: FlightEndpoint;
-  segments: FlightSegment[];
-  offerRules: FlightOfferRules;
-  rankingScore: number;
-  pros: string[];
-  cons: string[];
-  tags: string[];
+  duration?: string;
+  // Legacy fields (optional for backward compatibility)
+  departure?: FlightEndpoint;
+  arrival?: FlightEndpoint;
+  segments?: FlightSegment[];
+  offerRules?: FlightOfferRules;
+  rankingScore?: number;
+  pros?: string[];
+  cons?: string[];
+  tags?: string[];
+  // New fields for journey-based structure
   journey?: FlightJourney[]; // New field for journey array
   baggage?: BaggageInfo; // New field for baggage data from API
+  // Additional fields from new structure
+  tax?: number;
+  baseAmount?: number;
+  serviceFee?: number;
+  convenienceFee?: number;
 }
 
 interface FlightJourney {
@@ -728,9 +735,15 @@ const FlightCard = ({
   const isJourneyBased = flight.journey && flight.journey.length > 0;
 
   // Use journey data if available, otherwise fall back to legacy format
-  const departureInfo = isJourneyBased ? flight.journey![0].departure : flight.departure;
-  const arrivalInfo = isJourneyBased ? flight.journey![flight.journey!.length - 1].arrival : flight.arrival;
-  const duration = flight.duration ? formatDuration(flight.duration) : "Unknown";
+  const departureInfo = isJourneyBased ? flight.journey![0]?.departure : flight.departure;
+  const arrivalInfo = isJourneyBased ? flight.journey![flight.journey!.length - 1]?.arrival : flight.arrival;
+
+  // Safety check - if we don't have departure/arrival info, skip rendering this flight
+  if (!departureInfo || !arrivalInfo) {
+    console.warn("FlightCard: Missing departure or arrival info for flight:", flight.flightOfferId);
+    return null;
+  }
+  const duration = flight.duration ? formatDuration(flight.duration) : "";
   const price = flight.totalAmount || 0;
   const currency = flight.currency || "USD";
   const currencySymbol = getCurrencySymbol(currency);
@@ -790,10 +803,12 @@ const FlightCard = ({
           </div>
 
           <div className="mx-1 sm:mx-2 flex-1 text-center min-w-0 max-w-[40%]">
-            <div className="mb-1 flex items-center justify-center gap-1">
-              <Clock className="h-3 w-3 text-gray-400 flex-shrink-0" />
-              <span className="text-xs text-gray-500 truncate" style={{ fontSize: '11px' }}>{duration}</span>
-            </div>
+            {duration && (
+              <div className="mb-1 flex items-center justify-center gap-1">
+                <Clock className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                <span className="text-xs text-gray-500 truncate" style={{ fontSize: '11px' }}>{duration}</span>
+              </div>
+            )}
             <div className="relative border-t border-gray-300 mx-2" style={{ borderWidth: '0.5px' }}>
               {/* Stop dots based on number of stops */}
               {(() => {
@@ -1364,20 +1379,36 @@ const FlightListItem = ({
 
   // Handle both legacy and journey-based flights
   const isJourneyBased = flight.journey && flight.journey.length > 0;
-  const departureInfo = isJourneyBased ? flight.journey![0].departure : flight.departure;
-  const arrivalInfo = isJourneyBased ? flight.journey![flight.journey!.length - 1].arrival : flight.arrival;
+  const departureInfo = isJourneyBased ? flight.journey![0]?.departure : flight.departure;
+  const arrivalInfo = isJourneyBased ? flight.journey![flight.journey!.length - 1]?.arrival : flight.arrival;
+
+  // Safety check - if we don't have departure/arrival info, skip rendering this flight
+  if (!departureInfo || !arrivalInfo) {
+    console.warn("FlightListItem: Missing departure or arrival info for flight:", flight.flightOfferId);
+    return null;
+  }
   const duration = flight.duration ? formatDuration(flight.duration) : "";
   const price = flight.totalAmount || 0;
   const currency = flight.currency || "USD";
   const currencySymbol = getCurrencySymbol(currency);
   const { airline, airlineIata, flightNumber } = getAirlineInfo(flight);
 
-  // Get intermediate stop IATA codes for connecting flights
+  // Get intermediate stop IATA codes for connecting flights (updated for new data structure)
   const getStopIataCodes = (flight: FlightOption) => {
-    if (flight.segments.length <= 1) return [];
+    // Handle journey-based flights
+    if (flight.journey && flight.journey.length > 0) {
+      const allSegments = flight.journey.flatMap(j => j.segments || []);
+      if (allSegments.length <= 1) return [];
+
+      // For connecting flights, intermediate stops are the arrival airports of all segments except the last one
+      return allSegments.slice(0, -1).map(segment => segment.arrival?.airportIata).filter(Boolean);
+    }
+
+    // Handle legacy flights
+    if (!flight.segments || flight.segments.length <= 1) return [];
 
     // For connecting flights, intermediate stops are the arrival airports of all segments except the last one
-    return flight.segments.slice(0, -1).map(segment => segment.arrival.airportIata);
+    return flight.segments.slice(0, -1).map(segment => segment.arrival?.airportIata).filter(Boolean);
   };
 
   const stopIataCodes = getStopIataCodes(flight);
@@ -1430,14 +1461,27 @@ const FlightListItem = ({
 
             {/* Duration & Stops */}
             <div className="text-center min-w-0">
-              <div className="text-xs text-gray-700" style={{ fontSize: '12px' }}>
-                {duration}
-              </div>
+              {duration && (
+                <div className="text-xs text-gray-700" style={{ fontSize: '12px' }}>
+                  {duration}
+                </div>
+              )}
               <div className="relative">
                 <div className="border-t border-gray-300 w-full"></div>
-                {flight.segments.length > 1 && (
-                  <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 transform rounded-full bg-orange-400"></div>
-                )}
+                {(() => {
+                  // Handle journey-based flights
+                  if (flight.journey && flight.journey.length > 0) {
+                    const totalSegments = flight.journey.reduce((total, j) => total + (j.segments?.length || 0), 0);
+                    return totalSegments > 1 ? (
+                      <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 transform rounded-full bg-orange-400"></div>
+                    ) : null;
+                  }
+                  // Handle legacy flights
+                  if (flight.segments && flight.segments.length > 1) {
+                    return <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 transform rounded-full bg-orange-400"></div>;
+                  }
+                  return null;
+                })()}
               </div>
               <div className="text-xs text-gray-500 whitespace-nowrap" style={{ fontSize: '10px' }}>
                 {(() => {
@@ -1516,9 +1560,11 @@ const FlightListItem = ({
 
         {/* Center: Duration & Stops */}
         <div className="text-center flex-1 max-w-[120px]">
-          <div className="text-sm font-medium text-gray-700">
-            {duration}
-          </div>
+          {duration && (
+            <div className="text-sm font-medium text-gray-700">
+              {duration}
+            </div>
+          )}
           <div className="relative my-1">
             <div className="border-t border-gray-300 w-full"></div>
             {(() => {
@@ -1787,25 +1833,51 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
     }
   };
 
-  // Apply filters to flights
+  // Apply filters to flights (updated to handle new data structure)
   const applyFilters = (flights: FlightOption[]) => {
     return flights.filter(flight => {
-      // Stops filter
+      // Stops filter - handle both journey and legacy structure
       if (stopsFilter !== 'any') {
-        const stopCount = flight.segments.length - 1;
+        let stopCount = 0;
+
+        // Calculate stop count based on available data structure
+        if (flight.journey && flight.journey.length > 0) {
+          // New journey structure - count total segments across all journeys
+          stopCount = flight.journey.reduce((total, j) => total + (j.segments?.length || 0), 0) - 1;
+        } else if (flight.segments && flight.segments.length > 0) {
+          // Legacy structure
+          stopCount = flight.segments.length - 1;
+        }
+
         if (stopsFilter === 'nonstop' && stopCount > 0) return false;
-        if (stopsFilter === '1stop' && stopCount > 1) return false;
+        if (stopsFilter === '1stop' && stopCount !== 1) return false;
         if (stopsFilter === '2+stops' && stopCount < 2) return false;
       }
 
-      // Departure time filter
+      // Departure time filter - handle both journey and legacy structure
       if (departureTimeFilter !== 'any') {
-        const departureTime = new Date(flight.departure.date);
-        const hour = departureTime.getHours();
+        let departureDate: string | null = null;
 
-        if (departureTimeFilter === 'morning' && (hour < 6 || hour >= 12)) return false;
-        if (departureTimeFilter === 'afternoon' && (hour < 12 || hour >= 18)) return false;
-        if (departureTimeFilter === 'evening' && (hour < 18 || hour >= 24)) return false;
+        // Get departure date based on available data structure
+        if (flight.journey && flight.journey.length > 0 && flight.journey[0].departure?.date) {
+          departureDate = flight.journey[0].departure.date;
+        } else if (flight.departure?.date) {
+          departureDate = flight.departure.date;
+        }
+
+        if (departureDate) {
+          try {
+            const departureTime = new Date(departureDate);
+            const hour = departureTime.getHours();
+
+            if (departureTimeFilter === 'morning' && (hour < 6 || hour >= 12)) return false;
+            if (departureTimeFilter === 'afternoon' && (hour < 12 || hour >= 18)) return false;
+            if (departureTimeFilter === 'evening' && (hour < 18 || hour >= 24)) return false;
+          } catch (error) {
+            console.warn("Invalid departure date format:", departureDate, error);
+            // Skip time filter if date is invalid
+          }
+        }
       }
 
       // Refundable filter
@@ -1906,24 +1978,22 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
         {selectedFlight && (
           <div className="mt-4 rounded-lg border border-green-200 bg-green-50 p-3">
             <p className="text-sm text-green-800">
-              Flight{" "}
               {(() => {
                 const selectedFlightData = allFlightTuples.find((f: any) => f.flightOfferId === selectedFlight);
-                if (!selectedFlightData) return "Unknown";
+                if (!selectedFlightData) return "Flight selected!";
 
                 // Try to get flight number from segments
                 if (selectedFlightData.segments?.[0]?.flightNumber) {
-                  return selectedFlightData.segments[0].flightNumber;
+                  return `Flight ${selectedFlightData.segments[0].flightNumber} selected!`;
                 }
 
                 // Try to get flight number from journey
                 if (selectedFlightData.journey?.[0]?.segments?.[0]?.flightNumber) {
-                  return selectedFlightData.journey[0].segments[0].flightNumber;
+                  return `Flight ${selectedFlightData.journey[0].segments[0].flightNumber} selected!`;
                 }
 
-                return "Unknown";
-              })()}{" "}
-              selected!
+                return "Flight selected!";
+              })()}
             </p>
           </div>
         )}
