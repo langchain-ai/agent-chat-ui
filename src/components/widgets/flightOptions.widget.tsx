@@ -13,6 +13,7 @@ import {
   Luggage,
   Briefcase,
   X,
+  Filter,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
@@ -412,14 +413,14 @@ const BaggageDisplay = ({ flight }: { flight: FlightOption }) => {
       <div className="flex items-center gap-2 flex-1">
         <Luggage className="h-4 w-4 text-black flex-shrink-0" />
         <div className="min-w-0">
-          <div className="text-xs font-medium text-black">Check-in</div>
+          <div className="text-xs font-normal text-black">Check-in</div>
           {checkInInfo.hasData ? (
             <div className="text-xs text-gray-700">
               {checkInInfo.weight}
             </div>
           ) : (
             <div className="flex items-center justify-center">
-              <X className="h-4 w-4 text-black" />
+              <X className="h-4 w-4 text-red-500" />
             </div>
           )}
         </div>
@@ -432,14 +433,14 @@ const BaggageDisplay = ({ flight }: { flight: FlightOption }) => {
       <div className="flex items-center gap-2 flex-1">
         <Briefcase className="h-4 w-4 text-black flex-shrink-0" />
         <div className="min-w-0">
-          <div className="text-xs font-medium text-black">Carry-on</div>
+          <div className="text-xs font-normal text-black">Carry-on</div>
           {cabinInfo.hasData ? (
             <div className="text-xs text-gray-700">
               {cabinInfo.weight}
             </div>
           ) : (
             <div className="flex items-center justify-center">
-              <X className="h-4 w-4 text-black" />
+              <X className="h-4 w-4 text-red-500" />
             </div>
           )}
         </div>
@@ -526,16 +527,16 @@ const JourneyDisplay = ({ journey, journeyIndex, totalJourneys }: {
           <div className="font-bold text-black text-sm">
             {formatTime(journey.departure.date)}
           </div>
-          <div className="text-xs text-gray-700">{journey.departure.airportIata}</div>
+          <div className="text-xs text-gray-700" style={{ fontSize: '12px' }}>{journey.departure.airportIata}</div>
         </div>
 
         {/* Duration and Stops */}
         <div className="mx-2 flex-1 text-center min-w-0">
           <div className="flex items-center justify-center gap-1 mb-1">
-            <Clock className="h-3 w-3 text-black" />
-            <span className="text-xs text-black">{duration}</span>
+            <Clock className="h-3 w-3 text-gray-400" />
+            <span className="text-xs text-gray-500" style={{ fontSize: '11px' }}>{duration}</span>
           </div>
-          <div className="relative border-t border-black mx-2">
+          <div className="relative border-t border-gray-300 mx-2" style={{ borderWidth: '0.5px' }}>
             {journey.segments && journey.segments.length === 2 && (
               <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 transform rounded-full bg-gray-600"></div>
             )}
@@ -546,7 +547,7 @@ const JourneyDisplay = ({ journey, journeyIndex, totalJourneys }: {
               </>
             )}
           </div>
-          <div className="text-xs text-gray-700 mt-1">
+          <div className="text-xs text-gray-500 mt-1" style={{ fontSize: '10px' }}>
             {journey.segments && journey.segments.length === 1
               ? "Non-stop"
               : journey.segments
@@ -560,7 +561,7 @@ const JourneyDisplay = ({ journey, journeyIndex, totalJourneys }: {
           <div className="font-bold text-black text-sm">
             {formatTime(journey.arrival.date)}
           </div>
-          <div className="text-xs text-gray-700">{journey.arrival.airportIata}</div>
+          <div className="text-xs text-gray-700" style={{ fontSize: '12px' }}>{journey.arrival.airportIata}</div>
         </div>
       </div>
 
@@ -604,8 +605,7 @@ const FlightCard = ({
   const isJourneyBased = flight.journey && flight.journey.length > 0;
   const isRoundTrip = isJourneyBased && flight.journey!.length === 2;
 
-  // Generate personalized flight highlights - Commented out since highlights rendering is disabled
-  /*
+  // Generate personalized flight highlights
   const getFlightHighlights = (flight: FlightOption) => {
     const highlights = [];
 
@@ -644,7 +644,6 @@ const FlightCard = ({
     // Return max 3 highlights
     return highlights.slice(0, 3);
   };
-  */
 
   //Todo: @Khalid, this is very critical and hacky, please verify the actual flight timings with what we are showing.
   const formatTime = (isoString: string) => {
@@ -804,15 +803,15 @@ const FlightCard = ({
               <div className="font-bold text-gray-900 truncate" style={{ fontSize: '14px' }}>
                 {formatTime(departureInfo.date)}
               </div>
-              <div className="text-xs sm:text-sm text-gray-600 truncate">{departureInfo.airportIata}</div>
+              <div className="text-xs text-gray-600 truncate" style={{ fontSize: '12px' }}>{departureInfo.airportIata}</div>
             </div>
 
             <div className="mx-1 sm:mx-2 flex-1 text-center min-w-0 max-w-[40%]">
               <div className="mb-1 flex items-center justify-center gap-1">
-                <Clock className="h-3 w-3 text-black flex-shrink-0" />
-                <span className="text-xs text-black truncate">{duration}</span>
+                <Clock className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                <span className="text-xs text-gray-500 truncate" style={{ fontSize: '11px' }}>{duration}</span>
               </div>
-              <div className="relative border-t border-black mx-2">
+              <div className="relative border-t border-gray-300 mx-2" style={{ borderWidth: '0.5px' }}>
                 {/* Stop dots based on number of stops */}
                 {(() => {
                   // Handle journey-based flights
@@ -862,7 +861,7 @@ const FlightCard = ({
                   return null;
                 })()}
               </div>
-              <div className="mt-1 text-xs text-gray-700 truncate">
+              <div className="mt-1 text-xs text-gray-500 truncate" style={{ fontSize: '10px' }}>
                 {(() => {
                   // Handle journey-based flights
                   if (flight.journey && flight.journey.length > 0) {
@@ -885,7 +884,7 @@ const FlightCard = ({
               <div className="font-bold text-gray-900 truncate" style={{ fontSize: '14px' }}>
                 {formatTime(arrivalInfo.date)}
               </div>
-              <div className="text-xs sm:text-sm text-gray-600 truncate">{arrivalInfo.airportIata}</div>
+              <div className="text-xs text-gray-600 truncate" style={{ fontSize: '12px' }}>{arrivalInfo.airportIata}</div>
             </div>
           </div>
         )}
@@ -893,29 +892,29 @@ const FlightCard = ({
         {/* Baggage Information - only show for legacy format or if baggage data is available */}
         {(!isJourneyBased || flight.baggage) && <BaggageDisplay flight={flight} />}
 
-      {/* Flight Highlights with Clean Black Border - Commented out for now, can be easily restored */}
-      {/*
+      {/* Flight Highlights with Gradient Border */}
       {(() => {
         const highlights = getFlightHighlights(flight);
         return highlights.length > 0 && (
           <div className="mb-4">
-            <div className="rounded-lg border-2 border-black bg-white p-3">
-              <ul className="space-y-1">
-                {highlights.map((highlight, index) => (
-                  <li
-                    key={index}
-                    className="flex items-start gap-2 text-sm text-black font-medium"
-                  >
-                    <span className="mt-1 text-black">•</span>
-                    <span>{highlight}</span>
-                  </li>
-                ))}
-              </ul>
+            <div className="rounded-lg bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 p-[1px]">
+              <div className="rounded-lg bg-white p-3">
+                <ul className="space-y-1">
+                  {highlights.map((highlight, index) => (
+                    <li
+                      key={index}
+                      className="flex items-start gap-2 text-sm text-black font-normal"
+                    >
+                      <span className="mt-1 text-black">•</span>
+                      <span>{highlight}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
         );
       })()}
-      */}
       </div>
 
       {/* Minimal spacer for button alignment */}
@@ -925,7 +924,7 @@ const FlightCard = ({
       <Button
         onClick={() => onSelect(flight.flightOfferId)}
         disabled={isLoading}
-        className="w-full bg-black text-white border border-black py-3 transition-colors duration-200 hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 mt-1"
+        className="w-full bg-white text-black border border-gray-300 py-3 transition-colors duration-200 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 mt-1"
       >
         <span className="flex items-center justify-center gap-2">
           <span className="font-normal">{isLoading ? "Selecting..." : "Select Flight"}</span>
@@ -1086,7 +1085,7 @@ const ResponsiveCarousel = ({
           {[...Array(3)].map((_, index) => (
             <div
               key={index}
-              className="flex-shrink-0 w-[280px] sm:w-auto"
+              className="flex-shrink-0 w-[252px] sm:w-auto"
               style={{
                 scrollSnapAlign: 'start',
               }}
@@ -1148,7 +1147,7 @@ const ResponsiveCarousel = ({
           // Calculate card width more conservatively to prevent overflow
           const gapSize = cardsPerView >= 2 ? 16 : 12;
           const totalGaps = (cardsPerView - 1) * gapSize;
-          const availableWidth = 100; // percentage
+          const availableWidth = 90; // percentage - reduced by 10%
           const cardWidth = (availableWidth / cardsPerView) - (totalGaps / cardsPerView);
 
           return (
@@ -1156,10 +1155,10 @@ const ResponsiveCarousel = ({
               key={flight.flightOfferId || `flight-${index}`}
               className="flex-shrink-0"
               style={{
-                width: `${Math.max(cardWidth, 20)}%`, // Ensure minimum width and use percentage
+                width: `${Math.max(cardWidth, 18)}%`, // Ensure minimum width and use percentage - reduced by 10%
                 scrollSnapAlign: 'start',
-                minWidth: '280px', // Minimum card width for readability
-                maxWidth: cardsPerView === 1 ? '100%' : `${cardWidth}%`,
+                minWidth: '252px', // Minimum card width for readability - reduced by 10%
+                maxWidth: cardsPerView === 1 ? '90%' : `${cardWidth}%`, // reduced by 10%
                 minHeight: '420px', // Ensure consistent card height
               }}
             >
@@ -1361,15 +1360,25 @@ const FlightListItem = ({
   const currencySymbol = getCurrencySymbol(currency);
   const { airline, airlineIata, flightNumber } = getAirlineInfo(flight);
 
+  // Get intermediate stop IATA codes for connecting flights
+  const getStopIataCodes = (flight: FlightOption) => {
+    if (flight.segments.length <= 1) return [];
+
+    // For connecting flights, intermediate stops are the arrival airports of all segments except the last one
+    return flight.segments.slice(0, -1).map(segment => segment.arrival.airportIata);
+  };
+
+  const stopIataCodes = getStopIataCodes(flight);
+
   return (
     <div
-      className="border-b border-gray-200 bg-white py-3 px-3 sm:px-4 hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
+      className="border-b border-gray-200 bg-white py-4 px-3 sm:px-4 hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
       onClick={() => onSelect(flight.flightOfferId)}
     >
       {/* Mobile Layout */}
       <div className="block sm:hidden">
         {/* Main Flight Row */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-start gap-3 min-h-[80px]">
           {/* Left: Airline Info */}
           <div className="flex items-center gap-3">
             {/* Airline Logo - only show if we have airline data */}
@@ -1398,7 +1407,7 @@ const FlightListItem = ({
             </div>
           </div>
 
-          {/* Center: Times and Duration */}
+          {/* Center: Times and Duration - Original Layout */}
           <div className="flex items-center gap-4 flex-1 justify-center">
             {/* Departure */}
             <div className="text-center">
@@ -1411,6 +1420,12 @@ const FlightListItem = ({
             <div className="text-center min-w-0">
               <div className="text-xs text-gray-700" style={{ fontSize: '12px' }}>
                 {duration}
+              </div>
+              <div className="relative">
+                <div className="border-t border-gray-300 w-full"></div>
+                {flight.segments.length > 1 && (
+                  <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 transform rounded-full bg-orange-400"></div>
+                )}
               </div>
               <div className="text-xs text-gray-500 whitespace-nowrap" style={{ fontSize: '10px' }}>
                 {(() => {
@@ -1429,6 +1444,12 @@ const FlightListItem = ({
                   return "Non-stop";
                 })()}
               </div>
+              {/* Show stop IATA codes - NEW */}
+              {stopIataCodes.length > 0 && (
+                <div className="text-xs text-gray-400 whitespace-nowrap" style={{ fontSize: '9px' }}>
+                  {stopIataCodes.join(", ")}
+                </div>
+              )}
             </div>
 
             {/* Arrival */}
@@ -1440,14 +1461,15 @@ const FlightListItem = ({
           </div>
 
           {/* Right: Price */}
-          <div className="text-right flex-shrink-0">
-            <div className="text-base font-bold text-gray-900">
+          <div className="text-right flex-shrink-0 flex flex-col justify-center">
+            <div className="text-lg font-bold text-gray-900">
               {currencySymbol}{price.toLocaleString()}
             </div>
+            {flight.offerRules?.isRefundable && (
+              <div className="text-xs text-green-600 mt-1">Refundable</div>
+            )}
           </div>
         </div>
-
-
       </div>
 
       {/* Desktop Layout */}
@@ -1687,6 +1709,12 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
   const [showAllFlights, setShowAllFlights] = useState(false);
   const [bottomSheetFilter, setBottomSheetFilter] = useState<'cheapest' | 'fastest' | 'recommended'>('cheapest');
 
+  // Filter states for the bottom sheet
+  const [stopsFilter, setStopsFilter] = useState<'any' | 'nonstop' | '1stop' | '2+stops'>('any');
+  const [departureTimeFilter, setDepartureTimeFilter] = useState<'any' | 'morning' | 'afternoon' | 'evening'>('any');
+  const [refundableFilter, setRefundableFilter] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+
   const allFlightTuples = args.flightOffers || [];
 
   // Determine if we have journey-based flights and the journey type
@@ -1750,7 +1778,54 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
     }
   };
 
-  const sortedFlights = getSortedFlights(allFlightTuples, bottomSheetFilter);
+  // Apply filters to flights
+  const applyFilters = (flights: FlightOption[]) => {
+    return flights.filter(flight => {
+      // Stops filter
+      if (stopsFilter !== 'any') {
+        const stopCount = flight.segments.length - 1;
+        if (stopsFilter === 'nonstop' && stopCount > 0) return false;
+        if (stopsFilter === '1stop' && stopCount > 1) return false;
+        if (stopsFilter === '2+stops' && stopCount < 2) return false;
+      }
+
+      // Departure time filter
+      if (departureTimeFilter !== 'any') {
+        const departureTime = new Date(flight.departure.date);
+        const hour = departureTime.getHours();
+
+        if (departureTimeFilter === 'morning' && (hour < 6 || hour >= 12)) return false;
+        if (departureTimeFilter === 'afternoon' && (hour < 12 || hour >= 18)) return false;
+        if (departureTimeFilter === 'evening' && (hour < 18 || hour >= 24)) return false;
+      }
+
+      // Refundable filter
+      if (refundableFilter && !flight.offerRules?.isRefundable) return false;
+
+      return true;
+    });
+  };
+
+  const filteredFlights = applyFilters(allFlightTuples);
+  const sortedFlights = getSortedFlights(filteredFlights, bottomSheetFilter);
+
+  // Count active filters for UI feedback
+  const getActiveFilterCount = () => {
+    let count = 0;
+    if (stopsFilter !== 'any') count++;
+    if (departureTimeFilter !== 'any') count++;
+    if (refundableFilter) count++;
+    return count;
+  };
+
+  const activeFilterCount = getActiveFilterCount();
+
+  // Helper function to clear all filters
+  const clearAllFilters = () => {
+    setStopsFilter('any');
+    setDepartureTimeFilter('any');
+    setRefundableFilter(false);
+  };
 
   // Check if we have any flights with the mandatory tags
   const hasRecommended = allFlightTuples.some((flight: any) => flight.tags?.includes('recommended'));
@@ -1862,51 +1937,314 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
         >
           <SheetHeader className="flex-shrink-0 pb-4 border-b border-gray-200">
             <SheetTitle className="text-xl font-semibold">
-              All Available Flights ({allFlightTuples.length} flights)
+              All Available Flights ({filteredFlights.length} of {allFlightTuples.length} flights)
             </SheetTitle>
           </SheetHeader>
 
-          {/* Filter Tabs */}
-          <div className="flex-shrink-0 border-b border-gray-200">
-            <div className="flex">
-              {[
-                { id: 'cheapest' as const, label: 'Cheapest', icon: DollarSign },
-                { id: 'fastest' as const, label: 'Fastest', icon: Zap },
-                { id: 'recommended' as const, label: 'Recommended', icon: Star },
-              ].map((tab) => {
-                const Icon = tab.icon;
-                const isActive = bottomSheetFilter === tab.id;
+          {/* Desktop Layout with Filters */}
+          <div className="hidden lg:flex flex-1 overflow-hidden">
+            {/* Left Sidebar - Filters */}
+            <div className="w-64 bg-gray-50 border-r border-gray-200 p-4 overflow-y-auto">
+              <div className="flex items-center gap-2 mb-4">
+                <Filter className="h-5 w-5 text-gray-600" />
+                <h3 className="font-semibold text-gray-900">Filters</h3>
+              </div>
 
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setBottomSheetFilter(tab.id)}
-                    className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium border-b-2 transition-colors duration-200",
-                      isActive
-                        ? "text-blue-600 border-blue-600 bg-blue-50"
-                        : "text-gray-500 border-transparent hover:text-gray-700 hover:bg-gray-50"
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
+              {/* Stops Filter */}
+              <div className="mb-6">
+                <h4 className="font-medium text-gray-900 mb-3">Stops</h4>
+                <div className="space-y-2">
+                  {[
+                    { value: 'any', label: 'Any number of stops' },
+                    { value: 'nonstop', label: 'Nonstop only' },
+                    { value: '1stop', label: '1 stop or fewer' },
+                    { value: '2+stops', label: '2+ stops' },
+                  ].map((option) => (
+                    <label key={option.value} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="stops"
+                        value={option.value}
+                        checked={stopsFilter === option.value}
+                        onChange={(e) => setStopsFilter(e.target.value as typeof stopsFilter)}
+                        className="text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">{option.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Departure Times Filter */}
+              <div className="mb-6">
+                <h4 className="font-medium text-gray-900 mb-3">Departure Times</h4>
+                <div className="space-y-2">
+                  {[
+                    { value: 'any', label: 'Any time' },
+                    { value: 'morning', label: 'Morning (6AM - 12PM)' },
+                    { value: 'afternoon', label: 'Afternoon (12PM - 6PM)' },
+                    { value: 'evening', label: 'Evening (6PM - 12AM)' },
+                  ].map((option) => (
+                    <label key={option.value} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="departureTime"
+                        value={option.value}
+                        checked={departureTimeFilter === option.value}
+                        onChange={(e) => setDepartureTimeFilter(e.target.value as typeof departureTimeFilter)}
+                        className="text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">{option.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Refundable Filter */}
+              <div className="mb-6">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={refundableFilter}
+                    onChange={(e) => setRefundableFilter(e.target.checked)}
+                    className="text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">Refundable fares only</span>
+                </label>
+              </div>
+
+              {/* Clear Filters Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearAllFilters}
+                disabled={activeFilterCount === 0}
+                className="w-full text-gray-600 border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Clear all filters
+                {activeFilterCount > 0 && (
+                  <span className="ml-1 text-xs">({activeFilterCount})</span>
+                )}
+              </Button>
+            </div>
+
+            {/* Main Content */}
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {/* Pill-shaped Filter Tabs - Uber Style */}
+              <div className="flex-shrink-0 p-4 border-b border-gray-200">
+                <div className="flex gap-3 justify-center">
+                  {[
+                    { id: 'cheapest' as const, label: 'Cheapest', icon: DollarSign },
+                    { id: 'fastest' as const, label: 'Fastest', icon: Zap },
+                    { id: 'recommended' as const, label: 'Best', icon: Star },
+                  ].map((tab) => {
+                    const Icon = tab.icon;
+                    const isActive = bottomSheetFilter === tab.id;
+
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setBottomSheetFilter(tab.id)}
+                        className={cn(
+                          "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 border",
+                          isActive
+                            ? "bg-black text-white border-black shadow-sm"
+                            : "bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+                        )}
+                      >
+                        <Icon className="h-4 w-4" />
+                        <span>{tab.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Flight List */}
+              <div className="flex-1 overflow-y-auto">
+                <div className="divide-y divide-gray-200">
+                  {sortedFlights.map((flight: any, index: number) => (
+                    <FlightListItem
+                      key={flight.flightOfferId || `flight-${index}`}
+                      flight={flight}
+                      onSelect={handleSelectFlight}
+                      isLoading={isLoading}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Flight List */}
-          <div className="flex-1 overflow-y-auto">
-            <div className="divide-y divide-gray-200">
-              {sortedFlights.map((flight: any, index: number) => (
-                <FlightListItem
-                  key={flight.flightOfferId || `flight-${index}`}
-                  flight={flight}
-                  onSelect={handleSelectFlight}
-                  isLoading={isLoading}
-                />
-              ))}
+          {/* Mobile Layout */}
+          <div className="lg:hidden flex flex-col flex-1 overflow-hidden">
+            {/* Combined Pill Tabs and Filter Button */}
+            <div className="flex-shrink-0 p-4 border-b border-gray-200">
+              <div className="flex gap-2 justify-center items-center">
+                {/* Filter Button as Pill */}
+                <button
+                  onClick={() => setShowMobileFilters(true)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full transition-all duration-200 border relative",
+                    activeFilterCount > 0
+                      ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                      : "bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+                  )}
+                >
+                  <Filter className="h-3 w-3" />
+                  <span>Filters</span>
+                  {activeFilterCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* Pill-shaped Filter Tabs - Uber Style Mobile */}
+                {[
+                  { id: 'cheapest' as const, label: 'Cheapest', icon: DollarSign },
+                  { id: 'fastest' as const, label: 'Fastest', icon: Zap },
+                  { id: 'recommended' as const, label: 'Best', icon: Star },
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = bottomSheetFilter === tab.id;
+
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setBottomSheetFilter(tab.id)}
+                      className={cn(
+                        "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full transition-all duration-200 border",
+                        isActive
+                          ? "bg-black text-white border-black shadow-sm"
+                          : "bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+                      )}
+                    >
+                      <Icon className="h-3 w-3" />
+                      <span>{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Flight List */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="divide-y divide-gray-200">
+                {sortedFlights.map((flight: any, index: number) => (
+                  <FlightListItem
+                    key={flight.flightOfferId || `flight-${index}`}
+                    flight={flight}
+                    onSelect={handleSelectFlight}
+                    isLoading={isLoading}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Mobile Filter Modal */}
+      <Sheet open={showMobileFilters} onOpenChange={setShowMobileFilters}>
+        <SheetContent
+          side="bottom"
+          className="h-[60vh] flex flex-col overflow-hidden"
+        >
+          <SheetHeader className="flex-shrink-0 pb-3 border-b border-gray-200">
+            <SheetTitle className="text-lg font-semibold">
+              Filter Flights
+            </SheetTitle>
+          </SheetHeader>
+
+          <div className="flex-1 overflow-y-auto p-4">
+            <div className="space-y-4">
+              {/* Stops Filter */}
+              <div>
+                <h3 className="font-medium text-gray-900 mb-2">Stops</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { value: 'any', label: 'Any' },
+                    { value: 'nonstop', label: 'Nonstop' },
+                    { value: '1stop', label: '1 stop' },
+                    { value: '2+stops', label: '2+ stops' },
+                  ].map((option) => (
+                    <label key={option.value} className="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-gray-50 border border-gray-200">
+                      <input
+                        type="radio"
+                        name="mobileStops"
+                        value={option.value}
+                        checked={stopsFilter === option.value}
+                        onChange={(e) => setStopsFilter(e.target.value as typeof stopsFilter)}
+                        className="text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">{option.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Departure Times Filter */}
+              <div>
+                <h3 className="font-medium text-gray-900 mb-2">Departure Times</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { value: 'any', label: 'Any time' },
+                    { value: 'morning', label: 'Morning' },
+                    { value: 'afternoon', label: 'Afternoon' },
+                    { value: 'evening', label: 'Evening' },
+                  ].map((option) => (
+                    <label key={option.value} className="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-gray-50 border border-gray-200">
+                      <input
+                        type="radio"
+                        name="mobileDepartureTime"
+                        value={option.value}
+                        checked={departureTimeFilter === option.value}
+                        onChange={(e) => setDepartureTimeFilter(e.target.value as typeof departureTimeFilter)}
+                        className="text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">{option.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Refundable Filter */}
+              <div>
+                <h3 className="font-medium text-gray-900 mb-2">Booking Options</h3>
+                <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-gray-50 border border-gray-200">
+                  <input
+                    type="checkbox"
+                    checked={refundableFilter}
+                    onChange={(e) => setRefundableFilter(e.target.checked)}
+                    className="text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">Refundable fares only</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Filter Actions */}
+          <div className="flex-shrink-0 p-4 border-t border-gray-200 bg-white">
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={clearAllFilters}
+                disabled={activeFilterCount === 0}
+                className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Clear all
+                {activeFilterCount > 0 && (
+                  <span className="ml-1">({activeFilterCount})</span>
+                )}
+              </Button>
+              <Button
+                onClick={() => setShowMobileFilters(false)}
+                className="flex-1 bg-black text-white hover:bg-gray-800"
+              >
+                Show {filteredFlights.length} flights
+              </Button>
             </div>
           </div>
         </SheetContent>
