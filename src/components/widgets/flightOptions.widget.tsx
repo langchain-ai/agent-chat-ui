@@ -285,31 +285,33 @@ const AirlineLogo = ({
 };
 
 const getBadgeConfigs = (tags: string[]) => {
+  const badges = [];
+
   // Priority order: recommended > cheapest > fastest
   // Only show one badge per flight
   if (tags.includes("recommended")) {
-    return [{
+    badges.push({
       emoji: "⭐",
-      text: "Best",
-      color: "bg-black text-white border-black",
-    }];
+      text: "Recommended",
+      color: "bg-white text-gray-800 border-gray-200",
+    });
   }
   if (tags.includes("cheapest")) {
-    return [{
+    badges.push({
       emoji: "💰",
       text: "Cheapest",
-      color: "bg-black text-white border-black",
-    }];
+      color: "bg-white text-gray-800 border-gray-200",
+    });
   }
   if (tags.includes("fastest")) {
-    return [{
+    badges.push({
       emoji: "⚡",
       text: "Fastest",
-      color: "bg-black text-white border-black",
-    }];
+      color: "bg-white text-gray-800 border-gray-200",
+    });
   }
 
-  return [];
+  return badges;
 };
 
 // Get baggage data from API or fallback to mock data
@@ -601,10 +603,6 @@ const FlightCard = ({
 }) => {
   const badgeConfigs = flight.tags && flight.tags.length > 0 ? getBadgeConfigs(flight.tags) : [];
 
-  // Check if this is a journey-based flight (round trip)
-  const isJourneyBased = flight.journey && flight.journey.length > 0;
-  const isRoundTrip = isJourneyBased && flight.journey!.length === 2;
-
   // Generate personalized flight highlights
   const getFlightHighlights = (flight: FlightOption) => {
     const highlights = [];
@@ -620,18 +618,11 @@ const FlightCard = ({
       highlights.push("Fastest route to your destination");
     }
 
-    // Add journey-specific highlights
-    if (isRoundTrip) {
-      highlights.push("Round trip - convenient return journey included");
-    } else if (isJourneyBased) {
-      highlights.push("One-way journey - flexible travel option");
-    } else {
-      // Add additional contextual highlights for legacy format
-      if (flight.segments && flight.segments.length === 1) {
-        highlights.push("Direct flight - no hassle with connections");
-      } else if (flight.segments && flight.segments.length === 2) {
-        highlights.push("Single layover - good balance of time and price");
-      }
+    // Add additional contextual highlights
+    if (flight.segments && flight.segments.length === 1) {
+      highlights.push("Direct flight - no hassle with connections");
+    } else if (flight.segments && flight.segments.length === 2) {
+      highlights.push("Single layover - good balance of time and price");
     }
 
     // Add cancellation policy information
@@ -644,6 +635,10 @@ const FlightCard = ({
     // Return max 3 highlights
     return highlights.slice(0, 3);
   };
+
+  // Check if this is a journey-based flight (round trip)
+  const isJourneyBased = flight.journey && flight.journey.length > 0;
+  const isRoundTrip = isJourneyBased && flight.journey!.length === 2;
 
   //Todo: @Khalid, this is very critical and hacky, please verify the actual flight timings with what we are showing.
   const formatTime = (isoString: string) => {
@@ -892,26 +887,48 @@ const FlightCard = ({
         {/* Baggage Information - only show for legacy format or if baggage data is available */}
         {(!isJourneyBased || flight.baggage) && <BaggageDisplay flight={flight} />}
 
-      {/* Flight Highlights with Gradient Border */}
+      {/* Flight Highlights with Moving Gradient Border */}
       {(() => {
         const highlights = getFlightHighlights(flight);
         return highlights.length > 0 && (
           <div className="mb-4">
-            <div className="rounded-lg bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 p-[2px] overflow-visible">
-              <div className="rounded-[calc(0.5rem-2px)] bg-white p-3">
+            <div
+              className="relative rounded-lg animate-gradient-border"
+              style={{
+                background: 'linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab)',
+                backgroundSize: '400% 400%',
+                padding: '2px', // Match button border thickness
+              }}
+            >
+              {/* Inner content with white background */}
+              <div className="bg-white rounded-lg p-3">
                 <ul className="space-y-1">
                   {highlights.map((highlight, index) => (
                     <li
                       key={index}
-                      className="flex items-start gap-2 text-sm text-black font-normal"
+                      className="flex items-start gap-2 text-sm text-gray-800 font-medium"
                     >
-                      <span className="mt-1 text-black">•</span>
+                      <span className="mt-1 text-gray-600">•</span>
                       <span>{highlight}</span>
                     </li>
                   ))}
                 </ul>
               </div>
             </div>
+
+            {/* Add the CSS animation styles */}
+            <style dangerouslySetInnerHTML={{
+              __html: `
+                @keyframes gradientShift {
+                  0% { background-position: 0% 50%; }
+                  50% { background-position: 100% 50%; }
+                  100% { background-position: 0% 50%; }
+                }
+                .animate-gradient-border {
+                  animation: gradientShift 15s ease infinite;
+                }
+              `
+            }} />
           </div>
         );
       })()}
@@ -924,7 +941,7 @@ const FlightCard = ({
       <Button
         onClick={() => onSelect(flight.flightOfferId)}
         disabled={isLoading}
-        className="w-full bg-white text-black border border-gray-300 py-3 transition-colors duration-200 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 mt-1"
+        className="w-full bg-white border border-gray-300 py-3 text-gray-900 transition-colors duration-200 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 mt-1"
       >
         <span className="flex items-center justify-center gap-2">
           <span className="font-normal">{isLoading ? "Selecting..." : "Select Flight"}</span>
