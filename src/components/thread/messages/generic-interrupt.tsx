@@ -16,7 +16,7 @@ function isUrl(value: any): boolean {
   }
 }
 
-function renderValue(value: any): React.ReactNode {
+function renderInterruptStateItem(value: any): React.ReactNode {
   if (isComplexValue(value)) {
     return (
       <code className="rounded bg-gray-50 px-2 py-1 font-mono text-sm">
@@ -132,7 +132,7 @@ export function GenericInterruptView({
                           {key}
                         </td>
                         <td className="px-4 py-2 text-sm text-gray-500">
-                          {renderValue(value)}
+                          {renderInterruptStateItem(value)}
                         </td>
                       </tr>
                     );
