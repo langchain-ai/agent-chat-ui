@@ -2,7 +2,7 @@
 import { isUIMessage, isRemoveUIMessage } from "@langchain/langgraph-sdk/react-ui";
 
 // Normalize LangGraph stream events to a small internal set
-// Types: 'message', 'ui', 'values', 'ignore'
+// Types: 'message', 'ui', 'values', 'interrupt', 'ignore'
 // For messages, we also add a 'subtype': 'partial' | 'metadata' | 'base'
 export function normalizeEvent(eventName, data) {
   const receivedAt = Date.now();
@@ -29,6 +29,9 @@ export function normalizeEvent(eventName, data) {
   }
 
   if (baseEvent === "values") {
+    if (data && typeof data === "object" && "__interrupt__" in data) {
+      return { type: "interrupt", payload: data.__interrupt__, receivedAt };
+    }
     return { type: "values", payload: data, receivedAt };
   }
 

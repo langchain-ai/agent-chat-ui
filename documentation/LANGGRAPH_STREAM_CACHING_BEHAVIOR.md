@@ -294,3 +294,107 @@ if (threads && threadId && threads[threadId]) {
 - UI values: normalized and reduced with stable ordering and persistence vs. SDK’s callback-only mutation with no built-in persistence.
 - Interrupts: sourced from `values.__interrupt__` and not persisted vs. SDK’s history-derived interrupt state.
 - Ordering: per-thread actor + first-seen orders for both messages and UI vs. SDK’s per-stream tuple indexing and final server history order.
+
+---
+
+## Plan: Inline, persistent Interrupt widgets (ordering + read-only + refresh-safe)
+
+This plan extends the current message/UI caching to fully support interrupt widgets with strict inline ordering relative to messages and UI, automatic read-only freezing on submission, and localStorage-backed hydration.
+
+### 1) Unified blocks timeline (dev-only, breaking change)
+
+- Add a canonical, append-only timeline to the store, where each entry is a "block":
+  - `Block = { id: string; kind: "message" | "ui" | "interrupt"; receivedAt: number; anchorId?: string; }`
+  - Maintain `blocksById: Map<string, BlockData>` and `blockOrder: string[]` similar to messages/UI.
+  - `BlockData` for:
+    - `message`: `{ messageChunk }` (existing), `visible: boolean` (partial gating)
+    - `ui`: `{ uiValue }` (existing reduced item)
+    - `interrupt`: `{ value: any; completed: boolean; frozenValue?: any }`
+- Expose only `values.blocks` (aka unified timeline) for rendering. All chat UIs should render from blocks; message/UI specific selectors can be removed during dev.
+
+Persistence:
+
+- Bump schema to `schemaVersion: 2`. Persist `{ blocks, lastUpdatedAt }` (messages/ui no longer persisted in dev-only mode).
+- Hydration: No migration path needed in dev; clear old cache or ignore missing fields.
+
+### 2) Event normalization and insertion rules
+
+- Treat `values` events that include `__interrupt__` as an explicit interrupt insertion:
+  - Keep current normalization (`type: "values"`), but extend `Store.applyValues()` to call `Store.applyInterrupt(interruptValue, meta)` if `__interrupt__` is present.
+  - Alternatively, normalize to a new internal type `interrupt` at the router level; both approaches are equivalent internally.
+- `applyInterrupt(threadId, interrupt)`:
+  - Determine `interruptId`:
+    - Prefer `interrupt.interrupt_id` if present.
+    - Else generate a deterministic id (e.g., `hash(JSON.stringify(interrupt) + receivedAt)`), stored in `blocksById`.
+  - Determine anchor position:
+    - If `interrupt.value?.metadata?.attachmentId` references a known UI id, insert the interrupt block immediately after that UI block.
+    - Else, anchor to the most recent visible message block at the time of application (per-thread actor preserves order), inserting after it.
+    - Fallback: append to the end.
+  - Insert once: if a block with the same `interruptId` already exists, update its `value` but never reorder it.
+  - Mark `completed: false` by default.
+
+### 3) Read-only after submission (generic, minimal widget code)
+
+- Provide a single API on the stream hook to freeze an interrupt:
+  - `thread.completeInterrupt(interruptId: string, frozenValue?: any)` which sets `{ completed: true, frozenValue: frozenValue ?? currentValue }` in the store and persists.
+- Wire this generically at submission points:
+  - Wrap `thread.submit(...)` (or provide `submitInterruptResponse(...)`) so that on successful resume it calls `completeInterrupt` for the in-flight interrupt id.
+  - A small helper `useInterruptSubmission()` already exists; update it to call the new store method instead of an in-memory context.
+- Rendering contract for widgets (generic):
+  - `DynamicRenderer` (or equivalent) receives an `interrupt` object. We will pass-through a derived prop `readOnly = block.completed`.
+  - Widgets should honor `readOnly` by disabling inputs; no widget-specific code beyond checking this flag.
+  - For best UX, `frozenValue` (if provided) is passed instead of `value` to guarantee the UI shows the last visible state at submission time.
+
+### 4) Refresh-safe persistence and hydration
+
+- On every interrupt insert/update/complete, write-through to `localStorage` via `Persistence.saveThread` (v2 shape including `blocks`).
+- On mount or thread switch, `Store.hydrate` restores `blocks` and `useStream` sets `values.blocks` for inline renderers.
+- All renderers should be updated to use `values.blocks` exclusively during dev.
+
+### 5) Minimal changes to existing rendering
+
+- Provide a new helper for views that want inline rendering:
+  - `selectTimeline(snapshot): Array<{ kind, id, node }>` that:
+    - For `message` kinds: returns the toDict message as today.
+    - For `ui` kinds: returns the reduced UI value.
+    - For `interrupt` kinds: returns `{ type, props, readOnly }` suitable for `DynamicRenderer`.
+- Update chat thread to iterate `values.blocks` exclusively. Remove in-memory `InterruptPersistenceContext` usage in dev mode; ordering and persistence come from the timeline.
+
+### 6) Data model and API sketch
+
+Store additions:
+
+- `applyInterrupt(threadId, interruptValue, receivedAt, anchorId?)`
+- `completeInterrupt(threadId, interruptId, frozenValue?)`
+- `snapshot(threadId)` now returns `{ blocks, lastUpdatedAt }` (messages/ui derived only if explicitly needed).
+
+Hook additions:
+
+- `values.blocks` on `useStream`
+- `completeInterrupt(interruptId, frozenValue?)` exposed off the returned API
+
+Persistence:
+
+- `schemaVersion: 2`
+- Thread record: `{ blocks: BlockSnapshot[], lastUpdatedAt: number }`
+
+### 7) Edge cases
+
+- Duplicate interrupts (retries/subgraphs): de-dupe by `interrupt_id` when provided; otherwise, keep first seen and update the payload in place.
+- Out-of-order arrivals across subgraphs: per-thread actor guarantees the relative order we apply is stable; anchor rules ensure deterministic placement.
+- Partial UI/message visibility: interrupts anchored to a message hidden by hold-mode are still inserted after that message and will appear when the message becomes visible.
+
+### 8) SDK differences (updated)
+
+- We maintain a persisted, unified blocks timeline with explicit `interrupt` entries; the SDK does not provide ordering/persistence for interrupts or UI out of the box.
+- Post-submit freezing is handled locally via `completeInterrupt`, guaranteeing read-only widgets on reload.
+
+---
+
+## Implementation checklist (internal)
+
+- Store: add blocks timeline and interrupt APIs, integrate into `applyValues`.
+- Persistence: bump schema to v2, include blocks in snapshot, hydrate/upgrade from v1.
+- Hook: expose `values.blocks`, add `completeInterrupt` API, update hydration and save points.
+- Rendering: add a helper to render `values.blocks` and pass `readOnly` to widgets; migrate chat to use it.
+- Remove/retire in-memory `InterruptPersistenceContext` once blocks timeline is adopted.

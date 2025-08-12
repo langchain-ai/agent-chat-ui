@@ -44,7 +44,7 @@ export function HumanMessage({
   isLoading: boolean;
 }) {
   const thread = useStreamContext();
-  const meta = thread.getMessagesMetadata(message);
+  const meta = undefined as any;
   const parentCheckpoint = meta?.firstSeenState?.parent_checkpoint;
 
   const [isEditing, setIsEditing] = useState(false);
@@ -81,16 +81,7 @@ export function HumanMessage({
       checkpoint: parentCheckpoint,
       streamMode: ["updates"],
       streamSubgraphs: true,
-      optimisticValues: (prev: any) => {
-        const values = meta?.firstSeenState?.values;
-        if (!values) return prev;
-
-        return {
-          ...values,
-          messages: [...(values.messages ?? []), newMessage],
-          ui: prev.ui ?? [], // Preserve UI state
-        };
-      },
+      optimisticValues: undefined,
     });
   };
 

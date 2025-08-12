@@ -15,11 +15,11 @@ export class Persistence {
   constructor() {}
 
   loadAll() {
-    if (typeof window === "undefined") return { threads: {}, schemaVersion: 1 };
+    if (typeof window === "undefined") return { threads: {}, schemaVersion: 2 };
     const raw = window.localStorage.getItem(STORAGE_KEY);
     const parsed = raw ? safeParse(raw) : null;
-    if (!parsed || typeof parsed !== "object") return { threads: {}, schemaVersion: 1 };
-    const { threads = {}, schemaVersion = 1 } = parsed;
+    if (!parsed || typeof parsed !== "object") return { threads: {}, schemaVersion: 2 };
+    const { threads = {}, schemaVersion = 2 } = parsed;
     return { threads, schemaVersion };
   }
 
@@ -27,15 +27,14 @@ export class Persistence {
     if (typeof window === "undefined") return;
     const current = this.loadAll();
     current.threads[threadId] = {
-      messages: snapshot.messages ?? [],
-      ui: snapshot.ui ?? [],
+      blocks: snapshot.blocks ?? [],
       lastUpdatedAt: snapshot.lastUpdatedAt ?? Date.now(),
     };
     this._prune(current);
     try {
       window.localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify({ ...current, schemaVersion: 1 })
+        JSON.stringify({ ...current, schemaVersion: 2 })
       );
     } catch (e) {
       console.warn("[PERSIST] failed to save cache", e);

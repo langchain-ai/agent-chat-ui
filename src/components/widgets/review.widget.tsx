@@ -1249,6 +1249,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
   isSubmitting: externalIsSubmitting,
   onSubmittingChange,
 }) => {
+  console.log("&&&&&&&&&&& Review Widget - API data:", apiData);
   // Get thread context for interrupt responses
   const thread = useStreamContext();
 
@@ -1314,6 +1315,8 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
       setInternalIsSubmitting(value);
     }
   };
+
+  console.log("$$$$$$$ Review Widget - API data:", apiData);
 
   // Transform API data or use provided props/mock data
   const transformedFlightDetails = apiData

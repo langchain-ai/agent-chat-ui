@@ -40,8 +40,6 @@ import {
 import { getJwtToken, GetUserId } from "@/services/authService";
 import { updateThreadWithMessage } from "@/utils/thread-storage";
 import { InterruptManager } from "./messages/interrupt-manager";
-import { PersistentInterruptList } from "./messages/persistent-interrupt";
-import { useInterruptPersistenceContext } from "@/providers/InterruptPersistenceContext";
 import { GenericInterruptView } from "./messages/generic-interrupt";
 import { NonAgentFlowReopenButton } from "./NonAgentFlowReopenButton";
 
@@ -107,11 +105,10 @@ function isDisplayableMessage(m: Message) {
 
 export function Thread() {
   const [artifactContext, setArtifactContext] = useArtifactContext();
-  const interruptPersistence = useInterruptPersistenceContext();
   const [artifactOpen, closeArtifact] = useArtifactOpen();
   const { locationData } = useLocationContext();
 
-  const [threadId, _setThreadId] = useQueryState("threadId");
+  const [threadId, setThreadId] = useQueryState("threadId");
   const [assistantId] = useQueryState("assistantId");
   const [chatHistoryOpen, setChatHistoryOpen] = useQueryState(
     "chatHistoryOpen",
@@ -136,33 +133,30 @@ export function Thread() {
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
 
   const stream = useStreamContext();
-  const messages = stream.messages;
+  const blocks = (stream.values?.blocks ?? []) as Array<{
+    id: string;
+    kind: string;
+    data: any;
+  }>;
   const isLoading = stream.isLoading;
+
+  const messageBlocks = blocks.filter(
+    (b) => b.kind === "message" && !!b.data,
+  ) as Array<{ id: string; kind: "message"; data: Message }>;
 
   // Track the last threadId to reset displayMessages on thread switch
   const lastThreadId = useRef<string | null>(threadId);
   useEffect(() => {
     lastThreadId.current = threadId;
-  }, [threadId, messages]);
+  }, [threadId, blocks.length]);
 
   // Optionally clear input and contentBlocks when threadId changes
   useEffect(() => {
     setInput("");
     setContentBlocks([]);
-    if (threadId === null) {
-      // setDisplayMessages([]); // Remove this line //TODO: come back here
-    }
   }, [threadId, setContentBlocks]);
 
   const lastError = useRef<string | undefined>(undefined);
-
-  const setThreadId = (id: string | null) => {
-    _setThreadId(id);
-
-    // close artifact and reset artifact context
-    closeArtifact();
-    setArtifactContext({});
-  };
 
   useEffect(() => {
     if (!stream.error) {
@@ -172,11 +166,8 @@ export function Thread() {
     try {
       const message = (stream.error as any).message;
       if (!message || lastError.current === message) {
-        // Message has already been logged. do not modify ref, return early.
         return;
       }
-
-      // Message is defined, and it has not been logged yet. Save it, and send the error
       lastError.current = message;
       toast.error("An error occurred. Please try again.", {
         description: (
@@ -196,15 +187,15 @@ export function Thread() {
   const prevMessageLength = useRef(0);
   useEffect(() => {
     if (
-      messages.length !== prevMessageLength.current &&
-      messages?.length &&
-      messages[messages.length - 1].type === "ai"
+      messageBlocks.length !== prevMessageLength.current &&
+      messageBlocks?.length &&
+      (messageBlocks[messageBlocks.length - 1].data as any)?.type === "ai"
     ) {
       setFirstTokenReceived(true);
     }
 
-    prevMessageLength.current = messages.length;
-  }, [messages]);
+    prevMessageLength.current = messageBlocks.length;
+  }, [messageBlocks.length]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -225,7 +216,10 @@ export function Thread() {
       ] as Message["content"],
     };
 
-    const toolMessages = ensureToolCallsHaveResponses(stream.messages);
+    const existingMessages: Message[] = messageBlocks.map(
+      (b) => b.data as Message,
+    );
+    const toolMessages = ensureToolCallsHaveResponses(existingMessages);
 
     const context =
       Object.keys(artifactContext).length > 0 ? artifactContext : undefined;
@@ -254,11 +248,8 @@ export function Thread() {
     const submitOptions: any = {
       streamMode: ["updates"],
       streamSubgraphs: true,
-      optimisticValues: (prev: any) => ({
-        ...prev,
-        context,
-        messages: [...(prev.messages ?? []), ...toolMessages, newHumanMessage],
-      }),
+      optimisticValues: undefined,
+      optimisticHumanMessage: newHumanMessage,
     };
 
     // Add metadata for thread creation/updating
@@ -319,9 +310,9 @@ export function Thread() {
     });
   };
 
-  const chatStarted = !!threadId || !!messages.length;
-  const hasNoAIOrToolMessages = !messages.find(
-    (m: any) => m.type === "ai" || m.type === "tool",
+  const chatStarted = !!threadId || !!messageBlocks.length;
+  const hasNoAIOrToolMessages = !messageBlocks.find(
+    (b: any) => b.data?.type === "ai" || b.data?.type === "tool",
   );
 
   return (
@@ -331,17 +322,11 @@ export function Thread() {
           <motion.div
             className="absolute z-20 h-full overflow-hidden border-r border-gray-200 bg-white"
             style={{ width: 260 }}
-            animate={
-              isLargeScreen
-                ? { x: chatHistoryOpen ? 0 : -260 }
-                : { x: chatHistoryOpen ? 0 : -260 }
-            }
+            animate={{
+              x: chatHistoryOpen ? 0 : -260,
+            }}
             initial={{ x: -260 }}
-            transition={
-              isLargeScreen
-                ? { type: "spring", stiffness: 300, damping: 30 }
-                : { duration: 0 }
-            }
+            transition={{ duration: 0 }}
           >
             <div
               className="relative h-full"
@@ -372,11 +357,7 @@ export function Thread() {
                   : "100%"
                 : "100%",
             }}
-            transition={
-              isLargeScreen
-                ? { type: "spring", stiffness: 300, damping: 30 }
-                : { duration: 0 }
-            }
+            transition={{ duration: 0 }}
           >
             {!chatStarted && (
               <div className="absolute top-0 left-0 z-10 flex w-full items-center justify-between gap-3 py-1">
@@ -443,67 +424,40 @@ export function Thread() {
                 contentClassName="pt-8 pb-16  max-w-3xl mx-auto flex flex-col gap-4 w-full"
                 content={
                   <>
-                    {messages
-                      .filter(isDisplayableMessage)
-                      .flatMap((message: any, index: number) => {
-                        const messageElement =
-                          message.type === "human" ? (
-                            <HumanMessage
-                              key={message.id || `${message.type}-${index}`}
-                              message={message}
-                              isLoading={isLoading}
-                            />
-                          ) : (
-                            <AssistantMessage
-                              key={message.id || `${message.type}-${index}`}
-                              message={message}
-                              isLoading={isLoading}
-                              handleRegenerate={handleRegenerate}
-                            />
-                          );
-
-                        // Check if there are any persisted interrupts associated with this message
-                        const messageInterrupts = message.id
-                          ? interruptPersistence.getInterruptsForMessage(
-                              message.id,
-                            )
-                          : [];
-
-                        // Return array of elements: message + persistent interrupts
-                        const elements = [messageElement];
-
-                        if (messageInterrupts.length > 0) {
-                          elements.push(
-                            <div
-                              key={`${message.id || `${message.type}-${index}`}-interrupts`}
-                              className="mt-2"
-                            >
-                              <PersistentInterruptList
-                                interrupts={messageInterrupts}
-                              />
-                            </div>,
-                          );
-                        }
-
-                        return elements;
-                      })}
-                    {/* Special rendering case where there are no AI/tool messages, but there is an interrupt. */}
-                    {hasNoAIOrToolMessages && !!stream.interrupt && (
-                      <AssistantMessage
-                        key="interrupt-msg"
-                        message={undefined}
-                        isLoading={isLoading}
-                        handleRegenerate={handleRegenerate}
-                      />
-                    )}
+                    {blocks.map((block, index) => {
+                      if (
+                        block.kind === "message" &&
+                        block.data &&
+                        isDisplayableMessage(block.data as Message)
+                      ) {
+                        const message = block.data as Message;
+                        return message.type === "human" ? (
+                          <HumanMessage
+                            key={block.id || `${message.type}-${index}`}
+                            message={message}
+                            isLoading={isLoading}
+                          />
+                        ) : (
+                          <AssistantMessage
+                            key={block.id || `${message.type}-${index}`}
+                            message={message}
+                            isLoading={isLoading}
+                            handleRegenerate={handleRegenerate}
+                          />
+                        );
+                      }
+                      if (block.kind === "interrupt") {
+                        const interruptData = block.data as Record<string, any>;
+                        return (
+                          <GenericInterruptView
+                            key={block.id || `interrupt-${index}`}
+                            interrupt={interruptData}
+                          />
+                        );
+                      }
+                      return null;
+                    })}
                     {isLoading && <AssistantMessageLoading />}
-                    {/* Always render the interrupt widget at the end if present */}
-
-                    {stream.interrupt && (
-                      <GenericInterruptView
-                        interrupt={stream.interrupt.value ?? {}}
-                      />
-                    )}
                   </>
                 }
                 footer={
@@ -558,21 +512,6 @@ export function Thread() {
                         />
 
                         <div className="flex items-center gap-6 p-2 pt-4">
-                          {/* <div>
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              id="render-tool-calls"
-                              checked={hideToolCalls ?? false}
-                              onCheckedChange={setHideToolCalls}
-                            />
-                            <Label
-                              htmlFor="render-tool-calls"
-                              className="text-sm text-gray-600"
-                            >
-                              Hide Tool Calls
-                            </Label>
-                          </div>
-                        </div> */}
                           <Label
                             htmlFor="file-input"
                             className="flex cursor-pointer items-center gap-2"

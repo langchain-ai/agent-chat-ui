@@ -1,6 +1,5 @@
 import React, { useRef, useCallback, useEffect } from "react";
 import { useStreamContext } from "@/providers/Stream";
-import { useInterruptPersistenceContext } from "@/providers/InterruptPersistenceContext";
 
 interface InterruptManagerProps {
   children: React.ReactNode;
@@ -8,65 +7,43 @@ interface InterruptManagerProps {
 
 export function InterruptManager({ children }: InterruptManagerProps) {
   const stream = useStreamContext();
-  const interruptPersistence = useInterruptPersistenceContext();
   const activeInterruptIdRef = useRef<string | null>(null);
   const lastInterruptRef = useRef<any>(null);
 
-  // Handle new interrupts
+  // Handle new interrupts (record id while active)
   useEffect(() => {
     if (stream.interrupt && stream.interrupt !== lastInterruptRef.current) {
-      // New interrupt detected
-      const currentMessageId =
-        stream.messages.length > 0
-          ? stream.messages[stream.messages.length - 1].id
-          : undefined;
-
-      const interruptId = interruptPersistence.addInterrupt(
-        stream.interrupt.value || stream.interrupt,
-        currentMessageId,
-      );
-
+      const iv = stream.interrupt.value || stream.interrupt;
+      const interruptId = iv?.interrupt_id || iv?.id || null;
       activeInterruptIdRef.current = interruptId;
       lastInterruptRef.current = stream.interrupt;
-
-      console.log("📌 Persisted new interrupt:", interruptId);
+      if (interruptId) {
+        console.log("📌 Active interrupt:", interruptId);
+      }
     }
-  }, [stream.interrupt, interruptPersistence]);
+  }, [stream.interrupt]);
 
-  // Handle interrupt completion (when stream.interrupt becomes null)
+  // Handle interrupt cleared: mark as completed in the store timeline
   useEffect(() => {
     if (
       !stream.interrupt &&
       activeInterruptIdRef.current &&
       lastInterruptRef.current
     ) {
-      // Interrupt was cleared, mark as completed
-      const responseMessageId =
-        stream.messages.length > 0
-          ? stream.messages[stream.messages.length - 1].id
-          : undefined;
-
-      interruptPersistence.markAsCompleted(
-        activeInterruptIdRef.current,
-        responseMessageId,
-      );
-
-      console.log(
-        "✅ Marked interrupt as completed:",
-        activeInterruptIdRef.current,
-      );
-
+      const id = activeInterruptIdRef.current;
+      stream.completeInterrupt?.(id);
+      console.log("✅ Marked interrupt as completed:", id);
       activeInterruptIdRef.current = null;
       lastInterruptRef.current = null;
     }
-  }, [stream.interrupt, stream.messages, interruptPersistence]);
+  }, [stream.interrupt, stream]);
 
   return <>{children}</>;
 }
 
-// Hook to get interrupt submission handlers with persistence
+// Hook to get interrupt submission handlers with timeline persistence
 export function useInterruptSubmission() {
-  const interruptPersistence = useInterruptPersistenceContext();
+  const stream = useStreamContext();
 
   const createSubmissionHandlers = useCallback(
     (interruptId?: string) => ({
@@ -75,7 +52,7 @@ export function useInterruptSubmission() {
       },
       onSubmitComplete: () => {
         if (interruptId) {
-          interruptPersistence.markAsCompleted(interruptId);
+          stream.completeInterrupt?.(interruptId);
           console.log("✅ Interrupt submission completed and persisted");
         }
       },
@@ -83,7 +60,7 @@ export function useInterruptSubmission() {
         console.error("❌ Interrupt submission failed:", error);
       },
     }),
-    [interruptPersistence],
+    [stream],
   );
 
   return { createSubmissionHandlers };

@@ -11,7 +11,7 @@ import { Persistence } from "./core/persistence.js";
 
 /** @typedef {import("@langchain/langgraph-sdk").Message} SdkMessage */
 /**
- * @typedef {{ messages: SdkMessage[], ui: any[] }} ValuesSnapshot
+ * @typedef {{ blocks: any[], ui?: any[], messages?: any[], lastUpdatedAt?: number }} ValuesSnapshot
  */
 /**
  * @typedef {{ value?: any } | null} UseStreamInterrupt
@@ -19,7 +19,6 @@ import { Persistence } from "./core/persistence.js";
 /**
  * @typedef {Object} UseStreamReturn
  * @property {ValuesSnapshot} values
- * @property {SdkMessage[]} messages
  * @property {any} client
  * @property {any} assistantId
  * @property {any} error
@@ -32,9 +31,10 @@ import { Persistence } from "./core/persistence.js";
  * @property {any[]} history
  * @property {boolean} isThreadLoading
  * @property {UseStreamInterrupt} interrupt
- * @property {(message: SdkMessage, index?: number) => any} getMessagesMetadata
  * @property {(newThreadId: string) => void} resetForThreadSwitch
  * @property {(threadIdToClear: string) => void} clearThreadCache
+ * @property {(interruptId: string, frozenValue?: any) => void} completeInterrupt
+ * @property {(humanMessage: any) => void} addOptimisticHumanBlock
  */
 
 function unique(array) {
@@ -48,7 +48,7 @@ export function useStream(options) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(undefined);
   /** @type {[ValuesSnapshot, any]} */
-  const [values, setValues] = useState(/** @type {ValuesSnapshot} */({ messages: [], ui: [] }));
+  const [values, setValues] = useState(/** @type {ValuesSnapshot} */({ blocks: [], ui: [], messages: [] }));
   const [branch, setBranch] = useState("");
   /** @type {[UseStreamInterrupt, any]} */
   const [interrupt, setInterrupt] = useState(/** @type {UseStreamInterrupt} */(null));
@@ -88,7 +88,7 @@ export function useStream(options) {
     if (threads && threadId && threads[threadId]) {
       storeRef.current.hydrate(threadId, threads[threadId]);
       const snap = storeRef.current.snapshot(threadId);
-      setValues({ messages: snap.messages, ui: snap.ui });
+      setValues(snap);
     }
   }, [threadId]);
 
@@ -110,6 +110,8 @@ export function useStream(options) {
           setInterrupt({ value: normalized.payload.__interrupt__ });
         }
         storeRef.current.applyValues(tid, normalized.payload);
+      } else if (normalized.type === "interrupt") {
+        storeRef.current.applyInterrupt(tid, normalized.payload);
       } else {
         // ignore
       }
@@ -117,7 +119,7 @@ export function useStream(options) {
       const snap = storeRef.current.snapshot(tid);
       persistRef.current.saveThread(tid, snap);
       if (tid === threadId || threadId == null) {
-        setValues({ messages: snap.messages, ui: snap.ui });
+        setValues(snap);
       }
     });
   }, [threadId]);
@@ -199,21 +201,15 @@ export function useStream(options) {
       }
       if (!usableThreadId) throw new Error("Failed to obtain valid thread ID.");
 
-      // Apply optimistic values immediately (messages/ui) before starting stream
-      if (submitOptions?.optimisticValues != null) {
-        const prevSnap = storeRef.current.snapshot(usableThreadId);
-        const base = { messages: prevSnap.messages ?? [], ui: prevSnap.ui ?? [] };
-        const ov = typeof submitOptions.optimisticValues === "function"
-          ? submitOptions.optimisticValues(base)
-          : submitOptions.optimisticValues;
-        const nextMessages = Array.isArray(ov?.messages) ? [...base.messages, ...ov.messages] : base.messages;
-        const nextUi = Array.isArray(ov?.ui) ? [...base.ui, ...ov.ui] : base.ui;
+      // Optimistic values (blocks-only): allow immediate human echo if provided on submitOptions
+      if (submitOptions?.optimisticHumanMessage) {
+        const optimistic = submitOptions.optimisticHumanMessage;
         actorRef.current.enqueue(usableThreadId, async () => {
-          storeRef.current.hydrate(usableThreadId, { messages: nextMessages, ui: nextUi, lastUpdatedAt: Date.now() });
+          storeRef.current.addOptimisticHumanBlock(usableThreadId, optimistic);
           const snap = storeRef.current.snapshot(usableThreadId);
           persistRef.current.saveThread(usableThreadId, snap);
           if (usableThreadId === threadId || threadId == null) {
-            setValues({ messages: snap.messages, ui: snap.ui });
+            setValues(snap);
           }
         });
       }
@@ -259,10 +255,6 @@ export function useStream(options) {
     get values() {
       return values;
     },
-    /** @returns {SdkMessage[]} */
-    get messages() {
-      return values?.messages ?? [];
-    },
     client,
     assistantId,
     error,
@@ -278,11 +270,6 @@ export function useStream(options) {
     get interrupt() {
       return interrupt;
     },
-    getMessagesMetadata(message, index) {
-      // Minimal shim: metadata not available without history; return undefined
-      void message; void index; // satisfy lints
-      return undefined;
-    },
     resetForThreadSwitch(newThreadId) {
       // No clearing of persisted cache; only switch active view
       if (newThreadId && newThreadId !== threadId) {
@@ -291,7 +278,7 @@ export function useStream(options) {
           storeRef.current.hydrate(newThreadId, threads[newThreadId]);
         }
         const snap = storeRef.current.snapshot(newThreadId);
-        setValues({ messages: snap.messages, ui: snap.ui });
+        setValues(snap);
       }
     },
     clearThreadCache(threadIdToClear) {
@@ -304,6 +291,26 @@ export function useStream(options) {
       } catch (e) {
         console.warn("[PERSIST] failed to clear thread cache", e);
       }
+    },
+    completeInterrupt(interruptId, frozenValue) {
+      const tid = threadId;
+      if (!tid || !interruptId) return;
+      actorRef.current.enqueue(tid, async () => {
+        storeRef.current.completeInterrupt(tid, interruptId, frozenValue);
+        const snap = storeRef.current.snapshot(tid);
+        persistRef.current.saveThread(tid, snap);
+        setValues(snap);
+      });
+    },
+    addOptimisticHumanBlock(humanMessage) {
+      const tid = threadId;
+      if (!tid || !humanMessage) return;
+      actorRef.current.enqueue(tid, async () => {
+        storeRef.current.addOptimisticHumanBlock(tid, humanMessage);
+        const snap = storeRef.current.snapshot(tid);
+        persistRef.current.saveThread(tid, snap);
+        setValues(snap);
+      });
     },
   };
 

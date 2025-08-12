@@ -41,7 +41,7 @@ const TravelerDetailsBottomSheet: React.FC<{ apiData: any; args: any }> = ({
 
   return (
     <ReviewWidget
-      apiData={apiData}
+      apiData={apiData.value}
       {...args}
     />
   );
@@ -78,44 +78,57 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
   const processedWidgetsRef = useRef<Set<string>>(new Set());
   const [foundInterruptWidget, setFoundInterruptWidget] = useState<any>(null);
 
-  // Stable key for ui list
+  // Normalize widget envelope from various shapes
+  const widget = useMemo(() => {
+    const i: any = interrupt;
+    return (
+      i?.widget || i?.value?.widget || i?.value?.value?.widget || undefined
+    );
+  }, [interrupt]);
+
+  // Resolve type from multiple shapes
+  const resolvedType = useMemo(() => {
+    const i: any = interrupt;
+    return i?.type || i?.value?.type || i?.value?.value?.type || interruptType;
+  }, [interrupt, interruptType]);
+
+  // Stable key for ui list (best-effort; safe if UI is still exposed)
   const uiKey = useMemo(() => {
     const ui = (stream.values as any)?.ui as any[] | undefined;
     return Array.isArray(ui) ? ui.map((u) => u.id).join("|") : "";
   }, [(stream.values as any)?.ui]);
 
-  // Also capture the latest message id in the thread for matching by message_id
+  // Capture the latest message id from blocks timeline
   const lastMessageId = useMemo(() => {
-    const msgs = stream.messages as any[];
-    return Array.isArray(msgs) && msgs.length > 0
-      ? msgs[msgs.length - 1]?.id
-      : undefined;
-  }, [stream.messages]);
+    const blocks = (stream.values?.blocks ?? []) as Array<{
+      kind: string;
+      data: any;
+    }>;
+    const messages = Array.isArray(blocks)
+      ? blocks.filter((b) => b.kind === "message" && b.data)
+      : [];
+    if (messages.length === 0) return undefined;
+    return messages[messages.length - 1]?.data?.id;
+  }, [stream.values?.blocks]);
 
-  // Confirm mount and current snapshot sizes every render
+  // Dev diagnostics
   try {
     const uiCount = Array.isArray((stream.values as any)?.ui)
       ? (stream.values as any).ui.length
       : 0;
-    const msgCount = Array.isArray(stream.messages)
-      ? stream.messages.length
+    const blocks = (stream.values?.blocks ?? []) as any[];
+    const msgCount = Array.isArray(blocks)
+      ? blocks.filter((b) => b.kind === "message" && b.data).length
       : 0;
     debugLog("[INTERRUPT/DYN] render", {
       interruptType,
+      resolvedType,
       uiCount,
       msgCount,
       uiKey,
       lastMessageId,
     });
   } catch {}
-  // Avoid logging full values snapshot every render; rely on counts above
-
-  // Robustly resolve interrupt shape (it can be nested under value.value)
-  const rawVal = interrupt?.value;
-  const nestedVal =
-    rawVal && typeof rawVal === "object" ? (rawVal as any).value : undefined;
-  const resolvedType: string | undefined =
-    (interrupt as any)?.type || rawVal?.type || nestedVal?.type;
 
   // Helper to collect candidate IDs from a generic object location
   const collectIds = (obj: any): (string | undefined)[] => {
@@ -130,192 +143,119 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
     ];
   };
 
-  // Gather candidate IDs from top-level interrupt, raw value, nested value, and last message id
+  // Gather candidate IDs from top-level interrupt and nested shapes + last message id
+  const rawVal: any = (interrupt as any)?.value ?? interrupt;
+  const nestedVal: any =
+    rawVal && typeof rawVal === "object" ? rawVal.value : undefined;
   const candidateIds: (string | undefined)[] = [
     ...collectIds(interrupt),
     ...collectIds(rawVal),
     ...collectIds(nestedVal),
     lastMessageId,
   ];
-
   const firstCandidateId: string | undefined = candidateIds.find(
     (v): v is string => typeof v === "string" && v.length > 0,
   );
-  const hasAnyCandidateId = !!firstCandidateId;
 
-  // Dev-only logs for field resolution
-  debugLog("[INTERRUPT RESOLVE]", {
-    incomingType: interruptType,
-    resolvedType,
-    firstCandidateId,
-    allCandidates: candidateIds.filter((v) => typeof v === "string"),
-    lastMessageId,
-  });
+  // Determine if we can render a chat widget directly
+  const canRenderWidget = useMemo(() => {
+    const type = widget?.type as string | undefined;
+    return !!(resolvedType === "widget" && type && type in componentMap);
+  }, [resolvedType, widget?.type]);
 
+  // Notify parent about renderability without setting state during render
   useEffect(() => {
-    console.log("🔍 DynamicRenderer useEffect triggered:", {
-      interruptType,
-      renderingWindow: interrupt.value?.widget?.args?.renderingWindow,
-      widgetType: interrupt.value?.widget?.type,
-    });
+    if (!onRendered) return;
+    onRendered(!!canRenderWidget || !!foundInterruptWidget);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canRenderWidget, !!foundInterruptWidget]);
 
+  // Itinerary window side-effect (process-only; not for normal chat render)
+  useEffect(() => {
     if (
-      (interruptType === "widget" || interruptType === "interruptWidget") &&
-      interrupt.value?.widget?.args?.renderingWindow === "itinerary"
+      (resolvedType === "widget" || resolvedType === "interruptWidget") &&
+      widget?.args?.renderingWindow === "itinerary"
     ) {
-      console.log("✅ Itinerary rendering condition met, processing widget...");
-
       const interruptId =
-        interrupt.value?.interrupt_id ||
-        interrupt.value?.widget?.args?.interrupt_id;
-      const argsHash = JSON.stringify(interrupt.value.widget.args || {});
+        (interrupt as any)?.value?.interrupt_id || widget?.args?.interrupt_id;
+      const argsHash = JSON.stringify(widget?.args || {});
       const widgetId =
-        interruptId ||
-        `${interrupt.value.widget.type}-${btoa(argsHash).slice(0, 8)}`;
+        interruptId || `${widget?.type}-${btoa(argsHash).slice(0, 8)}`;
 
-      console.log("📝 Widget ID generated:", widgetId);
-
-      // Only process if not already processed
       if (!processedWidgetsRef.current.has(widgetId)) {
-        console.log("🆕 Processing new widget for itinerary...");
         processedWidgetsRef.current.add(widgetId);
-
-        const Component =
-          componentMap[interrupt.value.widget.type as ComponentType];
-        let widgetComponent: React.ReactNode;
-
-        if (interrupt.value.widget.type === "TravelerDetailsWidget") {
-          widgetComponent = (
-            <TravelerDetailsBottomSheet
-              apiData={interrupt}
-              args={interrupt.value.widget.args}
-            />
-          );
-        } else if (interrupt.value.widget.type === "NonAgentFlowWidget") {
-          widgetComponent = (
+        const Component = componentMap[widget?.type as ComponentType];
+        const widgetComponent =
+          widget?.type === "NonAgentFlowWidget" ? (
             <NonAgentFlowBottomSheet
               apiData={interrupt}
-              args={interrupt.value.widget.args}
+              args={widget?.args}
             />
+          ) : widget?.type === "TravelerDetailsWidget" ? (
+            <TravelerDetailsBottomSheet
+              apiData={interrupt}
+              args={widget?.args}
+            />
+          ) : (
+            <Component {...(widget?.args ?? {})} />
           );
-        } else {
-          widgetComponent = <Component {...interrupt.value.widget.args} />;
-        }
-
-        // Add widget to itinerary
-        console.log("📋 Adding widget to itinerary context...");
         addWidget(widgetId, widgetComponent);
-        onRendered?.(true);
-
-        // Only switch to review if we haven't already switched for this widget
-        if (!globalSwitchedWidgets.has(widgetId)) {
-          console.log("🔄 Attempting to switch to Review tab...");
-          try {
-            switchToReview();
-            globalSwitchedWidgets.add(widgetId);
-            console.log(`✅ Successfully switched to Review for widget: ${widgetId}`);
-          } catch (error) {
-            console.error("❌ Error switching to Review tab:", error);
-          }
-        } else {
-          console.log(
-            `⏭️ Already switched to Review for widget: ${widgetId}, skipping`,
-          );
-        }
-      } else {
-        console.log("⏭️ Widget already processed, skipping...");
+        try {
+          switchToReview();
+        } catch {}
       }
-    } else {
-      console.log("❌ Itinerary rendering condition not met");
     }
-  }, [interruptType, interrupt, addWidget, switchToReview]);
+  }, [
+    resolvedType,
+    widget?.args,
+    widget?.type,
+    interrupt,
+    addWidget,
+    switchToReview,
+  ]);
 
-  debugLog("DynamicRenderer called", { interruptType, interrupt });
-
-  if (hasAnyCandidateId) {
-    const attachmentId = firstCandidateId as string;
-
-    if (attachmentId) {
-      if (foundInterruptWidget) {
-        return (
-          <LoadExternalComponent
-            key={foundInterruptWidget.id}
-            stream={stream as any}
-            message={foundInterruptWidget}
-            meta={{ ui: foundInterruptWidget, artifact }}
-          />
-        );
-      }
-      return null;
-    }
-
-    debugLog("No attachmentId found in interruptWidget interrupt", {
-      interrupt,
-    });
-    return null;
+  // Attachment-based rendering: if an attached UI widget is available (future: setFoundInterruptWidget)
+  if (firstCandidateId && foundInterruptWidget) {
+    return (
+      <LoadExternalComponent
+        key={foundInterruptWidget.id}
+        stream={stream as any}
+        message={foundInterruptWidget}
+        meta={{ ui: foundInterruptWidget, artifact }}
+      />
+    );
   }
 
-  if (
-    interruptType === "widget" &&
-    interrupt.value.widget.type in componentMap
-  ) {
-    const Component =
-      componentMap[interrupt.value.widget.type as ComponentType];
-
-    const renderingWindow =
-      interrupt.value.widget.args?.renderingWindow || "chat";
-
-    let widgetComponent: React.ReactNode;
-
-    if (interrupt.value.widget.type === "TravelerDetailsWidget") {
-      widgetComponent = (
-        <TravelerDetailsBottomSheet
-          apiData={interrupt}
-          args={interrupt.value.widget.args}
-        />
-      );
-    } else if (interrupt.value.widget.type === "SeatPaymentWidget") {
-      widgetComponent = <Component {...interrupt.value.widget.args} />;
-    } else if (interrupt.value.widget.type === "AddBaggageWidget") {
-      widgetComponent = <Component {...interrupt.value.widget.args} />;
-    } else if (interrupt.value.widget.type === "NonAgentFlowWidget") {
-      widgetComponent = (
-        <NonAgentFlowBottomSheet
-          apiData={interrupt}
-          args={interrupt.value.widget.args}
-        />
-      );
-    } else if (
-      [
-        "SeatPreferenceWidget",
-        "SeatSelectionWidget",
-        "SeatMapWidget",
-        "SeatCombinedWidget",
-      ].includes(interrupt.value.widget.type)
-    ) {
-      widgetComponent = <Component {...interrupt.value.widget.args} />;
-    } else {
-      widgetComponent = <Component {...interrupt.value.widget.args} />;
-    }
+  // Component-map rendering (chat inline)
+  if (canRenderWidget) {
+    const Component = componentMap[widget?.type as ComponentType];
+    const renderingWindow = widget?.args?.renderingWindow || "chat";
 
     if (renderingWindow === "itinerary") {
-      const interruptId =
-        interrupt.value?.interrupt_id ||
-        interrupt.value?.widget?.args?.interrupt_id;
-      const argsHash = JSON.stringify(interrupt.value.widget.args || {});
-      const widgetId =
-        interruptId ||
-        `${interrupt.value.widget.type}-${btoa(argsHash).slice(0, 8)}`;
-      onRendered?.(true);
-      return null;
+      return null; // handled by effect above
     }
 
-    onRendered?.(true);
-    return widgetComponent;
+    if (widget?.type === "NonAgentFlowWidget") {
+      return (
+        <NonAgentFlowBottomSheet
+          apiData={interrupt.value.value}
+          args={widget?.args}
+        />
+      );
+    }
+    if (widget?.type === "TravelerDetailsWidget") {
+      console.log("777777777 Traveler Details Widget - API data:", JSON.stringify(interrupt));
+      return (
+        <TravelerDetailsBottomSheet
+          apiData={interrupt}
+          args={widget?.args}
+        />
+      );
+    }
+    return <Component {...(widget?.args ?? {})} />;
   }
 
-  debugLog("No widget found", { interruptType, interrupt });
-  onRendered?.(false);
+  // Nothing to render
   return null;
 };
 
@@ -334,11 +274,19 @@ export function GenericInterruptView({
 
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const contentStr = JSON.stringify(interrupt, null, 2);
+  // If we receive full block data, prefer frozen value when completed
+  const blockLike = interrupt as any;
+  const rawValue = blockLike?.value ?? interrupt;
+  const readOnly = !!blockLike?.completed;
+  const effectiveValue = blockLike?.frozenValue ?? rawValue;
+
+  const contentStr = JSON.stringify(effectiveValue, null, 2);
   const contentLines = contentStr.split("\n");
   const shouldTruncate = contentLines.length > 4 || contentStr.length > 500;
 
-  const interruptObj = Array.isArray(interrupt) ? interrupt[0] : interrupt;
+  const interruptObj = Array.isArray(effectiveValue)
+    ? effectiveValue[0]
+    : effectiveValue;
   const interruptType =
     interruptObj.type ||
     interruptObj.value?.type ||
@@ -348,7 +296,7 @@ export function GenericInterruptView({
   const dynamicWidget = (
     <DynamicRenderer
       interruptType={interruptType}
-      interrupt={interruptObj}
+      interrupt={{ ...interruptObj, _readOnly: readOnly }}
       onRendered={setRenderedByDynamic}
     />
   );
@@ -379,10 +327,10 @@ export function GenericInterruptView({
   };
 
   const processEntries = () => {
-    if (Array.isArray(interrupt)) {
-      return isExpanded ? interrupt : interrupt.slice(0, 5);
+    if (Array.isArray(effectiveValue)) {
+      return isExpanded ? effectiveValue : effectiveValue.slice(0, 5);
     } else {
-      const entries = Object.entries(interrupt);
+      const entries = Object.entries(effectiveValue);
       if (!isExpanded && shouldTruncate) {
         return entries.map(([key, value]) => [key, truncateValue(value)]);
       }
@@ -397,7 +345,13 @@ export function GenericInterruptView({
       {dynamicWidget}
       {!renderedByDynamic && (
         <DebugPanel
-          data={{ interrupt, interruptType, shouldTruncate, isExpanded }}
+          data={{
+            interrupt: effectiveValue,
+            interruptType,
+            shouldTruncate,
+            isExpanded,
+            readOnly,
+          }}
           label="Generic Interrupt Debug"
         />
       )}
@@ -433,7 +387,7 @@ export function GenericInterruptView({
                   <table className="min-w-full divide-y divide-gray-200">
                     <tbody className="divide-y divide-gray-200">
                       {displayEntries.map((item, argIdx) => {
-                        const [key, value] = Array.isArray(interrupt)
+                        const [key, value] = Array.isArray(effectiveValue)
                           ? [argIdx.toString(), item]
                           : (item as [string, any]);
                         return (
@@ -459,7 +413,7 @@ export function GenericInterruptView({
               </AnimatePresence>
             </div>
             {(shouldTruncate ||
-              (Array.isArray(interrupt) && interrupt.length > 5)) && (
+              (Array.isArray(effectiveValue) && effectiveValue.length > 5)) && (
               <motion.button
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="flex w-full cursor-pointer items-center justify-center border-t-[1px] border-gray-200 py-2 text-gray-500 transition-all duration-200 ease-in-out hover:bg-gray-50 hover:text-gray-600"
