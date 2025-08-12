@@ -12,6 +12,7 @@ import SeatPaymentWidget from "./seatPayment.widget";
 import SeatCombinedWidget from "./seatCombined.widget";
 import AddBaggageWidget from "./addBaggage.widget";
 import WhosTravellingWidget from "./whosTravelling.widget";
+import BookingStatusWidget from "./bookingStatus";
 
 export const componentMap = {
   SearchCriteriaWidget, // Add mapping for SearchCriteria type
@@ -19,7 +20,7 @@ export const componentMap = {
   FlightStatusWidget, /// simple widget needs to send from server
   LoungeWidget, ///  simple widget needs to send from server
   weatherWidget, ///  simple widget needs to send from server
-  TravelerDetailsWidget: WhosTravellingWidget, /// Flight booking review widget
+  TravelerDetailsWidget: ReviewWidget, /// Flight booking review widget
   PaymentWidget, /// Razorpay payment widget
   NonAgentFlowWidget, /// Non-agent flow payment widget with bottom sheet
   SeatPreferenceWidget, /// Seat preference selection widget
@@ -28,6 +29,7 @@ export const componentMap = {
   SeatCombinedWidget, /// Combined seat selection widget with all options
   AddBaggageWidget, /// Baggage selection widget with weight and price options
   WhosTravellingWidget, /// Passenger selection widget for booking
+  BookingStatusWidget, /// Ticket confirmation widget with booking and payment status
 } as const;
 
 export type ComponentType = keyof typeof componentMap;

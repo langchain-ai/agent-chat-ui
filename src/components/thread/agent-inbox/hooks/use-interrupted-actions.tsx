@@ -14,6 +14,7 @@ import { HumanInterrupt, HumanResponse } from "@langchain/langgraph/prebuilt";
 import { END } from "@langchain/langgraph/web";
 import { useStreamContext } from "@/providers/Stream";
 import { getJwtToken, GetUserId } from "@/services/authService";
+import { getCachedLocation } from "@/lib/location-cache";
 
 interface UseInterruptedActionsInput {
   interrupt: HumanInterrupt;
@@ -81,27 +82,35 @@ export default function useInterruptedActions({
     }
   }, [interrupt]);
 
-  const resumeRun = (response: HumanResponse[]): boolean => {
+  const resumeRun = async (response: HumanResponse[]): Promise<boolean> => {
     try {
       // Get user ID from JWT token
       const jwtToken = getJwtToken();
       const userId = jwtToken ? GetUserId(jwtToken) : null;
 
-      // Include userId in the submission data
+      // Get location data from cache
+      const locationData = await getCachedLocation();
+
+      // Include userId and location in the submission data
       const submissionData: any = {};
       if (userId) {
         submissionData.userId = userId;
       }
+      if (locationData) {
+        submissionData.userLocation = {
+          latitude: locationData.latitude,
+          longitude: locationData.longitude,
+          accuracy: locationData.accuracy,
+          timestamp: locationData.timestamp,
+        };
+      }
 
-      thread.submit(
-        submissionData,
-        {
-          streamSubgraphs: true,
-          command: {
-            resume: response,
-          },
+      thread.submit(submissionData, {
+        streamSubgraphs: true,
+        command: {
+          resume: response,
         },
-      );
+      });
       return true;
     } catch (e: any) {
       console.error("Error sending human response", e);
@@ -174,7 +183,7 @@ export default function useInterruptedActions({
 
         setLoading(true);
         setStreaming(true);
-        const resumedSuccessfully = resumeRun([input]);
+        const resumedSuccessfully = await resumeRun([input]);
         if (!resumedSuccessfully) {
           // This will only be undefined if the graph ID is not found
           // in this case, the method will trigger a toast for us.
@@ -220,7 +229,7 @@ export default function useInterruptedActions({
       }
     } else {
       setLoading(true);
-      resumeRun(humanResponse);
+      await resumeRun(humanResponse);
 
       toast("Success", {
         description: "Response submitted successfully.",
@@ -248,7 +257,7 @@ export default function useInterruptedActions({
     setLoading(true);
     initialHumanInterruptEditValue.current = {};
 
-    resumeRun([ignoreResponse]);
+    await resumeRun([ignoreResponse]);
 
     setLoading(false);
     toast("Successfully ignored thread", {

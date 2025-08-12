@@ -7,14 +7,13 @@ import { AirportCombobox } from "@/components/common/ui/airportCombobox";
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
 import { useTabContext } from "@/providers/TabContext";
-import {submitInterruptResponse} from "./util";
+import { submitInterruptResponse } from "./util";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/common/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { getUserLocation, LocationResult } from "@/lib/utils";
 
 // DateInput component using shadcn Calendar
 interface DateInputProps {
@@ -35,33 +34,39 @@ const DateInput = ({
   const formatDateDisplay = (date: Date | undefined) => {
     if (!date) return placeholder || "Select date";
     const options: Intl.DateTimeFormatOptions = {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      year: "numeric",
     };
-    return date.toLocaleDateString('en-US', options);
+    return date.toLocaleDateString("en-US", options);
   };
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover
+      open={isOpen}
+      onOpenChange={setIsOpen}
+    >
       <PopoverTrigger asChild>
         <Button
           variant="outline"
           className={cn(
             "w-full justify-start text-left font-normal focus:border-black focus:ring-black",
             !date && "text-muted-foreground",
-            className
+            className,
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
           {formatDateDisplay(date)}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
+      <PopoverContent
+        className="w-auto p-0"
+        align="start"
+      >
         <Calendar
           mode="single"
           selected={date}
@@ -97,7 +102,7 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
   const [flightClass, setFlightClass] = useState(
     flightSearchCriteria.class
       ? flightSearchCriteria.class.charAt(0).toUpperCase() +
-      flightSearchCriteria.class.slice(1)
+          flightSearchCriteria.class.slice(1)
       : "Economy",
   );
   const [fromAirport, setFromAirport] = useState<string>(
@@ -141,42 +146,6 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showTravellerDropdown, setShowTravellerDropdown] = useState(false);
 
-  // Location-related state
-  const [locationResult, setLocationResult] = useState<LocationResult | null>(null);
-  const [isGettingLocation, setIsGettingLocation] = useState(false);
-
-  // Request user location when component loads
-  useEffect(() => {
-    const requestLocation = async () => {
-      setIsGettingLocation(true);
-      try {
-        const result = await getUserLocation();
-        setLocationResult(result);
-
-        if (result.success) {
-          console.log("Location obtained successfully:", result.data);
-          // You can use the location data here if needed
-          // For example, to find nearby airports or set default location
-        } else {
-          console.log("Location request failed:", result.error);
-        }
-      } catch (error) {
-        console.error("Unexpected error getting location:", error);
-        setLocationResult({
-          success: false,
-          error: {
-            code: -1,
-            message: "Unexpected error occurred while getting location"
-          }
-        });
-      } finally {
-        setIsGettingLocation(false);
-      }
-    };
-
-    requestLocation();
-  }, [setLocationResult, setIsGettingLocation]); // Dependencies to avoid warnings
-
   // Wrapper functions for date state setters to match DateInput component interface
   const handleDepartureDateChange = (date: Date | undefined) => {
     setDepartureDate(date);
@@ -185,8 +154,6 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
   const handleReturnDateChange = (date: Date | undefined) => {
     setReturnDate(date);
   };
-
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -241,21 +208,20 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
     }
 
     const parts = [];
-    if (adults > 0) parts.push(`${adults} Adult${adults > 1 ? 's' : ''}`);
-    if (children > 0) parts.push(`${children} Child${children > 1 ? 'ren' : ''}`);
-    if (infants > 0) parts.push(`${infants} Infant${infants > 1 ? 's' : ''}`);
+    if (adults > 0) parts.push(`${adults} Adult${adults > 1 ? "s" : ""}`);
+    if (children > 0)
+      parts.push(`${children} Child${children > 1 ? "ren" : ""}`);
+    if (infants > 0) parts.push(`${infants} Infant${infants > 1 ? "s" : ""}`);
 
-    return `${parts.join(', ')}, ${flightClass}`;
+    return `${parts.join(", ")}, ${flightClass}`;
   };
-
-
 
   return (
     <>
       <div
-        className="mx-auto mt-2 w-full max-w-xs md:max-w-sm lg:max-w-md xl:max-w-lg rounded-2xl border border-gray-200 bg-white p-3 font-sans shadow-lg sm:mt-10 sm:p-6"
+        className="mx-auto mt-2 w-full max-w-xs rounded-2xl border border-gray-200 bg-white p-3 font-sans shadow-lg sm:mt-10 sm:p-6 md:max-w-sm lg:max-w-md xl:max-w-lg"
         style={{
-          fontFamily: "Uber Move, Arial, Helvetica, sans-serif"
+          fontFamily: "Uber Move, Arial, Helvetica, sans-serif",
         }}
       >
         <form
@@ -263,7 +229,7 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
           onSubmit={handleSubmit}
         >
           {/* Trip Type - Horizontal tabs */}
-          <div className="flex gap-2">
+          {/* <div className="flex gap-2">
             <button
               type="button"
               onClick={() => setTripType("oneway")}
@@ -288,7 +254,8 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
             >
               Round trip
             </button>
-          </div>
+           
+          </div> */}
 
           {/* Flight Details - From/To */}
           <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
@@ -336,23 +303,28 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
 
           {/* Travellers & Class - Dropdown */}
           <div>
-            <Popover open={showTravellerDropdown} onOpenChange={setShowTravellerDropdown}>
+            <Popover
+              open={showTravellerDropdown}
+              onOpenChange={setShowTravellerDropdown}
+            >
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   role="combobox"
                   aria-expanded={showTravellerDropdown}
-                  className="w-full justify-between focus:ring-black focus:border-black"
+                  className="w-full justify-between focus:border-black focus:ring-black"
                 >
                   <span>{formatTravellerText()}</span>
                   <span className="ml-2 text-gray-400">▼</span>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[320px] sm:w-[380px] md:w-[420px] p-0">
-                <div className="p-4 space-y-6">
+              <PopoverContent className="w-[320px] p-0 sm:w-[380px] md:w-[420px]">
+                <div className="space-y-6 p-4">
                   {/* Select travellers */}
                   <div>
-                    <h3 className="text-lg font-semibold mb-4">Select travellers</h3>
+                    <h3 className="mb-4 text-lg font-semibold">
+                      Select travellers
+                    </h3>
 
                     {/* Adults */}
                     <div className="flex items-center justify-between py-3">
@@ -371,7 +343,9 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
                         >
                           <Minus className="h-4 w-4" />
                         </Button>
-                        <span className="w-8 text-center font-medium">{adults}</span>
+                        <span className="w-8 text-center font-medium">
+                          {adults}
+                        </span>
                         <Button
                           type="button"
                           variant="outline"
@@ -401,7 +375,9 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
                         >
                           <Minus className="h-4 w-4" />
                         </Button>
-                        <span className="w-8 text-center font-medium">{children}</span>
+                        <span className="w-8 text-center font-medium">
+                          {children}
+                        </span>
                         <Button
                           type="button"
                           variant="outline"
@@ -431,7 +407,9 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
                         >
                           <Minus className="h-4 w-4" />
                         </Button>
-                        <span className="w-8 text-center font-medium">{infants}</span>
+                        <span className="w-8 text-center font-medium">
+                          {infants}
+                        </span>
                         <Button
                           type="button"
                           variant="outline"
@@ -447,21 +425,26 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
 
                   {/* Select class */}
                   <div>
-                    <h3 className="text-lg font-semibold mb-4">Select class</h3>
+                    <h3 className="mb-4 text-lg font-semibold">Select class</h3>
                     <div className="space-y-3">
-                      {['Economy', 'Business', 'Premium Economy'].map((classOption) => (
-                        <label key={classOption} className="flex items-center gap-3 cursor-pointer">
-                          <input
-                            type="radio"
-                            name="flightClass"
-                            value={classOption}
-                            checked={flightClass === classOption}
-                            onChange={(e) => setFlightClass(e.target.value)}
-                            className="w-4 h-4 text-black border-gray-300 focus:ring-black"
-                          />
-                          <span className="font-medium">{classOption}</span>
-                        </label>
-                      ))}
+                      {["Economy", "Business", "Premium Economy"].map(
+                        (classOption) => (
+                          <label
+                            key={classOption}
+                            className="flex cursor-pointer items-center gap-3"
+                          >
+                            <input
+                              type="radio"
+                              name="flightClass"
+                              value={classOption}
+                              checked={flightClass === classOption}
+                              onChange={(e) => setFlightClass(e.target.value)}
+                              className="h-4 w-4 border-gray-300 text-black focus:ring-black"
+                            />
+                            <span className="font-medium">{classOption}</span>
+                          </label>
+                        ),
+                      )}
                     </div>
                   </div>
                 </div>
@@ -474,15 +457,13 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-black hover:bg-gray-800 text-white font-semibold py-3 rounded-lg text-base"
+              className="w-full rounded-lg bg-black py-3 text-base font-semibold text-white hover:bg-gray-800"
             >
               {isLoading ? "Searching..." : "Search flights"}
             </Button>
           </div>
         </form>
       </div>
-
-
     </>
   );
 };

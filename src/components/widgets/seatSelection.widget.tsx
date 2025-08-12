@@ -141,11 +141,14 @@ const SeatSelectionWidget: React.FC<SeatSelectionWidgetProps> = (args) => {
   return (
     <>
       {/* Initial Options */}
-      <div className="mx-auto mt-2 w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 font-sans shadow-lg">
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Seat Selection</h2>
-          <p className="text-gray-600 mb-4">
-            Shall I reserve your usual seat {usualSeat}, or would you like to browse the seat map first?
+      <div
+        className="mx-auto mt-2 w-full max-w-md rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-lg"
+        style={{ fontFamily: 'Uber Move, Arial, Helvetica, sans-serif' }}
+      >
+        <div className="mb-4 sm:mb-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-black mb-2">Seat Selection</h2>
+          <p className="text-sm text-gray-600">
+            Choose your usual seat {usualSeat} or browse all available options
           </p>
         </div>
 
@@ -153,18 +156,25 @@ const SeatSelectionWidget: React.FC<SeatSelectionWidgetProps> = (args) => {
           <Button
             onClick={handleUsualSeatSelect}
             disabled={isLoading}
-            className="w-full bg-black hover:bg-gray-800 text-white font-semibold py-3 rounded-lg text-base"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 sm:py-4 rounded-xl text-base sm:text-lg shadow-lg hover:shadow-xl transition-all duration-200"
           >
-            {isLoading ? "Processing..." : `Reserve usual seat ${usualSeat}`}
+            {isLoading ? (
+              <div className="flex items-center justify-center space-x-2">
+                <div className="h-4 w-4 sm:h-5 sm:w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                <span>Processing...</span>
+              </div>
+            ) : (
+              `Reserve Seat ${usualSeat}`
+            )}
           </Button>
 
           <Button
             onClick={handleBrowseSeatMap}
             disabled={isLoading}
             variant="outline"
-            className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold py-3 rounded-lg text-base"
+            className="w-full border-2 border-gray-300 text-black hover:bg-gray-50 hover:border-gray-400 font-medium py-3 rounded-xl text-base"
           >
-            Browse seat map
+            Browse All Seats
           </Button>
         </div>
       </div>
@@ -186,18 +196,18 @@ const SeatSelectionWidget: React.FC<SeatSelectionWidgetProps> = (args) => {
               <p className="text-gray-600 mb-4">Choose an available seat from the seat map below</p>
 
               {/* Legend */}
-              <div className="flex gap-4 mb-6 text-sm">
+              <div className="flex justify-center gap-6 sm:gap-8 mb-6 text-sm bg-gray-50 rounded-xl p-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
-                  <span>Available</span>
+                  <div className="w-5 h-5 bg-green-100 border-2 border-green-300 rounded-lg shadow-sm"></div>
+                  <span className="text-gray-700 font-medium">Available</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-red-100 border border-red-300 rounded"></div>
-                  <span>Occupied</span>
+                  <div className="w-5 h-5 bg-red-100 border-2 border-red-300 rounded-lg"></div>
+                  <span className="text-gray-700 font-medium">Occupied</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-blue-500 border border-blue-500 rounded"></div>
-                  <span>Selected</span>
+                  <div className="w-5 h-5 bg-blue-500 border-2 border-blue-500 rounded-lg"></div>
+                  <span className="text-gray-700 font-medium">Selected</span>
                 </div>
               </div>
             </div>
@@ -292,12 +302,27 @@ const SeatSelectionWidget: React.FC<SeatSelectionWidgetProps> = (args) => {
             </div>
 
             {selectedSeat && (
-              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="mb-4 p-4 sm:p-5 bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-xl">
                 <div className="flex justify-between items-center">
-                  <span className="text-blue-800 font-medium">Selected Seat: {selectedSeat}</span>
-                  <span className="text-blue-800 font-semibold">
-                    {selectedPrice === 0 ? "Free" : `₹${selectedPrice}`}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                      <span className="text-white font-bold text-sm">{selectedSeat}</span>
+                    </div>
+                    <div>
+                      <div className="text-blue-800 font-bold text-base sm:text-lg">Seat {selectedSeat}</div>
+                      <div className="text-blue-600 text-sm">
+                        {selectedPrice === 0 ? 'Complimentary selection' : 'Premium seat'}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xl font-bold text-blue-800">
+                      {selectedPrice === 0 ? "FREE" : `₹${selectedPrice}`}
+                    </div>
+                    <div className="text-xs text-blue-600">
+                      {selectedPrice === 0 ? 'No charge' : 'One-time fee'}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -305,9 +330,18 @@ const SeatSelectionWidget: React.FC<SeatSelectionWidgetProps> = (args) => {
             <Button
               onClick={handleSeatMapSubmit}
               disabled={isLoading || !selectedSeat}
-              className="w-full bg-black hover:bg-gray-800 text-white font-semibold py-3 rounded-lg text-base"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 sm:py-4 rounded-xl text-base sm:text-lg shadow-lg hover:shadow-xl transition-all duration-200"
             >
-              {isLoading ? "Processing..." : "Confirm Seat Selection"}
+              {isLoading ? (
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="h-4 w-4 sm:h-5 sm:w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                  <span>Processing...</span>
+                </div>
+              ) : selectedSeat ? (
+                `Confirm Seat ${selectedSeat}`
+              ) : (
+                "Select a Seat Above"
+              )}
             </Button>
           </div>
         </SheetContent>

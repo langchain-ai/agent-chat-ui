@@ -41,6 +41,7 @@ import {
 import { cn } from "@/lib/utils";
 import { submitInterruptResponse } from "./util";
 import { useStreamContext } from "@/providers/Stream";
+
 import Image from "next/image";
 
 // DateInput component using shadcn Calendar (same as searchCriteria.widget.tsx)
@@ -397,6 +398,53 @@ const testCountryConversion = () => {
 // Uncomment the line below to run the test
 // testCountryConversion();
 
+// Helper function to get country code from country name (matching whosTravelling widget)
+const getCountryCodeFromName = (countryName: string): string => {
+  if (!countryName) return "IN"; // Default to India
+
+  const input = countryName.trim();
+
+  // Check if it's already a 2-letter code
+  if (input.length === 2 && /^[A-Z]{2}$/i.test(input)) {
+    return input.toUpperCase();
+  }
+
+  // Common name variations for edge cases (same as whosTravelling)
+  const nameVariations: { [key: string]: string } = {
+    usa: "US",
+    america: "US",
+    "united states": "US",
+    uk: "GB",
+    britain: "GB",
+    "great britain": "GB",
+    england: "GB",
+    uae: "AE",
+    emirates: "AE",
+    "united arab emirates": "AE",
+    "south korea": "KR",
+    korea: "KR",
+    russia: "RU",
+    "russian federation": "RU",
+  };
+
+  const lowerInput = input.toLowerCase();
+  if (nameVariations[lowerInput]) {
+    return nameVariations[lowerInput];
+  }
+
+  // Try to find in POPULAR_COUNTRIES list
+  const country = POPULAR_COUNTRIES.find(
+    (c) => c.name.toLowerCase() === lowerInput || c.code.toLowerCase() === lowerInput
+  );
+
+  if (country) {
+    return country.code;
+  }
+
+  // Default fallback
+  return "IN";
+};
+
 interface CountryComboboxProps {
   value?: string;
   onValueChange?: (value: string) => void;
@@ -504,7 +552,7 @@ const CountryCombobox = ({
   );
 };
 
-// TypeScript Interfaces for API Response
+// TypeScript Interfaces for API Response (matching whosTravelling widget)
 interface ApiPhone {
   countryCode: string;
   number: string;
@@ -519,6 +567,8 @@ interface ApiDocument {
   issuingDate: string;
   issuingCountry: string;
   documentUrl: string;
+  birthPlace?: string;
+  issuanceLocation?: string;
 }
 
 interface ApiTraveller {
@@ -564,29 +614,76 @@ interface ApiFlightOffer {
   totalEmissionUnit: string;
   currency: string;
   totalAmount: number;
-  duration: string;
-  departure: {
+  tax?: number;
+  baseAmount?: number;
+  serviceFee?: number;
+  convenienceFee?: number;
+  duration?: string;
+  // New journey structure
+  journey?: Array<{
+    id: string;
+    duration: string;
+    departure: {
+      date: string;
+      airportIata: string;
+      airportName: string;
+      cityCode: string;
+      countryCode: string;
+    };
+    arrival: {
+      date: string;
+      airportIata: string;
+      airportName: string;
+      cityCode: string;
+      countryCode: string;
+    };
+    segments: ApiFlightSegment[];
+  }>;
+  // Legacy structure (for backward compatibility)
+  departure?: {
     date: string;
     airportIata: string;
     airportName: string;
     cityCode: string;
     countryCode: string;
   };
-  arrival: {
+  arrival?: {
     date: string;
     airportIata: string;
     airportName: string;
     cityCode: string;
     countryCode: string;
   };
-  segments: ApiFlightSegment[];
-  offerRules: {
+  segments?: ApiFlightSegment[];
+  baggage?: {
+    check_in_baggage: {
+      weight: number;
+      weightUnit: string;
+    };
+    cabin_baggage: {
+      weight: number;
+      weightUnit: string;
+    };
+  };
+  offerRules?: {
     isRefundable: boolean;
   };
-  rankingScore: number;
-  pros: string[];
-  cons: string[];
-  tags: string[];
+  rankingScore?: number;
+  pros?: string[];
+  cons?: string[];
+  tags?: string[];
+}
+
+interface ApiTravelerRequirement {
+  travelerId: string;
+  genderRequired: boolean;
+  documentRequired: boolean;
+  documentIssuanceCityRequired: boolean;
+  dateOfBirthRequired: boolean;
+  redressRequiredIfAny: boolean;
+  airFranceDiscountRequired: boolean;
+  spanishResidentDiscountRequired: boolean;
+  residenceRequired: boolean;
 }
 
 interface ApiBookingRequirements {
@@ -597,7 +694,7 @@ interface ApiBookingRequirements {
   mobilePhoneNumberRequired: boolean;
   phoneNumberRequired: boolean;
   postalCodeRequired: boolean;
-  travelerRequirements: any;
+  travelerRequirements: ApiTravelerRequirement[] | null;
 }
 
 interface ApiWidgetArgs {
@@ -605,6 +702,11 @@ interface ApiWidgetArgs {
     userContext: {
       userDetails: ApiTraveller;
       savedTravellers: ApiTraveller[];
+      contactDetails?: {
+        countryCode?: string;
+        mobileNumber: string;
+        email: string;
+      };
     };
     selectionContext: {
       selectedFlightOffers: ApiFlightOffer[];
@@ -699,10 +801,6 @@ interface ReviewWidgetProps {
   onSubmit?: (data: any) => void;
   // New API response prop
   apiData?: ApiResponse;
-  // Bottom sheet mode
-  isInBottomSheet?: boolean;
-  // Function to close the bottom sheet
-  onClose?: () => void;
   // Loading state management
   isSubmitting?: boolean;
   onSubmittingChange?: (isSubmitting: boolean) => void;
@@ -710,18 +808,35 @@ interface ReviewWidgetProps {
 
 // Utility functions to transform API data
 const formatDateTime = (isoString: string) => {
-  const date = new Date(isoString);
-  const dateStr = date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-  const timeStr = date.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
-  return { date: dateStr, time: timeStr };
+  if (!isoString) {
+    console.warn("formatDateTime: Empty or undefined date string provided");
+    return { date: "N/A", time: "N/A" };
+  }
+
+  try {
+    const date = new Date(isoString);
+
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      console.warn("formatDateTime: Invalid date string provided:", isoString);
+      return { date: "Invalid Date", time: "Invalid Time" };
+    }
+
+    const dateStr = date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+    const timeStr = date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+    return { date: dateStr, time: timeStr };
+  } catch (error) {
+    console.error("formatDateTime: Error formatting date:", isoString, error);
+    return { date: "Error", time: "Error" };
+  }
 };
 
 const parseDuration = (duration: string) => {
@@ -781,7 +896,7 @@ const AirlineLogo = ({
           alt={`${airlineName} logo`}
           width={size === "sm" ? 24 : size === "md" ? 32 : 40}
           height={size === "sm" ? 24 : size === "md" ? 32 : 40}
-          className="rounded-full object-contain"
+          className="airline-logo rounded-full object-contain"
           onError={(e) => {
             // Fallback to gray circle if image fails to load
             const target = e.target as HTMLImageElement;
@@ -807,37 +922,65 @@ const transformApiDataToFlightDetails = (
       .selectedFlightOffers[0];
   if (!flightOffer) return null;
 
-  const departure = formatDateTime(flightOffer.departure.date);
-  const arrival = formatDateTime(flightOffer.arrival.date);
+  // Handle new journey structure or legacy structure
+  let departureData, arrivalData, segments, duration;
+
+  if (flightOffer.journey && flightOffer.journey.length > 0) {
+    // New journey structure
+    const journey = flightOffer.journey[0];
+    departureData = journey.departure;
+    arrivalData = journey.arrival;
+    segments = journey.segments || [];
+    duration = journey.duration;
+  } else {
+    // Legacy structure (backward compatibility)
+    departureData = flightOffer.departure;
+    arrivalData = flightOffer.arrival;
+    segments = flightOffer.segments || [];
+    duration = flightOffer.duration;
+  }
+
+  // Safety check for required data
+  if (!departureData || !arrivalData || !departureData.date || !arrivalData.date) {
+    console.warn("Missing departure or arrival data in flight offer:", flightOffer);
+    return null;
+  }
+
+  const departure = formatDateTime(departureData.date);
+  const arrival = formatDateTime(arrivalData.date);
 
   // Get airline info from first segment
-  const firstSegment = flightOffer.segments[0];
+  const firstSegment = segments[0];
 
   return {
     departure: {
-      city: flightOffer.departure.cityCode,
-      airport:
-        flightOffer.departure.airportName || flightOffer.departure.airportIata,
-      code: flightOffer.departure.airportIata,
+      city: departureData.cityCode || departureData.airportIata,
+      airport: departureData.airportName || departureData.airportIata,
+      code: departureData.airportIata,
       date: departure.date,
       time: departure.time,
     },
     arrival: {
-      city: flightOffer.arrival.cityCode,
-      airport:
-        flightOffer.arrival.airportName || flightOffer.arrival.airportIata,
-      code: flightOffer.arrival.airportIata,
+      city: arrivalData.cityCode || arrivalData.airportIata,
+      airport: arrivalData.airportName || arrivalData.airportIata,
+      code: arrivalData.airportIata,
       date: arrival.date,
       time: arrival.time,
     },
-    airline: {
+    airline: firstSegment ? {
       name: firstSegment.airlineName || firstSegment.airlineIata,
       flightNumber: `${firstSegment.airlineIata} ${firstSegment.flightNumber}`,
       cabinClass: "Economy", // Default as not provided in API
       aircraftType: firstSegment.aircraftType,
       iataCode: firstSegment.airlineIata,
+    } : {
+      name: "Unknown Airline",
+      flightNumber: "N/A",
+      cabinClass: "Economy",
+      aircraftType: "Unknown",
+      iataCode: "XX",
     },
-    duration: parseDuration(flightOffer.duration),
+    duration: parseDuration(duration || ""),
   };
 };
 
@@ -865,13 +1008,29 @@ const transformApiDataToPassengerDetails = (
 const transformApiDataToContactInfo = (
   apiData: ApiResponse,
 ): ContactInformation | null => {
-  const userDetails =
-    apiData.value.widget.args.flightItinerary.userContext.userDetails;
+  // First try to get contact details from contactDetails (matching whosTravelling logic)
+  const contactDetails = apiData.value.widget.args.flightItinerary.userContext.contactDetails;
+
+  if (contactDetails) {
+    console.log("📞 Review Widget - Processing contactDetails:", contactDetails);
+
+    // Format phone number with country code
+    const countryCode = contactDetails.countryCode || "91";
+    const formattedPhone = `+${countryCode} ${contactDetails.mobileNumber}`;
+
+    return {
+      phone: formattedPhone,
+      email: contactDetails.email,
+    };
+  }
+
+  // Fallback to userDetails if contactDetails not available
+  const userDetails = apiData.value.widget.args.flightItinerary.userContext.userDetails;
   if (!userDetails) return null;
 
   const phone =
     userDetails.phone && userDetails.phone.length > 0
-      ? userDetails.phone[0].number
+      ? `+${userDetails.phone[0].countryCode} ${userDetails.phone[0].number}`
       : "";
 
   return {
@@ -913,11 +1072,13 @@ const transformApiDataToPaymentSummary = (
       .selectedFlightOffers[0];
   if (!flightOffer) return null;
 
-  // Since detailed breakdown is not provided in API, we'll estimate
+  // Use actual breakdown if available, otherwise estimate
   const total = flightOffer.totalAmount;
-  const baseFare = Math.round(total * 0.75); // Estimate 75% as base fare
-  const taxes = Math.round(total * 0.2); // Estimate 20% as taxes
-  const fees = Math.round(total * 0.05); // Estimate 5% as fees
+  const baseFare = flightOffer.baseAmount || Math.round(total * 0.75);
+  const taxes = flightOffer.tax || Math.round(total * 0.2);
+  const serviceFee = flightOffer.serviceFee || 0;
+  const convenienceFee = flightOffer.convenienceFee || 0;
+  const fees = serviceFee + convenienceFee || Math.round(total * 0.05);
 
   return {
     baseFare: baseFare,
@@ -930,28 +1091,57 @@ const transformApiDataToPaymentSummary = (
   };
 };
 
-const transformApiDataToSavedPassengers = (apiData: ApiResponse) => {
+const transformApiDataToSavedPassengers = (apiData: ApiResponse): SavedPassenger[] => {
   const savedTravellers =
     apiData.value.widget.args.flightItinerary.userContext.savedTravellers;
   if (!savedTravellers) return [];
 
-  return savedTravellers.map((traveller, index) => ({
-    id: traveller.travellerId.toString(),
-    firstName: traveller.firstName,
-    lastName: traveller.lastName,
-    gender: traveller.gender,
-    dateOfBirth: traveller.dateOfBirth,
-  }));
+  console.log("📋 Review Widget - Transforming saved travellers:", savedTravellers);
+
+  return savedTravellers
+    .map((traveller): SavedPassenger => {
+      const transformedPassenger = {
+        id: traveller.travellerId.toString(),
+        firstName: traveller.firstName,
+        lastName: traveller.lastName,
+        gender: traveller.gender,
+        dateOfBirth: traveller.dateOfBirth,
+        numberOfFlights: traveller.numberOfFlights,
+        documents: traveller.documents || [], // Include document information
+        email: traveller.email,
+        nationality: traveller.nationality,
+      };
+
+      console.log("📋 Review Widget - Transformed passenger:", transformedPassenger);
+      return transformedPassenger;
+    })
+    .sort((a, b) => (b.numberOfFlights || 0) - (a.numberOfFlights || 0)); // Sort by numberOfFlights descending (frequent flyers first)
 };
 
+// Type definition for saved passengers
+interface SavedPassenger {
+  id: string;
+  firstName: string;
+  lastName: string;
+  gender: string;
+  dateOfBirth: string;
+  numberOfFlights?: number;
+  documents?: ApiDocument[];
+  email?: string;
+  nationality?: string;
+}
+
 // Mock saved passengers data (fallback)
-const mockSavedPassengers = [
+const mockSavedPassengers: SavedPassenger[] = [
   {
     id: "1",
     firstName: "John",
     lastName: "Doe",
     gender: "Male",
     dateOfBirth: "1990-01-15",
+    numberOfFlights: 5,
+    documents: [],
+    nationality: "IN",
   },
   {
     id: "2",
@@ -959,6 +1149,9 @@ const mockSavedPassengers = [
     lastName: "Smith",
     gender: "Female",
     dateOfBirth: "1985-03-22",
+    numberOfFlights: 3,
+    documents: [],
+    nationality: "IN",
   },
   {
     id: "3",
@@ -966,6 +1159,9 @@ const mockSavedPassengers = [
     lastName: "Johnson",
     gender: "Male",
     dateOfBirth: "1992-07-08",
+    numberOfFlights: 2,
+    documents: [],
+    nationality: "IN",
   },
   {
     id: "4",
@@ -973,6 +1169,9 @@ const mockSavedPassengers = [
     lastName: "Williams",
     gender: "Female",
     dateOfBirth: "1988-11-30",
+    numberOfFlights: 1,
+    documents: [],
+    nationality: "IN",
   },
 ];
 
@@ -1047,8 +1246,6 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
   paymentSummary,
   onSubmit,
   apiData,
-  isInBottomSheet = false,
-  onClose,
   isSubmitting: externalIsSubmitting,
   onSubmittingChange,
 }) => {
@@ -1061,6 +1258,54 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
     externalIsSubmitting !== undefined
       ? externalIsSubmitting
       : internalIsSubmitting;
+
+  // Generate a unique key for this widget instance based on apiData
+  const widgetKey = React.useMemo(() => {
+    if (apiData) {
+      const argsHash = JSON.stringify(apiData.value?.widget?.args || {});
+      return `review-widget-submitted-${btoa(argsHash).slice(0, 12)}`;
+    }
+    return `review-widget-submitted-${Date.now()}`;
+  }, [apiData]);
+
+  // Check localStorage for submission state
+  const getSubmissionState = React.useCallback(() => {
+    try {
+      const stored = localStorage.getItem(widgetKey);
+      return stored === 'true';
+    } catch (error) {
+      console.error('Error reading from localStorage:', error);
+      return false;
+    }
+  }, [widgetKey]);
+
+  // Set submission state in localStorage
+  const setSubmissionState = React.useCallback((submitted: boolean) => {
+    try {
+      if (submitted) {
+        localStorage.setItem(widgetKey, 'true');
+      } else {
+        localStorage.removeItem(widgetKey);
+      }
+    } catch (error) {
+      console.error('Error writing to localStorage:', error);
+    }
+  }, [widgetKey]);
+
+  // Add state to track if booking has been submitted (to hide button)
+  const [isBookingSubmitted, setIsBookingSubmitted] = useState(() => getSubmissionState());
+
+  // Update localStorage when local state changes
+  React.useEffect(() => {
+    setSubmissionState(isBookingSubmitted);
+  }, [isBookingSubmitted, setSubmissionState]);
+
+  // Optional: Clear localStorage on component unmount (uncomment if needed)
+  // React.useEffect(() => {
+  //   return () => {
+  //     setSubmissionState(false);
+  //   };
+  // }, [setSubmissionState]);
 
   const setIsSubmitting = (value: boolean) => {
     if (onSubmittingChange) {
@@ -1089,6 +1334,21 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
   const savedPassengers = apiData
     ? transformApiDataToSavedPassengers(apiData)
     : mockSavedPassengers;
+
+  // Extract isRefundable from API data
+  const isRefundable = apiData
+    ? apiData.value.widget.args.flightItinerary.selectionContext
+        .selectedFlightOffers[0]?.offerRules?.isRefundable ?? null
+    : null;
+
+  // Extract booking requirements for dynamic field visibility
+  const bookingRequirements = apiData?.value.widget.args.bookingRequirements;
+  const travelerRequirement = bookingRequirements?.travelerRequirements?.[0]; // Get first traveler requirement
+
+  // Determine field visibility based on booking requirements
+  const isGenderRequired = travelerRequirement?.genderRequired ?? true; // Default to true for backward compatibility
+  const isDocumentRequired = travelerRequirement?.documentRequired ?? true; // Default to true for backward compatibility
+  const isDateOfBirthRequired = travelerRequirement?.dateOfBirthRequired ?? true; // Default to true for backward compatibility
 
   // Determine if travel documents component should be shown
   // Hide if travelerRequirements is null in API data
@@ -1162,81 +1422,88 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
       : null,
   );
 
+  // Populate data from contactDetails when component mounts (matching whosTravelling logic)
+  React.useEffect(() => {
+    if (apiData) {
+      const contactDetails = apiData.value.widget.args.flightItinerary.userContext.contactDetails;
+
+      if (contactDetails) {
+        console.log("📞 Review Widget - Processing contactDetails on mount:", contactDetails);
+
+        // Update contact state with contactDetails data
+        const countryCode = contactDetails.countryCode || "91";
+        const formattedPhone = `+${countryCode} ${contactDetails.mobileNumber}`;
+
+        setContact(prevContact => ({
+          ...prevContact,
+          email: contactDetails.email || prevContact.email,
+          phone: formattedPhone,
+        }));
+      }
+    }
+  }, [apiData]);
+
   // Validation state
   const [validationErrors, setValidationErrors] = useState<{
     [key: string]: boolean;
   }>({});
 
-  // Data transformation function to format data according to backend requirements
+  // Data transformation function to format data according to backend requirements (matching whosTravelling widget)
   const transformDataForBackend = () => {
-    // Extract phone number and country code from contact.phone
+    // Extract phone number and country code from contact.phone (same logic as whosTravelling)
     let phoneCountryCode = "91"; // Default to India
     let phoneNumber = contact.phone;
 
     // Try to parse phone number format like "+1 (555) 123-4567" or "+91 8448549215"
-    const phoneMatch = contact.phone.match(/\+(\d+)\s*[\(\)\s]*(\d+)/);
+    const phoneMatch = contact.phone.match(/\+(\d+)\s*[\(\)\s-]*(.+)/);
     if (phoneMatch) {
       phoneCountryCode = phoneMatch[1];
-      phoneNumber = phoneMatch[2].replace(/[\(\)\s]/g, "");
+      phoneNumber = phoneMatch[2].replace(/[\(\)\s-]/g, "");
     }
 
-    // Format gender to uppercase
+    // Format gender to uppercase (same as whosTravelling)
     const formattedGender = passenger.gender?.toUpperCase() || "MALE";
 
-    // Format document type to uppercase
+    // Format document type to uppercase (same as whosTravelling)
     const formattedDocumentType = document?.type?.toUpperCase() || "PASSPORT";
 
     // Get country codes for issuing country and nationality using the utility function
-    const issuingCountryCode = getCountryCode(document?.issuingCountry || "");
-    const nationalityCode = getCountryCode(document?.nationality || "");
+    const issuingCountryCode = getCountryCodeFromName(document?.issuingCountry || "");
+    const nationalityCode = getCountryCodeFromName(document?.nationality || "");
 
-    // Log the conversion for debugging (can be removed in production)
-    console.log("Country conversion:", {
-      originalIssuingCountry: document?.issuingCountry,
-      convertedIssuingCountry: issuingCountryCode,
-      originalNationality: document?.nationality,
-      convertedNationality: nationalityCode,
-    });
-
-    // Additional validation - ensure we always have 2-letter codes
-    if (issuingCountryCode.length !== 2) {
-      console.warn("Warning: Issuing country code is not 2 letters:", issuingCountryCode);
-    }
-    if (nationalityCode.length !== 2) {
-      console.warn("Warning: Nationality code is not 2 letters:", nationalityCode);
-    }
-
-    // Format date strings to YYYY-MM-DD
+    // Format date strings to YYYY-MM-DD (same as whosTravelling)
     const formatDate = (dateString: string) => {
       if (!dateString) return "";
       const date = new Date(dateString);
       return date.toISOString().split("T")[0];
     };
 
+    // Build documents array (matching whosTravelling structure exactly)
+    const documents = document ? [
+      {
+        documentType: formattedDocumentType,
+        birthPlace: document.issuingCountry || "", // Using issuing country as birth place
+        issuanceLocation: document.issuingCountry || "",
+        issuanceDate: formatDate(document.issuanceDate || "2015-04-14"), // Default if not provided
+        number: document.number || "",
+        expiryDate: formatDate(document.expiryDate),
+        issuanceCountry: issuingCountryCode,
+        validityCountry: issuingCountryCode, // Same as issuanceCountry
+        nationality: nationalityCode,
+        holder: true,
+      },
+    ] : [];
+
     const travellersDetail = [
       {
-        id: "1",
-        dateOfBirth: formatDate(passenger.dateOfBirth),
+        id: 1, // Use number instead of string (matching whosTravelling)
+        dateOfBirth: passenger.dateOfBirth ? formatDate(passenger.dateOfBirth) : null,
         gender: formattedGender,
         name: {
           firstName: passenger.firstName?.toUpperCase() || "",
           lastName: passenger.lastName?.toUpperCase() || "",
         },
-        documents: document
-          ? [
-              {
-                number: document.number || "",
-                issuanceDate: formatDate(document.issuanceDate || "2015-04-14"), // Default if not provided
-                expiryDate: formatDate(document.expiryDate),
-                issuanceCountry: issuingCountryCode,
-                issuanceLocation: document.issuingCountry || "",
-                nationality: nationalityCode,
-                birthPlace: document.issuingCountry || "", // Using issuing country as birth place if not provided
-                documentType: formattedDocumentType,
-                holder: true,
-              },
-            ]
-          : [],
+        documents: documents,
         contact: {
           purpose: "STANDARD",
           phones: [
@@ -1301,14 +1568,16 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
       errors.lastName = true;
       isValid = false;
     }
-    if (!passenger.gender?.trim()) {
+    // Only validate gender if required
+    if (isGenderRequired && !passenger.gender?.trim()) {
       errors.gender = true;
       isValid = false;
     }
-    // Only validate Date of Birth if travel documents are shown and expanded
+    // Only validate Date of Birth if required and travel documents are shown and expanded
     if (
       showTravelDocuments &&
       isTravelDocsExpanded &&
+      isDateOfBirthRequired &&
       !passenger.dateOfBirth?.trim()
     ) {
       errors.dateOfBirth = true;
@@ -1328,8 +1597,8 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
       isValid = false;
     }
 
-    // Validate travel documents (only if shown)
-    if (showTravelDocuments) {
+    // Validate travel documents (only if shown and document is required)
+    if (showTravelDocuments && isDocumentRequired) {
       if (!document || !document.type?.trim()) {
         errors.documentType = true;
         isValid = false;
@@ -1362,7 +1631,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
     if (
       !passenger.firstName?.trim() ||
       !passenger.lastName?.trim() ||
-      !passenger.gender?.trim()
+      (isGenderRequired && !passenger.gender?.trim())
     ) {
       return false;
     }
@@ -1387,8 +1656,8 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
       return false;
     }
 
-    // Check travel documents (only if shown)
-    if (showTravelDocuments) {
+    // Check travel documents (only if shown and document is required)
+    if (showTravelDocuments && isDocumentRequired) {
       if (
         !document ||
         !document.type?.trim() ||
@@ -1401,8 +1670,13 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
       }
     }
 
+    // Check date of birth (only if required)
+    if (showTravelDocuments && isDateOfBirthRequired && !passenger.dateOfBirth?.trim()) {
+      return false;
+    }
+
     return true;
-  }, [passenger, contact, document, showTravelDocuments, isTravelDocsExpanded]);
+  }, [passenger, contact, document, showTravelDocuments, isTravelDocsExpanded, isGenderRequired, isDocumentRequired, isDateOfBirthRequired]);
 
   // Calculate total with seat selection
   const calculateTotal = () => {
@@ -1422,15 +1696,50 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
 
   // Handle selecting a saved passenger
   const handleSelectSavedPassenger = (
-    savedPassenger: (typeof savedPassengers)[0],
+    savedPassenger: SavedPassenger,
   ) => {
+    // Update passenger details
     setPassenger({
       firstName: savedPassenger.firstName,
       lastName: savedPassenger.lastName,
       gender: savedPassenger.gender,
       dateOfBirth: savedPassenger.dateOfBirth,
-      title: passenger.title, // Keep existing title if any
+      title: savedPassenger.gender === "Female" ? "Ms." : "Mr.", // Set title based on gender
     });
+
+    // Update document information if available
+    if (savedPassenger.documents && savedPassenger.documents.length > 0 && showTravelDocuments) {
+      const savedDocument = savedPassenger.documents[0]; // Use first document
+      console.log("📄 Review Widget - Populating document from saved passenger:", savedDocument);
+
+      setDocument({
+        type: savedDocument.documentType?.charAt(0).toUpperCase() + savedDocument.documentType?.slice(1).toLowerCase() || "Passport",
+        number: savedDocument.documentNumber || "",
+        issuingCountry: savedDocument.issuingCountry || "",
+        expiryDate: savedDocument.expiryDate || "",
+        nationality: savedDocument.nationality || savedPassenger.nationality || "",
+        issuanceDate: savedDocument.issuingDate || "",
+      });
+    } else {
+      console.log("📄 Review Widget - No documents found for saved passenger or travel docs disabled:", {
+        hasDocuments: savedPassenger.documents && savedPassenger.documents.length > 0,
+        showTravelDocuments,
+        savedPassenger
+      });
+
+      // Clear document if no documents available
+      if (showTravelDocuments) {
+        setDocument({
+          type: "Passport",
+          number: "",
+          issuingCountry: "",
+          expiryDate: "",
+          nationality: savedPassenger.nationality || "",
+          issuanceDate: "",
+        });
+      }
+    }
+
     setIsSavedPassengersExpanded(false); // Collapse the section after selection
   };
 
@@ -1445,27 +1754,43 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
       return;
     }
 
-    // Set loading state
+    // Set loading state and mark as submitted
     setIsSubmitting(true);
+    setIsBookingSubmitted(true);
 
     try {
-      // Transform data according to backend requirements
+      // Transform data according to backend requirements (matching whosTravelling format)
       const formattedData = transformDataForBackend();
-      await submitInterruptResponse(thread, "response", formattedData);
+
+      // Create response in exact same format as whosTravelling widget
+      const responseData = [
+        {
+          type: "response",
+          data: formattedData,
+        },
+      ];
+
+      console.log("📤 Review Widget - Submitting response:", responseData);
+
+      // Submit using the same pattern as whosTravelling widget
+      await submitInterruptResponse(
+        thread,
+        responseData[0].type,
+        responseData[0].data,
+      );
+
+      // Booking submitted successfully - state is already saved in localStorage via useEffect
     } catch (error) {
       console.error("Error submitting booking:", error);
+      // Reset booking submitted state on error so user can retry
+      setIsBookingSubmitted(false);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div
-      className={cn(
-        isInBottomSheet ? "bg-white" : "min-h-screen bg-gray-50",
-        "relative",
-      )}
-    >
+    <div className="relative min-h-screen bg-gray-50">
       {/* Loading Overlay */}
       {isSubmitting && (
         <div className="bg-opacity-75 absolute inset-0 z-50 flex items-center justify-center bg-white">
@@ -1480,18 +1805,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
           </div>
         </div>
       )}
-      <div
-        className={cn(
-          "mx-auto max-w-4xl",
-          isInBottomSheet ? "p-4 pb-4" : "p-3 pb-20 sm:p-4 sm:pb-4",
-        )}
-      >
-        {/* Header - Only show if not in bottom sheet (title is in sheet header) */}
-        {!isInBottomSheet && (
-          <h1 className="mb-4 text-2xl font-bold text-gray-900 sm:text-3xl">
-            Review Your Booking
-          </h1>
-        )}
+      <div className="mx-auto max-w-4xl p-3 pb-4 sm:p-4 sm:pb-4">
 
         {/* Desktop Two-Column Layout */}
         <div className="hidden lg:grid lg:grid-cols-2 lg:gap-6">
@@ -1562,26 +1876,13 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
               {/* Expanded View */}
               {isFlightExpanded && (
                 <div className="mt-3 border-t pt-4">
-                  {/* Airline Info */}
-                  <div className="mb-3 flex items-center space-x-3">
-                    <AirlineLogo
-                      airlineIata={finalFlightDetails.airline.iataCode || ""}
-                      airlineName={finalFlightDetails.airline.name}
-                      size="sm"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs font-medium">
-                          {finalFlightDetails.airline.name}
-                        </span>
-                      </div>
-                      <div className="mt-1 flex items-center space-x-2">
-                        <span className="text-xs text-gray-600">
-                          Aircraft:{" "}
-                          {finalFlightDetails.airline.aircraftType ||
-                            "Not specified"}
-                        </span>
-                      </div>
+                  {/* Additional Flight Info */}
+                  <div className="mb-3">
+                    <div className="text-xs text-gray-600">
+                      Aircraft: {finalFlightDetails.airline.aircraftType || "Not specified"}
+                    </div>
+                    <div className="text-xs text-gray-600">
+                      Flight: {finalFlightDetails.airline.flightNumber}
                     </div>
                   </div>
 
@@ -1700,42 +2001,44 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                   )}
                 </div>
 
-                {/* Gender */}
-                <div>
-                  <Label
-                    htmlFor="gender"
-                    className="mb-0.5 text-xs font-medium text-gray-700"
-                  >
-                    Gender *
-                  </Label>
-                  <Select
-                    value={passenger.gender}
-                    onValueChange={(value) => {
-                      setPassenger({ ...passenger, gender: value });
-                      validateField(value, "gender");
-                    }}
-                  >
-                    <SelectTrigger
-                      className={cn(
-                        "h-9",
-                        validationErrors.gender
-                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                          : "",
-                      )}
+                {/* Gender - Only show if required */}
+                {isGenderRequired && (
+                  <div>
+                    <Label
+                      htmlFor="gender"
+                      className="mb-0.5 text-xs font-medium text-gray-700"
                     >
-                      <SelectValue placeholder="Select gender" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Male">Male</SelectItem>
-                      <SelectItem value="Female">Female</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {validationErrors.gender && (
-                    <p className="mt-1 text-xs text-red-500">
-                      Gender is required
-                    </p>
-                  )}
-                </div>
+                      Gender *
+                    </Label>
+                    <Select
+                      value={passenger.gender}
+                      onValueChange={(value) => {
+                        setPassenger({ ...passenger, gender: value });
+                        validateField(value, "gender");
+                      }}
+                    >
+                      <SelectTrigger
+                        className={cn(
+                          "h-9",
+                          validationErrors.gender
+                            ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                            : "",
+                        )}
+                      >
+                        <SelectValue placeholder="Select gender" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {validationErrors.gender && (
+                      <p className="mt-1 text-xs text-red-500">
+                        Gender is required
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Footer Note */}
@@ -1940,14 +2243,15 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 {isTravelDocsExpanded && (
                   <div className="mt-4 border-t pt-4">
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                      {/* Date of Birth */}
-                      <div>
-                        <Label
-                          htmlFor="dateOfBirth"
-                          className="mb-0.5 text-xs font-medium text-gray-700"
-                        >
-                          Date of Birth *
-                        </Label>
+                      {/* Date of Birth - Only show if required */}
+                      {isDateOfBirthRequired && (
+                        <div>
+                          <Label
+                            htmlFor="dateOfBirth"
+                            className="mb-0.5 text-xs font-medium text-gray-700"
+                          >
+                            Date of Birth *
+                          </Label>
                         <DateInput
                           date={
                             passenger.dateOfBirth
@@ -1972,21 +2276,25 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                               : "",
                           )}
                         />
-                        {validationErrors.dateOfBirth && (
-                          <p className="mt-1 text-xs text-red-500">
-                            Date of birth is required
-                          </p>
-                        )}
-                      </div>
+                          {validationErrors.dateOfBirth && (
+                            <p className="mt-1 text-xs text-red-500">
+                              Date of birth is required
+                            </p>
+                          )}
+                        </div>
+                      )}
 
-                      {/* Document Type */}
-                      <div>
-                        <Label
-                          htmlFor="documentType"
-                          className="mb-0.5 text-xs font-medium text-gray-700"
-                        >
-                          Document Type *
-                        </Label>
+                      {/* Document fields - Only show if documentRequired is true */}
+                      {isDocumentRequired && (
+                        <>
+                          {/* Document Type */}
+                          <div>
+                            <Label
+                              htmlFor="documentType"
+                              className="mb-0.5 text-xs font-medium text-gray-700"
+                            >
+                              Document Type *
+                            </Label>
                         <Select
                           value={document?.type || ""}
                           onValueChange={(value) => {
@@ -2179,7 +2487,9 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                           }
                           return null;
                         })()}
-                      </div>
+                          </div>
+                        </>
+                      )}
                     </div>
 
                     {/* Verification Status */}
@@ -2292,17 +2602,22 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 className="cursor-pointer"
                 onClick={() => setIsPaymentExpanded(!isPaymentExpanded)}
               >
-                <div className="flex items-center justify-between rounded-lg bg-gray-50 p-3">
-                  <div>
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
                     <h2 className="text-lg font-semibold">Payment Summary</h2>
-                    <div className="text-sm font-bold text-gray-900">
-                      Total:{" "}
-                      {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                      {calculateTotal().toFixed(2)}{" "}
-                      {finalPaymentSummary.currency}
-                    </div>
+                    {!isPaymentExpanded && (
+                      <div className="mt-1 text-sm text-gray-600">
+                        Total: {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
+                        {calculateTotal().toFixed(2)} {finalPaymentSummary.currency}
+                        {isRefundable !== null && (
+                          <span className={`ml-2 ${isRefundable ? 'text-green-600' : 'text-red-600'}`}>
+                            • {isRefundable ? 'Refundable' : 'Non-refundable'}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <div>
+                  <div className="ml-4">
                     {isPaymentExpanded ? (
                       <ChevronUp className="h-5 w-5 text-gray-400" />
                     ) : (
@@ -2367,6 +2682,16 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                     </div>
                   )}
 
+                  {/* Refundable Status */}
+                  {isRefundable !== null && (
+                    <div className="flex justify-between">
+                      <span className="text-xs text-gray-600">Ticket Status</span>
+                      <span className={`text-xs font-medium ${isRefundable ? 'text-green-600' : 'text-red-600'}`}>
+                        {isRefundable ? 'Refundable' : 'Non-refundable'}
+                      </span>
+                    </div>
+                  )}
+
                   {/* Total */}
                   <div className="mt-2 border-t pt-2">
                     <div className="flex justify-between">
@@ -2382,41 +2707,12 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
               )}
             </div>
 
-            {/* Desktop Action Buttons */}
-            <div className="flex flex-col space-y-3">
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={onClose}
-                disabled={isSubmitting}
-              >
-                Back
-              </Button>
-              <Button
-                onClick={handleSubmit}
-                disabled={!isFormValid || isSubmitting}
-                className={cn(
-                  "w-full py-3 text-base",
-                  isFormValid && !isSubmitting
-                    ? "bg-blue-600 hover:bg-blue-700"
-                    : "cursor-not-allowed bg-gray-400",
-                )}
-              >
-                {isSubmitting ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                    <span>Submitting...</span>
-                  </div>
-                ) : (
-                  "Confirm Booking"
-                )}
-              </Button>
-            </div>
+
           </div>
         </div>
 
         {/* Mobile/Tablet Single Column Layout */}
-        <div className="space-y-3 lg:hidden">
+        <div className="space-y-3 lg:hidden pb-4">
           {/* Flight Details */}
           <div className="rounded-lg bg-white p-4 shadow">
             <div
@@ -2468,19 +2764,19 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                   <div className="sm:hidden">
                     <div className="mb-3 flex items-center justify-between">
                       <div className="text-center">
-                        <div className="text-base font-bold">
+                        <div className="text-sm font-bold">
                           {finalFlightDetails.departure.code}
                         </div>
-                        <div className="text-base font-bold">
+                        <div className="text-sm font-bold">
                           {finalFlightDetails.departure.time}
                         </div>
                       </div>
                       <ArrowRight className="h-4 w-4 text-gray-400" />
                       <div className="text-center">
-                        <div className="text-base font-bold">
+                        <div className="text-sm font-bold">
                           {finalFlightDetails.arrival.code}
                         </div>
-                        <div className="text-base font-bold">
+                        <div className="text-sm font-bold">
                           {finalFlightDetails.arrival.time}
                         </div>
                       </div>
@@ -2517,26 +2813,13 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
             {/* Expanded View */}
             {isFlightExpanded && (
               <div className="mt-3 border-t pt-4">
-                {/* Airline Info */}
-                <div className="mb-4 flex items-center space-x-3">
-                  <AirlineLogo
-                    airlineIata={finalFlightDetails.airline.iataCode || ""}
-                    airlineName={finalFlightDetails.airline.name}
-                    size="md"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium">
-                        {finalFlightDetails.airline.name}
-                      </span>
-                    </div>
-                    <div className="mt-1 flex items-center space-x-2">
-                      <span className="text-xs text-gray-600">
-                        Aircraft:{" "}
-                        {finalFlightDetails.airline.aircraftType ||
-                          "Not specified"}
-                      </span>
-                    </div>
+                {/* Additional Flight Info */}
+                <div className="mb-4">
+                  <div className="text-xs text-gray-600">
+                    Aircraft: {finalFlightDetails.airline.aircraftType || "Not specified"}
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    Flight: {finalFlightDetails.airline.flightNumber}
                   </div>
                 </div>
 
@@ -2545,7 +2828,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                   {/* Departure */}
                   <div className="text-left">
                     <div className="mb-1 text-sm text-gray-600">Departure</div>
-                    <div className="text-base font-bold">
+                    <div className="text-sm font-bold">
                       {finalFlightDetails.departure.time}
                     </div>
                     <div className="text-sm text-gray-900">
@@ -2571,7 +2854,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                   {/* Arrival */}
                   <div className="text-right">
                     <div className="mb-1 text-sm text-gray-600">Arrival</div>
-                    <div className="text-base font-bold">
+                    <div className="text-sm font-bold">
                       {finalFlightDetails.arrival.time}
                     </div>
                     <div className="text-sm text-gray-900">
@@ -2653,42 +2936,44 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 )}
               </div>
 
-              {/* Gender */}
-              <div>
-                <Label
-                  htmlFor="gender-mobile"
-                  className="mb-0.5 text-xs font-medium text-gray-700"
-                >
-                  Gender *
-                </Label>
-                <Select
-                  value={passenger.gender}
-                  onValueChange={(value) => {
-                    setPassenger({ ...passenger, gender: value });
-                    validateField(value, "gender");
-                  }}
-                >
-                  <SelectTrigger
-                    className={cn(
-                      "h-9",
-                      validationErrors.gender
-                        ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                        : "",
-                    )}
+              {/* Gender - Only show if required */}
+              {isGenderRequired && (
+                <div>
+                  <Label
+                    htmlFor="gender-mobile"
+                    className="mb-0.5 text-xs font-medium text-gray-700"
                   >
-                    <SelectValue placeholder="Select gender" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Male">Male</SelectItem>
-                    <SelectItem value="Female">Female</SelectItem>
-                  </SelectContent>
-                </Select>
-                {validationErrors.gender && (
-                  <p className="mt-1 text-xs text-red-500">
-                    Gender is required
-                  </p>
-                )}
-              </div>
+                    Gender *
+                  </Label>
+                  <Select
+                    value={passenger.gender}
+                    onValueChange={(value) => {
+                      setPassenger({ ...passenger, gender: value });
+                      validateField(value, "gender");
+                    }}
+                  >
+                    <SelectTrigger
+                      className={cn(
+                        "h-9",
+                        validationErrors.gender
+                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                          : "",
+                      )}
+                    >
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Male">Male</SelectItem>
+                      <SelectItem value="Female">Female</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {validationErrors.gender && (
+                    <p className="mt-1 text-xs text-red-500">
+                      Gender is required
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Footer Note */}
@@ -2889,14 +3174,15 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
               {isTravelDocsExpanded && (
                 <div className="mt-4 border-t pt-4">
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    {/* Date of Birth */}
-                    <div>
-                      <Label
-                        htmlFor="dateOfBirth-mobile"
-                        className="mb-0.5 text-xs font-medium text-gray-700"
-                      >
-                        Date of Birth *
-                      </Label>
+                    {/* Date of Birth - Only show if required */}
+                    {isDateOfBirthRequired && (
+                      <div>
+                        <Label
+                          htmlFor="dateOfBirth-mobile"
+                          className="mb-0.5 text-xs font-medium text-gray-700"
+                        >
+                          Date of Birth *
+                        </Label>
                       <DateInput
                         date={
                           passenger.dateOfBirth
@@ -2921,19 +3207,23 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                             : "",
                         )}
                       />
-                      {validationErrors.dateOfBirth && (
-                        <p className="mt-1 text-xs text-red-500">
-                          Date of birth is required
-                        </p>
-                      )}
-                    </div>
+                        {validationErrors.dateOfBirth && (
+                          <p className="mt-1 text-xs text-red-500">
+                            Date of birth is required
+                          </p>
+                        )}
+                      </div>
+                    )}
 
-                    {/* Document Type */}
-                    <div>
-                      <Label
-                        htmlFor="documentType-mobile"
-                        className="mb-0.5 text-xs font-medium text-gray-700"
-                      >
+                    {/* Document fields - Only show if documentRequired is true */}
+                    {isDocumentRequired && (
+                      <>
+                        {/* Document Type */}
+                        <div>
+                          <Label
+                            htmlFor="documentType-mobile"
+                            className="mb-0.5 text-xs font-medium text-gray-700"
+                          >
                         Document Type *
                       </Label>
                       <Select
@@ -2966,12 +3256,14 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                           </SelectItem>
                         </SelectContent>
                       </Select>
-                      {validationErrors.documentType && (
-                        <p className="mt-1 text-xs text-red-500">
-                          Document type is required
-                        </p>
-                      )}
-                    </div>
+                          {validationErrors.documentType && (
+                            <p className="mt-1 text-xs text-red-500">
+                              Document type is required
+                            </p>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {/* Verification Status */}
@@ -3082,15 +3374,22 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
               className="cursor-pointer"
               onClick={() => setIsPaymentExpanded(!isPaymentExpanded)}
             >
-              <div className="flex items-center justify-between rounded-lg bg-gray-50 p-3">
-                <div>
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
                   <h2 className="text-lg font-semibold">Payment Summary</h2>
-                  <div className="text-sm font-bold text-gray-900">
-                    Total: {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                    {calculateTotal().toFixed(2)} {finalPaymentSummary.currency}
-                  </div>
+                  {!isPaymentExpanded && (
+                    <div className="mt-1 text-sm text-gray-600">
+                      Total: {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
+                      {calculateTotal().toFixed(2)} {finalPaymentSummary.currency}
+                      {isRefundable !== null && (
+                        <span className={`ml-2 ${isRefundable ? 'text-green-600' : 'text-red-600'}`}>
+                          • {isRefundable ? 'Refundable' : 'Non-refundable'}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <div>
+                <div className="ml-4">
                   {isPaymentExpanded ? (
                     <ChevronUp className="h-5 w-5 text-gray-400" />
                   ) : (
@@ -3155,6 +3454,16 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                   </div>
                 )}
 
+                {/* Refundable Status */}
+                {isRefundable !== null && (
+                  <div className="flex justify-between">
+                    <span className="text-xs text-gray-600">Ticket Status</span>
+                    <span className={`text-xs font-medium ${isRefundable ? 'text-green-600' : 'text-red-600'}`}>
+                      {isRefundable ? 'Refundable' : 'Non-refundable'}
+                    </span>
+                  </div>
+                )}
+
                 {/* Total */}
                 <div className="mt-2 border-t pt-2">
                   <div className="flex justify-between">
@@ -3172,51 +3481,16 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
         </div>
 
         {/* Action Buttons */}
-        {isInBottomSheet ? (
-          // Bottom sheet buttons - always sticky at bottom
-          <div className="sticky bottom-0 -mx-4 mt-6 border-t bg-white p-4">
-            <div className="flex space-x-3">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={onClose}
-                disabled={isSubmitting}
-              >
-                Back
-              </Button>
-              <Button
-                onClick={handleSubmit}
-                disabled={!isFormValid || isSubmitting}
-                className={cn(
-                  "flex-1",
-                  isFormValid && !isSubmitting
-                    ? "bg-blue-600 hover:bg-blue-700"
-                    : "cursor-not-allowed bg-gray-400",
-                )}
-              >
-                {isSubmitting ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                    <span>Submitting...</span>
-                  </div>
-                ) : (
-                  "Confirm Booking"
-                )}
-              </Button>
-            </div>
-          </div>
-        ) : (
-          // Mobile/Tablet Sticky Button (Desktop buttons are in the right column)
-          // Only show on mobile/tablet, hidden on desktop (lg and above)
-          <div className="fixed right-0 bottom-0 left-0 z-50 block border-t bg-white p-4 lg:hidden">
+        <div className="mt-6">
+          {!isBookingSubmitted ? (
             <Button
               onClick={handleSubmit}
               disabled={!isFormValid || isSubmitting}
               className={cn(
-                "w-full py-3 text-base",
+                "w-full py-3 text-base font-medium",
                 isFormValid && !isSubmitting
-                  ? "bg-blue-600 hover:bg-blue-700"
-                  : "cursor-not-allowed bg-gray-400",
+                  ? "bg-blue-600 hover:bg-blue-700 text-white"
+                  : "cursor-not-allowed bg-gray-400 text-white",
               )}
             >
               {isSubmitting ? (
@@ -3228,8 +3502,19 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 "Confirm Booking"
               )}
             </Button>
-          </div>
-        )}
+          ) : (
+            <div className="text-center py-4">
+              <div className="flex items-center justify-center space-x-2 text-green-600">
+                <div className="h-5 w-5 rounded-full bg-green-100 flex items-center justify-center">
+                  <svg className="h-3 w-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <span className="text-sm font-medium">Booking submitted successfully!</span>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

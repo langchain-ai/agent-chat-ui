@@ -17,9 +17,9 @@ import ThreadHistory from "./history";
 import { useTabContext } from "@/providers/TabContext";
 
 const tabs = [
-  { name: "Map", component: <MapView /> },
+  // { name: "Map", component: <MapView /> }, // Commented out - can be easily restored later
   { name: "Chat", component: <Thread /> },
-  { name: "Itinerary", component: <ItineraryView /> },
+  { name: "Review", component: <ItineraryView /> },
 ];
 
 export const TabsLayout = () => {
@@ -81,7 +81,7 @@ export const TabsLayout = () => {
         <Tabs
           value={activeTab}
           onValueChange={(value) =>
-            setActiveTab(value as "Chat" | "Map" | "Itinerary")
+            setActiveTab(value as "Chat" | "Review")
           }
           className="flex h-full w-full flex-col"
         >
@@ -101,7 +101,7 @@ export const TabsLayout = () => {
               </Button>
             </div>
 
-            <TabsList className="bg-muted mx-4 flex max-w-[300px] flex-grow justify-center rounded-md p-1">
+            {/* <TabsList className="bg-muted mx-4 flex max-w-[300px] flex-grow justify-center rounded-md p-1">
               {tabs.map((tab) => (
                 <TabsTrigger
                   key={tab.name}
@@ -111,7 +111,7 @@ export const TabsLayout = () => {
                   {tab.name}
                 </TabsTrigger>
               ))}
-            </TabsList>
+            </TabsList> */}
 
             <Button
               size="lg"

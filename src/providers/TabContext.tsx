@@ -2,12 +2,12 @@
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
 
-type TabName = "Chat" | "Map" | "Itinerary";
+type TabName = "Chat" | "Review"; // "Map" commented out - can be restored later
 
 interface TabContextType {
   activeTab: TabName;
   setActiveTab: (tab: TabName) => void;
-  switchToItinerary: () => void;
+  switchToReview: () => void;
   switchToChat: () => void;
 }
 
@@ -16,9 +16,10 @@ const TabContext = createContext<TabContextType | undefined>(undefined);
 export function TabProvider({ children }: { children: ReactNode }) {
   const [activeTab, setActiveTab] = useState<TabName>("Chat");
 
-  const switchToItinerary = () => {
-    console.log("TabContext: Switching to Itinerary");
-    setActiveTab("Itinerary");
+  const switchToReview = () => {
+    console.log("🔄 TabContext: switchToReview called, current tab:", activeTab);
+    setActiveTab("Review");
+    console.log("✅ TabContext: setActiveTab('Review') executed");
   };
   const switchToChat = () => {
     console.log("TabContext: Switching to Chat");
@@ -28,7 +29,7 @@ export function TabProvider({ children }: { children: ReactNode }) {
   const value: TabContextType = {
     activeTab,
     setActiveTab,
-    switchToItinerary,
+    switchToReview,
     switchToChat,
   };
 

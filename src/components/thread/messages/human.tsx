@@ -8,6 +8,7 @@ import { BranchSwitcher, CommandBar } from "./shared";
 import { MultimodalPreview } from "@/components/thread/MultimodalPreview";
 import { isBase64ContentBlock } from "@/lib/multimodal-utils";
 import { getJwtToken, GetUserId } from "@/services/authService";
+import { getCachedLocation } from "@/lib/location-cache";
 
 function EditableContent({
   value,
@@ -50,39 +51,47 @@ export function HumanMessage({
   const [value, setValue] = useState("");
   const contentString = getContentString(message.content);
 
-  const handleSubmitEdit = () => {
+  const handleSubmitEdit = async () => {
     setIsEditing(false);
 
     // Get user ID from JWT token
     const jwtToken = getJwtToken();
     const userId = jwtToken ? GetUserId(jwtToken) : null;
 
+    // Get location data from cache
+    const locationData = await getCachedLocation();
+
     const newMessage: Message = { type: "human", content: value };
 
-    // Include userId in the submission
+    // Include userId and location in the submission
     const submissionData: any = { messages: [newMessage] };
     if (userId) {
       submissionData.userId = userId;
     }
+    if (locationData) {
+      submissionData.userLocation = {
+        latitude: locationData.latitude,
+        longitude: locationData.longitude,
+        accuracy: locationData.accuracy,
+        timestamp: locationData.timestamp,
+      };
+    }
 
-    thread.submit(
-      submissionData,
-      {
-        checkpoint: parentCheckpoint,
-        streamMode: ["updates"],
-        streamSubgraphs: true,
-        optimisticValues: (prev: any) => {
-          const values = meta?.firstSeenState?.values;
-          if (!values) return prev;
+    thread.submit(submissionData, {
+      checkpoint: parentCheckpoint,
+      streamMode: ["updates"],
+      streamSubgraphs: true,
+      optimisticValues: (prev: any) => {
+        const values = meta?.firstSeenState?.values;
+        if (!values) return prev;
 
-          return {
-            ...values,
-            messages: [...(values.messages ?? []), newMessage],
-            ui: prev.ui ?? [], // Preserve UI state
-          };
-        },
+        return {
+          ...values,
+          messages: [...(values.messages ?? []), newMessage],
+          ui: prev.ui ?? [], // Preserve UI state
+        };
       },
-    );
+    });
   };
 
   return (
@@ -122,7 +131,7 @@ export function HumanMessage({
               </div>
             )}
             {/* Render text if present, otherwise fallback to file/image name */}
-            <p className="bg-muted ml-auto w-full max-w-[80vw] rounded-3xl px-4 py-2 text-right whitespace-pre-wrap break-words">
+            <p className="bg-muted ml-auto w-full max-w-[80vw] rounded-3xl px-4 py-2 text-right break-words whitespace-pre-wrap">
               {contentString}
             </p>
           </div>

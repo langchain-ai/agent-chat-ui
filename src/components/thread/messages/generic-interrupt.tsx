@@ -72,7 +72,7 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
 }) => {
   const stream = useStreamContext();
   const artifact = useArtifact();
-  const { switchToItinerary } = useTabContext();
+  const { switchToReview } = useTabContext();
   const { addWidget } = useItineraryWidget();
 
   const processedWidgetsRef = useRef<Set<string>>(new Set());
@@ -153,16 +153,18 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
   });
 
   useEffect(() => {
-    debugLog("[INTERRUPT] itinerary effect check", {
+    console.log("🔍 DynamicRenderer useEffect triggered:", {
       interruptType,
-      hasWidget: !!interrupt?.value?.widget,
-      renderingWindow: interrupt?.value?.widget?.args?.renderingWindow,
+      renderingWindow: interrupt.value?.widget?.args?.renderingWindow,
+      widgetType: interrupt.value?.widget?.type,
     });
+
     if (
       (interruptType === "widget" || interruptType === "interruptWidget") &&
       interrupt.value?.widget?.args?.renderingWindow === "itinerary"
     ) {
-      debugLog("[INTERRUPT] itinerary path engaged");
+      console.log("✅ Itinerary rendering condition met, processing widget...");
+
       const interruptId =
         interrupt.value?.interrupt_id ||
         interrupt.value?.widget?.args?.interrupt_id;
@@ -171,7 +173,11 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
         interruptId ||
         `${interrupt.value.widget.type}-${btoa(argsHash).slice(0, 8)}`;
 
+      console.log("📝 Widget ID generated:", widgetId);
+
+      // Only process if not already processed
       if (!processedWidgetsRef.current.has(widgetId)) {
+        console.log("🆕 Processing new widget for itinerary...");
         processedWidgetsRef.current.add(widgetId);
 
         const Component =
@@ -196,77 +202,33 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
           widgetComponent = <Component {...interrupt.value.widget.args} />;
         }
 
-        debugLog("[INTERRUPT] adding itinerary widget", { widgetId });
+        // Add widget to itinerary
+        console.log("📋 Adding widget to itinerary context...");
         addWidget(widgetId, widgetComponent);
         onRendered?.(true);
 
+        // Only switch to review if we haven't already switched for this widget
         if (!globalSwitchedWidgets.has(widgetId)) {
-          switchToItinerary();
-          globalSwitchedWidgets.add(widgetId);
-          debugLog(`Switching to Itinerary for widget: ${widgetId}`);
+          console.log("🔄 Attempting to switch to Review tab...");
+          try {
+            switchToReview();
+            globalSwitchedWidgets.add(widgetId);
+            console.log(`✅ Successfully switched to Review for widget: ${widgetId}`);
+          } catch (error) {
+            console.error("❌ Error switching to Review tab:", error);
+          }
+        } else {
+          console.log(
+            `⏭️ Already switched to Review for widget: ${widgetId}, skipping`,
+          );
         }
+      } else {
+        console.log("⏭️ Widget already processed, skipping...");
       }
-    }
-  }, [interruptType, interrupt, addWidget, switchToItinerary]);
-
-  // Handle interruptWidget processing looking up matching UI widget (no preservation)
-  useEffect(() => {
-    const idCandidates = candidateIds.filter(
-      (v): v is string => typeof v === "string" && v.length > 0,
-    );
-
-    const currentUi: any[] = ((stream.values as any)?.ui as any[]) || [];
-
-    // Dev-only debug log for the scanning step
-    debugLog("[INTERRUPT WIDGET] scanning UI entries", {
-      idCandidates,
-      uiCount: currentUi.length,
-      uiSummaries: currentUi.map((u) => ({
-        id: u?.id,
-        name: u?.name,
-        metaMsgId: u?.metadata?.message_id,
-        metaAttach: u?.metadata?.attachmentId ?? u?.metadata?.attachment_id,
-        propsAttach: u?.props?.attachmentId ?? u?.props?.attachment_id,
-      })),
-    });
-
-    const matchesAttachment = (ui: any, id: string) => {
-      return (
-        ui?.id === id ||
-        ui?.metadata?.message_id === id ||
-        ui?.metadata?.attachmentId === id ||
-        ui?.metadata?.attachment_id === id ||
-        ui?.props?.attachmentId === id ||
-        ui?.props?.attachment_id === id ||
-        ui?.props?.metadata?.attachmentId === id ||
-        ui?.props?.metadata?.attachment_id === id
-      );
-    };
-
-    let matchingUIWidget: any | undefined;
-    if (idCandidates.length > 0) {
-      matchingUIWidget = currentUi.find((ui) =>
-        idCandidates.some((id) => matchesAttachment(ui, id)),
-      );
-    }
-
-    // Fallback: if no candidates found, and there is a single UI entry, pick it.
-    if (!matchingUIWidget && currentUi.length === 1) {
-      matchingUIWidget = currentUi[0];
-    }
-
-    debugLog("[INTERRUPT WIDGET] match result", {
-      found: !!matchingUIWidget,
-      matchingUIWidget,
-    });
-
-    if (matchingUIWidget) {
-      setFoundInterruptWidget(matchingUIWidget);
-      onRendered?.(true);
     } else {
-      onRendered?.(false);
+      console.log("❌ Itinerary rendering condition not met");
     }
-  }, [candidateIds, uiKey, stream.values]);
+  }, [interruptType, interrupt, addWidget, switchToReview]);
 
   debugLog("DynamicRenderer called", { interruptType, interrupt });
 

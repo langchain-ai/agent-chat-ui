@@ -186,7 +186,7 @@ export function AirportCombobox({
         className="max-h-[300px] p-0"
         style={{ width: triggerWidth > 0 ? `${triggerWidth}px` : 'auto' }}
       >
-        <Command>
+        <Command shouldFilter={false}>
           <CommandInput 
             placeholder="Search airports..." 
             className="h-9"

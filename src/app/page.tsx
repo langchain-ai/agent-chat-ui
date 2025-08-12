@@ -6,6 +6,7 @@ import { ArtifactProvider } from "@/components/thread/artifact";
 import { NonAgentFlowProvider } from "@/providers/NonAgentFlowContext";
 import { TabProvider } from "@/providers/TabContext";
 import { ItineraryWidgetProvider } from "@/providers/ItineraryWidgetContext";
+import { LocationProvider } from "@/providers/LocationContext";
 import { Toaster } from "@/components/ui/sonner";
 import { ProtectedRoute } from "@/components/auth";
 import React from "react";
@@ -17,6 +18,7 @@ export default function DemoPage(): React.ReactNode {
     <React.Suspense fallback={<div>Loading (layout)...</div>}>
       <Toaster />
       <ProtectedRoute>
+        <LocationProvider>
         <ThreadProvider>
           <StreamProvider>
             <ArtifactProvider>
@@ -34,6 +36,7 @@ export default function DemoPage(): React.ReactNode {
             </ArtifactProvider>
           </StreamProvider>
         </ThreadProvider>
+        </LocationProvider>
       </ProtectedRoute>
     </React.Suspense>
   );

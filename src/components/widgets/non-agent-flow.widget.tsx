@@ -75,9 +75,91 @@ interface NonAgentFlowWidgetProps {
     userContext: {
       userDetails: any;
       userId: string;
+      contactDetails?: {
+        countryCode: string;
+        mobileNumber: string;
+        email: string;
+      };
     };
     selectionContext: {
-      selectedFlightOffers: any[];
+      selectedFlightOffers:  Array<{
+        flightOfferId: string;
+        totalAmount: number;
+        tax: number;
+        baseAmount: number;
+        serviceFee: number;
+        convenienceFee: number;
+        currency: string;
+        journey?: Array<{
+          id: string;
+          duration: string;
+          departure: {
+            date: string;
+            airportIata: string;
+            airportName: string;
+            cityCode: string;
+            countryCode: string;
+          };
+          arrival: {
+            date: string;
+            airportIata: string;
+            airportName: string;
+            cityCode: string;
+            countryCode: string;
+          };
+          segments: Array<{
+            id: string;
+            airlineIata: string;
+            flightNumber: string;
+            duration: string;
+            aircraftType: string;
+            airlineName: string;
+            departure: {
+              date: string;
+              airportIata: string;
+              airportName: string;
+              cityCode: string;
+              countryCode: string;
+            };
+            arrival: {
+              date: string;
+              airportIata: string;
+              airportName: string;
+              cityCode: string;
+              countryCode: string;
+            };
+          }>;
+        }>;
+        baggage?: {
+          check_in_baggage: {
+            weight: number;
+            weightUnit: string;
+          };
+          cabin_baggage: {
+            weight: number;
+            weightUnit: string;
+          };
+        };
+        offerRules?: {
+          isRefundable: boolean;
+        };
+        // Legacy fields for backward compatibility
+        departure?: {
+          date: string;
+          airportIata: string;
+          airportName: string;
+          cityCode: string;
+          countryCode: string;
+        };
+        arrival?: {
+          date: string;
+          airportIata: string;
+          airportName: string;
+          cityCode: string;
+          countryCode: string;
+        };
+        [key: string]: any;
+      }>;
     };
   };
   itinId?: string;
@@ -150,14 +232,16 @@ const NonAgentFlowBottomSheet: React.FC<NonAgentFlowWidgetProps> = (props) => {
           </div>
         </SheetHeader>
 
-        <div className="flex-1 overflow-auto p-6">
-          <NonAgentFlowWidgetContent
-            {...props}
-            tripId={extractedTripId}
-            onClose={handleClose}
-            setIsOpen={setIsOpen}
-            apiData={props.apiData}
-          />
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <div className="flex-1 overflow-auto p-6">
+            <NonAgentFlowWidgetContent
+              {...props}
+              tripId={extractedTripId}
+              onClose={handleClose}
+              setIsOpen={setIsOpen}
+              apiData={props.apiData}
+            />
+          </div>
         </div>
       </SheetContent>
     </Sheet>
@@ -171,6 +255,7 @@ const NonAgentFlowWidgetContent: React.FC<
   }
 > = ({
   tripId,
+  flightItinerary,
   onClose,
   setIsOpen,
   onPaymentSuccess,
@@ -181,16 +266,215 @@ const NonAgentFlowWidgetContent: React.FC<
   const thread = useStreamContext();
   const { switchToChat } = useTabContext();
 
+  // Extract price data for display
+  const totalAmount = flightItinerary?.selectionContext?.selectedFlightOffers?.[0]?.totalAmount;
+  const currency = flightItinerary?.selectionContext?.selectedFlightOffers?.[0]?.currency;
+  const tax = flightItinerary?.selectionContext?.selectedFlightOffers?.[0]?.tax;
+  const baseAmount = flightItinerary?.selectionContext?.selectedFlightOffers?.[0]?.baseAmount;
+  const serviceFee = flightItinerary?.selectionContext?.selectedFlightOffers?.[0]?.serviceFee;
+  const convenienceFee = flightItinerary?.selectionContext?.selectedFlightOffers?.[0]?.convenienceFee;
+
+  // Extract price breakdown from selectedFlightOffers (updated for new structure)
+  const getPriceBreakdown = () => {
+    // First try to get from flightItinerary prop
+    if (flightItinerary?.selectionContext?.selectedFlightOffers && flightItinerary.selectionContext.selectedFlightOffers.length > 0) {
+      const offer = flightItinerary.selectionContext.selectedFlightOffers[0];
+      return {
+        totalAmount: offer.totalAmount || 0,
+        tax: offer.tax || 0,
+        baseAmount: offer.baseAmount || 0,
+        serviceFee: offer.serviceFee || 0,
+        convenienceFee: offer.convenienceFee || 0,
+        currency: offer.currency || "INR",
+      };
+    }
+
+    // Try to get from apiData (interrupt data)
+    const interruptData = apiData?.value?.widget?.args || apiData;
+    const selectedFlightOffers = interruptData?.flightItinerary?.selectionContext?.selectedFlightOffers;
+
+    if (selectedFlightOffers && selectedFlightOffers.length > 0) {
+      const offer = selectedFlightOffers[0];
+      return {
+        totalAmount: offer.totalAmount || 0,
+        tax: offer.tax || 0,
+        baseAmount: offer.baseAmount || 0,
+        serviceFee: offer.serviceFee || 0,
+        convenienceFee: offer.convenienceFee || 0,
+        currency: offer.currency || "INR",
+      };
+    }
+
+    // Fallback to extracted values
+    return {
+      totalAmount: totalAmount || 0,
+      tax: tax || 0,
+      baseAmount: baseAmount || 0,
+      serviceFee: serviceFee || 0,
+      convenienceFee: convenienceFee || 0,
+      currency: currency || "INR",
+    };
+  };
+
+  const priceBreakdown = getPriceBreakdown();
+
+  // Extract contact details from flightItinerary or apiData
+  const getContactDetails = () => {
+    // First try to get from flightItinerary prop
+    if (flightItinerary?.userContext?.contactDetails) {
+      return flightItinerary.userContext.contactDetails;
+    }
+
+    // Try to get from apiData (interrupt data)
+    const interruptData = apiData?.value?.widget?.args || apiData;
+    const contactDetails = interruptData?.flightItinerary?.userContext?.contactDetails;
+
+    if (contactDetails) {
+      return contactDetails;
+    }
+
+    // Return null if no contact details found
+    return null;
+  };
+
+  const contactDetails = getContactDetails();
+
+  // Log contact details for debugging
+  console.log("📞 NonAgentFlow - Contact Details:", contactDetails);
+
+  // Helper function to extract flight data from new journey structure or legacy structure
+  const getFlightData = (offer: any) => {
+    if (!offer) return null;
+
+    // Try new journey structure first
+    if (offer.journey && offer.journey.length > 0) {
+      const journey = offer.journey[0]; // Take first journey
+      return {
+        departure: journey.departure || {},
+        arrival: journey.arrival || {},
+        segments: journey.segments || [],
+        duration: journey.duration || "",
+      };
+    }
+
+    // Fallback to legacy structure
+    if (offer.departure && offer.arrival) {
+      return {
+        departure: offer.departure || {},
+        arrival: offer.arrival || {},
+        segments: offer.segments || [],
+        duration: offer.duration || "",
+      };
+    }
+
+    return null;
+  };
+
+  // Helper function to safely format date and time
+  const formatDateTime = (dateString: string) => {
+    if (!dateString) return { date: "", time: "" };
+
+    try {
+      const date = new Date(dateString);
+      const dateStr = date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+      const timeStr = date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      });
+      return { date: dateStr, time: timeStr };
+    } catch (error) {
+      console.error("Error formatting date:", dateString, error);
+      return { date: "", time: "" };
+    }
+  };
+
+  // Get flight data for display
+  const flightData = (() => {
+    // First try to get from flightItinerary prop
+    if (flightItinerary?.selectionContext?.selectedFlightOffers && flightItinerary.selectionContext.selectedFlightOffers.length > 0) {
+      return getFlightData(flightItinerary.selectionContext.selectedFlightOffers[0]);
+    }
+
+    // Try to get from apiData (interrupt data)
+    const interruptData = apiData?.value?.widget?.args || apiData;
+    const selectedFlightOffers = interruptData?.flightItinerary?.selectionContext?.selectedFlightOffers;
+
+    if (selectedFlightOffers && selectedFlightOffers.length > 0) {
+      return getFlightData(selectedFlightOffers[0]);
+    }
+
+    return null;
+  })();
+
   // Check if this is an interrupt-triggered widget
   const isInterruptWidget = !!apiData;
-  const [paymentState, setPaymentState] = useState<PaymentState>({
-    status: "idle",
-  });
+
+  // Initialize payment state with localStorage persistence
+  const initializePaymentState = (): PaymentState => {
+    try {
+      const savedState = localStorage.getItem(`payment_state_${tripId}`);
+      console.log(`🔍 Checking localStorage for tripId ${tripId}:`, savedState);
+
+      if (savedState) {
+        const parsedState = JSON.parse(savedState);
+        // Only restore if the state is success to maintain booking/payment success across refreshes
+        if (parsedState.status === "success" && parsedState.verificationResponse) {
+          console.log("✅ Restored SUCCESS payment state from localStorage for tripId:", tripId);
+          return parsedState;
+        } else {
+          console.log("❌ Found saved state but not success or missing verification response:", parsedState.status);
+        }
+      } else {
+        console.log("📭 No saved payment state found in localStorage");
+      }
+    } catch (error) {
+      console.error("Error loading payment state from localStorage:", error);
+    }
+    console.log("🆕 Initializing with idle payment state");
+    return { status: "idle" };
+  };
+
+  const [paymentState, setPaymentState] = useState<PaymentState>(initializePaymentState);
   const [countdown, setCountdown] = useState(10);
   const [isCountdownActive, setIsCountdownActive] = useState(false);
   const [hasUserClicked, setHasUserClicked] = useState(false);
   const [hasSwitchedToChat, setHasSwitchedToChat] = useState(false);
   const [isSubmittingInterrupt, setIsSubmittingInterrupt] = useState(false);
+
+  // Function to save payment state to localStorage
+  const savePaymentState = useCallback((state: PaymentState) => {
+    try {
+      // Only save success states to localStorage for persistence across refreshes
+      if (state.status === "success" && state.verificationResponse) {
+        localStorage.setItem(`payment_state_${tripId}`, JSON.stringify(state));
+        console.log("Saved payment state to localStorage for tripId:", tripId);
+      }
+    } catch (error) {
+      console.error("Error saving payment state to localStorage:", error);
+    }
+  }, [tripId]);
+
+  // Enhanced setPaymentState that also saves to localStorage
+  const updatePaymentState = useCallback((state: PaymentState) => {
+    console.log(`💳 Payment state transition: ${paymentState.status} → ${state.status}`);
+    setPaymentState(state);
+    savePaymentState(state);
+  }, [savePaymentState, paymentState.status]);
+
+  // Function to clear payment state from localStorage
+  const clearPaymentState = useCallback(() => {
+    try {
+      localStorage.removeItem(`payment_state_${tripId}`);
+      console.log("Cleared payment state from localStorage for tripId:", tripId);
+    } catch (error) {
+      console.error("Error clearing payment state from localStorage:", error);
+    }
+  }, [tripId]);
 
   // Load Razorpay script
   useEffect(() => {
@@ -210,24 +494,29 @@ const NonAgentFlowWidgetContent: React.FC<
 
   // Define handlePaymentClick early so it can be used in useEffect
   const handlePaymentClick = useCallback(() => {
-    // Prevent multiple payment attempts
+    // Prevent multiple payment attempts or re-triggering when payment is already successful
     if (
       paymentState.status === "loading" ||
-      paymentState.status === "processing"
+      paymentState.status === "processing" ||
+      paymentState.status === "success"
     ) {
-      console.log("Payment already in progress, ignoring click");
+      console.log(`Payment already in ${paymentState.status} state, ignoring click`);
       return;
     }
 
     setHasUserClicked(true);
     setIsCountdownActive(false);
     setHasSwitchedToChat(false); // Reset the flag when starting new payment
+    clearPaymentState(); // Clear any existing localStorage state when starting new payment
     // We'll call initiatePayment directly here to avoid dependency issues
+    console.log("💳 Setting payment state to loading");
     setPaymentState({ status: "loading" });
 
     // Trigger payment initiation
     (async () => {
       try {
+        console.log("Starting payment process...");
+
         // Validate tripId
         if (!tripId) {
           throw new Error("Trip ID is required but not provided");
@@ -241,6 +530,7 @@ const NonAgentFlowWidgetContent: React.FC<
           throw new Error(prepaymentResponse.message || "Prepayment failed");
         }
 
+        console.log("💳 Setting payment state to processing");
         setPaymentState({
           status: "processing",
           prepaymentData: prepaymentResponse.data,
@@ -300,7 +590,7 @@ const NonAgentFlowWidgetContent: React.FC<
 
               const pnr = extractPNR(verificationResponse);
 
-              setPaymentState({
+              updatePaymentState({
                 status: "success",
                 prepaymentData: prepaymentResponse.data,
                 verificationResponse,
@@ -340,6 +630,13 @@ const NonAgentFlowWidgetContent: React.FC<
 
                     try {
                       setIsSubmittingInterrupt(true);
+
+                      // Validate response data before submission
+                      if (!responseData || typeof responseData !== 'object') {
+                        throw new Error("Invalid response data structure");
+                      }
+
+                      console.log("Submitting interrupt response:", JSON.stringify(responseData, null, 2));
 
                       // Add timeout to prevent hanging
                       const interruptPromise = submitInterruptResponse(
@@ -425,6 +722,13 @@ const NonAgentFlowWidgetContent: React.FC<
                     },
                   };
 
+                  // Validate response data before submission
+                  if (!responseData || typeof responseData !== 'object') {
+                    console.error("Invalid response data for payment failure:", responseData);
+                    return;
+                  }
+
+                  console.log("Submitting payment failure interrupt:", JSON.stringify(responseData, null, 2));
                   await submitInterruptResponse(
                     thread,
                     "response",
@@ -458,7 +762,8 @@ const NonAgentFlowWidgetContent: React.FC<
           },
           prefill: {
             name: "Customer Name",
-            email: "customer@example.com",
+            email: contactDetails?.email || "customer@example.com",
+            contact: contactDetails?.mobileNumber ? `+${contactDetails.countryCode || "91"}${contactDetails.mobileNumber}` : undefined,
           },
           theme: {
             color: "#3B82F6",
@@ -493,6 +798,13 @@ const NonAgentFlowWidgetContent: React.FC<
                       },
                     };
 
+                    // Validate response data before submission
+                    if (!responseData || typeof responseData !== 'object') {
+                      console.error("Invalid response data for cancellation:", responseData);
+                      return;
+                    }
+
+                    console.log("Submitting cancellation interrupt:", JSON.stringify(responseData, null, 2));
                     await submitInterruptResponse(
                       thread,
                       "response",
@@ -523,8 +835,24 @@ const NonAgentFlowWidgetContent: React.FC<
         razorpay.open();
       } catch (error) {
         console.error("Payment initiation failed:", error);
-        const errorMessage =
-          error instanceof Error ? error.message : "Payment initiation failed";
+
+        // Check for specific error types
+        let errorMessage = "Payment initiation failed";
+        if (error instanceof Error) {
+          errorMessage = error.message;
+
+          // Handle specific airportIata error
+          if (error.message.includes("airportIata")) {
+            console.error("AirportIata error detected:", error);
+            errorMessage = "Flight data processing error. Please try again.";
+          }
+
+          // Handle other common errors
+          if (error.message.includes("Cannot read properties of undefined")) {
+            console.error("Data structure error:", error);
+            errorMessage = "Data processing error. Please refresh and try again.";
+          }
+        }
 
         setPaymentState({
           status: "failed",
@@ -549,6 +877,13 @@ const NonAgentFlowWidgetContent: React.FC<
               },
             };
 
+            // Validate response data before submission
+            if (!responseData || typeof responseData !== 'object') {
+              console.error("Invalid response data for payment initiation error:", responseData);
+              return;
+            }
+
+            console.log("Submitting payment initiation error interrupt:", JSON.stringify(responseData, null, 2));
             await submitInterruptResponse(thread, "response", responseData);
 
             // Switch to chat tab after payment initiation error interrupt resolution
@@ -576,20 +911,33 @@ const NonAgentFlowWidgetContent: React.FC<
     isInterruptWidget,
     switchToChat,
     thread,
+    clearPaymentState,
+    paymentState.status,
+    updatePaymentState,
   ]);
 
-  // Countdown effect
+  // Auto-trigger payment effect - only when payment state is idle
   useEffect(() => {
-    if (isCountdownActive && countdown > 0 && !hasUserClicked) {
-      const timer = setTimeout(() => {
-        setCountdown(countdown - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else if (isCountdownActive && countdown === 0 && !hasUserClicked) {
-      // Auto-trigger payment when countdown reaches 0
+    // Only trigger payment if the state is idle (not success, failed, loading, or processing)
+    if (paymentState.status === "idle" && !hasUserClicked) {
+      console.log("🚀 Auto-triggering payment for idle state");
       handlePaymentClick();
     }
-  }, [countdown, isCountdownActive, hasUserClicked, handlePaymentClick]);
+  }, [paymentState.status, hasUserClicked, handlePaymentClick]);
+
+  // Countdown effect (currently disabled but preserved for future use)
+  useEffect(() => {
+    // Countdown logic is commented out but preserved
+    // if (isCountdownActive && countdown > 0 && !hasUserClicked) {
+    //   const timer = setTimeout(() => {
+    //     setCountdown(countdown - 1);
+    //   }, 1000);
+    //   return () => clearTimeout(timer);
+    // } else if (isCountdownActive && countdown === 0 && !hasUserClicked) {
+    //   // Auto-trigger payment when countdown reaches 0
+    //   handlePaymentClick();
+    // }
+  }, [countdown, isCountdownActive, hasUserClicked]);
 
   // Start countdown when component mounts
   useEffect(() => {
@@ -601,12 +949,14 @@ const NonAgentFlowWidgetContent: React.FC<
   // Remove auto-start payment flow - now controlled by user interaction or countdown
 
   const retryPayment = useCallback(() => {
+    console.log("🔄 Retrying payment - resetting state to idle");
+    clearPaymentState(); // Clear localStorage when retrying payment
     setPaymentState({ status: "idle" });
     setCountdown(10);
     setIsCountdownActive(true);
     setHasUserClicked(false);
     setHasSwitchedToChat(false);
-  }, []);
+  }, [clearPaymentState]);
 
   const renderContent = () => {
     switch (paymentState.status) {
@@ -713,7 +1063,8 @@ const NonAgentFlowWidgetContent: React.FC<
               </div>
             </div>
 
-            <div className="flex space-x-3">
+            {/* Button container with mobile-friendly positioning */}
+            <div className="flex space-x-3 mt-6 sticky bottom-0 bg-white p-4 -mx-4 border-t border-gray-200 sm:static sm:bg-transparent sm:p-0 sm:mx-0 sm:border-t-0 sm:mt-4">
               <Button
                 onClick={retryPayment}
                 className="flex-1 bg-black text-white hover:bg-gray-800"
@@ -748,7 +1099,78 @@ const NonAgentFlowWidgetContent: React.FC<
               </div>
             </div>
 
-            <div className="flex space-x-3">
+            {/* Price Breakdown Card */}
+            {(totalAmount || baseAmount || serviceFee || tax || convenienceFee) && (
+              <div className="bg-gray-50 rounded-xl border border-gray-200 p-4">
+                <h4 className="text-lg font-semibold text-black mb-4 text-center">Payment Summary</h4>
+                <div className="space-y-3">
+                  {/* Base Amount */}
+                  {baseAmount && baseAmount > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-700">Base Amount</span>
+                      <span className="text-sm font-medium text-black">
+                        {currency === 'INR' ? '₹' : currency}{baseAmount.toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Service Fee */}
+                  {serviceFee && serviceFee > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-700">Service Fee</span>
+                      <span className="text-sm font-medium text-black">
+                        {currency === 'INR' ? '₹' : currency}{serviceFee.toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Tax */}
+                  {tax !== undefined && tax !== null && tax > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-700">Tax</span>
+                      <span className="text-sm font-medium text-black">
+                        {currency === 'INR' ? '₹' : currency}{tax.toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Convenience Fee (crossed out) */}
+                  {convenienceFee && convenienceFee > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-700">Convenience Fee</span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-red-500 line-through font-medium">
+                          {currency === 'INR' ? '₹' : currency}{convenienceFee.toLocaleString()}
+                        </span>
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">FREE</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Total Amount */}
+                  <div className="border-t border-gray-300 pt-3 mt-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-semibold text-black">Total Amount</span>
+                      <span className="text-xl font-bold text-black">
+                        {currency === 'INR' ? '₹' : currency}{totalAmount?.toLocaleString() || '0'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Free convenience fee promotional message */}
+                  {convenienceFee && convenienceFee > 0 && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
+                      <p className="text-xs text-green-800 text-center">
+                        🎉 Great news! We&apos;re waiving the convenience fee for you. Save {currency === 'INR' ? '₹' : currency}{convenienceFee.toLocaleString()}!
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Button container with mobile-friendly positioning */}
+            <div className="flex space-x-3 mt-6 sticky bottom-0 bg-white p-4 -mx-4 border-t border-gray-200 sm:static sm:bg-transparent sm:p-0 sm:mx-0 sm:border-t-0 sm:mt-4">
               <Button
                 onClick={handlePaymentClick}
                 className="relative flex-1 overflow-hidden bg-black text-white hover:bg-gray-800"
@@ -766,7 +1188,7 @@ const NonAgentFlowWidgetContent: React.FC<
                 <span className="relative z-10 flex items-center justify-center">
                   <CreditCard className="mr-2 h-4 w-4" />
                   {isCountdownActive && !hasUserClicked
-                    ? `Make Payment (${countdown}s)`
+                    ? `Make Payment`
                     : "Make Payment"}
                 </span>
               </Button>
@@ -795,25 +1217,99 @@ const NonAgentFlowWidgetContent: React.FC<
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-sm font-medium text-gray-700">
                   Trip ID:
                 </span>
                 <span className="text-sm text-gray-900">{tripId}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-sm font-medium text-gray-700">
-                  Amount:
-                </span>
-                <span className="text-sm font-semibold text-gray-900">
-                  {paymentState.prepaymentData.transaction.amount
-                    ? formatAmount(
-                        paymentState.prepaymentData.transaction.amount,
-                        "INR",
-                      )
-                    : "₹0.00"}
-                </span>
+
+              {/* Contact Information */}
+              {contactDetails && (
+                <div className="space-y-2 border-t border-gray-200 pt-3">
+                  <h4 className="text-sm font-semibold text-black">Contact Information</h4>
+
+                  {contactDetails.email && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-700">Email</span>
+                      <span className="text-sm text-black">{contactDetails.email}</span>
+                    </div>
+                  )}
+
+                  {contactDetails.mobileNumber && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-700">Mobile</span>
+                      <span className="text-sm text-black">
+                        +{contactDetails.countryCode || "91"} {contactDetails.mobileNumber}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Price Breakdown */}
+              <div className="space-y-2 border-t border-gray-200 pt-3">
+                <h4 className="text-sm font-semibold text-black">Price Details</h4>
+
+                {/* Base Amount */}
+                {priceBreakdown.baseAmount && priceBreakdown.baseAmount > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-700">Base Amount</span>
+                    <span className="text-sm text-black">₹{priceBreakdown.baseAmount.toLocaleString()}</span>
+                  </div>
+                )}
+
+                {/* Service Fee */}
+                {priceBreakdown.serviceFee && priceBreakdown.serviceFee > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-700">Service Fee</span>
+                    <span className="text-sm text-black">₹{priceBreakdown.serviceFee.toLocaleString()}</span>
+                  </div>
+                )}
+
+                {/* Tax */}
+                {priceBreakdown.tax !== undefined && priceBreakdown.tax !== null && priceBreakdown.tax > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-700">Tax</span>
+                    <span className="text-sm text-black">₹{priceBreakdown.tax.toLocaleString()}</span>
+                  </div>
+                )}
+
+                {/* Convenience Fee (crossed out) */}
+                {priceBreakdown.convenienceFee && priceBreakdown.convenienceFee > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-700">Convenience Fee</span>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-red-500 line-through">₹{priceBreakdown.convenienceFee.toLocaleString()}</span>
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">FREE</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Total Amount */}
+                <div className="flex justify-between border-t border-gray-300 pt-2">
+                  <span className="text-sm font-semibold text-black">Total Amount</span>
+                  <span className="text-lg font-bold text-black">
+                    {paymentState.prepaymentData.transaction.amount
+                      ? formatAmount(
+                          paymentState.prepaymentData.transaction.amount,
+                          "INR",
+                        )
+                      : priceBreakdown.totalAmount
+                        ? `₹${priceBreakdown.totalAmount.toLocaleString()}`
+                        : "₹0.00"}
+                  </span>
+                </div>
+
+                {/* Free convenience fee note */}
+                {priceBreakdown.convenienceFee && priceBreakdown.convenienceFee > 0 && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
+                    <p className="text-xs text-green-800">
+                      🎉 Great news! We&apos;re waiving the convenience fee for you. Save ₹{priceBreakdown.convenienceFee.toLocaleString()}!
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>

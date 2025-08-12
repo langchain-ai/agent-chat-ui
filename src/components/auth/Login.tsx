@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { 
-  loginWithGoogle, 
-  isAuthenticated, 
+import {
+  loginWithGoogle,
+  isAuthenticated,
   storeJwtTokenWithValidation,
-  type AuthTokens 
+  type AuthTokens,
 } from "@/services/authService";
+import { getUserLocation } from "@/lib/utils";
 
 const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -42,7 +43,7 @@ const Login: React.FC = () => {
       // Validate environment variables
       if (!CLIENT_ID || !CLIENT_SECRET || !REDIRECT_URI) {
         throw new Error(
-          "Missing required environment variables. Please check your .env file."
+          "Missing required environment variables. Please check your .env file.",
         );
       }
 
@@ -65,7 +66,7 @@ const Login: React.FC = () => {
     } catch (err) {
       console.error("Error during Google login:", err);
       setError(
-        err instanceof Error ? err.message : "Failed to initiate Google login"
+        err instanceof Error ? err.message : "Failed to initiate Google login",
       );
       setIsLoading(false);
     }
@@ -101,7 +102,7 @@ const Login: React.FC = () => {
                 "Content-Type": "application/json",
               },
               body: JSON.stringify(tokenPayload),
-            }
+            },
           );
 
           const tokens = await tokenResponse.json();
@@ -111,7 +112,7 @@ const Login: React.FC = () => {
             throw new Error(
               `Token exchange failed: ${
                 tokens.error_description || tokens.error || "Unknown error"
-              }`
+              }`,
             );
           }
 
@@ -125,7 +126,9 @@ const Login: React.FC = () => {
           }
 
           if (!tokens.refresh_token) {
-            throw new Error("Refresh token is required but not received from Google. Please revoke app permissions and try again.");
+            throw new Error(
+              "Refresh token is required but not received from Google. Please revoke app permissions and try again.",
+            );
           }
 
           console.log("✅ All required tokens received successfully!");
@@ -142,20 +145,47 @@ const Login: React.FC = () => {
 
           // Validate and store JWT token with user type validation
           try {
-            storeJwtTokenWithValidation(loginResponse.jwtToken, loginResponse.userType);
+            storeJwtTokenWithValidation(
+              loginResponse.jwtToken,
+              loginResponse.userType,
+            );
             console.log("✅ JWT token stored successfully!");
 
             // Clear URL parameters
-            window.history.replaceState({}, document.title, window.location.pathname);
+            window.history.replaceState(
+              {},
+              document.title,
+              window.location.pathname,
+            );
+
+            // Request location permission after successful login
+            console.log("Login successful! Requesting location permission...");
+            try {
+              const locationResult = await getUserLocation();
+              if (locationResult.success) {
+                console.log(
+                  "Location obtained after login:",
+                  locationResult.data,
+                );
+                // Location will be automatically cached by the LocationProvider
+                // No need to manually store in localStorage
+              } else {
+                console.log(
+                  "Location request failed after login:",
+                  locationResult.error,
+                );
+              }
+            } catch (error) {
+              console.error("Error requesting location after login:", error);
+            }
 
             // Redirect to main application
-            console.log("Login successful! Redirecting to main app...");
+            console.log("Redirecting to main app...");
             window.location.href = "/";
           } catch (validationError) {
             // Handle user type validation error
             throw validationError;
           }
-
         } catch (err) {
           console.error("Error during login process:", err);
           setError(err instanceof Error ? err.message : "Login failed");
@@ -169,31 +199,49 @@ const Login: React.FC = () => {
   }, [CLIENT_ID, CLIENT_SECRET, REDIRECT_URI]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 px-4 py-12 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md">
         {/* Logo/Brand Section */}
-        <div className="text-center mb-8">
-          <div className="mx-auto h-16 w-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center mb-4 shadow-lg">
-            <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg">
+            <svg
+              className="h-8 w-8 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+              />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2">
+          <h1 className="mb-2 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-3xl font-bold text-transparent">
             Flyo Chat
           </h1>
           <p className="text-gray-600">Welcome! Please sign in to continue.</p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8">
+        <div className="rounded-2xl border border-white/20 bg-white/80 p-8 shadow-xl backdrop-blur-sm">
           <div className="space-y-6">
             {/* Error Message */}
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="rounded-lg border border-red-200 bg-red-50 p-4">
                 <div className="flex">
                   <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    <svg
+                      className="h-5 w-5 text-red-400"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                   </div>
                   <div className="ml-3">
@@ -208,18 +256,21 @@ const Login: React.FC = () => {
               <Button
                 onClick={handleGoogleLogin}
                 disabled={isLoading}
-                className="group relative w-full flex justify-center items-center py-4 px-6 border border-gray-300 text-sm font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md"
+                className="group relative flex w-full items-center justify-center rounded-xl border border-gray-300 bg-white px-6 py-4 text-sm font-medium text-gray-700 shadow-sm transition-all duration-200 hover:bg-gray-50 hover:shadow-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 variant="outline"
                 size="lg"
               >
                 {isLoading ? (
                   <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mr-3"></div>
+                    <div className="mr-3 h-5 w-5 animate-spin rounded-full border-b-2 border-blue-600"></div>
                     <span>Signing in...</span>
                   </div>
                 ) : (
                   <div className="flex items-center">
-                    <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
+                    <svg
+                      className="mr-3 h-5 w-5"
+                      viewBox="0 0 24 24"
+                    >
                       <path
                         fill="#4285F4"
                         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -251,7 +302,7 @@ const Login: React.FC = () => {
                     setError(null);
                     setIsLoading(false);
                   }}
-                  className="text-sm text-blue-600 hover:text-blue-500 underline font-medium"
+                  className="text-sm font-medium text-blue-600 underline hover:text-blue-500"
                 >
                   Try Again
                 </button>
@@ -261,7 +312,7 @@ const Login: React.FC = () => {
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-8">
+        <div className="mt-8 text-center">
           <p className="text-sm text-gray-500">
             Secure login with Google authentication
           </p>

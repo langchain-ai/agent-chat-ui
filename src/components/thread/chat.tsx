@@ -3,6 +3,7 @@ import { FormEvent, useEffect, useRef, useState, ReactNode } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
+import { useLocationContext } from "@/providers/LocationContext";
 import { Button } from "../ui/button";
 import { Checkpoint, Message } from "@langchain/langgraph-sdk";
 import { AssistantMessage, AssistantMessageLoading } from "./messages/ai";
@@ -110,6 +111,7 @@ export function Thread() {
   const [artifactContext, setArtifactContext] = useArtifactContext();
   const interruptPersistence = useInterruptPersistenceContext();
   const [artifactOpen, closeArtifact] = useArtifactOpen();
+  const { locationData } = useLocationContext();
 
   const [threadId, _setThreadId] = useQueryState("threadId");
   const [assistantId] = useQueryState("assistantId");
@@ -274,7 +276,7 @@ export function Thread() {
     const context =
       Object.keys(artifactContext).length > 0 ? artifactContext : undefined;
 
-    // Include userId in the submission
+    // Include userId and location data in the submission
     const submissionData: any = {
       messages: [...toolMessages, newHumanMessage],
       context,
@@ -282,6 +284,16 @@ export function Thread() {
 
     if (userId) {
       submissionData.userId = userId;
+    }
+
+    // Include location data directly in submission data (same level as userId)
+    if (locationData) {
+      submissionData.userLocation = {
+        latitude: locationData.latitude,
+        longitude: locationData.longitude,
+        accuracy: locationData.accuracy,
+        timestamp: locationData.timestamp,
+      };
     }
 
     // Add metadata to ensure thread is properly saved and searchable
@@ -308,6 +320,9 @@ export function Thread() {
     }
 
     console.log("Submitting with options:", submitOptions);
+    console.log("Location data being sent:", locationData);
+    console.log("Context data being sent:", context);
+    console.log("Full submission data:", submissionData);
 
     // Store thread information locally for fallback
     const messageText =
