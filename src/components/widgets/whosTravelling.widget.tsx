@@ -675,7 +675,13 @@ const CityAutocomplete: React.FC<CityAutocompleteProps> = ({
   );
 };
 
-const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
+interface WhosTravellingProps extends Record<string, any> {
+  apiData?: any;
+  readOnly?: boolean;
+  interruptId?: string;
+}
+
+const WhosTravellingWidget: React.FC<WhosTravellingProps> = (args) => {
   const thread = useStreamContext();
   const [selectedPassengers, setSelectedPassengers] = useState<{
     [key: string]: SavedPassenger;
@@ -832,7 +838,7 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
         currency: offer.currency === "INR" ? "₹" : offer.currency,
         tax: offer.tax,
         baseAmount: offer.baseAmount,
-        serviceFee: offer.serviceFee
+        serviceFee: offer.serviceFee,
       };
     }
     return {
@@ -840,7 +846,7 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
       currency: args.currency || "₹",
       tax: args.tax,
       baseAmount: args.baseAmount,
-      serviceFee: args.serviceFee
+      serviceFee: args.serviceFee,
     };
   };
 
@@ -963,7 +969,12 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
         const mobileNumber = contactDetails.mobileNumber;
         const countryCode = contactDetails.countryCode;
 
-        console.log("📱 Mobile number:", mobileNumber, "Country code:", countryCode);
+        console.log(
+          "📱 Mobile number:",
+          mobileNumber,
+          "Country code:",
+          countryCode,
+        );
 
         // Set the mobile number directly (without country code prefix)
         setContactPhoneNumber(mobileNumber);
@@ -971,8 +982,10 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
         // Map country code to country dropdown
         if (countryCode) {
           // Find matching country code in our list
-          const matchingCountryCode = countryCodes.find(cc =>
-            cc.code === `+${countryCode}` || cc.code.replace("+", "") === countryCode
+          const matchingCountryCode = countryCodes.find(
+            (cc) =>
+              cc.code === `+${countryCode}` ||
+              cc.code.replace("+", "") === countryCode,
           );
 
           if (matchingCountryCode) {
@@ -981,7 +994,7 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
           } else {
             console.log("❌ No matching country found for code:", countryCode);
             // Default to India if no match found
-            const defaultCountry = countryCodes.find(cc => cc.code === "+91");
+            const defaultCountry = countryCodes.find((cc) => cc.code === "+91");
             if (defaultCountry) {
               setSelectedCountryCode(defaultCountry);
             }
@@ -991,7 +1004,9 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
           if (mobileNumber.startsWith("91")) {
             // Indian number
             setContactPhoneNumber(mobileNumber.substring(2)); // Remove "91" prefix
-            const indiaCountryCode = countryCodes.find(cc => cc.code === "+91");
+            const indiaCountryCode = countryCodes.find(
+              (cc) => cc.code === "+91",
+            );
             if (indiaCountryCode) {
               setSelectedCountryCode(indiaCountryCode);
             }
@@ -1474,10 +1489,30 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
     ];
 
     try {
+      const frozen = {
+        widget: {
+          type: "WhosTravellingWidget",
+          args: {
+            travellersDetail,
+            contactInfo: responseData[0].data.contactInfo,
+          },
+        },
+        value: {
+          type: "widget",
+          widget: {
+            type: "WhosTravellingWidget",
+            args: {
+              travellersDetail,
+              contactInfo: responseData[0].data.contactInfo,
+            },
+          },
+        },
+      };
       await submitInterruptResponse(
         thread,
         responseData[0].type,
         responseData[0].data,
+        { interruptId: args.interruptId, frozenValue: frozen },
       );
     } catch (error: any) {
       console.error("Error submitting passenger selection:", error);
@@ -1897,7 +1932,7 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
                 </div>
                 <ChevronDown
                   className={`h-5 w-5 text-gray-600 transition-transform duration-200 ${
-                    showPriceBreakdown ? 'rotate-180' : ''
+                    showPriceBreakdown ? "rotate-180" : ""
                   }`}
                 />
               </button>
@@ -1912,54 +1947,53 @@ const WhosTravellingWidget: React.FC<WhosTravellingWidgetProps> = (args) => {
           </div>
 
           {/* Price Breakdown */}
-          {showPriceBreakdown &&
-            (tax || baseAmount || serviceFee) && (
-              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                <h4 className="mb-3 text-sm font-semibold text-black">
-                  Price Breakdown
-                </h4>
-                <div className="space-y-2">
-                  {baseAmount && baseAmount > 0 && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-700">Base Amount</span>
-                      <span className="text-sm font-medium text-black">
-                        {currency}
-                        {baseAmount.toLocaleString()}
-                      </span>
-                    </div>
-                  )}
-                  {serviceFee && serviceFee > 0 && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-700">Service Fee</span>
-                      <span className="text-sm font-medium text-black">
-                        {currency}
-                        {serviceFee.toLocaleString()}
-                      </span>
-                    </div>
-                  )}
-                  {tax !== undefined && tax !== null && tax > 0 && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-700">Tax</span>
-                      <span className="text-sm font-medium text-black">
-                        {currency}
-                        {tax.toLocaleString()}
-                      </span>
-                    </div>
-                  )}
-                  <div className="mt-2 border-t border-gray-300 pt-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold text-black">
-                        Total Amount
-                      </span>
-                      <span className="text-sm font-bold text-black">
-                        {currency}
-                        {totalAmount.toLocaleString()}
-                      </span>
-                    </div>
+          {showPriceBreakdown && (tax || baseAmount || serviceFee) && (
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+              <h4 className="mb-3 text-sm font-semibold text-black">
+                Price Breakdown
+              </h4>
+              <div className="space-y-2">
+                {baseAmount && baseAmount > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-700">Base Amount</span>
+                    <span className="text-sm font-medium text-black">
+                      {currency}
+                      {baseAmount.toLocaleString()}
+                    </span>
+                  </div>
+                )}
+                {serviceFee && serviceFee > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-700">Service Fee</span>
+                    <span className="text-sm font-medium text-black">
+                      {currency}
+                      {serviceFee.toLocaleString()}
+                    </span>
+                  </div>
+                )}
+                {tax !== undefined && tax !== null && tax > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-700">Tax</span>
+                    <span className="text-sm font-medium text-black">
+                      {currency}
+                      {tax.toLocaleString()}
+                    </span>
+                  </div>
+                )}
+                <div className="mt-2 border-t border-gray-300 pt-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-black">
+                      Total Amount
+                    </span>
+                    <span className="text-sm font-bold text-black">
+                      {currency}
+                      {totalAmount.toLocaleString()}
+                    </span>
                   </div>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
           <Button
             onClick={handleSubmit}

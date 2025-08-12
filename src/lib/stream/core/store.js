@@ -315,7 +315,7 @@ export class Store {
         return { id: blockId, kind: "ui", data: u ?? null };
       }
       // interrupt
-      return { id: blockId, kind: "interrupt", data: { value: b.value, completed: !!b.completed, frozenValue: b.frozenValue } };
+      return { id: blockId, kind: "interrupt", data: { value: b.value, completed: !!b.completed, frozenValue: b.frozenValue, interrupt_id: b.refId } };
     }).filter(Boolean);
 
     return { messages, ui, blocks, lastUpdatedAt: state.lastUpdatedAt };

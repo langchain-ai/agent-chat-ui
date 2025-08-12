@@ -398,3 +398,69 @@ Persistence:
 - Hook: expose `values.blocks`, add `completeInterrupt` API, update hydration and save points.
 - Rendering: add a helper to render `values.blocks` and pass `readOnly` to widgets; migrate chat to use it.
 - Remove/retire in-memory `InterruptPersistenceContext` once blocks timeline is adopted.
+
+---
+
+## How to add a new interrupt widget (authoring guide)
+
+This repo now supports interrupt widgets with inline ordering, persistence, and automatic read-only after submission. To create a new widget that participates in this flow, follow this minimal checklist.
+
+1. Add component and map it
+
+- Create your widget React component under `src/components/widgets/YourWidget.widget.tsx`.
+- Export it in `src/components/widgets/index.ts` by adding a key to `componentMap`:
+  - Key is the widget type the agent emits (e.g., `YourWidget`), value is your component.
+
+2. Component props contract (kept generic)
+
+- Your component will automatically receive these props from the chat renderer:
+  - `apiData?: any` — the interrupt payload (or frozen payload after completion) for hydration.
+  - `readOnly?: boolean` — true when the interrupt block has been completed (or on reload after completion).
+  - `interruptId?: string` — the persisted interrupt id for explicit completion if needed.
+- Your component will also receive `widget.args` (anything the agent provided) as normal props because the renderer spreads them into the component.
+
+3. Hydrate initial values
+
+- Prefer values from `apiData` when present, then fall back to your normal `args` defaults:
+  - Common shapes (normalized by the renderer) that you can check:
+    - `apiData.value?.widget?.args`
+    - `apiData.widget?.args`
+    - `apiData.value?.value?.widget?.args`
+- If you do nothing, the widget will still render; hydrating from `apiData` is optional but recommended so values are shown after refresh.
+
+4. Read-only behavior
+
+- The chat renderer wraps all widgets in a `ReadOnlyGuard` that disables pointer events when `readOnly` is true. This guarantees a non-editable UI after submission or on reload.
+- Optional: You may additionally apply visual cues (disabled styles) based on the `readOnly` prop inside your widget. Functional disabling is already provided by the guard.
+
+5. Submit with freezing (one line)
+
+- On user submit, call the common helper which also completes the interrupt locally and persists a frozen snapshot:
+
+```ts
+await submitInterruptResponse(thread, "response", responseData, {
+  interruptId,          // optional; auto-derived from the latest interrupt if omitted
+  frozenValue: {
+    widget: { type: "YourWidget", args: <compact snapshot args> },
+    value:  { type: "widget", widget: { type: "YourWidget", args: <same args> } },
+  },
+});
+```
+
+Guidelines for `frozenValue`:
+
+- Keep it compact and sufficient to re-render a read-only view of what the user submitted.
+- Use your widget type string as emitted by the agent and add just the args you want to preserve.
+
+6. That’s it — no widget-specific persistence code
+
+- The store marks the interrupt as completed and persists `{ blocks }` with `frozenValue` and `interrupt_id`.
+- On reload, the timeline is hydrated; `GenericInterruptView`/`DynamicRenderer` will:
+  - pass `apiData` and `readOnly` to your component,
+  - and wrap your component with `ReadOnlyGuard` for non-editability.
+
+7. Optional: Itinerary-only widgets
+
+- If your widget is intended for the itinerary panel (`widget.args.renderingWindow === "itinerary"`), the renderer mounts it in the itinerary window instead of inline chat. The `apiData`/`readOnly`/`interruptId` props are still passed; use them the same way.
+
+This contract keeps widget code minimal — implement UI, read `apiData` to prefill, and call `submitInterruptResponse(...)` with a small `frozenValue`. The stream layer takes care of ordering, persistence, and read-only state across refreshes.

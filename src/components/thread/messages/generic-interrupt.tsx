@@ -26,6 +26,14 @@ interface DynamicRendererProps {
   onRendered?: (rendered: boolean) => void;
 }
 
+const ReadOnlyGuard: React.FC<{
+  disabled: boolean;
+  children: React.ReactNode;
+}> = ({ disabled, children }) => {
+  if (!disabled) return <>{children}</>;
+  return <div className="pointer-events-none">{children}</div>;
+};
+
 // Wrapper component for TravelerDetailsWidget with bottom sheet
 const TravelerDetailsBottomSheet: React.FC<{ apiData: any; args: any }> = ({
   apiData,
@@ -235,24 +243,49 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
       return null; // handled by effect above
     }
 
+    const interruptObj: any = interrupt as any;
+    const computedReadOnly = !!interruptObj?._readOnly;
+    const interruptId =
+      interruptObj?.interrupt_id ||
+      interruptObj?.value?.interrupt_id ||
+      interruptObj?.value?.value?.interrupt_id;
+    debugLog("[INTERRUPT/DYN] passing widget props", {
+      widgetType: widget?.type,
+      readOnly: computedReadOnly,
+      interruptId,
+      hasArgs: !!widget?.args,
+    });
+
     if (widget?.type === "NonAgentFlowWidget") {
       return (
-        <NonAgentFlowBottomSheet
-          apiData={interrupt.value.value}
-          args={widget?.args}
-        />
+        <ReadOnlyGuard disabled={computedReadOnly}>
+          <NonAgentFlowBottomSheet
+            apiData={interrupt.value.value}
+            args={widget?.args}
+          />
+        </ReadOnlyGuard>
       );
     }
     if (widget?.type === "TravelerDetailsWidget") {
-      console.log("777777777 Traveler Details Widget - API data:", JSON.stringify(interrupt));
       return (
-        <TravelerDetailsBottomSheet
-          apiData={interrupt}
-          args={widget?.args}
-        />
+        <ReadOnlyGuard disabled={computedReadOnly}>
+          <TravelerDetailsBottomSheet
+            apiData={interrupt}
+            args={widget?.args}
+          />
+        </ReadOnlyGuard>
       );
     }
-    return <Component {...(widget?.args ?? {})} />;
+    return (
+      <ReadOnlyGuard disabled={computedReadOnly}>
+        <Component
+          {...(widget?.args ?? {})}
+          apiData={interrupt}
+          readOnly={computedReadOnly}
+          interruptId={interruptId}
+        />
+      </ReadOnlyGuard>
+    );
   }
 
   // Nothing to render
@@ -296,7 +329,14 @@ export function GenericInterruptView({
   const dynamicWidget = (
     <DynamicRenderer
       interruptType={interruptType}
-      interrupt={{ ...interruptObj, _readOnly: readOnly }}
+      interrupt={{
+        ...interruptObj,
+        // Ensure we propagate the persisted id used in the timeline store
+        interrupt_id:
+          (blockLike as any)?.interrupt_id ??
+          (interruptObj as any)?.interrupt_id,
+        _readOnly: readOnly,
+      }}
       onRendered={setRenderedByDynamic}
     />
   );
@@ -306,6 +346,14 @@ export function GenericInterruptView({
       ? "[INTERRUPT] rendering dynamic widget (and hiding fallback)"
       : "[INTERRUPT] no dynamic render yet; showing generic fallback",
   );
+  if (readOnly) {
+    debugLog("[INTERRUPT] block is completed; widgets should be readOnly");
+  }
+  debugLog("[INTERRUPT] generic->dynamic props", {
+    blockCompleted: readOnly,
+    hasFrozen: !!blockLike?.frozenValue,
+    interruptType,
+  });
 
   const truncateValue = (value: any): any => {
     if (typeof value === "string" && value.length > 100) {

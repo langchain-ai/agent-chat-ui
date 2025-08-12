@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
+import { useTabContext } from "@/providers/TabContext";
 
 interface FlightOption {
   flightOfferId: string;
@@ -2081,11 +2082,15 @@ const FlightTabs = ({
   );
 };
 
-const FlightOptionsWidget = (args: Record<string, any>) => {
-  console.log("FlightOptionsWidget args:", args);
-  console.log("flightOffers:", args.flightOffers);
+interface FlightOptionsProps extends Record<string, any> {
+  apiData?: any;
+  readOnly?: boolean;
+  interruptId?: string;
+}
 
+const FlightOptionsWidget = (args: FlightOptionsProps) => {
   const thread = useStreamContext();
+  const { switchToChat, switchToReview } = useTabContext();
   const [selectedFlight, setSelectedFlight] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showAllFlights, setShowAllFlights] = useState(false);
@@ -2125,7 +2130,23 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
     };
 
     try {
-      await submitInterruptResponse(thread, "response", responseData);
+      const frozen = {
+        widget: {
+          type: "FlightOptionsWidget",
+          args: { selectedFlightId: flightOfferId },
+        },
+        value: {
+          type: "widget",
+          widget: {
+            type: "FlightOptionsWidget",
+            args: { selectedFlightId: flightOfferId },
+          },
+        },
+      };
+      await submitInterruptResponse(thread, "response", responseData, {
+        interruptId: args.interruptId,
+        frozenValue: frozen,
+      });
     } catch (error) {
       // Optional: already handled inside the utility
     } finally {
@@ -2134,6 +2155,7 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
   };
 
   const handleShowAllFlights = () => {
+    if (args.readOnly) return;
     setShowAllFlights(true);
   };
 
@@ -2373,8 +2395,8 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
         >
           <SheetHeader className="flex-shrink-0 border-b border-gray-200 pb-4">
             <SheetTitle className="text-xl font-semibold">
-              All Flights ({filteredFlights.length} of{" "}
-              {allFlightTuples.length} flights)
+              All Flights ({filteredFlights.length} of {allFlightTuples.length}{" "}
+              flights)
             </SheetTitle>
           </SheetHeader>
 

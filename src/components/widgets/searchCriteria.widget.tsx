@@ -82,12 +82,64 @@ const DateInput = ({
   );
 };
 
-const SearchCriteriaWidget = (args: Record<string, any>) => {
+interface SearchCriteriaProps extends Record<string, any> {
+  apiData?: any;
+  readOnly?: boolean;
+  interruptId?: string;
+}
+
+const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
   const thread = useStreamContext();
   const { switchToChat } = useTabContext();
 
   // Extract data from args
-  const flightSearchCriteria = args.flightSearchCriteria || {};
+  const flightSearchCriteria =
+    args.flightSearchCriteria ||
+    args.apiData?.value?.widget?.args?.flightSearchCriteria ||
+    {};
+  const readOnly = !!args.readOnly || !!(args as any)?._readOnly;
+  const interruptId: string | undefined =
+    args.interruptId ||
+    (args.apiData?.value?.interrupt_id ?? args.apiData?.interrupt_id);
+
+  // Fallback: detect a completed interrupt for this widget from the timeline
+  const timelineOverride = React.useMemo(() => {
+    try {
+      const blocks = (thread.values?.blocks ?? []) as Array<{
+        kind: string;
+        data?: any;
+      }>;
+      const lastCompleted = [...(Array.isArray(blocks) ? blocks : [])]
+        .reverse()
+        .find(
+          (b) =>
+            b.kind === "interrupt" &&
+            b.data?.completed &&
+            (b.data?.frozenValue?.widget?.type === "SearchCriteriaWidget" ||
+              b.data?.value?.widget?.type === "SearchCriteriaWidget"),
+        );
+      if (!lastCompleted) return undefined;
+      const fv = lastCompleted.data?.frozenValue || lastCompleted.data?.value;
+      const argsFromFV = fv?.widget?.args?.flightSearchCriteria;
+      return {
+        readOnly: true,
+        criteria: argsFromFV,
+      } as { readOnly: boolean; criteria?: any };
+    } catch {
+      return undefined;
+    }
+  }, [thread.values?.blocks]);
+
+  const effectiveReadOnly = readOnly || !!timelineOverride?.readOnly;
+  if (process.env.NODE_ENV === "development") {
+    console.log("[SearchCriteriaWidget] init", {
+      fromArgs: args.flightSearchCriteria,
+      fromApiData: args.apiData?.value?.widget?.args?.flightSearchCriteria,
+      interruptId,
+      timelineOverride,
+      effectiveReadOnly,
+    });
+  }
 
   // Initialize state from args
   const [tripType, setTripType] = useState<"oneway" | "round">(
@@ -146,6 +198,30 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showTravellerDropdown, setShowTravellerDropdown] = useState(false);
 
+  // Hydrate state from timeline override if present
+  useEffect(() => {
+    if (timelineOverride?.criteria) {
+      const c = timelineOverride.criteria;
+      setTripType(c.isRoundTrip ? "round" : "oneway");
+      setAdults(c.adults ?? 1);
+      setChildren(c.children ?? 0);
+      setInfants(c.infants ?? 0);
+      setFlightClass(
+        c.class
+          ? c.class.charAt(0).toUpperCase() + c.class.slice(1)
+          : "Economy",
+      );
+      setFromAirport(c.originAirport || "");
+      setToAirport(c.destinationAirport || "");
+      try {
+        setDepartureDate(
+          c.departureDate ? new Date(c.departureDate) : undefined,
+        );
+        setReturnDate(c.returnDate ? new Date(c.returnDate) : undefined);
+      } catch {}
+    }
+  }, [timelineOverride]);
+
   // Wrapper functions for date state setters to match DateInput component interface
   const handleDepartureDateChange = (date: Date | undefined) => {
     setDepartureDate(date);
@@ -189,7 +265,23 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
     };
 
     try {
-      await submitInterruptResponse(thread, "response", responseData);
+      const frozen = {
+        widget: {
+          type: "SearchCriteriaWidget",
+          args: { flightSearchCriteria: responseData.flightSearchCriteria },
+        },
+        value: {
+          type: "widget",
+          widget: {
+            type: "SearchCriteriaWidget",
+            args: { flightSearchCriteria: responseData.flightSearchCriteria },
+          },
+        },
+      };
+      await submitInterruptResponse(thread, "response", responseData, {
+        interruptId,
+        frozenValue: frozen,
+      });
     } catch (error: any) {
       console.error("Error submitting interrupt response:", error);
       // Optional: already handled inside the utility
@@ -265,6 +357,7 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
                 onValueChange={setFromAirport}
                 placeholder="From - City or Airport"
                 excludeAirport={toAirport}
+                disabled={effectiveReadOnly}
               />
             </div>
 
@@ -274,6 +367,7 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
                 onValueChange={setToAirport}
                 placeholder="To - City or Airport"
                 excludeAirport={fromAirport}
+                disabled={effectiveReadOnly}
               />
             </div>
           </div>
@@ -282,21 +376,37 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
           <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
             {/* Departure Date */}
             <div className="flex-1">
-              <DateInput
-                date={departureDate}
-                onDateChange={handleDepartureDateChange}
-                placeholder="Select departure date"
-              />
+              <div
+                className={
+                  effectiveReadOnly
+                    ? "pointer-events-none opacity-60"
+                    : undefined
+                }
+              >
+                <DateInput
+                  date={departureDate}
+                  onDateChange={handleDepartureDateChange}
+                  placeholder="Select departure date"
+                />
+              </div>
             </div>
 
             {/* Return Date - Only show for round trip */}
             {tripType === "round" && (
               <div className="flex-1">
-                <DateInput
-                  date={returnDate}
-                  onDateChange={handleReturnDateChange}
-                  placeholder="Select return date"
-                />
+                <div
+                  className={
+                    effectiveReadOnly
+                      ? "pointer-events-none opacity-60"
+                      : undefined
+                  }
+                >
+                  <DateInput
+                    date={returnDate}
+                    onDateChange={handleReturnDateChange}
+                    placeholder="Select return date"
+                  />
+                </div>
               </div>
             )}
           </div>
@@ -313,6 +423,7 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
                   role="combobox"
                   aria-expanded={showTravellerDropdown}
                   className="w-full justify-between focus:border-black focus:ring-black"
+                  disabled={effectiveReadOnly}
                 >
                   <span>{formatTravellerText()}</span>
                   <span className="ml-2 text-gray-400">▼</span>
@@ -339,7 +450,7 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
                           size="sm"
                           className="h-8 w-8 rounded-full p-0"
                           onClick={() => setAdults(Math.max(1, adults - 1))}
-                          disabled={adults <= 1}
+                          disabled={adults <= 1 || effectiveReadOnly}
                         >
                           <Minus className="h-4 w-4" />
                         </Button>
@@ -352,6 +463,7 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
                           size="sm"
                           className="h-8 w-8 rounded-full p-0"
                           onClick={() => setAdults(adults + 1)}
+                          disabled={effectiveReadOnly}
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -371,7 +483,7 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
                           size="sm"
                           className="h-8 w-8 rounded-full p-0"
                           onClick={() => setChildren(Math.max(0, children - 1))}
-                          disabled={children <= 0}
+                          disabled={children <= 0 || effectiveReadOnly}
                         >
                           <Minus className="h-4 w-4" />
                         </Button>
@@ -384,6 +496,7 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
                           size="sm"
                           className="h-8 w-8 rounded-full p-0"
                           onClick={() => setChildren(children + 1)}
+                          disabled={effectiveReadOnly}
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -403,7 +516,7 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
                           size="sm"
                           className="h-8 w-8 rounded-full p-0"
                           onClick={() => setInfants(Math.max(0, infants - 1))}
-                          disabled={infants <= 0}
+                          disabled={infants <= 0 || effectiveReadOnly}
                         >
                           <Minus className="h-4 w-4" />
                         </Button>
@@ -416,6 +529,7 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
                           size="sm"
                           className="h-8 w-8 rounded-full p-0"
                           onClick={() => setInfants(infants + 1)}
+                          disabled={effectiveReadOnly}
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -440,6 +554,7 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
                               checked={flightClass === classOption}
                               onChange={(e) => setFlightClass(e.target.value)}
                               className="h-4 w-4 border-gray-300 text-black focus:ring-black"
+                              disabled={effectiveReadOnly}
                             />
                             <span className="font-medium">{classOption}</span>
                           </label>
@@ -456,7 +571,7 @@ const SearchCriteriaWidget = (args: Record<string, any>) => {
           <div className="pt-4">
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || effectiveReadOnly}
               className="w-full rounded-lg bg-black py-3 text-base font-semibold text-white hover:bg-gray-800"
             >
               {isLoading ? "Searching..." : "Search flights"}
