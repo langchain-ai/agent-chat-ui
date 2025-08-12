@@ -812,6 +812,8 @@ interface ReviewWidgetProps {
   // Loading state management
   isSubmitting?: boolean;
   onSubmittingChange?: (isSubmitting: boolean) => void;
+  // Render as submitted/read-only when interrupt is completed (cache-block source of truth)
+  readOnly?: boolean;
 }
 
 // Utility functions to transform API data
@@ -926,8 +928,8 @@ const transformApiDataToFlightDetails = (
   apiData: ApiResponse,
 ): FlightDetails | null => {
   const flightOffer =
-    apiData.value.widget.args.flightItinerary.selectionContext
-      .selectedFlightOffers[0];
+    apiData?.value?.widget?.args?.flightItinerary?.selectionContext
+      ?.selectedFlightOffers?.[0];
   if (!flightOffer) return null;
 
   // Handle new journey structure or legacy structure
@@ -1006,21 +1008,37 @@ const transformApiDataToPassengerDetails = (
   apiData: ApiResponse,
 ): PassengerDetails | null => {
   const userDetails =
-    apiData.value.widget.args.flightItinerary.userContext.userDetails;
-  if (!userDetails) return null;
+    apiData?.value?.widget?.args?.flightItinerary?.userContext?.userDetails;
+  if (userDetails) {
+    return {
+      firstName: userDetails.firstName,
+      lastName: userDetails.lastName,
+      dateOfBirth: userDetails.dateOfBirth,
+      gender: userDetails.gender,
+      title:
+        userDetails.gender === "Male"
+          ? "Mr"
+          : userDetails.gender === "Female"
+            ? "Ms"
+            : "",
+    };
+  }
 
-  return {
-    firstName: userDetails.firstName,
-    lastName: userDetails.lastName,
-    dateOfBirth: userDetails.dateOfBirth,
-    gender: userDetails.gender,
-    title:
-      userDetails.gender === "Male"
-        ? "Mr"
-        : userDetails.gender === "Female"
-          ? "Ms"
-          : "",
-  };
+  // Fallback: hydrate from submission payload if present
+  const submission = (apiData?.value?.widget?.args as any)?.submission as any;
+  const t = submission?.travellersDetail?.[0];
+  if (t) {
+    const g = (t.gender || "").toString().toUpperCase();
+    return {
+      firstName: t.name?.firstName || "",
+      lastName: t.name?.lastName || "",
+      dateOfBirth: t.dateOfBirth || "",
+      gender: g === "MALE" ? "Male" : g === "FEMALE" ? "Female" : "",
+      title: g === "FEMALE" ? "Ms" : g === "MALE" ? "Mr" : "",
+    };
+  }
+
+  return null;
 };
 
 const transformApiDataToContactInfo = (
@@ -1028,7 +1046,7 @@ const transformApiDataToContactInfo = (
 ): ContactInformation | null => {
   // First try to get contact details from contactDetails (matching whosTravelling logic)
   const contactDetails =
-    apiData.value.widget.args.flightItinerary.userContext.contactDetails;
+    apiData?.value?.widget?.args?.flightItinerary?.userContext?.contactDetails;
 
   if (contactDetails) {
     console.log(
@@ -1048,51 +1066,82 @@ const transformApiDataToContactInfo = (
 
   // Fallback to userDetails if contactDetails not available
   const userDetails =
-    apiData.value.widget.args.flightItinerary.userContext.userDetails;
-  if (!userDetails) return null;
+    apiData?.value?.widget?.args?.flightItinerary?.userContext?.userDetails;
+  if (userDetails) {
+    const phone =
+      userDetails.phone && userDetails.phone.length > 0
+        ? `+${userDetails.phone[0].countryCode} ${userDetails.phone[0].number}`
+        : "";
 
-  const phone =
-    userDetails.phone && userDetails.phone.length > 0
-      ? `+${userDetails.phone[0].countryCode} ${userDetails.phone[0].number}`
-      : "";
+    return {
+      phone: phone,
+      email: userDetails.email,
+    };
+  }
 
-  return {
-    phone: phone,
-    email: userDetails.email,
-  };
+  // Fallback: hydrate from submission payload if present
+  const submission = (apiData?.value?.widget?.args as any)?.submission as any;
+  if (submission?.contactInfo) {
+    const cc = submission.contactInfo.phone?.countryCode || "";
+    const num = submission.contactInfo.phone?.number || "";
+    const formattedPhone = cc ? `+${cc} ${num}` : num;
+    return {
+      phone: formattedPhone,
+      email: submission.contactInfo.email || "",
+    };
+  }
+
+  return null;
 };
 
 const transformApiDataToTravelDocument = (
   apiData: ApiResponse,
 ): TravelDocument | null => {
   const userDetails =
-    apiData.value.widget.args.flightItinerary.userContext.userDetails;
+    apiData?.value?.widget?.args?.flightItinerary?.userContext?.userDetails;
   if (
-    !userDetails ||
-    !userDetails.documents ||
-    userDetails.documents.length === 0
-  )
-    return null;
+    userDetails &&
+    userDetails.documents &&
+    userDetails.documents.length > 0
+  ) {
+    const document = userDetails.documents[0];
+    return {
+      type:
+        document.documentType.charAt(0).toUpperCase() +
+        document.documentType.slice(1),
+      number: document.documentNumber,
+      issuingCountry: document.issuingCountry,
+      expiryDate: document.expiryDate,
+      nationality: document.nationality,
+    };
+  }
 
-  const document = userDetails.documents[0];
+  // Fallback: hydrate from submission payload if present
+  const submission = (apiData?.value?.widget?.args as any)?.submission as any;
+  const t = submission?.travellersDetail?.[0];
+  const d = t?.documents?.[0];
+  if (d) {
+    const toTitle = (s: string) =>
+      s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
+    return {
+      type: toTitle(d.documentType || ""),
+      number: d.number || "",
+      issuingCountry: d.issuanceCountry || "",
+      expiryDate: d.expiryDate || "",
+      nationality: d.nationality || "",
+      issuanceDate: d.issuanceDate || "",
+    };
+  }
 
-  return {
-    type:
-      document.documentType.charAt(0).toUpperCase() +
-      document.documentType.slice(1),
-    number: document.documentNumber,
-    issuingCountry: document.issuingCountry,
-    expiryDate: document.expiryDate,
-    nationality: document.nationality,
-  };
+  return null;
 };
 
 const transformApiDataToPaymentSummary = (
   apiData: ApiResponse,
 ): PaymentSummary | null => {
   const flightOffer =
-    apiData.value.widget.args.flightItinerary.selectionContext
-      .selectedFlightOffers[0];
+    apiData?.value?.widget?.args?.flightItinerary?.selectionContext
+      ?.selectedFlightOffers?.[0];
   if (!flightOffer) return null;
 
   // Use actual breakdown if available, otherwise estimate
@@ -1118,7 +1167,7 @@ const transformApiDataToSavedPassengers = (
   apiData: ApiResponse,
 ): SavedPassenger[] => {
   const savedTravellers =
-    apiData.value.widget.args.flightItinerary.userContext.savedTravellers;
+    apiData?.value?.widget?.args?.flightItinerary?.userContext?.savedTravellers;
   if (!savedTravellers) return [];
 
   console.log(
@@ -1279,6 +1328,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
   apiData,
   isSubmitting: externalIsSubmitting,
   onSubmittingChange,
+  readOnly,
 }) => {
   console.log("&&&&&&&&&&& Review Widget - API data:", apiData);
   // Get thread context for interrupt responses
@@ -1291,58 +1341,8 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
       ? externalIsSubmitting
       : internalIsSubmitting;
 
-  // Generate a unique key for this widget instance based on apiData
-  const widgetKey = React.useMemo(() => {
-    if (apiData) {
-      const argsHash = JSON.stringify(apiData.value?.widget?.args || {});
-      return `review-widget-submitted-${btoa(argsHash).slice(0, 12)}`;
-    }
-    return `review-widget-submitted-${Date.now()}`;
-  }, [apiData]);
-
-  // Check localStorage for submission state
-  const getSubmissionState = React.useCallback(() => {
-    try {
-      const stored = localStorage.getItem(widgetKey);
-      return stored === "true";
-    } catch (error) {
-      console.error("Error reading from localStorage:", error);
-      return false;
-    }
-  }, [widgetKey]);
-
-  // Set submission state in localStorage
-  const setSubmissionState = React.useCallback(
-    (submitted: boolean) => {
-      try {
-        if (submitted) {
-          localStorage.setItem(widgetKey, "true");
-        } else {
-          localStorage.removeItem(widgetKey);
-        }
-      } catch (error) {
-        console.error("Error writing to localStorage:", error);
-      }
-    },
-    [widgetKey],
-  );
-
-  // Add state to track if booking has been submitted (to hide button)
-  const [isBookingSubmitted, setIsBookingSubmitted] = useState(() =>
-    getSubmissionState(),
-  );
-
-  // Update localStorage when local state changes
-  React.useEffect(() => {
-    setSubmissionState(isBookingSubmitted);
-  }, [isBookingSubmitted, setSubmissionState]);
-
-  // Optional: Clear localStorage on component unmount (uncomment if needed)
-  // React.useEffect(() => {
-  //   return () => {
-  //     setSubmissionState(false);
-  //   };
-  // }, [setSubmissionState]);
+  // Source of truth: if parent marks the interrupt completed, treat as submitted
+  const isBookingSubmitted = !!readOnly;
 
   const setIsSubmitting = (value: boolean) => {
     if (onSubmittingChange) {
@@ -1375,13 +1375,12 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
     : mockSavedPassengers;
 
   // Extract isRefundable from API data
-  const isRefundable = apiData
-    ? (apiData.value.widget.args.flightItinerary.selectionContext
-        .selectedFlightOffers[0]?.offerRules?.isRefundable ?? null)
-    : null;
+  const isRefundable =
+    apiData?.value?.widget?.args?.flightItinerary?.selectionContext
+      ?.selectedFlightOffers?.[0]?.offerRules?.isRefundable ?? null;
 
   // Extract booking requirements for dynamic field visibility
-  const bookingRequirements = apiData?.value.widget.args.bookingRequirements;
+  const bookingRequirements = apiData?.value?.widget?.args?.bookingRequirements;
   const travelerRequirement = bookingRequirements?.travelerRequirements?.[0]; // Get first traveler requirement
 
   // Determine field visibility based on booking requirements
@@ -1392,10 +1391,9 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
 
   // Determine if travel documents component should be shown
   // Hide if travelerRequirements is null in API data
-  const showTravelDocuments = apiData
-    ? apiData.value.widget.args.bookingRequirements.travelerRequirements !==
-      null
-    : true; // Show by default for non-API usage (legacy/demo mode)
+  const showTravelDocuments = bookingRequirements
+    ? bookingRequirements.travelerRequirements !== null
+    : true; // Show by default when requirements are absent
 
   // Use transformed data, provided props, or fallback to mock data
   const finalFlightDetails =
@@ -1829,9 +1827,8 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
       return;
     }
 
-    // Set loading state and mark as submitted
+    // Set loading state
     setIsSubmitting(true);
-    setIsBookingSubmitted(true);
 
     try {
       // Transform data according to backend requirements (matching whosTravelling format)
@@ -1874,7 +1871,6 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
           frozenValue: frozen,
         },
       );
-      setIsBookingSubmitted(true);
     } catch (error) {
       console.error("Error submitting review data:", error);
     } finally {

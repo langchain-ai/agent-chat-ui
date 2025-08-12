@@ -20,6 +20,45 @@ const debugLog = (message: string, data?: any) => {
   }
 };
 
+// Build a normalized ApiResponse-like envelope from an interrupt-like input
+function normalizeApiDataEnvelope(
+  interruptLike: any,
+): { value: { type: string; widget: any } } | undefined {
+  if (!interruptLike) return undefined;
+  const block = (interruptLike as any)?.__block;
+  const original = block?.value ?? interruptLike;
+  const frozen = block?.frozenValue ?? null;
+  const pickInner = (obj: any) =>
+    obj?.value?.value?.widget
+      ? obj.value.value
+      : obj?.value?.widget
+        ? obj.value
+        : obj?.widget
+          ? obj
+          : undefined;
+  const originalInner = pickInner(original);
+  const frozenInner = pickInner(frozen);
+  if (!originalInner && !frozenInner) return undefined;
+  const base = originalInner ?? frozenInner;
+  return {
+    value: {
+      ...base,
+      widget: {
+        ...base.widget,
+        args: {
+          ...(base.widget?.args ?? {}),
+          ...(frozenInner?.widget?.args
+            ? {
+                submission:
+                  frozenInner.widget.args.submission ?? frozenInner.widget.args,
+              }
+            : {}),
+        },
+      },
+    },
+  };
+}
+
 interface DynamicRendererProps {
   interruptType: string;
   interrupt: Record<string, any>;
@@ -35,10 +74,11 @@ const ReadOnlyGuard: React.FC<{
 };
 
 // Wrapper component for TravelerDetailsWidget with bottom sheet
-const TravelerDetailsBottomSheet: React.FC<{ apiData: any; args: any }> = ({
-  apiData,
-  args,
-}) => {
+const TravelerDetailsBottomSheet: React.FC<{
+  apiData: any;
+  args: any;
+  readOnly?: boolean;
+}> = ({ apiData, args, readOnly }) => {
   const [isOpen, setIsOpen] = useState(true);
 
   const ReviewWidget = componentMap.TravelerDetailsWidget;
@@ -47,24 +87,31 @@ const TravelerDetailsBottomSheet: React.FC<{ apiData: any; args: any }> = ({
     setIsOpen(false);
   };
 
+  // Prefer frozenValue if present to expose submitted snapshot alongside original
+  const normalizedApiData = normalizeApiDataEnvelope(apiData);
+
   return (
     <ReviewWidget
-      apiData={apiData.value}
+      apiData={normalizedApiData}
+      readOnly={readOnly}
       {...args}
     />
   );
 };
 
 // Wrapper component for NonAgentFlowWidget with bottom sheet
-const NonAgentFlowBottomSheet: React.FC<{ apiData: any; args: any }> = ({
-  apiData,
-  args,
-}) => {
+const NonAgentFlowBottomSheet: React.FC<{
+  apiData: any;
+  args: any;
+  readOnly?: boolean;
+}> = ({ apiData, args, readOnly }) => {
   const NonAgentFlowWidget = componentMap.NonAgentFlowWidget;
 
+  const normalizedApiData = normalizeApiDataEnvelope(apiData);
   return (
     <NonAgentFlowWidget
-      apiData={apiData}
+      apiData={normalizedApiData}
+      readOnly={readOnly}
       {...args}
     />
   );
@@ -260,8 +307,9 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
       return (
         <ReadOnlyGuard disabled={computedReadOnly}>
           <NonAgentFlowBottomSheet
-            apiData={interrupt.value.value}
+            apiData={interrupt}
             args={widget?.args}
+            readOnly={computedReadOnly}
           />
         </ReadOnlyGuard>
       );
@@ -272,15 +320,17 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
           <TravelerDetailsBottomSheet
             apiData={interrupt}
             args={widget?.args}
+            readOnly={computedReadOnly}
           />
         </ReadOnlyGuard>
       );
     }
+    const normalizedApiData = normalizeApiDataEnvelope(interrupt);
     return (
       <ReadOnlyGuard disabled={computedReadOnly}>
         <Component
           {...(widget?.args ?? {})}
-          apiData={interrupt}
+          apiData={normalizedApiData}
           readOnly={computedReadOnly}
           interruptId={interruptId}
         />
@@ -330,12 +380,19 @@ export function GenericInterruptView({
     <DynamicRenderer
       interruptType={interruptType}
       interrupt={{
+        // Keep previous top-level shape for backward-compat (widget/type etc.)
         ...interruptObj,
         // Ensure we propagate the persisted id used in the timeline store
         interrupt_id:
           (blockLike as any)?.interrupt_id ??
           (interruptObj as any)?.interrupt_id,
         _readOnly: readOnly,
+        // New: include full block pointers so widgets can access both
+        __block: {
+          value: rawValue,
+          frozenValue: (blockLike as any)?.frozenValue,
+          completed: readOnly,
+        },
       }}
       onRendered={setRenderedByDynamic}
     />
