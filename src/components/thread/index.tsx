@@ -216,10 +216,12 @@ export function Thread() {
       ] as Message["content"],
     };
 
-    const existingMessages: Message[] = messageBlocks.map(
-      (b) => b.data as Message,
-    );
-    const toolMessages = ensureToolCallsHaveResponses(existingMessages);
+    const existingMessages: Message[] = threadId
+      ? messageBlocks.map((b) => b.data as Message)
+      : [];
+    const toolMessages = threadId
+      ? ensureToolCallsHaveResponses(existingMessages)
+      : [];
 
     const context =
       Object.keys(artifactContext).length > 0 ? artifactContext : undefined;
@@ -310,7 +312,7 @@ export function Thread() {
     });
   };
 
-  const chatStarted = !!threadId || !!messageBlocks.length;
+  const chatStarted = !!threadId;
   const hasNoAIOrToolMessages = !messageBlocks.find(
     (b: any) => b.data?.type === "ai" || b.data?.type === "tool",
   );
@@ -404,7 +406,13 @@ export function Thread() {
                     className="p-2"
                     tooltip="New thread"
                     variant="ghost"
-                    onClick={() => setThreadId(null)}
+                    onClick={() => {
+                      try {
+                        stream?.stop?.();
+                        stream?.clearInMemoryValues?.();
+                      } catch {}
+                      setThreadId(null);
+                    }}
                   >
                     <SquarePen className="size-4" />
                   </TooltipIconButton>

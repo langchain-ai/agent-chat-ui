@@ -111,13 +111,13 @@ const SeatSelectionWidget: React.FC<SeatSelectionProps> = (args) => {
       const frozen = {
         widget: {
           type: "SeatSelectionWidget",
-          args: { selectedSeatIds: selectedSeats },
+          args: { selectedSeatIds: [selectedSeat] },
         },
         value: {
           type: "widget",
           widget: {
             type: "SeatSelectionWidget",
-            args: { selectedSeatIds: selectedSeats },
+            args: { selectedSeatIds: [selectedSeat] },
           },
         },
       };
@@ -158,13 +158,13 @@ const SeatSelectionWidget: React.FC<SeatSelectionProps> = (args) => {
       const frozen = {
         widget: {
           type: "SeatSelectionWidget",
-          args: { selectedSeatIds: selectedSeats },
+          args: { selectedSeatIds: [selectedSeat] },
         },
         value: {
           type: "widget",
           widget: {
             type: "SeatSelectionWidget",
-            args: { selectedSeatIds: selectedSeats },
+            args: { selectedSeatIds: [selectedSeat] },
           },
         },
       };

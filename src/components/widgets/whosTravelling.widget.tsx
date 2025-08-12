@@ -938,7 +938,7 @@ const WhosTravellingWidget: React.FC<WhosTravellingProps> = (args) => {
     if (!args.bookingRequirements?.travelerRequirements) return false;
 
     const requirement = args.bookingRequirements.travelerRequirements.find(
-      (req) => req.travelerId === passengerSequence.toString(),
+      (req: { travelerId: string; documentRequired?: boolean }) => req.travelerId === passengerSequence.toString(),
     );
 
     return requirement?.documentRequired || false;
@@ -949,7 +949,7 @@ const WhosTravellingWidget: React.FC<WhosTravellingProps> = (args) => {
     if (!args.bookingRequirements?.travelerRequirements) return false;
 
     return args.bookingRequirements.travelerRequirements.some(
-      (req) => req.documentRequired,
+      (req: { documentRequired?: boolean }) => !!req.documentRequired,
     );
   };
 

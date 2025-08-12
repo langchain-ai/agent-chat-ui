@@ -242,10 +242,12 @@ export function Thread() {
       ] as Message["content"],
     };
 
-    const existingMessages: Message[] = messageBlocks.map(
-      (b) => b.data as Message,
-    );
-    const toolMessages = ensureToolCallsHaveResponses(existingMessages);
+    const existingMessages: Message[] = threadId
+      ? messageBlocks.map((b) => b.data as Message)
+      : [];
+    const toolMessages = threadId
+      ? ensureToolCallsHaveResponses(existingMessages)
+      : [];
 
     const context =
       Object.keys(artifactContext).length > 0 ? artifactContext : undefined;
@@ -303,7 +305,7 @@ export function Thread() {
     });
   };
 
-  const chatStarted = !!threadId || messageBlocks.length > 0;
+  const chatStarted = !!threadId;
   const hasNoAIOrToolMessages = !messageBlocks.find(
     (b: any) => b.data?.type === "ai" || b.data?.type === "tool",
   );

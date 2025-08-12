@@ -32,6 +32,7 @@ import { Persistence } from "./core/persistence.js";
  * @property {boolean} isThreadLoading
  * @property {UseStreamInterrupt} interrupt
  * @property {(newThreadId: string) => void} resetForThreadSwitch
+ * @property {() => void} clearInMemoryValues
  * @property {(threadIdToClear: string) => void} clearThreadCache
  * @property {(interruptId: string, frozenValue?: any) => void} completeInterrupt
  * @property {(humanMessage: any) => void} addOptimisticHumanBlock
@@ -74,6 +75,9 @@ export function useStream(options) {
   const actorRef = useRef(new ThreadActor());
   const storeRef = useRef(new Store());
   const persistRef = useRef(new Persistence());
+  // When true and threadId is null, do not reflect incoming updates into `values`
+  // This avoids leaking old-thread updates into the blank new-chat screen
+  const suspendWhenNullRef = useRef(false);
 
   // Apply partial display mode if provided
   useEffect(() => {
@@ -118,7 +122,7 @@ export function useStream(options) {
 
       const snap = storeRef.current.snapshot(tid);
       persistRef.current.saveThread(tid, snap);
-      if (tid === threadId || threadId == null) {
+      if (tid === threadId || (threadId == null && !suspendWhenNullRef.current)) {
         setValues(snap);
       }
     });
@@ -189,6 +193,8 @@ export function useStream(options) {
   };
 
   const submit = async (inputValues, submitOptions) => {
+    // Allow updates while threadId is still null for the new run
+    suspendWhenNullRef.current = false;
     await consumeStream(async (signal) => {
       let usableThreadId = threadId;
       if (!usableThreadId) {
@@ -280,6 +286,11 @@ export function useStream(options) {
         const snap = storeRef.current.snapshot(newThreadId);
         setValues(snap);
       }
+    },
+    /** Clear only in-memory snapshot for a new chat (keep persistence) */
+    clearInMemoryValues() {
+      suspendWhenNullRef.current = true;
+      setValues({ blocks: [], ui: [], messages: [], lastUpdatedAt: Date.now() });
     },
     clearThreadCache(threadIdToClear) {
       if (!threadIdToClear) return;

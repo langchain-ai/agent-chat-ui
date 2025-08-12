@@ -32,10 +32,16 @@ const SeatPreferenceWidget: React.FC<SeatPreferenceProps> = (args) => {
 
     try {
       const frozen = {
-        widget: { type: "SeatPreferenceWidget", args: { seatPreference } },
+        widget: {
+          type: "SeatPreferenceWidget",
+          args: { seatPreference: selectedPreference },
+        },
         value: {
           type: "widget",
-          widget: { type: "SeatPreferenceWidget", args: { seatPreference } },
+          widget: {
+            type: "SeatPreferenceWidget",
+            args: { seatPreference: selectedPreference },
+          },
         },
       };
       await submitInterruptResponse(thread, "response", responseData, {

@@ -20,6 +20,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getJwtToken, decodeJwtPayload } from "@/services/authService";
 import { FlyoLogoSVG } from "@/components/icons/langgraph";
+import { useStreamContext } from "@/providers/Stream";
 
 // Logo component
 function Logo() {
@@ -124,24 +125,15 @@ export default function ThreadHistory() {
     "chatHistoryOpen",
     parseAsBoolean.withDefault(false),
   );
-
   const [threadId, _setThreadId] = useQueryState("threadId");
-
-  const router = useRouter();
-
-  const { getThreads, threads, setThreads, threadsLoading, setThreadsLoading } =
-    useThreads();
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    setThreadsLoading(true);
-    getThreads()
-      .then(setThreads)
-      .catch(console.error)
-      .finally(() => setThreadsLoading(false));
-  }, [getThreads, setThreads, setThreadsLoading]);
-
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const stream = useStreamContext();
+
+  const { getThreads, threads, threadsLoading } = useThreads();
+  useEffect(() => {
+    if (!threads.length) getThreads();
+  }, []);
 
   return (
     <>
@@ -181,6 +173,11 @@ export default function ThreadHistory() {
                 `${window.location.pathname}?${params.toString()}`,
               );
               setChatHistoryOpen(false);
+              // Stop any in-flight stream and clear in-memory snapshot
+              try {
+                stream?.stop?.();
+                stream?.clearInMemoryValues?.();
+              } catch {}
               _setThreadId(null);
             }}
           >
