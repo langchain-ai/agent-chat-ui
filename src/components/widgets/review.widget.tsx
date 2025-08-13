@@ -3637,7 +3637,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
 
         {/* Action Buttons */}
         <div className="mt-6">
-          {!isBookingSubmitted ? (
+          {!readOnly ? (
             <Button
               onClick={handleSubmit}
               disabled={!isFormValid || isSubmitting}
@@ -3658,27 +3658,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
               )}
             </Button>
           ) : (
-            <div className="py-4 text-center">
-              <div className="flex items-center justify-center space-x-2 text-green-600">
-                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-green-100">
-                  <svg
-                    className="h-3 w-3 text-green-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                </div>
-                <span className="text-sm font-medium">
-                  Booking submitted successfully!
-                </span>
-              </div>
+            <div>
             </div>
           )}
         </div>

@@ -227,10 +227,12 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
   }, [canRenderWidget, !!foundInterruptWidget]);
 
   // Itinerary window side-effect (process-only; not for normal chat render)
+  // Skip for NonAgentFlowWidget to keep it inline in chat as per requirement
   useEffect(() => {
     if (
       (resolvedType === "widget" || resolvedType === "interruptWidget") &&
-      widget?.args?.renderingWindow === "itinerary"
+      widget?.args?.renderingWindow === "itinerary" &&
+      widget?.type !== "NonAgentFlowWidget"
     ) {
       const interruptId =
         (interrupt as any)?.value?.interrupt_id || widget?.args?.interrupt_id;
@@ -288,8 +290,9 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
   if (canRenderWidget) {
     const Component = componentMap[widget?.type as ComponentType];
     const renderingWindow = widget?.args?.renderingWindow || "chat";
+    const allowInlineForNonAgent = widget?.type === "NonAgentFlowWidget";
 
-    if (renderingWindow === "itinerary") {
+    if (renderingWindow === "itinerary" && !allowInlineForNonAgent) {
       return null; // handled by effect above
     }
 
