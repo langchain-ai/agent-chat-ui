@@ -1045,7 +1045,12 @@ const transformApiDataToPassengerDetails = (
       lastName: t.name?.lastName || "",
       dateOfBirth: t.dateOfBirth || "",
       gender: normalizedGender,
-      title: normalizedGender === "Female" ? "Ms" : normalizedGender === "Male" ? "Mr" : "",
+      title:
+        normalizedGender === "Female"
+          ? "Ms"
+          : normalizedGender === "Male"
+            ? "Mr"
+            : "",
     };
   }
 
@@ -1229,36 +1234,24 @@ interface ReviewWidgetProps extends Record<string, any> {
 }
 
 const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
-  console.log("&&&&&&&&&&& Review Widget - API data:", args.apiData);
+  console.log("---> Complete Args", JSON.stringify(args));
   // Get thread context for interrupt responses
   const thread = useStreamContext();
 
-  // Robust extraction of live and frozen args per authoring guide
-  const pickInner = (obj: any) =>
-    obj?.value?.value?.widget
-      ? obj.value.value
-      : obj?.value?.widget
-        ? obj.value
-        : obj?.widget
-          ? obj
-          : undefined;
-
-  const liveEnvelope = pickInner(args.apiData) || {};
-  const liveArgs = (liveEnvelope?.widget?.args as any) ?? {};
-
+  const liveArgs =
+    args.apiData?.__block?.value?.[0]?.value?.value?.widget?.args || {};
   // Attempt to read frozen submission either from args.submission or from __block.frozenValue
-  const frozenFromArgs = (liveArgs as any)?.submission;
-  const frozenEnvelope = pickInner((args.apiData as any)?.__block?.frozenValue);
-  const frozenArgsFallback = frozenEnvelope?.widget?.args;
-  const frozenArgs = frozenFromArgs ?? frozenArgsFallback;
+  const frozenArgs =
+    args.apiData?.__block?.frozenValue?.value?.widget?.args || {};
 
   const readOnly = !!args.readOnly;
 
+  console.log("---> Live Args", JSON.stringify(liveArgs));
+  console.log("---> Frozen Args", JSON.stringify(frozenArgs));
+
   // Build an effectiveArgs where ONLY savedTravellers and contactDetails may come from submission
   const savedTravellers =
-    readOnly && frozenArgs?.flightItinerary?.userContext?.savedTravellers
-      ? frozenArgs.flightItinerary.userContext.savedTravellers
-      : liveArgs?.flightItinerary?.userContext?.savedTravellers || [];
+    liveArgs?.flightItinerary?.userContext?.savedTravellers || [];
 
   const contactDetails =
     readOnly && frozenArgs?.flightItinerary?.userContext?.contactDetails
@@ -1270,7 +1263,6 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
   const selectedFlightOffers =
     liveArgs?.flightItinerary?.selectionContext?.selectedFlightOffers || [];
   const bookingRequirements = liveArgs?.bookingRequirements;
-  const numberOfTravellers = liveArgs?.numberOfTravellers;
 
   // Compose an effectiveArgs view for downstream usage without changing UI
   const effectiveArgs = {
@@ -1310,13 +1302,6 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
     } as any;
     return transformApiDataToSavedPassengers(env);
   }, [savedTravellers]);
-
-  // Seat allocation is out of scope for this widget
-
-  const interruptId: string | undefined =
-    args.interruptId ??
-    (args.apiData as any)?.value?.interrupt_id ??
-    (args.apiData as any)?.interrupt_id;
 
   // Add loading state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -1380,6 +1365,30 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
 
   // Form state - initialize directly from effectiveArgs-derived variables
   const [passenger, setPassenger] = useState(() => {
+    // If the widget is in read-only mode, prefer frozen args (travellersDetail)
+    if (readOnly) {
+      const frozenTravellers =
+        (frozenArgs as any)?.flightItinerary?.userContext?.selectedTravellers;
+
+      const t = Array.isArray(frozenTravellers) ? frozenTravellers[0] : null;
+      if (t) {
+        const normalizedGender = normalizeGender(t.gender || "");
+        return {
+          firstName: t.name?.firstName || "",
+          lastName: t.name?.lastName || "",
+          dateOfBirth: t.dateOfBirth || "",
+          gender: normalizedGender,
+          title:
+            normalizedGender === "Female"
+              ? "Ms"
+              : normalizedGender === "Male"
+                ? "Mr"
+                : "",
+        };
+      }
+    }
+
+    // Default live behavior when not read-only (or frozen had no travellers)
     if (userDetails) {
       const normalizedGender = normalizeGender(userDetails.gender || "");
       return {
@@ -1948,6 +1957,8 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
       // Transform data according to backend requirements (matching whosTravelling format)
       const formattedData = transformDataForBackend();
 
+      console.log("---> Formatted Data", JSON.stringify(formattedData));
+
       // Create response in exact same format as whosTravelling widget
       const responseData = [
         {
@@ -1978,8 +1989,8 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
       const frozenArgs = {
         flightItinerary: {
           userContext: {
-            savedTravellers: updatedSavedTravellers,
-            contactDetails: updatedContactDetails,
+            selectedTravellers: formattedData.travellersDetail,
+            contactDetails: formattedData.contactInfo,
           },
         },
       };
@@ -2003,7 +2014,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
         submissionData.type,
         submissionData.data,
         {
-          interruptId: interruptId,
+          interruptId: args.interruptId,
           frozenValue: frozen,
         },
       );
@@ -3658,8 +3669,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
               )}
             </Button>
           ) : (
-            <div>
-            </div>
+            <div></div>
           )}
         </div>
       </div>
