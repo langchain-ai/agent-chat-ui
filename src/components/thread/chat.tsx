@@ -41,12 +41,7 @@ import { LogoutButton } from "@/components/auth";
 import { getJwtToken, GetUserId } from "@/services/authService";
 import { updateThreadWithMessage } from "@/utils/thread-storage";
 import { InterruptManager } from "./messages/interrupt-manager";
-import { PersistentInterruptList } from "./messages/persistent-interrupt";
-import { useInterruptPersistenceContext } from "@/providers/InterruptPersistenceContext";
-import {
-  GenericInterruptView,
-  UIWidgetPreserver,
-} from "./messages/generic-interrupt";
+import { GenericInterruptView } from "./messages/generic-interrupt";
 import { NonAgentFlowReopenButton } from "./NonAgentFlowReopenButton";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 
@@ -112,7 +107,6 @@ function isDisplayableMessage(m: Message) {
 
 export function Thread() {
   const [artifactContext, setArtifactContext] = useArtifactContext();
-  const interruptPersistence = useInterruptPersistenceContext();
   const [artifactOpen, closeArtifact] = useArtifactOpen();
   const { locationData } = useLocationContext();
 
@@ -141,67 +135,54 @@ export function Thread() {
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
 
   const stream = useStreamContext();
-  const messages = stream.messages;
+  const blocks = (stream.values?.blocks ?? []) as Array<{
+    id: string;
+    kind: string;
+    data: any;
+  }>;
   const isLoading = stream.isLoading;
 
-  // Track the last threadId to reset displayMessages on thread switch
+  // Derived message blocks for some UX computations
+  const messageBlocks = blocks.filter(
+    (b) => b.kind === "message" && !!b.data,
+  ) as Array<{ id: string; kind: "message"; data: Message }>;
+
+  // Force rerender when message count changes (defensive against identity reuse)
+  const [, forceTick] = useState(0);
+  const prevCountRef = useRef(0);
+  useEffect(() => {
+    if ((messageBlocks?.length || 0) !== prevCountRef.current) {
+      prevCountRef.current = messageBlocks?.length || 0;
+      forceTick((x) => x + 1);
+    }
+  }, [messageBlocks?.length]);
+
+  // Track the last threadId to reset display state on thread switch
   const lastThreadId = useRef<string | null>(null);
   useEffect(() => {
     console.log("🔄 [THREAD DEBUG] threadId changed:", {
       from: lastThreadId.current,
       to: threadId,
       hasStreamValues: !!stream.values,
-      streamMessagesCount: stream.messages?.length || 0,
+      blocksCount: blocks.length || 0,
     });
 
-    // Handle different scenarios:
-    if (lastThreadId.current === null && threadId !== null) {
-      // New conversation started - threadId assigned for the first time
-      console.log("🆕 [NEW CONVERSATION] Thread ID assigned:", threadId);
-      // Don't reset stream values for new conversations - let them continue naturally
-    } else if (lastThreadId.current === threadId) {
-      // Same conversation continuing
-      console.log("🔄 [SAME CONVERSATION] Continuing same thread:", threadId);
-    } else if (lastThreadId.current !== null && threadId !== null) {
-      // Switching between existing threads
-      console.log(
-        "🔄 [THREAD SWITCH] Switching from",
-        lastThreadId.current,
-        "to",
-        threadId,
-      );
-
-      // Reset current stream values to force reload from cache/history
+    if (lastThreadId.current !== threadId && threadId) {
       if (stream.resetForThreadSwitch) {
         stream.resetForThreadSwitch(threadId);
       }
     }
     lastThreadId.current = threadId;
-  }, [threadId, stream]);
+  }, [threadId, stream, blocks.length]);
 
   // Clear input and contentBlocks when threadId changes
   useEffect(() => {
     setInput("");
     setContentBlocks([]);
     setFirstTokenReceived(false);
-
-    // Reset any thread-specific UI state when switching threads
-    if (threadId === null) {
-      console.log("🔄 [THREAD SWITCH] New thread - clearing UI state");
-    } else {
-      console.log("🔄 [THREAD SWITCH] Switching to thread:", threadId);
-    }
   }, [threadId, setContentBlocks]);
 
   const lastError = useRef<string | undefined>(undefined);
-
-  const setThreadId = (id: string | null) => {
-    _setThreadId(id);
-
-    // close artifact and reset artifact context
-    closeArtifact();
-    setArtifactContext({});
-  };
 
   useEffect(() => {
     if (!stream.error) {
@@ -211,11 +192,8 @@ export function Thread() {
     try {
       const message = (stream.error as any).message;
       if (!message || lastError.current === message) {
-        // Message has already been logged. do not modify ref, return early.
         return;
       }
-
-      // Message is defined, and it has not been logged yet. Save it, and send the error
       lastError.current = message;
       toast.error("An error occurred. Please try again.", {
         description: (
@@ -231,19 +209,19 @@ export function Thread() {
     }
   }, [stream.error]);
 
-  // TODO: this should be part of the useStream hook
+  // Track first AI token to gate loader
   const prevMessageLength = useRef(0);
   useEffect(() => {
-    if (
-      messages.length !== prevMessageLength.current &&
-      messages?.length &&
-      messages[messages.length - 1].type === "ai"
-    ) {
-      setFirstTokenReceived(true);
-    }
+    const hasNewAi =
+      messageBlocks.length !== prevMessageLength.current &&
+      messageBlocks?.length > 0 &&
+      (messageBlocks[messageBlocks.length - 1].data as any)?.type === "ai";
 
-    prevMessageLength.current = messages.length;
-  }, [messages]);
+    if (hasNewAi) setFirstTokenReceived(true);
+    if (!isLoading) setFirstTokenReceived(true);
+
+    prevMessageLength.current = messageBlocks.length;
+  }, [isLoading, messageBlocks.length]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -264,7 +242,12 @@ export function Thread() {
       ] as Message["content"],
     };
 
-    const toolMessages = ensureToolCallsHaveResponses(stream.messages);
+    const existingMessages: Message[] = threadId
+      ? messageBlocks.map((b) => b.data as Message)
+      : [];
+    const toolMessages = threadId
+      ? ensureToolCallsHaveResponses(existingMessages)
+      : [];
 
     const context =
       Object.keys(artifactContext).length > 0 ? artifactContext : undefined;
@@ -279,7 +262,6 @@ export function Thread() {
       submissionData.userId = userId;
     }
 
-    // Include location data directly in submission data (same level as userId)
     if (locationData) {
       submissionData.userLocation = {
         latitude: locationData.latitude,
@@ -289,55 +271,19 @@ export function Thread() {
       };
     }
 
-    // Add metadata to ensure thread is properly saved and searchable
     const submitOptions: any = {
       streamMode: ["updates"],
       streamSubgraphs: true,
-      optimisticValues: (prev: any) => ({
-        ...prev,
-        context,
-        messages: [...(prev.messages ?? []), ...toolMessages, newHumanMessage],
-        ui: prev.ui ?? [], // Preserve UI state
-      }),
+      optimisticHumanMessage: newHumanMessage,
     };
 
-    // Add metadata for thread creation/updating
     if (!threadId) {
-      // For new threads, add metadata to ensure they're searchable
       submitOptions.metadata = {
         assistant_id: assistantId,
         graph_id: assistantId,
         created_at: new Date().toISOString(),
         user_id: userId || "anonymous",
       };
-    }
-
-    console.log("Submitting with options:", submitOptions);
-    console.log("Location data being sent:", locationData);
-    console.log("Context data being sent:", context);
-    console.log("Full submission data:", submissionData);
-
-    // Store thread information locally for fallback
-    const messageText =
-      typeof newHumanMessage.content === "string"
-        ? newHumanMessage.content
-        : Array.isArray(newHumanMessage.content)
-          ? newHumanMessage.content.find((c) => c.type === "text")?.text || ""
-          : "";
-
-    if (messageText && assistantId) {
-      // Update local storage with thread info
-      if (threadId) {
-        updateThreadWithMessage(
-          threadId,
-          messageText,
-          assistantId,
-          userId ? String(userId) : undefined,
-        );
-      } else {
-        // For new threads, we'll update after getting the thread ID from onThreadId callback
-        console.log("Will update local storage after thread ID is assigned");
-      }
     }
 
     stream.submit(submissionData, submitOptions);
@@ -356,21 +302,16 @@ export function Thread() {
       checkpoint: parentCheckpoint,
       streamMode: ["updates"],
       streamSubgraphs: true,
-      optimisticValues: (prev: any) => ({
-        ...prev,
-        ui: prev.ui ?? [], // Preserve UI state
-      }),
     });
   };
 
-  const chatStarted = !!threadId || !!messages.length;
-  const hasNoAIOrToolMessages = !messages.find(
-    (m: any) => m.type === "ai" || m.type === "tool",
+  const chatStarted = !!threadId;
+  const hasNoAIOrToolMessages = !messageBlocks.find(
+    (b: any) => b.data?.type === "ai" || b.data?.type === "tool",
   );
 
   return (
     <InterruptManager>
-      <UIWidgetPreserver />
       <div className="flex h-full w-full overflow-hidden">
         <div
           className={cn(
@@ -484,66 +425,45 @@ export function Thread() {
                     contentClassName="pt-8 pb-24 max-w-3xl mx-auto flex flex-col gap-4 w-full"
                     content={
                       <>
-                        {messages
-                          .filter(isDisplayableMessage)
-                          .flatMap((message: any, index: number) => {
-                            const messageElement =
-                              message.type === "human" ? (
-                                <HumanMessage
-                                  key={message.id || `${message.type}-${index}`}
-                                  message={message}
-                                  isLoading={isLoading}
-                                />
-                              ) : (
-                                <AssistantMessage
-                                  key={message.id || `${message.type}-${index}`}
-                                  message={message}
-                                  isLoading={isLoading}
-                                  handleRegenerate={handleRegenerate}
-                                />
-                              );
-
-                            // Check if there are any persisted interrupts associated with this message
-                            const messageInterrupts = message.id
-                              ? interruptPersistence.getInterruptsForMessage(
-                                  message.id,
-                                )
-                              : [];
-
-                            // Return array of elements: message + persistent interrupts
-                            const elements = [messageElement];
-
-                            if (messageInterrupts.length > 0) {
-                              elements.push(
-                                <div
-                                  key={`${message.id || `${message.type}-${index}`}-interrupts`}
-                                  className="mt-2"
-                                >
-                                  <PersistentInterruptList
-                                    interrupts={messageInterrupts}
-                                  />
-                                </div>,
-                              );
-                            }
-
-                            return elements;
-                          })}
-                        {/* Special rendering case where there are no AI/tool messages, but there is an interrupt. */}
-                        {hasNoAIOrToolMessages && !!stream.interrupt && (
-                          <AssistantMessage
-                            key="interrupt-msg"
-                            message={undefined}
-                            isLoading={isLoading}
-                            handleRegenerate={handleRegenerate}
-                          />
-                        )}
-                        {isLoading && <AssistantMessageLoading />}
-                        {/* Always render the interrupt widget at the end if present */}
-
-                        {stream.interrupt && (
-                          <GenericInterruptView
-                            interrupt={stream.interrupt.value ?? {}}
-                          />
+                        {blocks.map((block, index) => {
+                          if (
+                            block.kind === "message" &&
+                            block.data &&
+                            isDisplayableMessage(block.data as Message)
+                          ) {
+                            const message = block.data as Message;
+                            return message.type === "human" ? (
+                              <HumanMessage
+                                key={block.id || `${message.type}-${index}`}
+                                message={message}
+                                isLoading={isLoading}
+                              />
+                            ) : (
+                              <AssistantMessage
+                                key={block.id || `${message.type}-${index}`}
+                                message={message}
+                                isLoading={isLoading}
+                                handleRegenerate={handleRegenerate}
+                              />
+                            );
+                          }
+                          if (block.kind === "interrupt") {
+                            const interruptData = block.data as Record<
+                              string,
+                              any
+                            >;
+                            return (
+                              <GenericInterruptView
+                                key={block.id || `interrupt-${index}`}
+                                interrupt={interruptData}
+                              />
+                            );
+                          }
+                          // optionally render UI blocks here if desired
+                          return null;
+                        })}
+                        {isLoading && !firstTokenReceived && (
+                          <AssistantMessageLoading />
                         )}
                       </>
                     }
@@ -587,28 +507,11 @@ export function Thread() {
                                   form?.requestSubmit();
                                 }
                               }}
-                              placeholder="Type your message..."
+                              placeholder="Type your message...."
                               className="field-sizing-content resize-none border-none bg-transparent p-3.5 pb-0 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none"
                             />
 
                             <div className="flex items-center gap-6 p-2 pt-4">
-                              {/* <Label
-                                htmlFor="file-input"
-                                className="flex cursor-pointer items-center gap-2"
-                              >
-                                <Plus className="size-5 text-gray-600" />
-                                <span className="text-sm text-gray-600">
-                                  Upload PDF, Image, or Video
-                                </span>
-                              </Label>
-                              <input
-                                id="file-input"
-                                type="file"
-                                onChange={handleFileUpload}
-                                multiple
-                                accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
-                                className="hidden"
-                              /> */}
                               {stream.isLoading ? (
                                 <Button
                                   key="stop"

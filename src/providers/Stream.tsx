@@ -8,7 +8,6 @@ import React, {
 } from "react";
 import { useStream } from "@/lib/langgraph-index";
 import { type Message } from "@langchain/langgraph-sdk";
-
 import { useQueryState } from "nuqs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -70,13 +69,17 @@ const StreamSession = ({
 }) => {
   const [threadId, setThreadId] = useQueryState("threadId");
   const { getThreads, setThreads } = useThreads();
-
   const streamValue = useTypedStream({
     apiUrl,
     apiKey: apiKey ?? undefined,
     assistantId,
     threadId: threadId ?? null,
-    onThreadId: (id: string) => {
+    onCustomEvent: (event: any, options: any) => {
+      // UI events are now handled internally in the custom stream implementation
+      // This callback is kept for any additional custom event handling if needed
+      console.log(`---> Got custom event: ${JSON.stringify(event)}`);
+    },
+    onThreadId: (id: any) => {
       console.log("New thread ID created:", id);
       setThreadId(id);
 

@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
+import { useTabContext } from "@/providers/TabContext";
 
 interface FlightOption {
   flightOfferId: string;
@@ -720,10 +721,12 @@ const FlightCard = ({
   flight,
   onSelect,
   isLoading,
+  readOnly = false,
 }: {
   flight: FlightOption;
   onSelect: (flightOfferId: string) => void;
   isLoading?: boolean;
+  readOnly?: boolean;
 }) => {
   const badgeConfigs =
     flight.tags && flight.tags.length > 0 ? getBadgeConfigs(flight.tags) : [];
@@ -1114,15 +1117,16 @@ const FlightCard = ({
       {/* Select Button with Price - Natural positioning */}
       <Button
         onClick={() => onSelect(flight.flightOfferId)}
-        disabled={isLoading}
+        disabled={isLoading || readOnly}
         className={cn(
           "w-full border border-gray-300 bg-white py-3 text-black transition-colors duration-200 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50",
           flight.reason ? "mt-1" : "mt-3",
+          readOnly && "bg-gray-100 text-gray-600 border-gray-200",
         )}
       >
         <span className="flex items-center justify-center gap-2">
           <span className="font-normal">
-            {isLoading ? "Selecting..." : "Select Flight"}
+            {readOnly ? "Selected" : isLoading ? "Selecting..." : "Select Flight"}
           </span>
           <span className="font-bold">
             {currencySymbol}
@@ -1198,10 +1202,12 @@ const ResponsiveCarousel = ({
   flights,
   onSelect,
   isLoading,
+  readOnly = false,
 }: {
   flights: FlightOption[];
   onSelect: (flightOfferId: string) => void;
   isLoading: boolean;
+  readOnly?: boolean;
 }) => {
   const carouselRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -1398,6 +1404,7 @@ const ResponsiveCarousel = ({
                 flight={flight}
                 onSelect={onSelect}
                 isLoading={isLoading}
+                readOnly={readOnly}
               />
             </div>
           );
@@ -1412,10 +1419,12 @@ const DirectFlightDisplay = ({
   flights,
   onSelect,
   isLoading,
+  readOnly = false,
 }: {
   flights: FlightOption[];
   onSelect: (flightOfferId: string) => void;
   isLoading: boolean;
+  readOnly?: boolean;
 }) => {
   // Helper function to get flights sorted by different criteria
   const getSortedFlights = (
@@ -1541,6 +1550,7 @@ const DirectFlightDisplay = ({
       flights={flightsToShow}
       onSelect={onSelect}
       isLoading={isLoading}
+      readOnly={readOnly}
     />
   );
 };
@@ -1550,10 +1560,12 @@ const FlightListItem = ({
   flight,
   onSelect,
   isLoading,
+  readOnly = false,
 }: {
   flight: FlightOption;
   onSelect: (flightOfferId: string) => void;
   isLoading?: boolean;
+  readOnly?: boolean;
 }) => {
   const formatTime = (isoString: string) => {
     return new Date(isoString).toLocaleTimeString("en-US", {
@@ -1673,8 +1685,13 @@ const FlightListItem = ({
 
   return (
     <div
-      className="cursor-pointer border-b border-gray-200 bg-white px-3 py-4 transition-colors duration-200 hover:bg-gray-50 sm:px-4"
-      onClick={() => onSelect(flight.flightOfferId)}
+      className={cn(
+        "border-b border-gray-200 bg-white px-3 py-4 transition-colors duration-200 sm:px-4",
+        readOnly
+          ? "cursor-default bg-gray-50"
+          : "cursor-pointer hover:bg-gray-50"
+      )}
+      onClick={() => !readOnly && onSelect(flight.flightOfferId)}
     >
       {/* Mobile Layout */}
       <div className="block sm:hidden">
@@ -2081,11 +2098,31 @@ const FlightTabs = ({
   );
 };
 
-const FlightOptionsWidget = (args: Record<string, any>) => {
-  console.log("FlightOptionsWidget args:", args);
-  console.log("flightOffers:", args.flightOffers);
+interface FlightOptionsProps extends Record<string, any> {
+  apiData?: any;
+  readOnly?: boolean;
+  interruptId?: string;
+}
 
+const FlightOptionsWidget = (args: FlightOptionsProps) => {
   const thread = useStreamContext();
+
+  const liveArgs = args.apiData?.value?.widget?.args ?? {};
+  const frozenArgs = (liveArgs as any)?.submission;
+  const effectiveArgs = args.readOnly && frozenArgs ? frozenArgs : liveArgs;
+
+  const flightOffers = (effectiveArgs as any)?.flightOffers ??
+    args.flightOffers ??
+    {};
+
+  const readOnly = !!args.readOnly;
+  const interruptId: string | undefined =
+    args.interruptId ??
+    args.apiData?.value?.interrupt_id ??
+    args.apiData?.interrupt_id;
+
+
+  const { switchToChat, switchToReview } = useTabContext();
   const [selectedFlight, setSelectedFlight] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showAllFlights, setShowAllFlights] = useState(false);
@@ -2103,7 +2140,7 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
   const [refundableFilter, setRefundableFilter] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-  const allFlightTuples = args.flightOffers || [];
+  const allFlightTuples = flightOffers || [];
 
   // Note: Removed journey type detection to match widgets page design
 
@@ -2117,6 +2154,9 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
   }
 
   const handleSelectFlight = async (flightOfferId: string) => {
+    // Prevent selection in read-only mode
+    if (readOnly) return;
+
     setSelectedFlight(flightOfferId);
     setIsLoading(true);
 
@@ -2125,7 +2165,26 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
     };
 
     try {
-      await submitInterruptResponse(thread, "response", responseData);
+      const selectedFlightOffer=flightOffers.find(
+        (offer: any) => offer.flightOfferId === flightOfferId,
+      );
+      const frozen = {
+        widget: {
+          type: "FlightOptionsWidget",
+          args: { flightOffers: [selectedFlightOffer]},
+        },
+        value: {
+          type: "widget",
+          widget: {
+            type: "FlightOptionsWidget",
+            args: { flightOffers: [selectedFlightOffer] },
+          },
+        },
+      };
+      await submitInterruptResponse(thread, "response", responseData, {
+        interruptId,
+        frozenValue: frozen,
+      });
     } catch (error) {
       // Optional: already handled inside the utility
     } finally {
@@ -2134,6 +2193,7 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
   };
 
   const handleShowAllFlights = () => {
+    if (readOnly) return;
     setShowAllFlights(true);
   };
 
@@ -2281,10 +2341,21 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
         }}
       >
         <div className="mb-4 sm:mb-6">
-          <h2 className="mb-2 text-lg font-semibold text-gray-900 sm:text-xl">
-            Available Flights
-          </h2>
-          <p className="text-sm text-gray-600">Choose from the best options</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="mb-2 text-lg font-semibold text-gray-900 sm:text-xl">
+                Available Flights
+              </h2>
+              <p className="text-sm text-gray-600">
+                {readOnly ? "Your selected flight option" : "Choose from the best options"}
+              </p>
+            </div>
+            {readOnly && (
+              <div className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
+                Selected
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Direct Flight Display - Only 3 Tagged Flights */}
@@ -2294,6 +2365,7 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
               flights={allFlightTuples}
               onSelect={handleSelectFlight}
               isLoading={isLoading}
+              readOnly={readOnly}
             />
           ) : (
             // Show loading state when no flights are available
@@ -2321,7 +2393,7 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
         </div>
 
         {/* Show All Flights Button */}
-        {allFlightTuples.length > 6 && (
+        {allFlightTuples.length > 6 && !readOnly && (
           <div className="text-center">
             <Button
               onClick={handleShowAllFlights}
@@ -2373,8 +2445,8 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
         >
           <SheetHeader className="flex-shrink-0 border-b border-gray-200 pb-4">
             <SheetTitle className="text-xl font-semibold">
-              All Flights ({filteredFlights.length} of{" "}
-              {allFlightTuples.length} flights)
+              All Flights ({filteredFlights.length} of {allFlightTuples.length}{" "}
+              flights)
             </SheetTitle>
           </SheetHeader>
 
@@ -2530,6 +2602,7 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
                       flight={flight}
                       onSelect={handleSelectFlight}
                       isLoading={isLoading}
+                      readOnly={readOnly}
                     />
                   ))}
                 </div>
@@ -2602,6 +2675,7 @@ const FlightOptionsWidget = (args: Record<string, any>) => {
                     flight={flight}
                     onSelect={handleSelectFlight}
                     isLoading={isLoading}
+                    readOnly={readOnly}
                   />
                 ))}
               </div>

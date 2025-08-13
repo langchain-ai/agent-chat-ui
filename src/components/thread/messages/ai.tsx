@@ -8,7 +8,7 @@ import { LoadExternalComponent } from "@langchain/langgraph-sdk/react-ui";
 import { cn } from "@/lib/utils";
 import { ToolCalls, ToolResult } from "./tool-calls";
 import { MessageContentComplex } from "@langchain/core/messages";
-import { Fragment } from "react";
+import { Fragment, useMemo } from "react";
 import { isAgentInboxInterruptSchema } from "@/lib/agent-inbox-interrupt";
 import { ThreadView } from "../agent-inbox";
 import { useQueryState, parseAsBoolean } from "nuqs";
@@ -84,12 +84,6 @@ function Interrupt({
         (isLastMessage || hasNoAIOrToolMessages) && (
           <ThreadView interrupt={interruptValue} />
         )}
-      {/* Todo: @Shubham removed this to avoid duplicate rendering of Interrupt */}
-      {/* {interruptValue &&
-      !isAgentInboxInterruptSchema(interruptValue) &&
-      isLastMessage ? (
-        <GenericInterruptView interrupt={interruptValue} />
-      ) : null} */}
     </>
   );
 }
@@ -111,14 +105,27 @@ export function AssistantMessage({
   );
 
   const thread = useStreamContext();
+  const blocks = (thread.values?.blocks ?? []) as Array<{
+    id: string;
+    kind: string;
+    data: any;
+  }>;
+  const messageBlocks = useMemo(
+    () =>
+      blocks.filter((b) => b.kind === "message" && !!b.data) as Array<{
+        id: string;
+        data: Message;
+      }>,
+    [blocks],
+  );
 
   const isLastMessage =
-    thread.messages.length > 0 &&
-    thread.messages[thread.messages.length - 1]?.id === message?.id;
-  const hasNoAIOrToolMessages = !thread.messages.find(
-    (m: any) => m.type === "ai" || m.type === "tool",
+    messageBlocks.length > 0 &&
+    (messageBlocks[messageBlocks.length - 1]?.data as any)?.id === message?.id;
+  const hasNoAIOrToolMessages = !messageBlocks.find(
+    (b: any) => b.data?.type === "ai" || b.data?.type === "tool",
   );
-  const meta = message ? thread.getMessagesMetadata(message) : undefined;
+  const meta = undefined as any;
   const threadInterrupt = thread.interrupt;
 
   const parentCheckpoint = meta?.firstSeenState?.parent_checkpoint;

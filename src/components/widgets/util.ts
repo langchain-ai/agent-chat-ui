@@ -27,6 +27,7 @@ export async function submitInterruptResponse(
   thread: any, // Replace with proper type from your stream context
   type: string,
   data: Record<string, any>,
+  options?: { interruptId?: string; frozenValue?: any },
 ): Promise<void> {
   try {
     // Get user ID from JWT token
@@ -61,6 +62,38 @@ export async function submitInterruptResponse(
         ],
       },
     });
+
+    // On success, if an interrupt id was provided, complete it to freeze UI values
+    if (typeof thread.completeInterrupt === "function") {
+      try {
+        // Prefer explicit id
+        let activeId = options?.interruptId;
+        if (!activeId) {
+          // Find the latest non-completed interrupt block in the current timeline
+          const blocks = (thread.values?.blocks ?? []) as Array<{
+            kind: string;
+            data?: any;
+          }>;
+          const interrupts = Array.isArray(blocks)
+            ? blocks.filter((b) => b.kind === "interrupt")
+            : [];
+          if (interrupts.length) {
+            const last =
+              [...interrupts].reverse().find((b) => !b.data?.completed) ??
+              interrupts[interrupts.length - 1];
+            activeId =
+              last?.data?.interrupt_id ||
+              last?.data?.value?.interrupt_id ||
+              last?.data?.id;
+          }
+        }
+        if (activeId) {
+          thread.completeInterrupt(activeId, options?.frozenValue);
+        }
+      } catch (e) {
+        console.warn("Failed to mark interrupt complete:", e);
+      }
+    }
   } catch (error) {
     console.error("Error submitting response:", error);
     toast.error("Error", {

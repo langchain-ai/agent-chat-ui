@@ -43,6 +43,7 @@ import { submitInterruptResponse } from "./util";
 import { useStreamContext } from "@/providers/Stream";
 
 import Image from "next/image";
+// import { toast } from "@/components/ui/use-toast";
 
 // DateInput component using shadcn Calendar (same as searchCriteria.widget.tsx)
 interface DateInputProps {
@@ -338,11 +339,13 @@ const POPULAR_COUNTRIES: Country[] = [
 // Utility functions for country code conversion
 const getCountryByNameOrCode = (input: string): Country | null => {
   if (!input) return null;
-  return POPULAR_COUNTRIES.find(
-    (country) =>
-      country.name.toLowerCase() === input.toLowerCase() ||
-      country.code.toLowerCase() === input.toLowerCase()
-  ) || null;
+  return (
+    POPULAR_COUNTRIES.find(
+      (country) =>
+        country.name.toLowerCase() === input.toLowerCase() ||
+        country.code.toLowerCase() === input.toLowerCase(),
+    ) || null
+  );
 };
 
 const getCountryCode = (input: string): string => {
@@ -359,7 +362,7 @@ const getCountryCode = (input: string): string => {
 
   // For unknown countries, try to create a reasonable 2-letter code
   // This is a fallback for test/fictional countries
-  const words = input.split(' ');
+  const words = input.split(" ");
   if (words.length >= 2) {
     return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
   } else {
@@ -385,11 +388,11 @@ const testCountryConversion = () => {
     "Antigua and Barbuda",
     "AG",
     "Eolian",
-    "Unknown Country"
+    "Unknown Country",
   ];
 
   console.log("=== Country Code Conversion Test ===");
-  testCases.forEach(testCase => {
+  testCases.forEach((testCase) => {
     console.log(`"${testCase}" -> "${getCountryCode(testCase)}"`);
   });
   console.log("=== End Test ===");
@@ -434,7 +437,9 @@ const getCountryCodeFromName = (countryName: string): string => {
 
   // Try to find in POPULAR_COUNTRIES list
   const country = POPULAR_COUNTRIES.find(
-    (c) => c.name.toLowerCase() === lowerInput || c.code.toLowerCase() === lowerInput
+    (c) =>
+      c.name.toLowerCase() === lowerInput ||
+      c.code.toLowerCase() === lowerInput,
   );
 
   if (country) {
@@ -522,9 +527,10 @@ const CountryCombobox = ({
                   value={country.value}
                   onSelect={(currentValue) => {
                     // Check if this country is already selected (by name or code)
-                    const isCurrentlySelected = value === currentValue ||
-                                              value === country.code ||
-                                              getCountryName(value || "") === currentValue;
+                    const isCurrentlySelected =
+                      value === currentValue ||
+                      value === country.code ||
+                      getCountryName(value || "") === currentValue;
                     onValueChange?.(isCurrentlySelected ? "" : currentValue);
                     setOpen(false);
                     setSearchQuery("");
@@ -539,7 +545,9 @@ const CountryCombobox = ({
                   <Check
                     className={cn(
                       "ml-auto h-4 w-4",
-                      (value === country.value || value === country.code) ? "opacity-100" : "opacity-0",
+                      value === country.value || value === country.code
+                        ? "opacity-100"
+                        : "opacity-0",
                     )}
                   />
                 </CommandItem>
@@ -790,22 +798,6 @@ interface PaymentSummary {
   currency: string;
 }
 
-interface ReviewWidgetProps {
-  // Legacy props for backward compatibility
-  flightDetails?: FlightDetails;
-  passengerDetails?: PassengerDetails;
-  contactInfo?: ContactInformation;
-  travelDocument?: TravelDocument;
-  seatAllocation?: SeatAllocation;
-  paymentSummary?: PaymentSummary;
-  onSubmit?: (data: any) => void;
-  // New API response prop
-  apiData?: ApiResponse;
-  // Loading state management
-  isSubmitting?: boolean;
-  onSubmittingChange?: (isSubmitting: boolean) => void;
-}
-
 // Utility functions to transform API data
 const formatDateTime = (isoString: string) => {
   if (!isoString) {
@@ -918,8 +910,8 @@ const transformApiDataToFlightDetails = (
   apiData: ApiResponse,
 ): FlightDetails | null => {
   const flightOffer =
-    apiData.value.widget.args.flightItinerary.selectionContext
-      .selectedFlightOffers[0];
+    apiData?.value?.widget?.args?.flightItinerary?.selectionContext
+      ?.selectedFlightOffers?.[0];
   if (!flightOffer) return null;
 
   // Handle new journey structure or legacy structure
@@ -941,13 +933,42 @@ const transformApiDataToFlightDetails = (
   }
 
   // Safety check for required data
-  if (!departureData || !arrivalData || !departureData.date || !arrivalData.date) {
-    console.warn("Missing departure or arrival data in flight offer:", flightOffer);
+  if (
+    !departureData ||
+    !arrivalData ||
+    !departureData.date ||
+    !arrivalData.date
+  ) {
+    console.warn(
+      "Missing departure or arrival data in flight offer:",
+      flightOffer,
+    );
     return null;
   }
 
-  const departure = formatDateTime(departureData.date);
-  const arrival = formatDateTime(arrivalData.date);
+  const to24h = (isoString: string) => {
+    try {
+      const d = new Date(isoString);
+      if (isNaN(d.getTime()))
+        return { date: "Invalid Date", time: "Invalid Time" };
+      const dateStr = d.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+      const timeStr = d.toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+      return { date: dateStr, time: timeStr };
+    } catch {
+      return { date: "Error", time: "Error" };
+    }
+  };
+
+  const departure = to24h(departureData.date);
+  const arrival = to24h(arrivalData.date);
 
   // Get airline info from first segment
   const firstSegment = segments[0];
@@ -967,19 +988,21 @@ const transformApiDataToFlightDetails = (
       date: arrival.date,
       time: arrival.time,
     },
-    airline: firstSegment ? {
-      name: firstSegment.airlineName || firstSegment.airlineIata,
-      flightNumber: `${firstSegment.airlineIata} ${firstSegment.flightNumber}`,
-      cabinClass: "Economy", // Default as not provided in API
-      aircraftType: firstSegment.aircraftType,
-      iataCode: firstSegment.airlineIata,
-    } : {
-      name: "Unknown Airline",
-      flightNumber: "N/A",
-      cabinClass: "Economy",
-      aircraftType: "Unknown",
-      iataCode: "XX",
-    },
+    airline: firstSegment
+      ? {
+          name: firstSegment.airlineName || firstSegment.airlineIata,
+          flightNumber: `${firstSegment.airlineIata} ${firstSegment.flightNumber}`,
+          cabinClass: "Economy", // Default as not provided in API
+          aircraftType: firstSegment.aircraftType,
+          iataCode: firstSegment.airlineIata,
+        }
+      : {
+          name: "Unknown Airline",
+          flightNumber: "N/A",
+          cabinClass: "Economy",
+          aircraftType: "Unknown",
+          iataCode: "XX",
+        },
     duration: parseDuration(duration || ""),
   };
 };
@@ -988,31 +1011,51 @@ const transformApiDataToPassengerDetails = (
   apiData: ApiResponse,
 ): PassengerDetails | null => {
   const userDetails =
-    apiData.value.widget.args.flightItinerary.userContext.userDetails;
-  if (!userDetails) return null;
+    apiData?.value?.widget?.args?.flightItinerary?.userContext?.userDetails;
+  if (userDetails) {
+    return {
+      firstName: userDetails.firstName,
+      lastName: userDetails.lastName,
+      dateOfBirth: userDetails.dateOfBirth,
+      gender: userDetails.gender,
+      title:
+        userDetails.gender === "Male"
+          ? "Mr"
+          : userDetails.gender === "Female"
+            ? "Ms"
+            : "",
+    };
+  }
 
-  return {
-    firstName: userDetails.firstName,
-    lastName: userDetails.lastName,
-    dateOfBirth: userDetails.dateOfBirth,
-    gender: userDetails.gender,
-    title:
-      userDetails.gender === "Male"
-        ? "Mr"
-        : userDetails.gender === "Female"
-          ? "Ms"
-          : "",
-  };
+  // Fallback: hydrate from submission payload if present
+  const submission = (apiData?.value?.widget?.args as any)?.submission as any;
+  const t = submission?.travellersDetail?.[0];
+  if (t) {
+    const g = (t.gender || "").toString().toUpperCase();
+    return {
+      firstName: t.name?.firstName || "",
+      lastName: t.name?.lastName || "",
+      dateOfBirth: t.dateOfBirth || "",
+      gender: g === "MALE" ? "Male" : g === "FEMALE" ? "Female" : "",
+      title: g === "FEMALE" ? "Ms" : g === "MALE" ? "Mr" : "",
+    };
+  }
+
+  return null;
 };
 
 const transformApiDataToContactInfo = (
   apiData: ApiResponse,
 ): ContactInformation | null => {
   // First try to get contact details from contactDetails (matching whosTravelling logic)
-  const contactDetails = apiData.value.widget.args.flightItinerary.userContext.contactDetails;
+  const contactDetails =
+    apiData?.value?.widget?.args?.flightItinerary?.userContext?.contactDetails;
 
   if (contactDetails) {
-    console.log("📞 Review Widget - Processing contactDetails:", contactDetails);
+    console.log(
+      "📞 Review Widget - Processing contactDetails:",
+      contactDetails,
+    );
 
     // Format phone number with country code
     const countryCode = contactDetails.countryCode || "91";
@@ -1025,51 +1068,83 @@ const transformApiDataToContactInfo = (
   }
 
   // Fallback to userDetails if contactDetails not available
-  const userDetails = apiData.value.widget.args.flightItinerary.userContext.userDetails;
-  if (!userDetails) return null;
+  const userDetails =
+    apiData?.value?.widget?.args?.flightItinerary?.userContext?.userDetails;
+  if (userDetails) {
+    const phone =
+      userDetails.phone && userDetails.phone.length > 0
+        ? `+${userDetails.phone[0].countryCode} ${userDetails.phone[0].number}`
+        : "";
 
-  const phone =
-    userDetails.phone && userDetails.phone.length > 0
-      ? `+${userDetails.phone[0].countryCode} ${userDetails.phone[0].number}`
-      : "";
+    return {
+      phone: phone,
+      email: userDetails.email,
+    };
+  }
 
-  return {
-    phone: phone,
-    email: userDetails.email,
-  };
+  // Fallback: hydrate from submission payload if present
+  const submission = (apiData?.value?.widget?.args as any)?.submission as any;
+  if (submission?.contactInfo) {
+    const cc = submission.contactInfo.phone?.countryCode || "";
+    const num = submission.contactInfo.phone?.number || "";
+    const formattedPhone = cc ? `+${cc} ${num}` : num;
+    return {
+      phone: formattedPhone,
+      email: submission.contactInfo.email || "",
+    };
+  }
+
+  return null;
 };
 
 const transformApiDataToTravelDocument = (
   apiData: ApiResponse,
 ): TravelDocument | null => {
   const userDetails =
-    apiData.value.widget.args.flightItinerary.userContext.userDetails;
+    apiData?.value?.widget?.args?.flightItinerary?.userContext?.userDetails;
   if (
-    !userDetails ||
-    !userDetails.documents ||
-    userDetails.documents.length === 0
-  )
-    return null;
+    userDetails &&
+    userDetails.documents &&
+    userDetails.documents.length > 0
+  ) {
+    const document = userDetails.documents[0];
+    return {
+      type:
+        document.documentType.charAt(0).toUpperCase() +
+        document.documentType.slice(1),
+      number: document.documentNumber,
+      issuingCountry: document.issuingCountry,
+      expiryDate: document.expiryDate,
+      nationality: document.nationality,
+    };
+  }
 
-  const document = userDetails.documents[0];
+  // Fallback: hydrate from submission payload if present
+  const submission = (apiData?.value?.widget?.args as any)?.submission as any;
+  const t = submission?.travellersDetail?.[0];
+  const d = t?.documents?.[0];
+  if (d) {
+    const toTitle = (s: string) =>
+      s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
+    return {
+      type: toTitle(d.documentType || ""),
+      number: d.number || "",
+      issuingCountry: d.issuanceCountry || "",
+      expiryDate: d.expiryDate || "",
+      nationality: d.nationality || "",
+      issuanceDate: d.issuanceDate || "",
+    };
+  }
 
-  return {
-    type:
-      document.documentType.charAt(0).toUpperCase() +
-      document.documentType.slice(1),
-    number: document.documentNumber,
-    issuingCountry: document.issuingCountry,
-    expiryDate: document.expiryDate,
-    nationality: document.nationality,
-  };
+  return null;
 };
 
 const transformApiDataToPaymentSummary = (
   apiData: ApiResponse,
 ): PaymentSummary | null => {
   const flightOffer =
-    apiData.value.widget.args.flightItinerary.selectionContext
-      .selectedFlightOffers[0];
+    apiData?.value?.widget?.args?.flightItinerary?.selectionContext
+      ?.selectedFlightOffers?.[0];
   if (!flightOffer) return null;
 
   // Use actual breakdown if available, otherwise estimate
@@ -1091,12 +1166,17 @@ const transformApiDataToPaymentSummary = (
   };
 };
 
-const transformApiDataToSavedPassengers = (apiData: ApiResponse): SavedPassenger[] => {
+const transformApiDataToSavedPassengers = (
+  apiData: ApiResponse,
+): SavedPassenger[] => {
   const savedTravellers =
-    apiData.value.widget.args.flightItinerary.userContext.savedTravellers;
+    apiData?.value?.widget?.args?.flightItinerary?.userContext?.savedTravellers;
   if (!savedTravellers) return [];
 
-  console.log("📋 Review Widget - Transforming saved travellers:", savedTravellers);
+  console.log(
+    "📋 Review Widget - Transforming saved travellers:",
+    savedTravellers,
+  );
 
   return savedTravellers
     .map((traveller): SavedPassenger => {
@@ -1112,7 +1192,10 @@ const transformApiDataToSavedPassengers = (apiData: ApiResponse): SavedPassenger
         nationality: traveller.nationality,
       };
 
-      console.log("📋 Review Widget - Transformed passenger:", transformedPassenger);
+      console.log(
+        "📋 Review Widget - Transformed passenger:",
+        transformedPassenger,
+      );
       return transformedPassenger;
     })
     .sort((a, b) => (b.numberOfFlights || 0) - (a.numberOfFlights || 0)); // Sort by numberOfFlights descending (frequent flyers first)
@@ -1131,249 +1214,131 @@ interface SavedPassenger {
   nationality?: string;
 }
 
-// Mock saved passengers data (fallback)
-const mockSavedPassengers: SavedPassenger[] = [
-  {
-    id: "1",
-    firstName: "John",
-    lastName: "Doe",
-    gender: "Male",
-    dateOfBirth: "1990-01-15",
-    numberOfFlights: 5,
-    documents: [],
-    nationality: "IN",
-  },
-  {
-    id: "2",
-    firstName: "Jane",
-    lastName: "Smith",
-    gender: "Female",
-    dateOfBirth: "1985-03-22",
-    numberOfFlights: 3,
-    documents: [],
-    nationality: "IN",
-  },
-  {
-    id: "3",
-    firstName: "Michael",
-    lastName: "Johnson",
-    gender: "Male",
-    dateOfBirth: "1992-07-08",
-    numberOfFlights: 2,
-    documents: [],
-    nationality: "IN",
-  },
-  {
-    id: "4",
-    firstName: "Sarah",
-    lastName: "Williams",
-    gender: "Female",
-    dateOfBirth: "1988-11-30",
-    numberOfFlights: 1,
-    documents: [],
-    nationality: "IN",
-  },
-];
+interface ReviewWidgetProps extends Record<string, any> {
+  apiData?: any;
+  readOnly?: boolean;
+  interruptId?: string;
+}
 
-// Mock data for demonstration
-const mockData = {
-  flightDetails: {
-    departure: {
-      city: "New York",
-      airport: "John F. Kennedy International Airport",
-      code: "JFK",
-      date: "Dec 15, 2024",
-      time: "2:30 PM",
-    },
-    arrival: {
-      city: "San Francisco",
-      airport: "San Francisco International Airport",
-      code: "SFO",
-      date: "Dec 15, 2024",
-      time: "6:15 PM",
-    },
-    airline: {
-      name: "American Airlines",
-      flightNumber: "AA 1234",
-      cabinClass: "Economy",
-      aircraftType: "Boeing 737-800",
-      iataCode: "AA",
-    },
-    duration: "5h 45m",
-  },
-  passengerDetails: {
-    firstName: "John",
-    lastName: "Doe",
-    dateOfBirth: "1990-01-15",
-    gender: "Male",
-    title: "Mr",
-  },
-  contactInfo: {
-    phone: "+1 (555) 123-4567",
-    email: "john.doe@email.com",
-  },
-  travelDocument: {
-    type: "Passport",
-    number: "A12345678",
-    issuingCountry: "United States",
-    expiryDate: "2029-01-11",
-    nationality: "United States",
-    issuanceDate: "2015-04-14",
-  },
-  seatAllocation: {
-    isSelected: true,
-    seatNumber: "12A",
-    location: "Window seat, front of aircraft",
-    price: 25.0,
-  },
-  paymentSummary: {
-    baseFare: 249.0,
-    taxes: 35.5,
-    fees: 12.75,
-    discount: 20.0,
-    seatFare: 25.0,
-    total: 302.25,
-    currency: "USD",
-  },
-};
-
-const ReviewWidget: React.FC<ReviewWidgetProps> = ({
-  flightDetails,
-  passengerDetails,
-  contactInfo,
-  travelDocument,
-  seatAllocation,
-  paymentSummary,
-  onSubmit,
-  apiData,
-  isSubmitting: externalIsSubmitting,
-  onSubmittingChange,
-}) => {
+const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
+  console.log("&&&&&&&&&&& Review Widget - API data:", args.apiData);
   // Get thread context for interrupt responses
   const thread = useStreamContext();
 
-  // Add loading state - use external state if provided, otherwise use internal state
-  const [internalIsSubmitting, setInternalIsSubmitting] = useState(false);
-  const isSubmitting =
-    externalIsSubmitting !== undefined
-      ? externalIsSubmitting
-      : internalIsSubmitting;
+  // Robust extraction of live and frozen args per authoring guide
+  const pickInner = (obj: any) =>
+    obj?.value?.value?.widget
+      ? obj.value.value
+      : obj?.value?.widget
+        ? obj.value
+        : obj?.widget
+          ? obj
+          : undefined;
 
-  // Generate a unique key for this widget instance based on apiData
-  const widgetKey = React.useMemo(() => {
-    if (apiData) {
-      const argsHash = JSON.stringify(apiData.value?.widget?.args || {});
-      return `review-widget-submitted-${btoa(argsHash).slice(0, 12)}`;
-    }
-    return `review-widget-submitted-${Date.now()}`;
-  }, [apiData]);
+  const liveEnvelope = pickInner(args.apiData) || {};
+  const liveArgs = (liveEnvelope?.widget?.args as any) ?? {};
 
-  // Check localStorage for submission state
-  const getSubmissionState = React.useCallback(() => {
-    try {
-      const stored = localStorage.getItem(widgetKey);
-      return stored === 'true';
-    } catch (error) {
-      console.error('Error reading from localStorage:', error);
-      return false;
-    }
-  }, [widgetKey]);
+  // Attempt to read frozen submission either from args.submission or from __block.frozenValue
+  const frozenFromArgs = (liveArgs as any)?.submission;
+  const frozenEnvelope = pickInner((args.apiData as any)?.__block?.frozenValue);
+  const frozenArgsFallback = frozenEnvelope?.widget?.args;
+  const frozenArgs = frozenFromArgs ?? frozenArgsFallback;
 
-  // Set submission state in localStorage
-  const setSubmissionState = React.useCallback((submitted: boolean) => {
-    try {
-      if (submitted) {
-        localStorage.setItem(widgetKey, 'true');
-      } else {
-        localStorage.removeItem(widgetKey);
-      }
-    } catch (error) {
-      console.error('Error writing to localStorage:', error);
-    }
-  }, [widgetKey]);
+  const readOnly = !!args.readOnly;
 
-  // Add state to track if booking has been submitted (to hide button)
-  const [isBookingSubmitted, setIsBookingSubmitted] = useState(() => getSubmissionState());
+  // Build an effectiveArgs where ONLY savedTravellers and contactDetails may come from submission
+  const savedTravellers =
+    readOnly && frozenArgs?.flightItinerary?.userContext?.savedTravellers
+      ? frozenArgs.flightItinerary.userContext.savedTravellers
+      : liveArgs?.flightItinerary?.userContext?.savedTravellers || [];
 
-  // Update localStorage when local state changes
-  React.useEffect(() => {
-    setSubmissionState(isBookingSubmitted);
-  }, [isBookingSubmitted, setSubmissionState]);
+  const contactDetails =
+    readOnly && frozenArgs?.flightItinerary?.userContext?.contactDetails
+      ? frozenArgs.flightItinerary.userContext.contactDetails
+      : liveArgs?.flightItinerary?.userContext?.contactDetails;
 
-  // Optional: Clear localStorage on component unmount (uncomment if needed)
-  // React.useEffect(() => {
-  //   return () => {
-  //     setSubmissionState(false);
-  //   };
-  // }, [setSubmissionState]);
+  // Everything else must always come from live data
+  const userDetails = liveArgs?.flightItinerary?.userContext?.userDetails;
+  const selectedFlightOffers =
+    liveArgs?.flightItinerary?.selectionContext?.selectedFlightOffers || [];
+  const bookingRequirements = liveArgs?.bookingRequirements;
+  const numberOfTravellers = liveArgs?.numberOfTravellers;
 
-  const setIsSubmitting = (value: boolean) => {
-    if (onSubmittingChange) {
-      onSubmittingChange(value);
-    } else {
-      setInternalIsSubmitting(value);
-    }
-  };
+  // Compose an effectiveArgs view for downstream usage without changing UI
+  const effectiveArgs = {
+    ...liveArgs,
+    flightItinerary: {
+      ...(liveArgs?.flightItinerary || {}),
+      userContext: {
+        ...(liveArgs?.flightItinerary?.userContext || {}),
+        savedTravellers,
+        contactDetails,
+      },
+    },
+  } as any;
 
-  // Transform API data or use provided props/mock data
-  const transformedFlightDetails = apiData
-    ? transformApiDataToFlightDetails(apiData)
-    : null;
-  const transformedPassengerDetails = apiData
-    ? transformApiDataToPassengerDetails(apiData)
-    : null;
-  const transformedContactInfo = apiData
-    ? transformApiDataToContactInfo(apiData)
-    : null;
-  const transformedTravelDocument = apiData
-    ? transformApiDataToTravelDocument(apiData)
-    : null;
-  const transformedPaymentSummary = apiData
-    ? transformApiDataToPaymentSummary(apiData)
-    : null;
-  const savedPassengers = apiData
-    ? transformApiDataToSavedPassengers(apiData)
-    : mockSavedPassengers;
+  // Provide computed, typed values used later in JSX to satisfy TS and keep UI intact
+  const finalFlightDetails = React.useMemo(() => {
+    const env = { value: { widget: { args: liveArgs } } } as any;
+    return transformApiDataToFlightDetails(env);
+  }, [liveArgs]);
 
-  // Extract isRefundable from API data
-  const isRefundable = apiData
-    ? apiData.value.widget.args.flightItinerary.selectionContext
-        .selectedFlightOffers[0]?.offerRules?.isRefundable ?? null
-    : null;
+  const finalPaymentSummary = React.useMemo(() => {
+    const env = { value: { widget: { args: liveArgs } } } as any;
+    return transformApiDataToPaymentSummary(env);
+  }, [liveArgs]);
 
-  // Extract booking requirements for dynamic field visibility
-  const bookingRequirements = apiData?.value.widget.args.bookingRequirements;
+  const savedPassengers = React.useMemo(() => {
+    const env = {
+      value: {
+        widget: {
+          args: {
+            flightItinerary: {
+              userContext: { savedTravellers },
+            },
+          },
+        },
+      },
+    } as any;
+    return transformApiDataToSavedPassengers(env);
+  }, [savedTravellers]);
+
+  // Seat allocation is out of scope for this widget
+
+  const interruptId: string | undefined =
+    args.interruptId ??
+    (args.apiData as any)?.value?.interrupt_id ??
+    (args.apiData as any)?.interrupt_id;
+
+  // Add loading state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Source of truth: if parent marks the interrupt completed, treat as submitted
+  const isBookingSubmitted = !!readOnly;
+
+  console.log("$$$$$$$ Review Widget - effectiveArgs:", effectiveArgs);
+
+  // Extract isRefundable from selectedFlightOffers
+  const isRefundable =
+    selectedFlightOffers?.[0]?.offerRules?.isRefundable ?? null;
+
+  // Extract traveler requirements for dynamic field visibility
   const travelerRequirement = bookingRequirements?.travelerRequirements?.[0]; // Get first traveler requirement
 
   // Determine field visibility based on booking requirements
   const isGenderRequired = travelerRequirement?.genderRequired ?? true; // Default to true for backward compatibility
   const isDocumentRequired = travelerRequirement?.documentRequired ?? true; // Default to true for backward compatibility
-  const isDateOfBirthRequired = travelerRequirement?.dateOfBirthRequired ?? true; // Default to true for backward compatibility
+  const isDateOfBirthRequired =
+    travelerRequirement?.dateOfBirthRequired ?? true; // Default to true for backward compatibility
 
   // Determine if travel documents component should be shown
   // Hide if travelerRequirements is null in API data
-  const showTravelDocuments = apiData
-    ? apiData.value.widget.args.bookingRequirements.travelerRequirements !==
-      null
-    : true; // Show by default for non-API usage (legacy/demo mode)
-
-  // Use transformed data, provided props, or fallback to mock data
-  const finalFlightDetails =
-    transformedFlightDetails || flightDetails || mockData.flightDetails;
-  const finalPassengerDetails =
-    transformedPassengerDetails ||
-    passengerDetails ||
-    mockData.passengerDetails;
-  const finalContactInfo =
-    transformedContactInfo || contactInfo || mockData.contactInfo;
-  const finalTravelDocument =
-    transformedTravelDocument || travelDocument || mockData.travelDocument;
-  const finalPaymentSummary =
-    transformedPaymentSummary || paymentSummary || mockData.paymentSummary;
-  const finalSeatAllocation = seatAllocation || mockData.seatAllocation;
+  const showTravelDocuments = bookingRequirements
+    ? bookingRequirements.travelerRequirements !== null
+    : true; // Show by default when requirements are absent
 
   // Determine if seat component should be shown (only if seatAllocation is provided)
-  const showSeatComponent = !!seatAllocation;
+  const showSeatComponent = false; // No seat allocation in this widget
 
   // Hook to detect desktop screen size
   const [isDesktop, setIsDesktop] = useState(false);
@@ -1394,9 +1359,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
   const [isContactExpanded, setIsContactExpanded] = useState(false);
   const [isTravelDocsExpanded, setIsTravelDocsExpanded] = useState(false);
   const [isPaymentExpanded, setIsPaymentExpanded] = useState(false);
-  const [isSeatSelected, setIsSeatSelected] = useState(
-    finalSeatAllocation?.isSelected || false,
-  );
+  const [isSeatSelected, setIsSeatSelected] = useState(false);
   const [isSavedPassengersExpanded, setIsSavedPassengersExpanded] =
     useState(false);
 
@@ -1407,41 +1370,99 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
     }
   }, [isDesktop, isPaymentExpanded]);
 
-  // Form state - initialize with transformed/provided data
-  const [passenger, setPassenger] = useState(finalPassengerDetails);
-  const [contact, setContact] = useState(finalContactInfo);
-  const [document, setDocument] = useState(
-    showTravelDocuments
-      ? finalTravelDocument || {
-          type: "",
-          number: "",
-          issuingCountry: "",
-          expiryDate: "",
-          nationality: "",
-        }
-      : null,
-  );
-
-  // Populate data from contactDetails when component mounts (matching whosTravelling logic)
-  React.useEffect(() => {
-    if (apiData) {
-      const contactDetails = apiData.value.widget.args.flightItinerary.userContext.contactDetails;
-
-      if (contactDetails) {
-        console.log("📞 Review Widget - Processing contactDetails on mount:", contactDetails);
-
-        // Update contact state with contactDetails data
-        const countryCode = contactDetails.countryCode || "91";
-        const formattedPhone = `+${countryCode} ${contactDetails.mobileNumber}`;
-
-        setContact(prevContact => ({
-          ...prevContact,
-          email: contactDetails.email || prevContact.email,
-          phone: formattedPhone,
-        }));
-      }
+  // Form state - initialize directly from effectiveArgs-derived variables
+  const [passenger, setPassenger] = useState(() => {
+    if (userDetails) {
+      return {
+        firstName: userDetails.firstName || "",
+        lastName: userDetails.lastName || "",
+        dateOfBirth: userDetails.dateOfBirth || "",
+        gender: userDetails.gender || "",
+        title:
+          userDetails.gender === "Male"
+            ? "Mr"
+            : userDetails.gender === "Female"
+              ? "Ms"
+              : "",
+      };
     }
-  }, [apiData]);
+    return {
+      firstName: "",
+      lastName: "",
+      dateOfBirth: "",
+      gender: "",
+      title: "",
+    };
+  });
+
+  const [contact, setContact] = useState(() => {
+    if (contactDetails) {
+      const countryCode = contactDetails.countryCode || "91";
+      const formattedPhone = `+${countryCode} ${contactDetails.mobileNumber || ""}`;
+      return {
+        phone: formattedPhone,
+        email: contactDetails.email || "",
+      };
+    }
+    if (userDetails?.phone?.[0]) {
+      const phone = `+${userDetails.phone[0].countryCode} ${userDetails.phone[0].number}`;
+      return {
+        phone: phone,
+        email: userDetails.email || "",
+      };
+    }
+    return {
+      phone: "",
+      email: "",
+    };
+  });
+
+  const [document, setDocument] = useState(() => {
+    if (!showTravelDocuments) return null;
+
+    if (userDetails?.documents?.[0]) {
+      const doc = userDetails.documents[0];
+      return {
+        type:
+          doc.documentType?.charAt(0).toUpperCase() +
+            doc.documentType?.slice(1) || "",
+        number: doc.documentNumber || "",
+        issuingCountry: doc.issuingCountry || "",
+        expiryDate: doc.expiryDate || "",
+        nationality: doc.nationality || "",
+        issuanceDate: doc.issuingDate || "",
+      };
+    }
+
+    return {
+      type: "",
+      number: "",
+      issuingCountry: "",
+      expiryDate: "",
+      nationality: "",
+      issuanceDate: "",
+    };
+  });
+
+  // Update contact state when contactDetails changes
+  React.useEffect(() => {
+    if (contactDetails) {
+      console.log(
+        "📞 Review Widget - Processing contactDetails on mount:",
+        contactDetails,
+      );
+
+      // Update contact state with contactDetails data
+      const countryCode = contactDetails.countryCode || "91";
+      const formattedPhone = `+${countryCode} ${contactDetails.mobileNumber || ""}`;
+
+      setContact((prevContact) => ({
+        ...prevContact,
+        email: contactDetails.email || prevContact?.email || "",
+        phone: formattedPhone,
+      }));
+    }
+  }, [contactDetails]);
 
   // Validation state
   const [validationErrors, setValidationErrors] = useState<{
@@ -1468,7 +1489,9 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
     const formattedDocumentType = document?.type?.toUpperCase() || "PASSPORT";
 
     // Get country codes for issuing country and nationality using the utility function
-    const issuingCountryCode = getCountryCodeFromName(document?.issuingCountry || "");
+    const issuingCountryCode = getCountryCodeFromName(
+      document?.issuingCountry || "",
+    );
     const nationalityCode = getCountryCodeFromName(document?.nationality || "");
 
     // Format date strings to YYYY-MM-DD (same as whosTravelling)
@@ -1479,25 +1502,29 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
     };
 
     // Build documents array (matching whosTravelling structure exactly)
-    const documents = document ? [
-      {
-        documentType: formattedDocumentType,
-        birthPlace: document.issuingCountry || "", // Using issuing country as birth place
-        issuanceLocation: document.issuingCountry || "",
-        issuanceDate: formatDate(document.issuanceDate || "2015-04-14"), // Default if not provided
-        number: document.number || "",
-        expiryDate: formatDate(document.expiryDate),
-        issuanceCountry: issuingCountryCode,
-        validityCountry: issuingCountryCode, // Same as issuanceCountry
-        nationality: nationalityCode,
-        holder: true,
-      },
-    ] : [];
+    const documents = document
+      ? [
+          {
+            documentType: formattedDocumentType,
+            birthPlace: document.issuingCountry || "", // Using issuing country as birth place
+            issuanceLocation: document.issuingCountry || "",
+            issuanceDate: formatDate(document.issuanceDate || "2015-04-14"), // Default if not provided
+            number: document.number || "",
+            expiryDate: formatDate(document.expiryDate),
+            issuanceCountry: issuingCountryCode,
+            validityCountry: issuingCountryCode, // Same as issuanceCountry
+            nationality: nationalityCode,
+            holder: true,
+          },
+        ]
+      : [];
 
     const travellersDetail = [
       {
         id: 1, // Use number instead of string (matching whosTravelling)
-        dateOfBirth: passenger.dateOfBirth ? formatDate(passenger.dateOfBirth) : null,
+        dateOfBirth: passenger.dateOfBirth
+          ? formatDate(passenger.dateOfBirth)
+          : null,
         gender: formattedGender,
         name: {
           firstName: passenger.firstName?.toUpperCase() || "",
@@ -1671,33 +1698,167 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
     }
 
     // Check date of birth (only if required)
-    if (showTravelDocuments && isDateOfBirthRequired && !passenger.dateOfBirth?.trim()) {
+    if (
+      showTravelDocuments &&
+      isDateOfBirthRequired &&
+      !passenger.dateOfBirth?.trim()
+    ) {
       return false;
     }
 
     return true;
-  }, [passenger, contact, document, showTravelDocuments, isTravelDocsExpanded, isGenderRequired, isDocumentRequired, isDateOfBirthRequired]);
+  }, [
+    passenger,
+    contact,
+    document,
+    showTravelDocuments,
+    isTravelDocsExpanded,
+    isGenderRequired,
+    isDocumentRequired,
+    isDateOfBirthRequired,
+  ]);
+
+  // Helper functions to extract data from effectiveArgs-derived variables
+  const getFlightDetails = () => {
+    const flightOffer = selectedFlightOffers?.[0];
+    if (!flightOffer) return null;
+
+    // Handle new journey structure or legacy structure
+    let departureData, arrivalData, segments, duration;
+
+    if (flightOffer.journey && flightOffer.journey.length > 0) {
+      // New journey structure
+      const journey = flightOffer.journey[0];
+      departureData = journey.departure;
+      arrivalData = journey.arrival;
+      segments = journey.segments || [];
+      duration = journey.duration;
+    } else {
+      // Legacy structure (backward compatibility)
+      departureData = flightOffer.departure;
+      arrivalData = flightOffer.arrival;
+      segments = flightOffer.segments || [];
+      duration = flightOffer.duration;
+    }
+
+    if (!departureData || !arrivalData) return null;
+
+    const formatDateTime = (isoString: string) => {
+      if (!isoString) return { date: "N/A", time: "N/A" };
+      try {
+        const date = new Date(isoString);
+        if (isNaN(date.getTime()))
+          return { date: "Invalid Date", time: "Invalid Time" };
+        const dateStr = date.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
+        const timeStr = date.toLocaleTimeString("en-GB", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        });
+        return { date: dateStr, time: timeStr };
+      } catch (error) {
+        return { date: "Error", time: "Error" };
+      }
+    };
+
+    const parseDuration = (duration: string) => {
+      const match = duration?.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
+      if (!match) return duration || "";
+      const hours = parseInt(match[1] || "0");
+      const minutes = parseInt(match[2] || "0");
+      if (hours > 0 && minutes > 0) {
+        return `${hours}h ${minutes}m`;
+      } else if (hours > 0) {
+        return `${hours}h`;
+      } else {
+        return `${minutes}m`;
+      }
+    };
+
+    const departure = formatDateTime(departureData.date);
+    const arrival = formatDateTime(arrivalData.date);
+    const firstSegment = segments[0];
+
+    return {
+      departure: {
+        city: departureData.cityCode || departureData.airportIata,
+        airport: departureData.airportName || departureData.airportIata,
+        code: departureData.airportIata,
+        date: departure.date,
+        time: departure.time,
+      },
+      arrival: {
+        city: arrivalData.cityCode || arrivalData.airportIata,
+        airport: arrivalData.airportName || arrivalData.airportIata,
+        code: arrivalData.airportIata,
+        date: arrival.date,
+        time: arrival.time,
+      },
+      airline: firstSegment
+        ? {
+            name: firstSegment.airlineName || firstSegment.airlineIata,
+            flightNumber: `${firstSegment.airlineIata} ${firstSegment.flightNumber}`,
+            cabinClass: "Economy", // Default as not provided in API
+            aircraftType: firstSegment.aircraftType,
+            iataCode: firstSegment.airlineIata,
+          }
+        : {
+            name: "Unknown Airline",
+            flightNumber: "N/A",
+            cabinClass: "Economy",
+            aircraftType: "Unknown",
+            iataCode: "XX",
+          },
+      duration: parseDuration(duration || ""),
+    };
+  };
+
+  const getPaymentSummary = () => {
+    const flightOffer = selectedFlightOffers?.[0];
+    if (!flightOffer) return null;
+
+    const total = flightOffer.totalAmount || 0;
+    const baseFare = flightOffer.baseAmount || Math.round(total * 0.75);
+    const taxes = flightOffer.tax || Math.round(total * 0.2);
+    const serviceFee = flightOffer.serviceFee || 0;
+    const convenienceFee = flightOffer.convenienceFee || 0;
+    const fees = serviceFee + convenienceFee || Math.round(total * 0.05);
+
+    return {
+      baseFare: baseFare,
+      taxes: taxes,
+      fees: fees,
+      discount: 0,
+      seatFare: 0,
+      total: total,
+      currency: flightOffer.currency || "INR",
+    };
+  };
 
   // Calculate total with seat selection
   const calculateTotal = () => {
+    const paymentSummary = getPaymentSummary();
+    if (!paymentSummary) return 0;
+
     if (!showSeatComponent) {
-      return finalPaymentSummary.total;
+      return paymentSummary.total;
     }
-    const seatFare =
-      isSeatSelected && finalSeatAllocation ? finalSeatAllocation.price : 0;
+    const seatFare = isSeatSelected ? 0 : 0; // No seat allocation data available
     return (
-      finalPaymentSummary.baseFare +
-      finalPaymentSummary.taxes +
-      finalPaymentSummary.fees +
+      paymentSummary.baseFare +
+      paymentSummary.taxes +
+      paymentSummary.fees +
       seatFare -
-      finalPaymentSummary.discount
+      paymentSummary.discount
     );
   };
 
   // Handle selecting a saved passenger
-  const handleSelectSavedPassenger = (
-    savedPassenger: SavedPassenger,
-  ) => {
+  const handleSelectSavedPassenger = (savedPassenger: SavedPassenger) => {
     // Update passenger details
     setPassenger({
       firstName: savedPassenger.firstName,
@@ -1708,24 +1869,38 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
     });
 
     // Update document information if available
-    if (savedPassenger.documents && savedPassenger.documents.length > 0 && showTravelDocuments) {
+    if (
+      savedPassenger.documents &&
+      savedPassenger.documents.length > 0 &&
+      showTravelDocuments
+    ) {
       const savedDocument = savedPassenger.documents[0]; // Use first document
-      console.log("📄 Review Widget - Populating document from saved passenger:", savedDocument);
+      console.log(
+        "📄 Review Widget - Populating document from saved passenger:",
+        savedDocument,
+      );
 
       setDocument({
-        type: savedDocument.documentType?.charAt(0).toUpperCase() + savedDocument.documentType?.slice(1).toLowerCase() || "Passport",
+        type:
+          savedDocument.documentType?.charAt(0).toUpperCase() +
+            savedDocument.documentType?.slice(1).toLowerCase() || "Passport",
         number: savedDocument.documentNumber || "",
         issuingCountry: savedDocument.issuingCountry || "",
         expiryDate: savedDocument.expiryDate || "",
-        nationality: savedDocument.nationality || savedPassenger.nationality || "",
+        nationality:
+          savedDocument.nationality || savedPassenger.nationality || "",
         issuanceDate: savedDocument.issuingDate || "",
       });
     } else {
-      console.log("📄 Review Widget - No documents found for saved passenger or travel docs disabled:", {
-        hasDocuments: savedPassenger.documents && savedPassenger.documents.length > 0,
-        showTravelDocuments,
-        savedPassenger
-      });
+      console.log(
+        "📄 Review Widget - No documents found for saved passenger or travel docs disabled:",
+        {
+          hasDocuments:
+            savedPassenger.documents && savedPassenger.documents.length > 0,
+          showTravelDocuments,
+          savedPassenger,
+        },
+      );
 
       // Clear document if no documents available
       if (showTravelDocuments) {
@@ -1754,9 +1929,8 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
       return;
     }
 
-    // Set loading state and mark as submitted
+    // Set loading state
     setIsSubmitting(true);
-    setIsBookingSubmitted(true);
 
     try {
       // Transform data according to backend requirements (matching whosTravelling format)
@@ -1773,17 +1947,56 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
       console.log("📤 Review Widget - Submitting response:", responseData);
 
       // Submit using the same pattern as whosTravelling widget
+      const submissionData = {
+        type: "response",
+        data: formattedData,
+      } as const;
+      // Build frozen snapshot to store ONLY savedTravellers and contactDetails (as per rules),
+      // and ensure correct widget type: TravelerDetailsWidget
+      const updatedContactDetails = {
+        countryCode: contact.phone.match(/\+(\d+)/)?.[1] || "91",
+        mobileNumber: contact.phone.replace(/\+\d+\s*/, ""),
+        email: contact.email,
+      };
+
+      const updatedSavedTravellers = savedTravellers.map((traveller: any) => ({
+        ...traveller,
+      }));
+
+      const frozenArgs = {
+        flightItinerary: {
+          userContext: {
+            savedTravellers: updatedSavedTravellers,
+            contactDetails: updatedContactDetails,
+          },
+        },
+      };
+
+      const frozen = {
+        widget: {
+          type: "TravelerDetailsWidget",
+          args: frozenArgs,
+        },
+        value: {
+          type: "widget",
+          widget: {
+            type: "TravelerDetailsWidget",
+            args: frozenArgs,
+          },
+        },
+      };
+
       await submitInterruptResponse(
         thread,
-        responseData[0].type,
-        responseData[0].data,
+        submissionData.type,
+        submissionData.data,
+        {
+          interruptId: interruptId,
+          frozenValue: frozen,
+        },
       );
-
-      // Booking submitted successfully - state is already saved in localStorage via useEffect
     } catch (error) {
-      console.error("Error submitting booking:", error);
-      // Reset booking submitted state on error so user can retry
-      setIsBookingSubmitted(false);
+      console.error("Error submitting review data:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -1806,7 +2019,6 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
         </div>
       )}
       <div className="mx-auto max-w-4xl p-3 pb-4 sm:p-4 sm:pb-4">
-
         {/* Desktop Two-Column Layout */}
         <div className="hidden lg:grid lg:grid-cols-2 lg:gap-6">
           {/* Left Column - Flight Info and Forms */}
@@ -1821,44 +2033,55 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-6">
-                      <div className="flex items-center space-x-3">
-                        <div className="text-center">
-                          <div className="text-sm font-bold">
-                            {finalFlightDetails.departure.code}
-                          </div>
-                          <div className="text-sm font-bold">
-                            {finalFlightDetails.departure.time}
-                          </div>
-                        </div>
-                        <ArrowRight className="h-3 w-3 text-gray-400" />
-                        <div className="text-center">
-                          <div className="text-sm font-bold">
-                            {finalFlightDetails.arrival.code}
-                          </div>
-                          <div className="text-sm font-bold">
-                            {finalFlightDetails.arrival.time}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="flex items-center space-x-2">
-                          <AirlineLogo
-                            airlineIata={
-                              finalFlightDetails.airline.iataCode || ""
-                            }
-                            airlineName={finalFlightDetails.airline.name}
-                            size="sm"
-                          />
-                          <div className="text-xs text-gray-700">
-                            <div className="font-medium">
-                              {finalFlightDetails.airline.name}
+                      {(() => {
+                        const flightDetails = getFlightDetails();
+                        return flightDetails ? (
+                          <>
+                            <div className="flex items-center space-x-3">
+                              <div className="text-center">
+                                <div className="text-sm font-bold">
+                                  {flightDetails.departure.code}
+                                </div>
+                                <div className="text-sm font-bold">
+                                  {flightDetails.departure.time}
+                                </div>
+                              </div>
+                              <ArrowRight className="h-3 w-3 text-gray-400" />
+                              <div className="text-center">
+                                <div className="text-sm font-bold">
+                                  {flightDetails.arrival.code}
+                                </div>
+                                <div className="text-sm font-bold">
+                                  {flightDetails.arrival.time}
+                                </div>
+                              </div>
                             </div>
-                            <div className="text-gray-600">
-                              {finalFlightDetails.airline.cabinClass}
+                            <div className="flex items-center space-x-3">
+                              <div className="flex items-center space-x-2">
+                                <AirlineLogo
+                                  airlineIata={
+                                    flightDetails.airline.iataCode || ""
+                                  }
+                                  airlineName={flightDetails.airline.name}
+                                  size="sm"
+                                />
+                                <div className="text-xs text-gray-700">
+                                  <div className="font-medium">
+                                    {flightDetails.airline.name}
+                                  </div>
+                                  <div className="text-gray-600">
+                                    {flightDetails.airline.cabinClass}
+                                  </div>
+                                </div>
+                              </div>
                             </div>
+                          </>
+                        ) : (
+                          <div className="text-sm text-gray-500">
+                            No flight details available
                           </div>
-                        </div>
-                      </div>
+                        );
+                      })()}
                     </div>
                   </div>
 
@@ -1878,58 +2101,86 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 <div className="mt-3 border-t pt-4">
                   {/* Additional Flight Info */}
                   <div className="mb-3">
-                    <div className="text-xs text-gray-600">
-                      Aircraft: {finalFlightDetails.airline.aircraftType || "Not specified"}
-                    </div>
-                    <div className="text-xs text-gray-600">
-                      Flight: {finalFlightDetails.airline.flightNumber}
-                    </div>
+                    {(() => {
+                      const flightDetails = getFlightDetails();
+                      return flightDetails ? (
+                        <>
+                          <div className="text-xs text-gray-600">
+                            Aircraft:{" "}
+                            {flightDetails.airline.aircraftType ||
+                              "Not specified"}
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            Flight: {flightDetails.airline.flightNumber}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-xs text-gray-500">
+                          No flight details available
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Route Details */}
-                  <div className="grid grid-cols-3 items-center gap-3">
-                    {/* Departure */}
-                    <div className="text-left">
-                      <div className="mb-1 text-xs text-gray-600">
-                        Departure
-                      </div>
-                      <div className="text-sm font-bold">
-                        {finalFlightDetails.departure.time}
-                      </div>
-                      <div className="text-xs text-gray-900">
-                        {finalFlightDetails.departure.city}
-                      </div>
-                      <div className="text-xs text-gray-600">
-                        {finalFlightDetails.departure.date}
-                      </div>
-                    </div>
+                  {(() => {
+                    const flightDetails = getFlightDetails();
+                    if (!flightDetails)
+                      return (
+                        <div className="text-xs text-gray-500">
+                          No route details available
+                        </div>
+                      );
+                    return (
+                      <div className="grid grid-cols-3 items-center gap-3">
+                        {/* Departure */}
+                        <div className="text-left">
+                          <div className="mb-1 text-xs text-gray-600">
+                            Departure
+                          </div>
+                          <div className="text-sm font-bold">
+                            {flightDetails.departure.time}
+                          </div>
+                          <div className="text-xs text-gray-900">
+                            {flightDetails.departure.city}
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            {flightDetails.departure.date}
+                          </div>
+                        </div>
 
-                    {/* Duration Indicator */}
-                    <div className="flex flex-col items-center">
-                      <div className="mb-1 text-xs text-gray-600">
-                        {finalFlightDetails.duration}
-                      </div>
-                      <div className="flex w-full items-center">
-                        <div className="h-px w-16 bg-gray-300"></div>
-                        <ArrowRight className="mx-1 h-3 w-3 text-gray-400" />
-                      </div>
-                      <div className="mt-1 text-xs text-gray-600">Non-stop</div>
-                    </div>
+                        {/* Duration Indicator */}
+                        <div className="flex flex-col items-center">
+                          <div className="mb-1 text-xs text-gray-600">
+                            {flightDetails.duration}
+                          </div>
+                          <div className="flex w-full items-center">
+                            <div className="h-px w-16 bg-gray-300"></div>
+                            <ArrowRight className="mx-1 h-3 w-3 text-gray-400" />
+                          </div>
+                          <div className="mt-1 text-xs text-gray-600">
+                            Non-stop
+                          </div>
+                        </div>
 
-                    {/* Arrival */}
-                    <div className="text-right">
-                      <div className="mb-1 text-xs text-gray-600">Arrival</div>
-                      <div className="text-sm font-bold">
-                        {finalFlightDetails.arrival.time}
+                        {/* Arrival */}
+                        <div className="text-right">
+                          <div className="mb-1 text-xs text-gray-600">
+                            Arrival
+                          </div>
+                          <div className="text-sm font-bold">
+                            {flightDetails.arrival.time}
+                          </div>
+                          <div className="text-xs text-gray-900">
+                            {flightDetails.arrival.city}
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            {flightDetails.arrival.date}
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-900">
-                        {finalFlightDetails.arrival.city}
-                      </div>
-                      <div className="text-xs text-gray-600">
-                        {finalFlightDetails.arrival.date}
-                      </div>
-                    </div>
-                  </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>
@@ -2073,11 +2324,21 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                         Select a saved passenger:
                       </div>
                       <div className="space-y-2">
-                        {savedPassengers.map((savedPassenger) => (
+                        {savedTravellers.map((savedPassenger: any) => (
                           <button
-                            key={savedPassenger.id}
+                            key={savedPassenger.travellerId}
                             onClick={() =>
-                              handleSelectSavedPassenger(savedPassenger)
+                              handleSelectSavedPassenger({
+                                id: savedPassenger.travellerId.toString(),
+                                firstName: savedPassenger.firstName,
+                                lastName: savedPassenger.lastName,
+                                gender: savedPassenger.gender,
+                                dateOfBirth: savedPassenger.dateOfBirth,
+                                numberOfFlights: savedPassenger.numberOfFlights,
+                                documents: savedPassenger.documents || [],
+                                email: savedPassenger.email,
+                                nationality: savedPassenger.nationality,
+                              })
                             }
                             className="w-full rounded-md border bg-white p-3 text-left transition-colors duration-200 hover:border-blue-200 hover:bg-blue-50"
                           >
@@ -2252,30 +2513,30 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                           >
                             Date of Birth *
                           </Label>
-                        <DateInput
-                          date={
-                            passenger.dateOfBirth
-                              ? new Date(passenger.dateOfBirth)
-                              : undefined
-                          }
-                          onDateChange={(date) => {
-                            const dateString = date
-                              ? date.toISOString().split("T")[0]
-                              : "";
-                            setPassenger({
-                              ...passenger,
-                              dateOfBirth: dateString,
-                            });
-                            validateField(dateString, "dateOfBirth");
-                          }}
-                          placeholder="Select date of birth"
-                          disableFuture={true}
-                          className={cn(
-                            validationErrors.dateOfBirth
-                              ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                              : "",
-                          )}
-                        />
+                          <DateInput
+                            date={
+                              passenger.dateOfBirth
+                                ? new Date(passenger.dateOfBirth)
+                                : undefined
+                            }
+                            onDateChange={(date) => {
+                              const dateString = date
+                                ? date.toISOString().split("T")[0]
+                                : "";
+                              setPassenger({
+                                ...passenger,
+                                dateOfBirth: dateString,
+                              });
+                              validateField(dateString, "dateOfBirth");
+                            }}
+                            placeholder="Select date of birth"
+                            disableFuture={true}
+                            className={cn(
+                              validationErrors.dateOfBirth
+                                ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                                : "",
+                            )}
+                          />
                           {validationErrors.dateOfBirth && (
                             <p className="mt-1 text-xs text-red-500">
                               Date of birth is required
@@ -2295,198 +2556,203 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                             >
                               Document Type *
                             </Label>
-                        <Select
-                          value={document?.type || ""}
-                          onValueChange={(value) => {
-                            setDocument({
-                              ...(document || {}),
-                              type: value,
-                            } as any);
-                            validateField(value, "documentType");
-                          }}
-                        >
-                          <SelectTrigger
-                            className={cn(
-                              "h-9",
-                              validationErrors.documentType
-                                ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                                : "",
+                            <Select
+                              value={document?.type || ""}
+                              onValueChange={(value) => {
+                                setDocument({
+                                  ...(document || {}),
+                                  type: value,
+                                } as any);
+                                validateField(value, "documentType");
+                              }}
+                            >
+                              <SelectTrigger
+                                className={cn(
+                                  "h-9",
+                                  validationErrors.documentType
+                                    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                                    : "",
+                                )}
+                              >
+                                <SelectValue placeholder="Select document type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Passport">
+                                  Passport
+                                </SelectItem>
+                                <SelectItem value="National ID">
+                                  National ID
+                                </SelectItem>
+                                <SelectItem value="Driver's License">
+                                  Driver&apos;s License
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {validationErrors.documentType && (
+                              <p className="mt-1 text-xs text-red-500">
+                                Document type is required
+                              </p>
                             )}
-                          >
-                            <SelectValue placeholder="Select document type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Passport">Passport</SelectItem>
-                            <SelectItem value="National ID">
-                              National ID
-                            </SelectItem>
-                            <SelectItem value="Driver's License">
-                              Driver&apos;s License
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {validationErrors.documentType && (
-                          <p className="mt-1 text-xs text-red-500">
-                            Document type is required
-                          </p>
-                        )}
-                      </div>
+                          </div>
 
-                      {/* Document Number */}
-                      <div className="relative">
-                        <Label
-                          htmlFor="documentNumber"
-                          className="mb-0.5 text-xs font-medium text-gray-700"
-                        >
-                          {document?.type || "Document"} Number *
-                        </Label>
-                        <Input
-                          id="documentNumber"
-                          type="text"
-                          value={document?.number || ""}
-                          onChange={(e) => {
-                            setDocument({
-                              ...(document || {}),
-                              number: e.target.value,
-                            } as any);
-                            validateField(e.target.value, "documentNumber");
-                          }}
-                          className={cn(
-                            "w-full rounded-md border px-2 py-1.5 font-mono text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500",
-                            validationErrors.documentNumber
-                              ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                              : "",
-                          )}
-                          placeholder="Enter document number"
-                        />
-                        {validationErrors.documentNumber && (
-                          <p className="mt-1 text-xs text-red-500">
-                            Document number is required
-                          </p>
-                        )}
-                      </div>
+                          {/* Document Number */}
+                          <div className="relative">
+                            <Label
+                              htmlFor="documentNumber"
+                              className="mb-0.5 text-xs font-medium text-gray-700"
+                            >
+                              {document?.type || "Document"} Number *
+                            </Label>
+                            <Input
+                              id="documentNumber"
+                              type="text"
+                              value={document?.number || ""}
+                              onChange={(e) => {
+                                setDocument({
+                                  ...(document || {}),
+                                  number: e.target.value,
+                                } as any);
+                                validateField(e.target.value, "documentNumber");
+                              }}
+                              className={cn(
+                                "w-full rounded-md border px-2 py-1.5 font-mono text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500",
+                                validationErrors.documentNumber
+                                  ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                                  : "",
+                              )}
+                              placeholder="Enter document number"
+                            />
+                            {validationErrors.documentNumber && (
+                              <p className="mt-1 text-xs text-red-500">
+                                Document number is required
+                              </p>
+                            )}
+                          </div>
 
-                      {/* Issuing Country */}
-                      <div>
-                        <Label
-                          htmlFor="issuingCountry"
-                          className="mb-0.5 text-xs font-medium text-gray-700"
-                        >
-                          Issuing Country *
-                        </Label>
-                        <CountryCombobox
-                          value={document?.issuingCountry || ""}
-                          onValueChange={(value) => {
-                            setDocument({
-                              ...(document || {}),
-                              issuingCountry: value,
-                            } as any);
-                            validateField(value, "issuingCountry");
-                          }}
-                          placeholder="Select issuing country"
-                          className={cn(
-                            validationErrors.issuingCountry
-                              ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                              : "",
-                          )}
-                        />
-                        {validationErrors.issuingCountry && (
-                          <p className="mt-1 text-xs text-red-500">
-                            Issuing country is required
-                          </p>
-                        )}
-                      </div>
+                          {/* Issuing Country */}
+                          <div>
+                            <Label
+                              htmlFor="issuingCountry"
+                              className="mb-0.5 text-xs font-medium text-gray-700"
+                            >
+                              Issuing Country *
+                            </Label>
+                            <CountryCombobox
+                              value={document?.issuingCountry || ""}
+                              onValueChange={(value) => {
+                                setDocument({
+                                  ...(document || {}),
+                                  issuingCountry: value,
+                                } as any);
+                                validateField(value, "issuingCountry");
+                              }}
+                              placeholder="Select issuing country"
+                              className={cn(
+                                validationErrors.issuingCountry
+                                  ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                                  : "",
+                              )}
+                            />
+                            {validationErrors.issuingCountry && (
+                              <p className="mt-1 text-xs text-red-500">
+                                Issuing country is required
+                              </p>
+                            )}
+                          </div>
 
-                      {/* Nationality */}
-                      <div>
-                        <Label
-                          htmlFor="nationality"
-                          className="mb-0.5 text-xs font-medium text-gray-700"
-                        >
-                          Nationality *
-                        </Label>
-                        <CountryCombobox
-                          value={document?.nationality || ""}
-                          onValueChange={(value) => {
-                            setDocument({
-                              ...(document || {}),
-                              nationality: value,
-                            } as any);
-                            validateField(value, "nationality");
-                          }}
-                          placeholder="Select nationality"
-                          className={cn(
-                            validationErrors.nationality
-                              ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                              : "",
-                          )}
-                        />
-                        {validationErrors.nationality && (
-                          <p className="mt-1 text-xs text-red-500">
-                            Nationality is required
-                          </p>
-                        )}
-                      </div>
+                          {/* Nationality */}
+                          <div>
+                            <Label
+                              htmlFor="nationality"
+                              className="mb-0.5 text-xs font-medium text-gray-700"
+                            >
+                              Nationality *
+                            </Label>
+                            <CountryCombobox
+                              value={document?.nationality || ""}
+                              onValueChange={(value) => {
+                                setDocument({
+                                  ...(document || {}),
+                                  nationality: value,
+                                } as any);
+                                validateField(value, "nationality");
+                              }}
+                              placeholder="Select nationality"
+                              className={cn(
+                                validationErrors.nationality
+                                  ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                                  : "",
+                              )}
+                            />
+                            {validationErrors.nationality && (
+                              <p className="mt-1 text-xs text-red-500">
+                                Nationality is required
+                              </p>
+                            )}
+                          </div>
 
-                      {/* Expiry Date */}
-                      <div className="relative">
-                        <Label
-                          htmlFor="expiryDate"
-                          className="mb-0.5 text-xs font-medium text-gray-700"
-                        >
-                          Expiry Date *
-                        </Label>
-                        <DateInput
-                          date={
-                            document?.expiryDate
-                              ? new Date(document.expiryDate)
-                              : undefined
-                          }
-                          onDateChange={(date) => {
-                            const dateString = date
-                              ? date.toISOString().split("T")[0]
-                              : "";
-                            setDocument({
-                              ...(document || {}),
-                              expiryDate: dateString,
-                            } as any);
-                            validateField(dateString, "expiryDate");
-                          }}
-                          placeholder="Select expiry date"
-                          disablePast={true}
-                          className={cn(
-                            validationErrors.expiryDate
-                              ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                              : "",
-                          )}
-                        />
-                        {validationErrors.expiryDate && (
-                          <p className="mt-1 text-xs text-red-500">
-                            Expiry date is required
-                          </p>
-                        )}
-                        {/* Expiry Warning */}
-                        {(() => {
-                          if (!document?.expiryDate) return null;
-                          const expiryDate = new Date(document.expiryDate);
-                          const today = new Date();
-                          const daysUntilExpiry = Math.ceil(
-                            (expiryDate.getTime() - today.getTime()) /
-                              (1000 * 3600 * 24),
-                          );
+                          {/* Expiry Date */}
+                          <div className="relative">
+                            <Label
+                              htmlFor="expiryDate"
+                              className="mb-0.5 text-xs font-medium text-gray-700"
+                            >
+                              Expiry Date *
+                            </Label>
+                            <DateInput
+                              date={
+                                document?.expiryDate
+                                  ? new Date(document.expiryDate)
+                                  : undefined
+                              }
+                              onDateChange={(date) => {
+                                const dateString = date
+                                  ? date.toISOString().split("T")[0]
+                                  : "";
+                                setDocument({
+                                  ...(document || {}),
+                                  expiryDate: dateString,
+                                } as any);
+                                validateField(dateString, "expiryDate");
+                              }}
+                              placeholder="Select expiry date"
+                              disablePast={true}
+                              className={cn(
+                                validationErrors.expiryDate
+                                  ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                                  : "",
+                              )}
+                            />
+                            {validationErrors.expiryDate && (
+                              <p className="mt-1 text-xs text-red-500">
+                                Expiry date is required
+                              </p>
+                            )}
+                            {/* Expiry Warning */}
+                            {(() => {
+                              if (!document?.expiryDate) return null;
+                              const expiryDate = new Date(document.expiryDate);
+                              const today = new Date();
+                              const daysUntilExpiry = Math.ceil(
+                                (expiryDate.getTime() - today.getTime()) /
+                                  (1000 * 3600 * 24),
+                              );
 
-                          if (daysUntilExpiry < 180 && daysUntilExpiry > 0) {
-                            return (
-                              <div className="mt-2">
-                                <div className="flex items-center space-x-1 rounded-full bg-red-100 px-2 py-1 text-xs text-red-700">
-                                  <AlertTriangle className="h-3 w-3" />
-                                  <span>Expires soon</span>
-                                </div>
-                              </div>
-                            );
-                          }
-                          return null;
-                        })()}
+                              if (
+                                daysUntilExpiry < 180 &&
+                                daysUntilExpiry > 0
+                              ) {
+                                return (
+                                  <div className="mt-2">
+                                    <div className="flex items-center space-x-1 rounded-full bg-red-100 px-2 py-1 text-xs text-red-700">
+                                      <AlertTriangle className="h-3 w-3" />
+                                      <span>Expires soon</span>
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })()}
                           </div>
                         </>
                       )}
@@ -2509,92 +2775,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
 
           {/* Right Column - Payment Info and Actions */}
           <div className="space-y-3 lg:sticky lg:top-4 lg:self-start">
-            {/* Seat Allocation - Only show if seat data is available */}
-            {showSeatComponent && finalSeatAllocation && (
-              <div className="rounded-lg bg-white p-4 shadow">
-                <div className="mb-4 flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <h2 className="text-lg font-semibold">Seat Allocation</h2>
-                    {isSeatSelected && (
-                      <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
-                        {finalSeatAllocation.seatNumber}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Toggle Switch */}
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-600">Select seat</span>
-                    <button
-                      onClick={() => setIsSeatSelected(!isSeatSelected)}
-                      className={cn(
-                        "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:outline-none",
-                        isSeatSelected ? "bg-green-600" : "bg-gray-300",
-                      )}
-                      role="switch"
-                      aria-checked={isSeatSelected}
-                      aria-label="Toggle seat selection"
-                    >
-                      <span
-                        className={cn(
-                          "inline-block h-4 w-4 transform rounded-full border border-gray-200 shadow-sm transition-transform duration-200",
-                          isSeatSelected
-                            ? "translate-x-6 bg-white"
-                            : "translate-x-1 bg-white",
-                        )}
-                      />
-                    </button>
-                  </div>
-                </div>
-                {/* Seat Card */}
-                <div
-                  className={cn(
-                    "rounded-lg border p-4 transition-colors duration-200",
-                    isSeatSelected
-                      ? "border-green-200 bg-green-50"
-                      : "border-gray-200 bg-gray-50",
-                  )}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="mb-2 flex items-center space-x-2">
-                        <MapPin className="h-4 w-4 text-gray-600" />
-                        <span className="text-sm font-medium">
-                          {isSeatSelected
-                            ? `Seat ${finalSeatAllocation.seatNumber}`
-                            : "No seat selected"}
-                        </span>
-                      </div>
-                      {isSeatSelected && (
-                        <p className="text-xs text-gray-600">
-                          {finalSeatAllocation.location}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="text-right">
-                      <div className="text-lg font-semibold">
-                        {isSeatSelected
-                          ? `${finalPaymentSummary.currency === "INR" ? "₹" : "$"}${finalSeatAllocation.price.toFixed(2)}`
-                          : `${finalPaymentSummary.currency === "INR" ? "₹" : "$"}0.00`}
-                      </div>
-                      <div className="text-xs text-gray-600">
-                        {isSeatSelected ? "Seat fee" : "No fee"}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {!isSeatSelected && (
-                  <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-3">
-                    <p className="text-sm text-blue-700">
-                      💡 Select a seat to ensure you get your preferred location
-                      on the aircraft.
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Seat Allocation removed for this widget */}
 
             {/* Payment Summary */}
             <div className="rounded-lg bg-white p-4 shadow">
@@ -2605,17 +2786,32 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <h2 className="text-lg font-semibold">Payment Summary</h2>
-                    {!isPaymentExpanded && (
-                      <div className="mt-1 text-sm text-gray-600">
-                        Total: {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                        {calculateTotal().toFixed(2)} {finalPaymentSummary.currency}
-                        {isRefundable !== null && (
-                          <span className={`ml-2 ${isRefundable ? 'text-green-600' : 'text-red-600'}`}>
-                            • {isRefundable ? 'Refundable' : 'Non-refundable'}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                    {!isPaymentExpanded &&
+                      (() => {
+                        const paymentSummary = getPaymentSummary();
+                        if (!paymentSummary)
+                          return (
+                            <div className="mt-1 text-sm text-gray-500">
+                              No payment details available
+                            </div>
+                          );
+                        return (
+                          <div className="mt-1 text-sm text-gray-600">
+                            Total:{" "}
+                            {paymentSummary.currency === "INR" ? "₹" : "$"}
+                            {calculateTotal().toFixed(2)}{" "}
+                            {paymentSummary.currency}
+                            {isRefundable !== null && (
+                              <span
+                                className={`ml-2 ${isRefundable ? "text-green-600" : "text-red-600"}`}
+                              >
+                                •{" "}
+                                {isRefundable ? "Refundable" : "Non-refundable"}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                   </div>
                   <div className="ml-4">
                     {isPaymentExpanded ? (
@@ -2627,92 +2823,95 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 </div>
               </div>
 
-              {isPaymentExpanded && (
-                <div className="mt-4 space-y-2 border-t pt-4">
-                  {/* Base Fare */}
-                  <div className="flex justify-between">
-                    <span className="text-xs text-gray-600">Base fare</span>
-                    <span className="text-xs font-medium">
-                      {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                      {finalPaymentSummary.baseFare.toFixed(2)}
-                    </span>
-                  </div>
+              {isPaymentExpanded &&
+                (() => {
+                  const paymentSummary = getPaymentSummary();
+                  if (!paymentSummary)
+                    return (
+                      <div className="mt-4 border-t pt-4 text-sm text-gray-500">
+                        No payment details available
+                      </div>
+                    );
+                  return (
+                    <div className="mt-4 space-y-2 border-t pt-4">
+                      {/* Base Fare */}
+                      <div className="flex justify-between">
+                        <span className="text-xs text-gray-600">Base fare</span>
+                        <span className="text-xs font-medium">
+                          {paymentSummary.currency === "INR" ? "₹" : "$"}
+                          {paymentSummary.baseFare.toFixed(2)}
+                        </span>
+                      </div>
 
-                  {/* Taxes */}
-                  <div className="flex justify-between">
-                    <span className="text-xs text-gray-600">Taxes & fees</span>
-                    <span className="text-xs font-medium">
-                      {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                      {finalPaymentSummary.taxes.toFixed(2)}
-                    </span>
-                  </div>
+                      {/* Taxes */}
+                      <div className="flex justify-between">
+                        <span className="text-xs text-gray-600">
+                          Taxes & fees
+                        </span>
+                        <span className="text-xs font-medium">
+                          {paymentSummary.currency === "INR" ? "₹" : "$"}
+                          {paymentSummary.taxes.toFixed(2)}
+                        </span>
+                      </div>
 
-                  {/* Service Fees */}
-                  <div className="flex justify-between">
-                    <span className="text-xs text-gray-600">Service fees</span>
-                    <span className="text-xs font-medium">
-                      {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                      {finalPaymentSummary.fees.toFixed(2)}
-                    </span>
-                  </div>
+                      {/* Service Fees */}
+                      <div className="flex justify-between">
+                        <span className="text-xs text-gray-600">
+                          Service fees
+                        </span>
+                        <span className="text-xs font-medium">
+                          {paymentSummary.currency === "INR" ? "₹" : "$"}
+                          {paymentSummary.fees.toFixed(2)}
+                        </span>
+                      </div>
 
-                  {/* Seat Selection - Only show if seat component is enabled */}
-                  {showSeatComponent && finalSeatAllocation && (
-                    <div className="flex justify-between">
-                      <span className="text-xs text-gray-600">
-                        Seat selection
-                      </span>
-                      <span className="text-xs font-medium">
-                        {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                        {isSeatSelected
-                          ? finalSeatAllocation.price.toFixed(2)
-                          : "0.00"}
-                      </span>
+                      {/* Discount */}
+                      {paymentSummary.discount > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-xs text-gray-600">
+                            Discount
+                          </span>
+                          <span className="text-xs font-medium text-green-600">
+                            -{paymentSummary.currency === "INR" ? "₹" : "$"}
+                            {paymentSummary.discount.toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Refundable Status */}
+                      {isRefundable !== null && (
+                        <div className="flex justify-between">
+                          <span className="text-xs text-gray-600">
+                            Ticket Status
+                          </span>
+                          <span
+                            className={`text-xs font-medium ${isRefundable ? "text-green-600" : "text-red-600"}`}
+                          >
+                            {isRefundable ? "Refundable" : "Non-refundable"}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Total */}
+                      <div className="mt-2 border-t pt-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm font-semibold">Total</span>
+                          <span className="text-sm font-bold">
+                            {paymentSummary.currency === "INR" ? "₹" : "$"}
+                            {calculateTotal().toFixed(2)}{" "}
+                            {paymentSummary.currency}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  )}
-
-                  {/* Discount */}
-                  {finalPaymentSummary.discount > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-xs text-gray-600">Discount</span>
-                      <span className="text-xs font-medium text-green-600">
-                        -{finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                        {finalPaymentSummary.discount.toFixed(2)}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Refundable Status */}
-                  {isRefundable !== null && (
-                    <div className="flex justify-between">
-                      <span className="text-xs text-gray-600">Ticket Status</span>
-                      <span className={`text-xs font-medium ${isRefundable ? 'text-green-600' : 'text-red-600'}`}>
-                        {isRefundable ? 'Refundable' : 'Non-refundable'}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Total */}
-                  <div className="mt-2 border-t pt-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm font-semibold">Total</span>
-                      <span className="text-sm font-bold">
-                        {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                        {calculateTotal().toFixed(2)}{" "}
-                        {finalPaymentSummary.currency}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
+                  );
+                })()}
             </div>
-
-
           </div>
         </div>
 
         {/* Mobile/Tablet Single Column Layout */}
-        <div className="space-y-3 lg:hidden pb-4">
+        <div className="space-y-3 pb-4 lg:hidden">
           {/* Flight Details */}
           <div className="rounded-lg bg-white p-4 shadow">
             <div
@@ -2727,34 +2926,34 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                     <div className="flex items-center space-x-3">
                       <div className="text-center">
                         <div className="text-base font-bold">
-                          {finalFlightDetails.departure.code}
+                          {getFlightDetails()?.departure.code}
                         </div>
                         <div className="text-base font-bold">
-                          {finalFlightDetails.departure.time}
+                          {getFlightDetails()?.departure.time}
                         </div>
                       </div>
                       <ArrowRight className="h-4 w-4 text-gray-400" />
                       <div className="text-center">
                         <div className="text-base font-bold">
-                          {finalFlightDetails.arrival.code}
+                          {getFlightDetails()?.arrival.code}
                         </div>
                         <div className="text-base font-bold">
-                          {finalFlightDetails.arrival.time}
+                          {getFlightDetails()?.arrival.time}
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
                       <AirlineLogo
-                        airlineIata={finalFlightDetails.airline.iataCode || ""}
-                        airlineName={finalFlightDetails.airline.name}
+                        airlineIata={getFlightDetails()?.airline.iataCode || ""}
+                        airlineName={getFlightDetails()?.airline.name || ""}
                         size="sm"
                       />
                       <div className="text-sm text-gray-700">
                         <div className="font-medium">
-                          {finalFlightDetails.airline.name}
+                          {getFlightDetails()?.airline.name}
                         </div>
                         <div className="text-gray-600">
-                          {finalFlightDetails.airline.cabinClass}
+                          {getFlightDetails()?.airline.cabinClass}
                         </div>
                       </div>
                     </div>
@@ -2765,34 +2964,34 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                     <div className="mb-3 flex items-center justify-between">
                       <div className="text-center">
                         <div className="text-sm font-bold">
-                          {finalFlightDetails.departure.code}
+                          {getFlightDetails()?.departure.code}
                         </div>
                         <div className="text-sm font-bold">
-                          {finalFlightDetails.departure.time}
+                          {getFlightDetails()?.departure.time}
                         </div>
                       </div>
                       <ArrowRight className="h-4 w-4 text-gray-400" />
                       <div className="text-center">
                         <div className="text-sm font-bold">
-                          {finalFlightDetails.arrival.code}
+                          {getFlightDetails()?.arrival.code}
                         </div>
                         <div className="text-sm font-bold">
-                          {finalFlightDetails.arrival.time}
+                          {getFlightDetails()?.arrival.time}
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center justify-center space-x-3">
                       <AirlineLogo
-                        airlineIata={finalFlightDetails.airline.iataCode || ""}
-                        airlineName={finalFlightDetails.airline.name}
+                        airlineIata={getFlightDetails()?.airline.iataCode || ""}
+                        airlineName={getFlightDetails()?.airline.name || ""}
                         size="sm"
                       />
                       <div className="text-center">
                         <div className="text-sm font-medium text-gray-700">
-                          {finalFlightDetails.airline.name}
+                          {getFlightDetails()?.airline.name}
                         </div>
                         <div className="text-xs text-gray-600">
-                          {finalFlightDetails.airline.cabinClass}
+                          {getFlightDetails()?.airline.cabinClass}
                         </div>
                       </div>
                     </div>
@@ -2815,12 +3014,23 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
               <div className="mt-3 border-t pt-4">
                 {/* Additional Flight Info */}
                 <div className="mb-4">
-                  <div className="text-xs text-gray-600">
-                    Aircraft: {finalFlightDetails.airline.aircraftType || "Not specified"}
-                  </div>
-                  <div className="text-xs text-gray-600">
-                    Flight: {finalFlightDetails.airline.flightNumber}
-                  </div>
+                  {(() => {
+                    const fd = getFlightDetails();
+                    return fd ? (
+                      <>
+                        <div className="text-xs text-gray-600">
+                          Aircraft: {fd.airline.aircraftType || "Not specified"}
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          Flight: {fd.airline.flightNumber}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-xs text-gray-500">
+                        No flight details available
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Route Details */}
@@ -2828,21 +3038,30 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                   {/* Departure */}
                   <div className="text-left">
                     <div className="mb-1 text-sm text-gray-600">Departure</div>
-                    <div className="text-sm font-bold">
-                      {finalFlightDetails.departure.time}
-                    </div>
-                    <div className="text-sm text-gray-900">
-                      {finalFlightDetails.departure.city}
-                    </div>
-                    <div className="text-xs text-gray-600">
-                      {finalFlightDetails.departure.date}
-                    </div>
+                    {(() => {
+                      const fd = getFlightDetails();
+                      return fd ? (
+                        <>
+                          <div className="text-sm font-bold">
+                            {fd.departure.time}
+                          </div>
+                          <div className="text-sm text-gray-900">
+                            {fd.departure.city}
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            {fd.departure.date}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-xs text-gray-500">N/A</div>
+                      );
+                    })()}
                   </div>
 
                   {/* Duration Indicator */}
                   <div className="flex flex-col items-center">
                     <div className="mb-1 text-xs text-gray-600">
-                      {finalFlightDetails.duration}
+                      {getFlightDetails()?.duration}
                     </div>
                     <div className="flex w-full items-center">
                       <div className="h-px w-20 bg-gray-300"></div>
@@ -2854,15 +3073,24 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                   {/* Arrival */}
                   <div className="text-right">
                     <div className="mb-1 text-sm text-gray-600">Arrival</div>
-                    <div className="text-sm font-bold">
-                      {finalFlightDetails.arrival.time}
-                    </div>
-                    <div className="text-sm text-gray-900">
-                      {finalFlightDetails.arrival.city}
-                    </div>
-                    <div className="text-xs text-gray-600">
-                      {finalFlightDetails.arrival.date}
-                    </div>
+                    {(() => {
+                      const fd = getFlightDetails();
+                      return fd ? (
+                        <>
+                          <div className="text-sm font-bold">
+                            {fd.arrival.time}
+                          </div>
+                          <div className="text-sm text-gray-900">
+                            {fd.arrival.city}
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            {fd.arrival.date}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-xs text-gray-500">N/A</div>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
@@ -3183,30 +3411,30 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                         >
                           Date of Birth *
                         </Label>
-                      <DateInput
-                        date={
-                          passenger.dateOfBirth
-                            ? new Date(passenger.dateOfBirth)
-                            : undefined
-                        }
-                        onDateChange={(date) => {
-                          const dateString = date
-                            ? date.toISOString().split("T")[0]
-                            : "";
-                          setPassenger({
-                            ...passenger,
-                            dateOfBirth: dateString,
-                          });
-                          validateField(dateString, "dateOfBirth");
-                        }}
-                        placeholder="Select date of birth"
-                        disableFuture={true}
-                        className={cn(
-                          validationErrors.dateOfBirth
-                            ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                            : "",
-                        )}
-                      />
+                        <DateInput
+                          date={
+                            passenger.dateOfBirth
+                              ? new Date(passenger.dateOfBirth)
+                              : undefined
+                          }
+                          onDateChange={(date) => {
+                            const dateString = date
+                              ? date.toISOString().split("T")[0]
+                              : "";
+                            setPassenger({
+                              ...passenger,
+                              dateOfBirth: dateString,
+                            });
+                            validateField(dateString, "dateOfBirth");
+                          }}
+                          placeholder="Select date of birth"
+                          disableFuture={true}
+                          className={cn(
+                            validationErrors.dateOfBirth
+                              ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                              : "",
+                          )}
+                        />
                         {validationErrors.dateOfBirth && (
                           <p className="mt-1 text-xs text-red-500">
                             Date of birth is required
@@ -3224,38 +3452,38 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                             htmlFor="documentType-mobile"
                             className="mb-0.5 text-xs font-medium text-gray-700"
                           >
-                        Document Type *
-                      </Label>
-                      <Select
-                        value={document?.type || ""}
-                        onValueChange={(value) => {
-                          setDocument({
-                            ...(document || {}),
-                            type: value,
-                          } as any);
-                          validateField(value, "documentType");
-                        }}
-                      >
-                        <SelectTrigger
-                          className={cn(
-                            "h-9",
-                            validationErrors.documentType
-                              ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                              : "",
-                          )}
-                        >
-                          <SelectValue placeholder="Select document type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Passport">Passport</SelectItem>
-                          <SelectItem value="National ID">
-                            National ID
-                          </SelectItem>
-                          <SelectItem value="Driver's License">
-                            Driver&apos;s License
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
+                            Document Type *
+                          </Label>
+                          <Select
+                            value={document?.type || ""}
+                            onValueChange={(value) => {
+                              setDocument({
+                                ...(document || {}),
+                                type: value,
+                              } as any);
+                              validateField(value, "documentType");
+                            }}
+                          >
+                            <SelectTrigger
+                              className={cn(
+                                "h-9",
+                                validationErrors.documentType
+                                  ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                                  : "",
+                              )}
+                            >
+                              <SelectValue placeholder="Select document type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Passport">Passport</SelectItem>
+                              <SelectItem value="National ID">
+                                National ID
+                              </SelectItem>
+                              <SelectItem value="Driver's License">
+                                Driver&apos;s License
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
                           {validationErrors.documentType && (
                             <p className="mt-1 text-xs text-red-500">
                               Document type is required
@@ -3280,93 +3508,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
             </div>
           )}
 
-          {/* Seat Allocation - Only show if seat data is available */}
-          {showSeatComponent && finalSeatAllocation && (
-            <div className="rounded-lg bg-white p-4 shadow">
-              <div className="mb-4 flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <h2 className="text-lg font-semibold">Seat Allocation</h2>
-                  {isSeatSelected && (
-                    <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
-                      {finalSeatAllocation.seatNumber}
-                    </span>
-                  )}
-                </div>
-
-                {/* Toggle Switch */}
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-600">Select seat</span>
-                  <button
-                    onClick={() => setIsSeatSelected(!isSeatSelected)}
-                    className={cn(
-                      "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:outline-none",
-                      isSeatSelected ? "bg-green-600" : "bg-gray-300",
-                    )}
-                    role="switch"
-                    aria-checked={isSeatSelected}
-                    aria-label="Toggle seat selection"
-                  >
-                    <span
-                      className={cn(
-                        "inline-block h-4 w-4 transform rounded-full border border-gray-200 shadow-sm transition-transform duration-200",
-                        isSeatSelected
-                          ? "translate-x-6 bg-white"
-                          : "translate-x-1 bg-white",
-                      )}
-                    />
-                  </button>
-                </div>
-              </div>
-
-              {/* Seat Card */}
-              <div
-                className={cn(
-                  "rounded-lg border p-4 transition-colors duration-200",
-                  isSeatSelected
-                    ? "border-green-200 bg-green-50"
-                    : "border-gray-200 bg-gray-50",
-                )}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="mb-2 flex items-center space-x-2">
-                      <MapPin className="h-4 w-4 text-gray-600" />
-                      <span className="text-sm font-medium">
-                        {isSeatSelected
-                          ? `Seat ${finalSeatAllocation.seatNumber}`
-                          : "No seat selected"}
-                      </span>
-                    </div>
-                    {isSeatSelected && (
-                      <p className="text-xs text-gray-600">
-                        {finalSeatAllocation.location}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="text-right">
-                    <div className="text-lg font-semibold">
-                      {isSeatSelected
-                        ? `${finalPaymentSummary.currency === "INR" ? "₹" : "$"}${finalSeatAllocation.price.toFixed(2)}`
-                        : `${finalPaymentSummary.currency === "INR" ? "₹" : "$"}0.00`}
-                    </div>
-                    <div className="text-xs text-gray-600">
-                      {isSeatSelected ? "Seat fee" : "No fee"}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {!isSeatSelected && (
-                <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-3">
-                  <p className="text-sm text-blue-700">
-                    💡 Select a seat to ensure you get your preferred location
-                    on the aircraft.
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
+          {/* Seat Allocation removed */}
 
           {/* Payment Summary */}
           <div className="rounded-lg bg-white p-4 shadow">
@@ -3377,17 +3519,29 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <h2 className="text-lg font-semibold">Payment Summary</h2>
-                  {!isPaymentExpanded && (
-                    <div className="mt-1 text-sm text-gray-600">
-                      Total: {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                      {calculateTotal().toFixed(2)} {finalPaymentSummary.currency}
-                      {isRefundable !== null && (
-                        <span className={`ml-2 ${isRefundable ? 'text-green-600' : 'text-red-600'}`}>
-                          • {isRefundable ? 'Refundable' : 'Non-refundable'}
-                        </span>
-                      )}
-                    </div>
-                  )}
+                  {!isPaymentExpanded &&
+                    (() => {
+                      const ps = getPaymentSummary();
+                      if (!ps)
+                        return (
+                          <div className="mt-1 text-sm text-gray-500">
+                            No payment details available
+                          </div>
+                        );
+                      return (
+                        <div className="mt-1 text-sm text-gray-600">
+                          Total: {ps.currency === "INR" ? "₹" : "$"}
+                          {calculateTotal().toFixed(2)} {ps.currency}
+                          {isRefundable !== null && (
+                            <span
+                              className={`ml-2 ${isRefundable ? "text-green-600" : "text-red-600"}`}
+                            >
+                              • {isRefundable ? "Refundable" : "Non-refundable"}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                 </div>
                 <div className="ml-4">
                   {isPaymentExpanded ? (
@@ -3405,8 +3559,8 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 <div className="flex justify-between">
                   <span className="text-xs text-gray-600">Base fare</span>
                   <span className="text-xs font-medium">
-                    {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                    {finalPaymentSummary.baseFare.toFixed(2)}
+                    {getPaymentSummary()?.currency === "INR" ? "₹" : "$"}
+                    {(getPaymentSummary()?.baseFare ?? 0).toFixed(2)}
                   </span>
                 </div>
 
@@ -3414,8 +3568,8 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 <div className="flex justify-between">
                   <span className="text-xs text-gray-600">Taxes & fees</span>
                   <span className="text-xs font-medium">
-                    {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                    {finalPaymentSummary.taxes.toFixed(2)}
+                    {getPaymentSummary()?.currency === "INR" ? "₹" : "$"}
+                    {(getPaymentSummary()?.taxes ?? 0).toFixed(2)}
                   </span>
                 </div>
 
@@ -3423,33 +3577,20 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 <div className="flex justify-between">
                   <span className="text-xs text-gray-600">Service fees</span>
                   <span className="text-xs font-medium">
-                    {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                    {finalPaymentSummary.fees.toFixed(2)}
+                    {getPaymentSummary()?.currency === "INR" ? "₹" : "$"}
+                    {(getPaymentSummary()?.fees ?? 0).toFixed(2)}
                   </span>
                 </div>
 
-                {/* Seat Selection - Only show if seat component is enabled */}
-                {showSeatComponent && finalSeatAllocation && (
-                  <div className="flex justify-between">
-                    <span className="text-xs text-gray-600">
-                      Seat selection
-                    </span>
-                    <span className="text-xs font-medium">
-                      {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                      {isSeatSelected
-                        ? finalSeatAllocation.price.toFixed(2)
-                        : "0.00"}
-                    </span>
-                  </div>
-                )}
+                {/* Seat selection removed */}
 
                 {/* Discount */}
-                {finalPaymentSummary.discount > 0 && (
+                {(getPaymentSummary()?.discount ?? 0) > 0 && (
                   <div className="flex justify-between">
                     <span className="text-xs text-gray-600">Discount</span>
                     <span className="text-xs font-medium text-green-600">
-                      -{finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                      {finalPaymentSummary.discount.toFixed(2)}
+                      -{getPaymentSummary()?.currency === "INR" ? "₹" : "$"}
+                      {(getPaymentSummary()?.discount ?? 0).toFixed(2)}
                     </span>
                   </div>
                 )}
@@ -3458,8 +3599,10 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 {isRefundable !== null && (
                   <div className="flex justify-between">
                     <span className="text-xs text-gray-600">Ticket Status</span>
-                    <span className={`text-xs font-medium ${isRefundable ? 'text-green-600' : 'text-red-600'}`}>
-                      {isRefundable ? 'Refundable' : 'Non-refundable'}
+                    <span
+                      className={`text-xs font-medium ${isRefundable ? "text-green-600" : "text-red-600"}`}
+                    >
+                      {isRefundable ? "Refundable" : "Non-refundable"}
                     </span>
                   </div>
                 )}
@@ -3469,9 +3612,9 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                   <div className="flex justify-between">
                     <span className="text-sm font-semibold">Total</span>
                     <span className="text-sm font-bold">
-                      {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
+                      {getPaymentSummary()?.currency === "INR" ? "₹" : "$"}
                       {calculateTotal().toFixed(2)}{" "}
-                      {finalPaymentSummary.currency}
+                      {getPaymentSummary()?.currency}
                     </span>
                   </div>
                 </div>
@@ -3489,7 +3632,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
               className={cn(
                 "w-full py-3 text-base font-medium",
                 isFormValid && !isSubmitting
-                  ? "bg-blue-600 hover:bg-blue-700 text-white"
+                  ? "bg-blue-600 text-white hover:bg-blue-700"
                   : "cursor-not-allowed bg-gray-400 text-white",
               )}
             >
@@ -3503,14 +3646,26 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
               )}
             </Button>
           ) : (
-            <div className="text-center py-4">
+            <div className="py-4 text-center">
               <div className="flex items-center justify-center space-x-2 text-green-600">
-                <div className="h-5 w-5 rounded-full bg-green-100 flex items-center justify-center">
-                  <svg className="h-3 w-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-green-100">
+                  <svg
+                    className="h-3 w-3 text-green-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                 </div>
-                <span className="text-sm font-medium">Booking submitted successfully!</span>
+                <span className="text-sm font-medium">
+                  Booking submitted successfully!
+                </span>
               </div>
             </div>
           )}

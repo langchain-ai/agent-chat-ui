@@ -10,9 +10,13 @@ import { Button } from "@/components/ui/button";
 import { FlyoLogoSVG } from "@/components/icons/langgraph";
 import { motion } from "framer-motion";
 import { TabsLayout } from "../thread/TabsLayout";
+import { useSearchParams, useRouter as useNextRouter } from "next/navigation";
+import { useStreamContext } from "@/providers/Stream";
 
 export const Navbar = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const stream = useStreamContext();
 
   const [chatHistoryOpen, setChatHistoryOpen] = useQueryState(
     "chatHistoryOpen",
@@ -60,9 +64,19 @@ export const Navbar = () => {
         <Button
           size="lg"
           className="p-2"
-          
           variant="ghost"
-          onClick={() => router.push("/")}
+          onClick={() => {
+            // Clear threadId in URL and reset in-memory stream state
+            try {
+              stream?.stop?.();
+              stream?.clearInMemoryValues?.();
+            } catch {}
+            const params = new URLSearchParams(
+              searchParams?.toString?.() ?? "",
+            );
+            params.delete("threadId");
+            router.push(`/${params.toString() ? `?${params.toString()}` : ""}`);
+          }}
         >
           <SquarePen className="size-6" />
         </Button>
