@@ -61,11 +61,13 @@ export class Store {
   }
 
   _deriveInterruptId(interruptValue) {
-    const supplied = interruptValue?.interrupt_id || interruptValue?.id;
+    // Unwrap array payloads (LangGraph can send a list of interrupt objects)
+    const iv = Array.isArray(interruptValue) ? (interruptValue[0] ?? null) : interruptValue;
+    const supplied = iv?.interrupt_id || iv?.id;
     if (supplied) return String(supplied);
     // Derive from widget payload or entire value to ensure stability across duplicate events
     try {
-      const core = interruptValue?.value?.widget ?? interruptValue?.widget ?? interruptValue?.value ?? interruptValue;
+      const core = iv?.value?.widget ?? iv?.widget ?? iv?.value?.value?.widget ?? iv?.value ?? iv;
       const json = JSON.stringify(core);
       return `auto-${hashString(json)}`;
     } catch {
@@ -235,7 +237,8 @@ export class Store {
 
   applyInterrupt(threadId, interruptValue) {
     const state = this._ensure(threadId);
-    if (!interruptValue) return;
+    if (!interruptValue || (Array.isArray(interruptValue) && !interruptValue[0])) return;
+    const iv = Array.isArray(interruptValue) ? interruptValue[0] : interruptValue;
     // Determine interrupt id (stable)
     const interruptId = this._deriveInterruptId(interruptValue);
     const blockId = this._blockIdFor("interrupt", interruptId);
@@ -252,7 +255,7 @@ export class Store {
       });
       // compute anchor: after attachment UI if exists, else after last message, else append
       let afterBlockId = null;
-      const attachmentId = interruptValue?.value?.metadata?.attachmentId || interruptValue?.widget?.args?.attachmentId;
+      const attachmentId = iv?.value?.metadata?.attachmentId || iv?.widget?.args?.attachmentId || iv?.value?.value?.widget?.args?.attachmentId;
       if (attachmentId) {
         const uiBlockId = this._blockIdFor("ui", attachmentId);
         if (state.blocksById.has(uiBlockId)) afterBlockId = uiBlockId;
