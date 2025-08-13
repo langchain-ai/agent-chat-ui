@@ -1,7 +1,7 @@
 /* eslint-disable */
 
 const STORAGE_KEY = "langgraph-stream-cache";
-const MAX_THREADS = 50;
+const MAX_THREADS = 10;
 
 function safeParse(json) {
   try {
