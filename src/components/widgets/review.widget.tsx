@@ -798,24 +798,6 @@ interface PaymentSummary {
   currency: string;
 }
 
-interface ReviewWidgetProps {
-  // Legacy props for backward compatibility
-  flightDetails?: FlightDetails;
-  passengerDetails?: PassengerDetails;
-  contactInfo?: ContactInformation;
-  travelDocument?: TravelDocument;
-  seatAllocation?: SeatAllocation;
-  paymentSummary?: PaymentSummary;
-  onSubmit?: (data: any) => void;
-  // New API response prop
-  apiData?: ApiResponse;
-  // Loading state management
-  isSubmitting?: boolean;
-  onSubmittingChange?: (isSubmitting: boolean) => void;
-  // Render as submitted/read-only when interrupt is completed (cache-block source of truth)
-  readOnly?: boolean;
-}
-
 // Utility functions to transform API data
 const formatDateTime = (isoString: string) => {
   if (!isoString) {
@@ -964,8 +946,29 @@ const transformApiDataToFlightDetails = (
     return null;
   }
 
-  const departure = formatDateTime(departureData.date);
-  const arrival = formatDateTime(arrivalData.date);
+  const to24h = (isoString: string) => {
+    try {
+      const d = new Date(isoString);
+      if (isNaN(d.getTime()))
+        return { date: "Invalid Date", time: "Invalid Time" };
+      const dateStr = d.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+      const timeStr = d.toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+      return { date: dateStr, time: timeStr };
+    } catch {
+      return { date: "Error", time: "Error" };
+    }
+  };
+
+  const departure = to24h(departureData.date);
+  const arrival = to24h(arrivalData.date);
 
   // Get airline info from first segment
   const firstSegment = segments[0];
@@ -1211,176 +1214,115 @@ interface SavedPassenger {
   nationality?: string;
 }
 
-// Mock saved passengers data (fallback)
-const mockSavedPassengers: SavedPassenger[] = [
-  {
-    id: "1",
-    firstName: "John",
-    lastName: "Doe",
-    gender: "Male",
-    dateOfBirth: "1990-01-15",
-    numberOfFlights: 5,
-    documents: [],
-    nationality: "IN",
-  },
-  {
-    id: "2",
-    firstName: "Jane",
-    lastName: "Smith",
-    gender: "Female",
-    dateOfBirth: "1985-03-22",
-    numberOfFlights: 3,
-    documents: [],
-    nationality: "IN",
-  },
-  {
-    id: "3",
-    firstName: "Michael",
-    lastName: "Johnson",
-    gender: "Male",
-    dateOfBirth: "1992-07-08",
-    numberOfFlights: 2,
-    documents: [],
-    nationality: "IN",
-  },
-  {
-    id: "4",
-    firstName: "Sarah",
-    lastName: "Williams",
-    gender: "Female",
-    dateOfBirth: "1988-11-30",
-    numberOfFlights: 1,
-    documents: [],
-    nationality: "IN",
-  },
-];
+interface ReviewWidgetProps extends Record<string, any> {
+  apiData?: any;
+  readOnly?: boolean;
+  interruptId?: string;
+}
 
-// Mock data for demonstration
-const mockData = {
-  flightDetails: {
-    departure: {
-      city: "New York",
-      airport: "John F. Kennedy International Airport",
-      code: "JFK",
-      date: "Dec 15, 2024",
-      time: "2:30 PM",
-    },
-    arrival: {
-      city: "San Francisco",
-      airport: "San Francisco International Airport",
-      code: "SFO",
-      date: "Dec 15, 2024",
-      time: "6:15 PM",
-    },
-    airline: {
-      name: "American Airlines",
-      flightNumber: "AA 1234",
-      cabinClass: "Economy",
-      aircraftType: "Boeing 737-800",
-      iataCode: "AA",
-    },
-    duration: "5h 45m",
-  },
-  passengerDetails: {
-    firstName: "John",
-    lastName: "Doe",
-    dateOfBirth: "1990-01-15",
-    gender: "Male",
-    title: "Mr",
-  },
-  contactInfo: {
-    phone: "+1 (555) 123-4567",
-    email: "john.doe@email.com",
-  },
-  travelDocument: {
-    type: "Passport",
-    number: "A12345678",
-    issuingCountry: "United States",
-    expiryDate: "2029-01-11",
-    nationality: "United States",
-    issuanceDate: "2015-04-14",
-  },
-  seatAllocation: {
-    isSelected: true,
-    seatNumber: "12A",
-    location: "Window seat, front of aircraft",
-    price: 25.0,
-  },
-  paymentSummary: {
-    baseFare: 249.0,
-    taxes: 35.5,
-    fees: 12.75,
-    discount: 20.0,
-    seatFare: 25.0,
-    total: 302.25,
-    currency: "USD",
-  },
-};
-
-const ReviewWidget: React.FC<ReviewWidgetProps> = ({
-  flightDetails,
-  passengerDetails,
-  contactInfo,
-  travelDocument,
-  seatAllocation,
-  paymentSummary,
-  onSubmit,
-  apiData,
-  isSubmitting: externalIsSubmitting,
-  onSubmittingChange,
-  readOnly,
-}) => {
-  console.log("&&&&&&&&&&& Review Widget - API data:", apiData);
+const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
+  console.log("&&&&&&&&&&& Review Widget - API data:", args.apiData);
   // Get thread context for interrupt responses
   const thread = useStreamContext();
 
-  // Add loading state - use external state if provided, otherwise use internal state
-  const [internalIsSubmitting, setInternalIsSubmitting] = useState(false);
-  const isSubmitting =
-    externalIsSubmitting !== undefined
-      ? externalIsSubmitting
-      : internalIsSubmitting;
+  // Robust extraction of live and frozen args per authoring guide
+  const pickInner = (obj: any) =>
+    obj?.value?.value?.widget
+      ? obj.value.value
+      : obj?.value?.widget
+        ? obj.value
+        : obj?.widget
+          ? obj
+          : undefined;
+
+  const liveEnvelope = pickInner(args.apiData) || {};
+  const liveArgs = (liveEnvelope?.widget?.args as any) ?? {};
+
+  // Attempt to read frozen submission either from args.submission or from __block.frozenValue
+  const frozenFromArgs = (liveArgs as any)?.submission;
+  const frozenEnvelope = pickInner((args.apiData as any)?.__block?.frozenValue);
+  const frozenArgsFallback = frozenEnvelope?.widget?.args;
+  const frozenArgs = frozenFromArgs ?? frozenArgsFallback;
+
+  const readOnly = !!args.readOnly;
+
+  // Build an effectiveArgs where ONLY savedTravellers and contactDetails may come from submission
+  const savedTravellers =
+    readOnly && frozenArgs?.flightItinerary?.userContext?.savedTravellers
+      ? frozenArgs.flightItinerary.userContext.savedTravellers
+      : liveArgs?.flightItinerary?.userContext?.savedTravellers || [];
+
+  const contactDetails =
+    readOnly && frozenArgs?.flightItinerary?.userContext?.contactDetails
+      ? frozenArgs.flightItinerary.userContext.contactDetails
+      : liveArgs?.flightItinerary?.userContext?.contactDetails;
+
+  // Everything else must always come from live data
+  const userDetails = liveArgs?.flightItinerary?.userContext?.userDetails;
+  const selectedFlightOffers =
+    liveArgs?.flightItinerary?.selectionContext?.selectedFlightOffers || [];
+  const bookingRequirements = liveArgs?.bookingRequirements;
+  const numberOfTravellers = liveArgs?.numberOfTravellers;
+
+  // Compose an effectiveArgs view for downstream usage without changing UI
+  const effectiveArgs = {
+    ...liveArgs,
+    flightItinerary: {
+      ...(liveArgs?.flightItinerary || {}),
+      userContext: {
+        ...(liveArgs?.flightItinerary?.userContext || {}),
+        savedTravellers,
+        contactDetails,
+      },
+    },
+  } as any;
+
+  // Provide computed, typed values used later in JSX to satisfy TS and keep UI intact
+  const finalFlightDetails = React.useMemo(() => {
+    const env = { value: { widget: { args: liveArgs } } } as any;
+    return transformApiDataToFlightDetails(env);
+  }, [liveArgs]);
+
+  const finalPaymentSummary = React.useMemo(() => {
+    const env = { value: { widget: { args: liveArgs } } } as any;
+    return transformApiDataToPaymentSummary(env);
+  }, [liveArgs]);
+
+  const savedPassengers = React.useMemo(() => {
+    const env = {
+      value: {
+        widget: {
+          args: {
+            flightItinerary: {
+              userContext: { savedTravellers },
+            },
+          },
+        },
+      },
+    } as any;
+    return transformApiDataToSavedPassengers(env);
+  }, [savedTravellers]);
+
+  // Seat allocation is out of scope for this widget
+
+  const interruptId: string | undefined =
+    args.interruptId ??
+    (args.apiData as any)?.value?.interrupt_id ??
+    (args.apiData as any)?.interrupt_id;
+
+  // Add loading state
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Source of truth: if parent marks the interrupt completed, treat as submitted
   const isBookingSubmitted = !!readOnly;
 
-  const setIsSubmitting = (value: boolean) => {
-    if (onSubmittingChange) {
-      onSubmittingChange(value);
-    } else {
-      setInternalIsSubmitting(value);
-    }
-  };
+  console.log("$$$$$$$ Review Widget - effectiveArgs:", effectiveArgs);
 
-  console.log("$$$$$$$ Review Widget - API data:", apiData);
-
-  // Transform API data or use provided props/mock data
-  const transformedFlightDetails = apiData
-    ? transformApiDataToFlightDetails(apiData)
-    : null;
-  const transformedPassengerDetails = apiData
-    ? transformApiDataToPassengerDetails(apiData)
-    : null;
-  const transformedContactInfo = apiData
-    ? transformApiDataToContactInfo(apiData)
-    : null;
-  const transformedTravelDocument = apiData
-    ? transformApiDataToTravelDocument(apiData)
-    : null;
-  const transformedPaymentSummary = apiData
-    ? transformApiDataToPaymentSummary(apiData)
-    : null;
-  const savedPassengers = apiData
-    ? transformApiDataToSavedPassengers(apiData)
-    : mockSavedPassengers;
-
-  // Extract isRefundable from API data
+  // Extract isRefundable from selectedFlightOffers
   const isRefundable =
-    apiData?.value?.widget?.args?.flightItinerary?.selectionContext
-      ?.selectedFlightOffers?.[0]?.offerRules?.isRefundable ?? null;
+    selectedFlightOffers?.[0]?.offerRules?.isRefundable ?? null;
 
-  // Extract booking requirements for dynamic field visibility
-  const bookingRequirements = apiData?.value?.widget?.args?.bookingRequirements;
+  // Extract traveler requirements for dynamic field visibility
   const travelerRequirement = bookingRequirements?.travelerRequirements?.[0]; // Get first traveler requirement
 
   // Determine field visibility based on booking requirements
@@ -1395,23 +1337,8 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
     ? bookingRequirements.travelerRequirements !== null
     : true; // Show by default when requirements are absent
 
-  // Use transformed data, provided props, or fallback to mock data
-  const finalFlightDetails =
-    transformedFlightDetails || flightDetails || mockData.flightDetails;
-  const finalPassengerDetails =
-    transformedPassengerDetails ||
-    passengerDetails ||
-    mockData.passengerDetails;
-  const finalContactInfo =
-    transformedContactInfo || contactInfo || mockData.contactInfo;
-  const finalTravelDocument =
-    transformedTravelDocument || travelDocument || mockData.travelDocument;
-  const finalPaymentSummary =
-    transformedPaymentSummary || paymentSummary || mockData.paymentSummary;
-  const finalSeatAllocation = seatAllocation || mockData.seatAllocation;
-
   // Determine if seat component should be shown (only if seatAllocation is provided)
-  const showSeatComponent = !!seatAllocation;
+  const showSeatComponent = false; // No seat allocation in this widget
 
   // Hook to detect desktop screen size
   const [isDesktop, setIsDesktop] = useState(false);
@@ -1432,9 +1359,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
   const [isContactExpanded, setIsContactExpanded] = useState(false);
   const [isTravelDocsExpanded, setIsTravelDocsExpanded] = useState(false);
   const [isPaymentExpanded, setIsPaymentExpanded] = useState(false);
-  const [isSeatSelected, setIsSeatSelected] = useState(
-    finalSeatAllocation?.isSelected || false,
-  );
+  const [isSeatSelected, setIsSeatSelected] = useState(false);
   const [isSavedPassengersExpanded, setIsSavedPassengersExpanded] =
     useState(false);
 
@@ -1445,45 +1370,99 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
     }
   }, [isDesktop, isPaymentExpanded]);
 
-  // Form state - initialize with transformed/provided data
-  const [passenger, setPassenger] = useState(finalPassengerDetails);
-  const [contact, setContact] = useState(finalContactInfo);
-  const [document, setDocument] = useState(
-    showTravelDocuments
-      ? finalTravelDocument || {
-          type: "",
-          number: "",
-          issuingCountry: "",
-          expiryDate: "",
-          nationality: "",
-        }
-      : null,
-  );
-
-  // Populate data from contactDetails when component mounts (matching whosTravelling logic)
-  React.useEffect(() => {
-    if (apiData) {
-      const contactDetails =
-        apiData.value.widget.args.flightItinerary.userContext.contactDetails;
-
-      if (contactDetails) {
-        console.log(
-          "📞 Review Widget - Processing contactDetails on mount:",
-          contactDetails,
-        );
-
-        // Update contact state with contactDetails data
-        const countryCode = contactDetails.countryCode || "91";
-        const formattedPhone = `+${countryCode} ${contactDetails.mobileNumber}`;
-
-        setContact((prevContact) => ({
-          ...prevContact,
-          email: contactDetails.email || prevContact.email,
-          phone: formattedPhone,
-        }));
-      }
+  // Form state - initialize directly from effectiveArgs-derived variables
+  const [passenger, setPassenger] = useState(() => {
+    if (userDetails) {
+      return {
+        firstName: userDetails.firstName || "",
+        lastName: userDetails.lastName || "",
+        dateOfBirth: userDetails.dateOfBirth || "",
+        gender: userDetails.gender || "",
+        title:
+          userDetails.gender === "Male"
+            ? "Mr"
+            : userDetails.gender === "Female"
+              ? "Ms"
+              : "",
+      };
     }
-  }, [apiData]);
+    return {
+      firstName: "",
+      lastName: "",
+      dateOfBirth: "",
+      gender: "",
+      title: "",
+    };
+  });
+
+  const [contact, setContact] = useState(() => {
+    if (contactDetails) {
+      const countryCode = contactDetails.countryCode || "91";
+      const formattedPhone = `+${countryCode} ${contactDetails.mobileNumber || ""}`;
+      return {
+        phone: formattedPhone,
+        email: contactDetails.email || "",
+      };
+    }
+    if (userDetails?.phone?.[0]) {
+      const phone = `+${userDetails.phone[0].countryCode} ${userDetails.phone[0].number}`;
+      return {
+        phone: phone,
+        email: userDetails.email || "",
+      };
+    }
+    return {
+      phone: "",
+      email: "",
+    };
+  });
+
+  const [document, setDocument] = useState(() => {
+    if (!showTravelDocuments) return null;
+
+    if (userDetails?.documents?.[0]) {
+      const doc = userDetails.documents[0];
+      return {
+        type:
+          doc.documentType?.charAt(0).toUpperCase() +
+            doc.documentType?.slice(1) || "",
+        number: doc.documentNumber || "",
+        issuingCountry: doc.issuingCountry || "",
+        expiryDate: doc.expiryDate || "",
+        nationality: doc.nationality || "",
+        issuanceDate: doc.issuingDate || "",
+      };
+    }
+
+    return {
+      type: "",
+      number: "",
+      issuingCountry: "",
+      expiryDate: "",
+      nationality: "",
+      issuanceDate: "",
+    };
+  });
+
+  // Update contact state when contactDetails changes
+  React.useEffect(() => {
+    if (contactDetails) {
+      console.log(
+        "📞 Review Widget - Processing contactDetails on mount:",
+        contactDetails,
+      );
+
+      // Update contact state with contactDetails data
+      const countryCode = contactDetails.countryCode || "91";
+      const formattedPhone = `+${countryCode} ${contactDetails.mobileNumber || ""}`;
+
+      setContact((prevContact) => ({
+        ...prevContact,
+        email: contactDetails.email || prevContact?.email || "",
+        phone: formattedPhone,
+      }));
+    }
+  }, [contactDetails]);
 
   // Validation state
   const [validationErrors, setValidationErrors] = useState<{
@@ -1739,19 +1718,142 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
     isDateOfBirthRequired,
   ]);
 
+  // Helper functions to extract data from effectiveArgs-derived variables
+  const getFlightDetails = () => {
+    const flightOffer = selectedFlightOffers?.[0];
+    if (!flightOffer) return null;
+
+    // Handle new journey structure or legacy structure
+    let departureData, arrivalData, segments, duration;
+
+    if (flightOffer.journey && flightOffer.journey.length > 0) {
+      // New journey structure
+      const journey = flightOffer.journey[0];
+      departureData = journey.departure;
+      arrivalData = journey.arrival;
+      segments = journey.segments || [];
+      duration = journey.duration;
+    } else {
+      // Legacy structure (backward compatibility)
+      departureData = flightOffer.departure;
+      arrivalData = flightOffer.arrival;
+      segments = flightOffer.segments || [];
+      duration = flightOffer.duration;
+    }
+
+    if (!departureData || !arrivalData) return null;
+
+    const formatDateTime = (isoString: string) => {
+      if (!isoString) return { date: "N/A", time: "N/A" };
+      try {
+        const date = new Date(isoString);
+        if (isNaN(date.getTime()))
+          return { date: "Invalid Date", time: "Invalid Time" };
+        const dateStr = date.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
+        const timeStr = date.toLocaleTimeString("en-GB", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        });
+        return { date: dateStr, time: timeStr };
+      } catch (error) {
+        return { date: "Error", time: "Error" };
+      }
+    };
+
+    const parseDuration = (duration: string) => {
+      const match = duration?.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
+      if (!match) return duration || "";
+      const hours = parseInt(match[1] || "0");
+      const minutes = parseInt(match[2] || "0");
+      if (hours > 0 && minutes > 0) {
+        return `${hours}h ${minutes}m`;
+      } else if (hours > 0) {
+        return `${hours}h`;
+      } else {
+        return `${minutes}m`;
+      }
+    };
+
+    const departure = formatDateTime(departureData.date);
+    const arrival = formatDateTime(arrivalData.date);
+    const firstSegment = segments[0];
+
+    return {
+      departure: {
+        city: departureData.cityCode || departureData.airportIata,
+        airport: departureData.airportName || departureData.airportIata,
+        code: departureData.airportIata,
+        date: departure.date,
+        time: departure.time,
+      },
+      arrival: {
+        city: arrivalData.cityCode || arrivalData.airportIata,
+        airport: arrivalData.airportName || arrivalData.airportIata,
+        code: arrivalData.airportIata,
+        date: arrival.date,
+        time: arrival.time,
+      },
+      airline: firstSegment
+        ? {
+            name: firstSegment.airlineName || firstSegment.airlineIata,
+            flightNumber: `${firstSegment.airlineIata} ${firstSegment.flightNumber}`,
+            cabinClass: "Economy", // Default as not provided in API
+            aircraftType: firstSegment.aircraftType,
+            iataCode: firstSegment.airlineIata,
+          }
+        : {
+            name: "Unknown Airline",
+            flightNumber: "N/A",
+            cabinClass: "Economy",
+            aircraftType: "Unknown",
+            iataCode: "XX",
+          },
+      duration: parseDuration(duration || ""),
+    };
+  };
+
+  const getPaymentSummary = () => {
+    const flightOffer = selectedFlightOffers?.[0];
+    if (!flightOffer) return null;
+
+    const total = flightOffer.totalAmount || 0;
+    const baseFare = flightOffer.baseAmount || Math.round(total * 0.75);
+    const taxes = flightOffer.tax || Math.round(total * 0.2);
+    const serviceFee = flightOffer.serviceFee || 0;
+    const convenienceFee = flightOffer.convenienceFee || 0;
+    const fees = serviceFee + convenienceFee || Math.round(total * 0.05);
+
+    return {
+      baseFare: baseFare,
+      taxes: taxes,
+      fees: fees,
+      discount: 0,
+      seatFare: 0,
+      total: total,
+      currency: flightOffer.currency || "INR",
+    };
+  };
+
   // Calculate total with seat selection
   const calculateTotal = () => {
+    const paymentSummary = getPaymentSummary();
+    if (!paymentSummary) return 0;
+
     if (!showSeatComponent) {
-      return finalPaymentSummary.total;
+      return paymentSummary.total;
     }
-    const seatFare =
-      isSeatSelected && finalSeatAllocation ? finalSeatAllocation.price : 0;
+    const seatFare = isSeatSelected ? 0 : 0; // No seat allocation data available
     return (
-      finalPaymentSummary.baseFare +
-      finalPaymentSummary.taxes +
-      finalPaymentSummary.fees +
+      paymentSummary.baseFare +
+      paymentSummary.taxes +
+      paymentSummary.fees +
       seatFare -
-      finalPaymentSummary.discount
+      paymentSummary.discount
     );
   };
 
@@ -1849,25 +1951,47 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
         type: "response",
         data: formattedData,
       } as const;
+      // Build frozen snapshot to store ONLY savedTravellers and contactDetails (as per rules),
+      // and ensure correct widget type: TravelerDetailsWidget
+      const updatedContactDetails = {
+        countryCode: contact.phone.match(/\+(\d+)/)?.[1] || "91",
+        mobileNumber: contact.phone.replace(/\+\d+\s*/, ""),
+        email: contact.email,
+      };
+
+      const updatedSavedTravellers = savedTravellers.map((traveller: any) => ({
+        ...traveller,
+      }));
+
+      const frozenArgs = {
+        flightItinerary: {
+          userContext: {
+            savedTravellers: updatedSavedTravellers,
+            contactDetails: updatedContactDetails,
+          },
+        },
+      };
+
       const frozen = {
         widget: {
           type: "TravelerDetailsWidget",
-          args: { submission: formattedData },
+          args: frozenArgs,
         },
         value: {
           type: "widget",
           widget: {
             type: "TravelerDetailsWidget",
-            args: { submission: formattedData },
+            args: frozenArgs,
           },
         },
       };
+
       await submitInterruptResponse(
         thread,
         submissionData.type,
         submissionData.data,
         {
-          interruptId: (apiData as any)?.value?.interrupt_id,
+          interruptId: interruptId,
           frozenValue: frozen,
         },
       );
@@ -1909,44 +2033,55 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-6">
-                      <div className="flex items-center space-x-3">
-                        <div className="text-center">
-                          <div className="text-sm font-bold">
-                            {finalFlightDetails.departure.code}
-                          </div>
-                          <div className="text-sm font-bold">
-                            {finalFlightDetails.departure.time}
-                          </div>
-                        </div>
-                        <ArrowRight className="h-3 w-3 text-gray-400" />
-                        <div className="text-center">
-                          <div className="text-sm font-bold">
-                            {finalFlightDetails.arrival.code}
-                          </div>
-                          <div className="text-sm font-bold">
-                            {finalFlightDetails.arrival.time}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="flex items-center space-x-2">
-                          <AirlineLogo
-                            airlineIata={
-                              finalFlightDetails.airline.iataCode || ""
-                            }
-                            airlineName={finalFlightDetails.airline.name}
-                            size="sm"
-                          />
-                          <div className="text-xs text-gray-700">
-                            <div className="font-medium">
-                              {finalFlightDetails.airline.name}
+                      {(() => {
+                        const flightDetails = getFlightDetails();
+                        return flightDetails ? (
+                          <>
+                            <div className="flex items-center space-x-3">
+                              <div className="text-center">
+                                <div className="text-sm font-bold">
+                                  {flightDetails.departure.code}
+                                </div>
+                                <div className="text-sm font-bold">
+                                  {flightDetails.departure.time}
+                                </div>
+                              </div>
+                              <ArrowRight className="h-3 w-3 text-gray-400" />
+                              <div className="text-center">
+                                <div className="text-sm font-bold">
+                                  {flightDetails.arrival.code}
+                                </div>
+                                <div className="text-sm font-bold">
+                                  {flightDetails.arrival.time}
+                                </div>
+                              </div>
                             </div>
-                            <div className="text-gray-600">
-                              {finalFlightDetails.airline.cabinClass}
+                            <div className="flex items-center space-x-3">
+                              <div className="flex items-center space-x-2">
+                                <AirlineLogo
+                                  airlineIata={
+                                    flightDetails.airline.iataCode || ""
+                                  }
+                                  airlineName={flightDetails.airline.name}
+                                  size="sm"
+                                />
+                                <div className="text-xs text-gray-700">
+                                  <div className="font-medium">
+                                    {flightDetails.airline.name}
+                                  </div>
+                                  <div className="text-gray-600">
+                                    {flightDetails.airline.cabinClass}
+                                  </div>
+                                </div>
+                              </div>
                             </div>
+                          </>
+                        ) : (
+                          <div className="text-sm text-gray-500">
+                            No flight details available
                           </div>
-                        </div>
-                      </div>
+                        );
+                      })()}
                     </div>
                   </div>
 
@@ -1966,60 +2101,86 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 <div className="mt-3 border-t pt-4">
                   {/* Additional Flight Info */}
                   <div className="mb-3">
-                    <div className="text-xs text-gray-600">
-                      Aircraft:{" "}
-                      {finalFlightDetails.airline.aircraftType ||
-                        "Not specified"}
-                    </div>
-                    <div className="text-xs text-gray-600">
-                      Flight: {finalFlightDetails.airline.flightNumber}
-                    </div>
+                    {(() => {
+                      const flightDetails = getFlightDetails();
+                      return flightDetails ? (
+                        <>
+                          <div className="text-xs text-gray-600">
+                            Aircraft:{" "}
+                            {flightDetails.airline.aircraftType ||
+                              "Not specified"}
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            Flight: {flightDetails.airline.flightNumber}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-xs text-gray-500">
+                          No flight details available
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Route Details */}
-                  <div className="grid grid-cols-3 items-center gap-3">
-                    {/* Departure */}
-                    <div className="text-left">
-                      <div className="mb-1 text-xs text-gray-600">
-                        Departure
-                      </div>
-                      <div className="text-sm font-bold">
-                        {finalFlightDetails.departure.time}
-                      </div>
-                      <div className="text-xs text-gray-900">
-                        {finalFlightDetails.departure.city}
-                      </div>
-                      <div className="text-xs text-gray-600">
-                        {finalFlightDetails.departure.date}
-                      </div>
-                    </div>
+                  {(() => {
+                    const flightDetails = getFlightDetails();
+                    if (!flightDetails)
+                      return (
+                        <div className="text-xs text-gray-500">
+                          No route details available
+                        </div>
+                      );
+                    return (
+                      <div className="grid grid-cols-3 items-center gap-3">
+                        {/* Departure */}
+                        <div className="text-left">
+                          <div className="mb-1 text-xs text-gray-600">
+                            Departure
+                          </div>
+                          <div className="text-sm font-bold">
+                            {flightDetails.departure.time}
+                          </div>
+                          <div className="text-xs text-gray-900">
+                            {flightDetails.departure.city}
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            {flightDetails.departure.date}
+                          </div>
+                        </div>
 
-                    {/* Duration Indicator */}
-                    <div className="flex flex-col items-center">
-                      <div className="mb-1 text-xs text-gray-600">
-                        {finalFlightDetails.duration}
-                      </div>
-                      <div className="flex w-full items-center">
-                        <div className="h-px w-16 bg-gray-300"></div>
-                        <ArrowRight className="mx-1 h-3 w-3 text-gray-400" />
-                      </div>
-                      <div className="mt-1 text-xs text-gray-600">Non-stop</div>
-                    </div>
+                        {/* Duration Indicator */}
+                        <div className="flex flex-col items-center">
+                          <div className="mb-1 text-xs text-gray-600">
+                            {flightDetails.duration}
+                          </div>
+                          <div className="flex w-full items-center">
+                            <div className="h-px w-16 bg-gray-300"></div>
+                            <ArrowRight className="mx-1 h-3 w-3 text-gray-400" />
+                          </div>
+                          <div className="mt-1 text-xs text-gray-600">
+                            Non-stop
+                          </div>
+                        </div>
 
-                    {/* Arrival */}
-                    <div className="text-right">
-                      <div className="mb-1 text-xs text-gray-600">Arrival</div>
-                      <div className="text-sm font-bold">
-                        {finalFlightDetails.arrival.time}
+                        {/* Arrival */}
+                        <div className="text-right">
+                          <div className="mb-1 text-xs text-gray-600">
+                            Arrival
+                          </div>
+                          <div className="text-sm font-bold">
+                            {flightDetails.arrival.time}
+                          </div>
+                          <div className="text-xs text-gray-900">
+                            {flightDetails.arrival.city}
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            {flightDetails.arrival.date}
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-900">
-                        {finalFlightDetails.arrival.city}
-                      </div>
-                      <div className="text-xs text-gray-600">
-                        {finalFlightDetails.arrival.date}
-                      </div>
-                    </div>
-                  </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>
@@ -2163,11 +2324,21 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                         Select a saved passenger:
                       </div>
                       <div className="space-y-2">
-                        {savedPassengers.map((savedPassenger) => (
+                        {savedTravellers.map((savedPassenger: any) => (
                           <button
-                            key={savedPassenger.id}
+                            key={savedPassenger.travellerId}
                             onClick={() =>
-                              handleSelectSavedPassenger(savedPassenger)
+                              handleSelectSavedPassenger({
+                                id: savedPassenger.travellerId.toString(),
+                                firstName: savedPassenger.firstName,
+                                lastName: savedPassenger.lastName,
+                                gender: savedPassenger.gender,
+                                dateOfBirth: savedPassenger.dateOfBirth,
+                                numberOfFlights: savedPassenger.numberOfFlights,
+                                documents: savedPassenger.documents || [],
+                                email: savedPassenger.email,
+                                nationality: savedPassenger.nationality,
+                              })
                             }
                             className="w-full rounded-md border bg-white p-3 text-left transition-colors duration-200 hover:border-blue-200 hover:bg-blue-50"
                           >
@@ -2604,92 +2775,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
 
           {/* Right Column - Payment Info and Actions */}
           <div className="space-y-3 lg:sticky lg:top-4 lg:self-start">
-            {/* Seat Allocation - Only show if seat data is available */}
-            {showSeatComponent && finalSeatAllocation && (
-              <div className="rounded-lg bg-white p-4 shadow">
-                <div className="mb-4 flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <h2 className="text-lg font-semibold">Seat Allocation</h2>
-                    {isSeatSelected && (
-                      <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
-                        {finalSeatAllocation.seatNumber}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Toggle Switch */}
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-600">Select seat</span>
-                    <button
-                      onClick={() => setIsSeatSelected(!isSeatSelected)}
-                      className={cn(
-                        "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:outline-none",
-                        isSeatSelected ? "bg-green-600" : "bg-gray-300",
-                      )}
-                      role="switch"
-                      aria-checked={isSeatSelected}
-                      aria-label="Toggle seat selection"
-                    >
-                      <span
-                        className={cn(
-                          "inline-block h-4 w-4 transform rounded-full border border-gray-200 shadow-sm transition-transform duration-200",
-                          isSeatSelected
-                            ? "translate-x-6 bg-white"
-                            : "translate-x-1 bg-white",
-                        )}
-                      />
-                    </button>
-                  </div>
-                </div>
-                {/* Seat Card */}
-                <div
-                  className={cn(
-                    "rounded-lg border p-4 transition-colors duration-200",
-                    isSeatSelected
-                      ? "border-green-200 bg-green-50"
-                      : "border-gray-200 bg-gray-50",
-                  )}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="mb-2 flex items-center space-x-2">
-                        <MapPin className="h-4 w-4 text-gray-600" />
-                        <span className="text-sm font-medium">
-                          {isSeatSelected
-                            ? `Seat ${finalSeatAllocation.seatNumber}`
-                            : "No seat selected"}
-                        </span>
-                      </div>
-                      {isSeatSelected && (
-                        <p className="text-xs text-gray-600">
-                          {finalSeatAllocation.location}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="text-right">
-                      <div className="text-lg font-semibold">
-                        {isSeatSelected
-                          ? `${finalPaymentSummary.currency === "INR" ? "₹" : "$"}${finalSeatAllocation.price.toFixed(2)}`
-                          : `${finalPaymentSummary.currency === "INR" ? "₹" : "$"}0.00`}
-                      </div>
-                      <div className="text-xs text-gray-600">
-                        {isSeatSelected ? "Seat fee" : "No fee"}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {!isSeatSelected && (
-                  <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-3">
-                    <p className="text-sm text-blue-700">
-                      💡 Select a seat to ensure you get your preferred location
-                      on the aircraft.
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Seat Allocation removed for this widget */}
 
             {/* Payment Summary */}
             <div className="rounded-lg bg-white p-4 shadow">
@@ -2700,21 +2786,32 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <h2 className="text-lg font-semibold">Payment Summary</h2>
-                    {!isPaymentExpanded && (
-                      <div className="mt-1 text-sm text-gray-600">
-                        Total:{" "}
-                        {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                        {calculateTotal().toFixed(2)}{" "}
-                        {finalPaymentSummary.currency}
-                        {isRefundable !== null && (
-                          <span
-                            className={`ml-2 ${isRefundable ? "text-green-600" : "text-red-600"}`}
-                          >
-                            • {isRefundable ? "Refundable" : "Non-refundable"}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                    {!isPaymentExpanded &&
+                      (() => {
+                        const paymentSummary = getPaymentSummary();
+                        if (!paymentSummary)
+                          return (
+                            <div className="mt-1 text-sm text-gray-500">
+                              No payment details available
+                            </div>
+                          );
+                        return (
+                          <div className="mt-1 text-sm text-gray-600">
+                            Total:{" "}
+                            {paymentSummary.currency === "INR" ? "₹" : "$"}
+                            {calculateTotal().toFixed(2)}{" "}
+                            {paymentSummary.currency}
+                            {isRefundable !== null && (
+                              <span
+                                className={`ml-2 ${isRefundable ? "text-green-600" : "text-red-600"}`}
+                              >
+                                •{" "}
+                                {isRefundable ? "Refundable" : "Non-refundable"}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                   </div>
                   <div className="ml-4">
                     {isPaymentExpanded ? (
@@ -2726,88 +2823,89 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 </div>
               </div>
 
-              {isPaymentExpanded && (
-                <div className="mt-4 space-y-2 border-t pt-4">
-                  {/* Base Fare */}
-                  <div className="flex justify-between">
-                    <span className="text-xs text-gray-600">Base fare</span>
-                    <span className="text-xs font-medium">
-                      {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                      {finalPaymentSummary.baseFare.toFixed(2)}
-                    </span>
-                  </div>
+              {isPaymentExpanded &&
+                (() => {
+                  const paymentSummary = getPaymentSummary();
+                  if (!paymentSummary)
+                    return (
+                      <div className="mt-4 border-t pt-4 text-sm text-gray-500">
+                        No payment details available
+                      </div>
+                    );
+                  return (
+                    <div className="mt-4 space-y-2 border-t pt-4">
+                      {/* Base Fare */}
+                      <div className="flex justify-between">
+                        <span className="text-xs text-gray-600">Base fare</span>
+                        <span className="text-xs font-medium">
+                          {paymentSummary.currency === "INR" ? "₹" : "$"}
+                          {paymentSummary.baseFare.toFixed(2)}
+                        </span>
+                      </div>
 
-                  {/* Taxes */}
-                  <div className="flex justify-between">
-                    <span className="text-xs text-gray-600">Taxes & fees</span>
-                    <span className="text-xs font-medium">
-                      {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                      {finalPaymentSummary.taxes.toFixed(2)}
-                    </span>
-                  </div>
+                      {/* Taxes */}
+                      <div className="flex justify-between">
+                        <span className="text-xs text-gray-600">
+                          Taxes & fees
+                        </span>
+                        <span className="text-xs font-medium">
+                          {paymentSummary.currency === "INR" ? "₹" : "$"}
+                          {paymentSummary.taxes.toFixed(2)}
+                        </span>
+                      </div>
 
-                  {/* Service Fees */}
-                  <div className="flex justify-between">
-                    <span className="text-xs text-gray-600">Service fees</span>
-                    <span className="text-xs font-medium">
-                      {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                      {finalPaymentSummary.fees.toFixed(2)}
-                    </span>
-                  </div>
+                      {/* Service Fees */}
+                      <div className="flex justify-between">
+                        <span className="text-xs text-gray-600">
+                          Service fees
+                        </span>
+                        <span className="text-xs font-medium">
+                          {paymentSummary.currency === "INR" ? "₹" : "$"}
+                          {paymentSummary.fees.toFixed(2)}
+                        </span>
+                      </div>
 
-                  {/* Seat Selection - Only show if seat component is enabled */}
-                  {showSeatComponent && finalSeatAllocation && (
-                    <div className="flex justify-between">
-                      <span className="text-xs text-gray-600">
-                        Seat selection
-                      </span>
-                      <span className="text-xs font-medium">
-                        {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                        {isSeatSelected
-                          ? finalSeatAllocation.price.toFixed(2)
-                          : "0.00"}
-                      </span>
+                      {/* Discount */}
+                      {paymentSummary.discount > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-xs text-gray-600">
+                            Discount
+                          </span>
+                          <span className="text-xs font-medium text-green-600">
+                            -{paymentSummary.currency === "INR" ? "₹" : "$"}
+                            {paymentSummary.discount.toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Refundable Status */}
+                      {isRefundable !== null && (
+                        <div className="flex justify-between">
+                          <span className="text-xs text-gray-600">
+                            Ticket Status
+                          </span>
+                          <span
+                            className={`text-xs font-medium ${isRefundable ? "text-green-600" : "text-red-600"}`}
+                          >
+                            {isRefundable ? "Refundable" : "Non-refundable"}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Total */}
+                      <div className="mt-2 border-t pt-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm font-semibold">Total</span>
+                          <span className="text-sm font-bold">
+                            {paymentSummary.currency === "INR" ? "₹" : "$"}
+                            {calculateTotal().toFixed(2)}{" "}
+                            {paymentSummary.currency}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  )}
-
-                  {/* Discount */}
-                  {finalPaymentSummary.discount > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-xs text-gray-600">Discount</span>
-                      <span className="text-xs font-medium text-green-600">
-                        -{finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                        {finalPaymentSummary.discount.toFixed(2)}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Refundable Status */}
-                  {isRefundable !== null && (
-                    <div className="flex justify-between">
-                      <span className="text-xs text-gray-600">
-                        Ticket Status
-                      </span>
-                      <span
-                        className={`text-xs font-medium ${isRefundable ? "text-green-600" : "text-red-600"}`}
-                      >
-                        {isRefundable ? "Refundable" : "Non-refundable"}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Total */}
-                  <div className="mt-2 border-t pt-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm font-semibold">Total</span>
-                      <span className="text-sm font-bold">
-                        {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                        {calculateTotal().toFixed(2)}{" "}
-                        {finalPaymentSummary.currency}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
+                  );
+                })()}
             </div>
           </div>
         </div>
@@ -2828,34 +2926,34 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                     <div className="flex items-center space-x-3">
                       <div className="text-center">
                         <div className="text-base font-bold">
-                          {finalFlightDetails.departure.code}
+                          {getFlightDetails()?.departure.code}
                         </div>
                         <div className="text-base font-bold">
-                          {finalFlightDetails.departure.time}
+                          {getFlightDetails()?.departure.time}
                         </div>
                       </div>
                       <ArrowRight className="h-4 w-4 text-gray-400" />
                       <div className="text-center">
                         <div className="text-base font-bold">
-                          {finalFlightDetails.arrival.code}
+                          {getFlightDetails()?.arrival.code}
                         </div>
                         <div className="text-base font-bold">
-                          {finalFlightDetails.arrival.time}
+                          {getFlightDetails()?.arrival.time}
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
                       <AirlineLogo
-                        airlineIata={finalFlightDetails.airline.iataCode || ""}
-                        airlineName={finalFlightDetails.airline.name}
+                        airlineIata={getFlightDetails()?.airline.iataCode || ""}
+                        airlineName={getFlightDetails()?.airline.name || ""}
                         size="sm"
                       />
                       <div className="text-sm text-gray-700">
                         <div className="font-medium">
-                          {finalFlightDetails.airline.name}
+                          {getFlightDetails()?.airline.name}
                         </div>
                         <div className="text-gray-600">
-                          {finalFlightDetails.airline.cabinClass}
+                          {getFlightDetails()?.airline.cabinClass}
                         </div>
                       </div>
                     </div>
@@ -2866,34 +2964,34 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                     <div className="mb-3 flex items-center justify-between">
                       <div className="text-center">
                         <div className="text-sm font-bold">
-                          {finalFlightDetails.departure.code}
+                          {getFlightDetails()?.departure.code}
                         </div>
                         <div className="text-sm font-bold">
-                          {finalFlightDetails.departure.time}
+                          {getFlightDetails()?.departure.time}
                         </div>
                       </div>
                       <ArrowRight className="h-4 w-4 text-gray-400" />
                       <div className="text-center">
                         <div className="text-sm font-bold">
-                          {finalFlightDetails.arrival.code}
+                          {getFlightDetails()?.arrival.code}
                         </div>
                         <div className="text-sm font-bold">
-                          {finalFlightDetails.arrival.time}
+                          {getFlightDetails()?.arrival.time}
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center justify-center space-x-3">
                       <AirlineLogo
-                        airlineIata={finalFlightDetails.airline.iataCode || ""}
-                        airlineName={finalFlightDetails.airline.name}
+                        airlineIata={getFlightDetails()?.airline.iataCode || ""}
+                        airlineName={getFlightDetails()?.airline.name || ""}
                         size="sm"
                       />
                       <div className="text-center">
                         <div className="text-sm font-medium text-gray-700">
-                          {finalFlightDetails.airline.name}
+                          {getFlightDetails()?.airline.name}
                         </div>
                         <div className="text-xs text-gray-600">
-                          {finalFlightDetails.airline.cabinClass}
+                          {getFlightDetails()?.airline.cabinClass}
                         </div>
                       </div>
                     </div>
@@ -2916,13 +3014,23 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
               <div className="mt-3 border-t pt-4">
                 {/* Additional Flight Info */}
                 <div className="mb-4">
-                  <div className="text-xs text-gray-600">
-                    Aircraft:{" "}
-                    {finalFlightDetails.airline.aircraftType || "Not specified"}
-                  </div>
-                  <div className="text-xs text-gray-600">
-                    Flight: {finalFlightDetails.airline.flightNumber}
-                  </div>
+                  {(() => {
+                    const fd = getFlightDetails();
+                    return fd ? (
+                      <>
+                        <div className="text-xs text-gray-600">
+                          Aircraft: {fd.airline.aircraftType || "Not specified"}
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          Flight: {fd.airline.flightNumber}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-xs text-gray-500">
+                        No flight details available
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Route Details */}
@@ -2930,21 +3038,30 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                   {/* Departure */}
                   <div className="text-left">
                     <div className="mb-1 text-sm text-gray-600">Departure</div>
-                    <div className="text-sm font-bold">
-                      {finalFlightDetails.departure.time}
-                    </div>
-                    <div className="text-sm text-gray-900">
-                      {finalFlightDetails.departure.city}
-                    </div>
-                    <div className="text-xs text-gray-600">
-                      {finalFlightDetails.departure.date}
-                    </div>
+                    {(() => {
+                      const fd = getFlightDetails();
+                      return fd ? (
+                        <>
+                          <div className="text-sm font-bold">
+                            {fd.departure.time}
+                          </div>
+                          <div className="text-sm text-gray-900">
+                            {fd.departure.city}
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            {fd.departure.date}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-xs text-gray-500">N/A</div>
+                      );
+                    })()}
                   </div>
 
                   {/* Duration Indicator */}
                   <div className="flex flex-col items-center">
                     <div className="mb-1 text-xs text-gray-600">
-                      {finalFlightDetails.duration}
+                      {getFlightDetails()?.duration}
                     </div>
                     <div className="flex w-full items-center">
                       <div className="h-px w-20 bg-gray-300"></div>
@@ -2956,15 +3073,24 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                   {/* Arrival */}
                   <div className="text-right">
                     <div className="mb-1 text-sm text-gray-600">Arrival</div>
-                    <div className="text-sm font-bold">
-                      {finalFlightDetails.arrival.time}
-                    </div>
-                    <div className="text-sm text-gray-900">
-                      {finalFlightDetails.arrival.city}
-                    </div>
-                    <div className="text-xs text-gray-600">
-                      {finalFlightDetails.arrival.date}
-                    </div>
+                    {(() => {
+                      const fd = getFlightDetails();
+                      return fd ? (
+                        <>
+                          <div className="text-sm font-bold">
+                            {fd.arrival.time}
+                          </div>
+                          <div className="text-sm text-gray-900">
+                            {fd.arrival.city}
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            {fd.arrival.date}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-xs text-gray-500">N/A</div>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
@@ -3382,93 +3508,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
             </div>
           )}
 
-          {/* Seat Allocation - Only show if seat data is available */}
-          {showSeatComponent && finalSeatAllocation && (
-            <div className="rounded-lg bg-white p-4 shadow">
-              <div className="mb-4 flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <h2 className="text-lg font-semibold">Seat Allocation</h2>
-                  {isSeatSelected && (
-                    <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
-                      {finalSeatAllocation.seatNumber}
-                    </span>
-                  )}
-                </div>
-
-                {/* Toggle Switch */}
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-600">Select seat</span>
-                  <button
-                    onClick={() => setIsSeatSelected(!isSeatSelected)}
-                    className={cn(
-                      "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:outline-none",
-                      isSeatSelected ? "bg-green-600" : "bg-gray-300",
-                    )}
-                    role="switch"
-                    aria-checked={isSeatSelected}
-                    aria-label="Toggle seat selection"
-                  >
-                    <span
-                      className={cn(
-                        "inline-block h-4 w-4 transform rounded-full border border-gray-200 shadow-sm transition-transform duration-200",
-                        isSeatSelected
-                          ? "translate-x-6 bg-white"
-                          : "translate-x-1 bg-white",
-                      )}
-                    />
-                  </button>
-                </div>
-              </div>
-
-              {/* Seat Card */}
-              <div
-                className={cn(
-                  "rounded-lg border p-4 transition-colors duration-200",
-                  isSeatSelected
-                    ? "border-green-200 bg-green-50"
-                    : "border-gray-200 bg-gray-50",
-                )}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="mb-2 flex items-center space-x-2">
-                      <MapPin className="h-4 w-4 text-gray-600" />
-                      <span className="text-sm font-medium">
-                        {isSeatSelected
-                          ? `Seat ${finalSeatAllocation.seatNumber}`
-                          : "No seat selected"}
-                      </span>
-                    </div>
-                    {isSeatSelected && (
-                      <p className="text-xs text-gray-600">
-                        {finalSeatAllocation.location}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="text-right">
-                    <div className="text-lg font-semibold">
-                      {isSeatSelected
-                        ? `${finalPaymentSummary.currency === "INR" ? "₹" : "$"}${finalSeatAllocation.price.toFixed(2)}`
-                        : `${finalPaymentSummary.currency === "INR" ? "₹" : "$"}0.00`}
-                    </div>
-                    <div className="text-xs text-gray-600">
-                      {isSeatSelected ? "Seat fee" : "No fee"}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {!isSeatSelected && (
-                <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-3">
-                  <p className="text-sm text-blue-700">
-                    💡 Select a seat to ensure you get your preferred location
-                    on the aircraft.
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
+          {/* Seat Allocation removed */}
 
           {/* Payment Summary */}
           <div className="rounded-lg bg-white p-4 shadow">
@@ -3479,21 +3519,29 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <h2 className="text-lg font-semibold">Payment Summary</h2>
-                  {!isPaymentExpanded && (
-                    <div className="mt-1 text-sm text-gray-600">
-                      Total:{" "}
-                      {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                      {calculateTotal().toFixed(2)}{" "}
-                      {finalPaymentSummary.currency}
-                      {isRefundable !== null && (
-                        <span
-                          className={`ml-2 ${isRefundable ? "text-green-600" : "text-red-600"}`}
-                        >
-                          • {isRefundable ? "Refundable" : "Non-refundable"}
-                        </span>
-                      )}
-                    </div>
-                  )}
+                  {!isPaymentExpanded &&
+                    (() => {
+                      const ps = getPaymentSummary();
+                      if (!ps)
+                        return (
+                          <div className="mt-1 text-sm text-gray-500">
+                            No payment details available
+                          </div>
+                        );
+                      return (
+                        <div className="mt-1 text-sm text-gray-600">
+                          Total: {ps.currency === "INR" ? "₹" : "$"}
+                          {calculateTotal().toFixed(2)} {ps.currency}
+                          {isRefundable !== null && (
+                            <span
+                              className={`ml-2 ${isRefundable ? "text-green-600" : "text-red-600"}`}
+                            >
+                              • {isRefundable ? "Refundable" : "Non-refundable"}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                 </div>
                 <div className="ml-4">
                   {isPaymentExpanded ? (
@@ -3511,8 +3559,8 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 <div className="flex justify-between">
                   <span className="text-xs text-gray-600">Base fare</span>
                   <span className="text-xs font-medium">
-                    {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                    {finalPaymentSummary.baseFare.toFixed(2)}
+                    {getPaymentSummary()?.currency === "INR" ? "₹" : "$"}
+                    {(getPaymentSummary()?.baseFare ?? 0).toFixed(2)}
                   </span>
                 </div>
 
@@ -3520,8 +3568,8 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 <div className="flex justify-between">
                   <span className="text-xs text-gray-600">Taxes & fees</span>
                   <span className="text-xs font-medium">
-                    {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                    {finalPaymentSummary.taxes.toFixed(2)}
+                    {getPaymentSummary()?.currency === "INR" ? "₹" : "$"}
+                    {(getPaymentSummary()?.taxes ?? 0).toFixed(2)}
                   </span>
                 </div>
 
@@ -3529,33 +3577,20 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                 <div className="flex justify-between">
                   <span className="text-xs text-gray-600">Service fees</span>
                   <span className="text-xs font-medium">
-                    {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                    {finalPaymentSummary.fees.toFixed(2)}
+                    {getPaymentSummary()?.currency === "INR" ? "₹" : "$"}
+                    {(getPaymentSummary()?.fees ?? 0).toFixed(2)}
                   </span>
                 </div>
 
-                {/* Seat Selection - Only show if seat component is enabled */}
-                {showSeatComponent && finalSeatAllocation && (
-                  <div className="flex justify-between">
-                    <span className="text-xs text-gray-600">
-                      Seat selection
-                    </span>
-                    <span className="text-xs font-medium">
-                      {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                      {isSeatSelected
-                        ? finalSeatAllocation.price.toFixed(2)
-                        : "0.00"}
-                    </span>
-                  </div>
-                )}
+                {/* Seat selection removed */}
 
                 {/* Discount */}
-                {finalPaymentSummary.discount > 0 && (
+                {(getPaymentSummary()?.discount ?? 0) > 0 && (
                   <div className="flex justify-between">
                     <span className="text-xs text-gray-600">Discount</span>
                     <span className="text-xs font-medium text-green-600">
-                      -{finalPaymentSummary.currency === "INR" ? "₹" : "$"}
-                      {finalPaymentSummary.discount.toFixed(2)}
+                      -{getPaymentSummary()?.currency === "INR" ? "₹" : "$"}
+                      {(getPaymentSummary()?.discount ?? 0).toFixed(2)}
                     </span>
                   </div>
                 )}
@@ -3577,9 +3612,9 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = ({
                   <div className="flex justify-between">
                     <span className="text-sm font-semibold">Total</span>
                     <span className="text-sm font-bold">
-                      {finalPaymentSummary.currency === "INR" ? "₹" : "$"}
+                      {getPaymentSummary()?.currency === "INR" ? "₹" : "$"}
                       {calculateTotal().toFixed(2)}{" "}
-                      {finalPaymentSummary.currency}
+                      {getPaymentSummary()?.currency}
                     </span>
                   </div>
                 </div>

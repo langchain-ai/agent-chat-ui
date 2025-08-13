@@ -8,6 +8,7 @@ import { LoadExternalComponent } from "@langchain/langgraph-sdk/react-ui";
 import { useArtifact } from "../artifact";
 import { useTabContext } from "@/providers/TabContext";
 import { useItineraryWidget } from "@/providers/ItineraryWidgetContext";
+import ReviewWidget from "@/components/widgets/review.widget";
 
 // Debug utility function
 const debugLog = (message: string, data?: any) => {
@@ -247,7 +248,9 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
               args={widget?.args}
             />
           ) : widget?.type === "TravelerDetailsWidget" ? (
-            <TravelerDetailsBottomSheet
+            <ReviewWidget
+              interruptId={interruptId}
+              readOnly={!!(interrupt as any)?._readOnly}
               apiData={interrupt}
               args={widget?.args}
             />
@@ -317,9 +320,10 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({
     if (widget?.type === "TravelerDetailsWidget") {
       return (
         <ReadOnlyGuard disabled={computedReadOnly}>
-          <TravelerDetailsBottomSheet
+          <ReviewWidget
             apiData={interrupt}
             args={widget?.args}
+            interruptId={interruptId}
             readOnly={computedReadOnly}
           />
         </ReadOnlyGuard>
