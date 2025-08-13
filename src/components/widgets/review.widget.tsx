@@ -1007,21 +1007,29 @@ const transformApiDataToFlightDetails = (
   };
 };
 
+// Helper function to normalize gender values (case-insensitive)
+const normalizeGender = (gender: string): string => {
+  if (!gender) return "";
+  const g = gender.toString().toUpperCase();
+  return g === "MALE" ? "Male" : g === "FEMALE" ? "Female" : "";
+};
+
 const transformApiDataToPassengerDetails = (
   apiData: ApiResponse,
 ): PassengerDetails | null => {
   const userDetails =
     apiData?.value?.widget?.args?.flightItinerary?.userContext?.userDetails;
   if (userDetails) {
+    const normalizedGender = normalizeGender(userDetails.gender);
     return {
       firstName: userDetails.firstName,
       lastName: userDetails.lastName,
       dateOfBirth: userDetails.dateOfBirth,
-      gender: userDetails.gender,
+      gender: normalizedGender,
       title:
-        userDetails.gender === "Male"
+        normalizedGender === "Male"
           ? "Mr"
-          : userDetails.gender === "Female"
+          : normalizedGender === "Female"
             ? "Ms"
             : "",
     };
@@ -1031,13 +1039,13 @@ const transformApiDataToPassengerDetails = (
   const submission = (apiData?.value?.widget?.args as any)?.submission as any;
   const t = submission?.travellersDetail?.[0];
   if (t) {
-    const g = (t.gender || "").toString().toUpperCase();
+    const normalizedGender = normalizeGender(t.gender || "");
     return {
       firstName: t.name?.firstName || "",
       lastName: t.name?.lastName || "",
       dateOfBirth: t.dateOfBirth || "",
-      gender: g === "MALE" ? "Male" : g === "FEMALE" ? "Female" : "",
-      title: g === "FEMALE" ? "Ms" : g === "MALE" ? "Mr" : "",
+      gender: normalizedGender,
+      title: normalizedGender === "Female" ? "Ms" : normalizedGender === "Male" ? "Mr" : "",
     };
   }
 
@@ -1184,7 +1192,7 @@ const transformApiDataToSavedPassengers = (
         id: traveller.travellerId.toString(),
         firstName: traveller.firstName,
         lastName: traveller.lastName,
-        gender: traveller.gender,
+        gender: normalizeGender(traveller.gender), // Normalize gender for consistency
         dateOfBirth: traveller.dateOfBirth,
         numberOfFlights: traveller.numberOfFlights,
         documents: traveller.documents || [], // Include document information
@@ -1373,15 +1381,16 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
   // Form state - initialize directly from effectiveArgs-derived variables
   const [passenger, setPassenger] = useState(() => {
     if (userDetails) {
+      const normalizedGender = normalizeGender(userDetails.gender || "");
       return {
         firstName: userDetails.firstName || "",
         lastName: userDetails.lastName || "",
         dateOfBirth: userDetails.dateOfBirth || "",
-        gender: userDetails.gender || "",
+        gender: normalizedGender,
         title:
-          userDetails.gender === "Male"
+          normalizedGender === "Male"
             ? "Mr"
-            : userDetails.gender === "Female"
+            : normalizedGender === "Female"
               ? "Ms"
               : "",
       };
@@ -1859,13 +1868,16 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
 
   // Handle selecting a saved passenger
   const handleSelectSavedPassenger = (savedPassenger: SavedPassenger) => {
+    // Normalize gender value to ensure consistency
+    const normalizedGender = normalizeGender(savedPassenger.gender);
+
     // Update passenger details
     setPassenger({
       firstName: savedPassenger.firstName,
       lastName: savedPassenger.lastName,
-      gender: savedPassenger.gender,
+      gender: normalizedGender,
       dateOfBirth: savedPassenger.dateOfBirth,
-      title: savedPassenger.gender === "Female" ? "Ms." : "Mr.", // Set title based on gender
+      title: normalizedGender === "Female" ? "Ms." : "Mr.", // Set title based on normalized gender
     });
 
     // Update document information if available
