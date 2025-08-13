@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/common/ui/button";
 import { Plus, Minus, CalendarIcon } from "lucide-react";
 import { AirportCombobox } from "@/components/common/ui/airportCombobox";
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
-import { useTabContext } from "@/providers/TabContext";
 import { submitInterruptResponse } from "./util";
 import {
   Popover,
@@ -90,54 +89,28 @@ interface SearchCriteriaProps extends Record<string, any> {
 
 const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
   const thread = useStreamContext();
-  const { switchToChat } = useTabContext();
 
-  // Extract data from args
-  const flightSearchCriteria =
-    args.flightSearchCriteria ||
-    args.apiData?.value?.widget?.args?.flightSearchCriteria ||
+  // Hydrate from apiData per interrupt authoring guide
+  const liveArgs = args.apiData?.value?.widget?.args ?? {};
+  const frozenArgs = (liveArgs as any)?.submission;
+  const effectiveArgs = args.readOnly && frozenArgs ? frozenArgs : liveArgs;
+
+  const flightSearchCriteria = (effectiveArgs as any)?.flightSearchCriteria ??
+    args.flightSearchCriteria ??
     {};
-  const readOnly = !!args.readOnly || !!(args as any)?._readOnly;
+
+  const readOnly = !!args.readOnly;
   const interruptId: string | undefined =
-    args.interruptId ||
-    (args.apiData?.value?.interrupt_id ?? args.apiData?.interrupt_id);
+    args.interruptId ??
+    args.apiData?.value?.interrupt_id ??
+    args.apiData?.interrupt_id;
 
-  // Fallback: detect a completed interrupt for this widget from the timeline
-  const timelineOverride = React.useMemo(() => {
-    try {
-      const blocks = (thread.values?.blocks ?? []) as Array<{
-        kind: string;
-        data?: any;
-      }>;
-      const lastCompleted = [...(Array.isArray(blocks) ? blocks : [])]
-        .reverse()
-        .find(
-          (b) =>
-            b.kind === "interrupt" &&
-            b.data?.completed &&
-            (b.data?.frozenValue?.widget?.type === "SearchCriteriaWidget" ||
-              b.data?.value?.widget?.type === "SearchCriteriaWidget"),
-        );
-      if (!lastCompleted) return undefined;
-      const fv = lastCompleted.data?.frozenValue || lastCompleted.data?.value;
-      const argsFromFV = fv?.widget?.args?.flightSearchCriteria;
-      return {
-        readOnly: true,
-        criteria: argsFromFV,
-      } as { readOnly: boolean; criteria?: any };
-    } catch {
-      return undefined;
-    }
-  }, [thread.values?.blocks]);
-
-  const effectiveReadOnly = readOnly || !!timelineOverride?.readOnly;
   if (process.env.NODE_ENV === "development") {
     console.log("[SearchCriteriaWidget] init", {
       fromArgs: args.flightSearchCriteria,
       fromApiData: args.apiData?.value?.widget?.args?.flightSearchCriteria,
       interruptId,
-      timelineOverride,
-      effectiveReadOnly,
+      readOnly,
     });
   }
 
@@ -197,30 +170,6 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [showTravellerDropdown, setShowTravellerDropdown] = useState(false);
-
-  // Hydrate state from timeline override if present
-  useEffect(() => {
-    if (timelineOverride?.criteria) {
-      const c = timelineOverride.criteria;
-      setTripType(c.isRoundTrip ? "round" : "oneway");
-      setAdults(c.adults ?? 1);
-      setChildren(c.children ?? 0);
-      setInfants(c.infants ?? 0);
-      setFlightClass(
-        c.class
-          ? c.class.charAt(0).toUpperCase() + c.class.slice(1)
-          : "Economy",
-      );
-      setFromAirport(c.originAirport || "");
-      setToAirport(c.destinationAirport || "");
-      try {
-        setDepartureDate(
-          c.departureDate ? new Date(c.departureDate) : undefined,
-        );
-        setReturnDate(c.returnDate ? new Date(c.returnDate) : undefined);
-      } catch {}
-    }
-  }, [timelineOverride]);
 
   // Wrapper functions for date state setters to match DateInput component interface
   const handleDepartureDateChange = (date: Date | undefined) => {
@@ -357,7 +306,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                 onValueChange={setFromAirport}
                 placeholder="From - City or Airport"
                 excludeAirport={toAirport}
-                disabled={effectiveReadOnly}
+                disabled={readOnly}
               />
             </div>
 
@@ -367,7 +316,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                 onValueChange={setToAirport}
                 placeholder="To - City or Airport"
                 excludeAirport={fromAirport}
-                disabled={effectiveReadOnly}
+                disabled={readOnly}
               />
             </div>
           </div>
@@ -378,7 +327,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
             <div className="flex-1">
               <div
                 className={
-                  effectiveReadOnly
+                  readOnly
                     ? "pointer-events-none opacity-60"
                     : undefined
                 }
@@ -396,7 +345,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
               <div className="flex-1">
                 <div
                   className={
-                    effectiveReadOnly
+                    readOnly
                       ? "pointer-events-none opacity-60"
                       : undefined
                   }
@@ -423,7 +372,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                   role="combobox"
                   aria-expanded={showTravellerDropdown}
                   className="w-full justify-between focus:border-black focus:ring-black"
-                  disabled={effectiveReadOnly}
+                  disabled={readOnly}
                 >
                   <span>{formatTravellerText()}</span>
                   <span className="ml-2 text-gray-400">▼</span>
@@ -450,7 +399,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                           size="sm"
                           className="h-8 w-8 rounded-full p-0"
                           onClick={() => setAdults(Math.max(1, adults - 1))}
-                          disabled={adults <= 1 || effectiveReadOnly}
+                          disabled={adults <= 1 || readOnly}
                         >
                           <Minus className="h-4 w-4" />
                         </Button>
@@ -463,7 +412,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                           size="sm"
                           className="h-8 w-8 rounded-full p-0"
                           onClick={() => setAdults(adults + 1)}
-                          disabled={effectiveReadOnly}
+                          disabled={readOnly}
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -483,7 +432,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                           size="sm"
                           className="h-8 w-8 rounded-full p-0"
                           onClick={() => setChildren(Math.max(0, children - 1))}
-                          disabled={children <= 0 || effectiveReadOnly}
+                          disabled={children <= 0 || readOnly}
                         >
                           <Minus className="h-4 w-4" />
                         </Button>
@@ -496,7 +445,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                           size="sm"
                           className="h-8 w-8 rounded-full p-0"
                           onClick={() => setChildren(children + 1)}
-                          disabled={effectiveReadOnly}
+                          disabled={readOnly}
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -516,7 +465,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                           size="sm"
                           className="h-8 w-8 rounded-full p-0"
                           onClick={() => setInfants(Math.max(0, infants - 1))}
-                          disabled={infants <= 0 || effectiveReadOnly}
+                          disabled={infants <= 0 || readOnly}
                         >
                           <Minus className="h-4 w-4" />
                         </Button>
@@ -529,7 +478,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                           size="sm"
                           className="h-8 w-8 rounded-full p-0"
                           onClick={() => setInfants(infants + 1)}
-                          disabled={effectiveReadOnly}
+                          disabled={readOnly}
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -554,7 +503,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                               checked={flightClass === classOption}
                               onChange={(e) => setFlightClass(e.target.value)}
                               className="h-4 w-4 border-gray-300 text-black focus:ring-black"
-                              disabled={effectiveReadOnly}
+                              disabled={readOnly}
                             />
                             <span className="font-medium">{classOption}</span>
                           </label>
@@ -571,7 +520,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
           <div className="pt-4">
             <Button
               type="submit"
-              disabled={isLoading || effectiveReadOnly}
+              disabled={isLoading || readOnly}
               className="w-full rounded-lg bg-black py-3 text-base font-semibold text-white hover:bg-gray-800"
             >
               {isLoading ? "Searching..." : "Search flights"}
