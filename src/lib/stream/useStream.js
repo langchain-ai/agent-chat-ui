@@ -109,11 +109,11 @@ export function useStream(options) {
       } else if (normalized.type === "ui") {
         storeRef.current.applyUI(tid, normalized.payload);
       } else if (normalized.type === "values") {
+        storeRef.current.applyValues(tid, normalized.payload);
         // track last interrupt if present
         if (normalized.payload && typeof normalized.payload === "object" && "__interrupt__" in normalized.payload) {
           setInterrupt({ value: normalized.payload.__interrupt__ });
         }
-        storeRef.current.applyValues(tid, normalized.payload);
       } else if (normalized.type === "interrupt") {
         storeRef.current.applyInterrupt(tid, normalized.payload);
       } else {
