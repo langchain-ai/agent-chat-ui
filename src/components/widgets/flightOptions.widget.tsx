@@ -2116,11 +2116,6 @@ const FlightOptionsWidget = (args: FlightOptionsProps) => {
     {};
 
   const readOnly = !!args.readOnly;
-  const interruptId: string | undefined =
-    args.interruptId ??
-    args.apiData?.value?.interrupt_id ??
-    args.apiData?.interrupt_id;
-
 
   const { switchToChat, switchToReview } = useTabContext();
   const [selectedFlight, setSelectedFlight] = useState<string | null>(null);
@@ -2182,7 +2177,7 @@ const FlightOptionsWidget = (args: FlightOptionsProps) => {
         },
       };
       await submitInterruptResponse(thread, "response", responseData, {
-        interruptId,
+        interruptId: args.interruptId,
         frozenValue: frozen,
       });
     } catch (error) {

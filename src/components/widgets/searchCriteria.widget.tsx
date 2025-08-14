@@ -100,16 +100,12 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
     {};
 
   const readOnly = !!args.readOnly;
-  const interruptId: string | undefined =
-    args.interruptId ??
-    args.apiData?.value?.interrupt_id ??
-    args.apiData?.interrupt_id;
 
   if (process.env.NODE_ENV === "development") {
     console.log("[SearchCriteriaWidget] init", {
       fromArgs: args.flightSearchCriteria,
       fromApiData: args.apiData?.value?.widget?.args?.flightSearchCriteria,
-      interruptId,
+      interruptId: args.interruptId,
       readOnly,
     });
   }
@@ -228,7 +224,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
         },
       };
       await submitInterruptResponse(thread, "response", responseData, {
-        interruptId,
+        interruptId: args.interruptId,
         frozenValue: frozen,
       });
     } catch (error: any) {
