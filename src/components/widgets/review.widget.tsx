@@ -1309,6 +1309,11 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
   // Source of truth: if parent marks the interrupt completed, treat as submitted
   const isBookingSubmitted = !!readOnly;
 
+  // State to track selected saved passenger and name modifications
+  const [selectedSavedPassenger, setSelectedSavedPassenger] = useState<SavedPassenger | null>(null);
+  const [originalFirstName, setOriginalFirstName] = useState<string>("");
+  const [originalLastName, setOriginalLastName] = useState<string>("");
+
   console.log("$$$$$$$ Review Widget - effectiveArgs:", effectiveArgs);
 
   // Extract isRefundable from selectedFlightOffers
@@ -1362,6 +1367,33 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
       setIsPaymentExpanded(true);
     }
   }, [isDesktop, isPaymentExpanded]);
+
+  // Effect to check if initial userDetails corresponds to a saved passenger
+  React.useEffect(() => {
+    if (userDetails && savedPassengers.length > 0) {
+      // Find matching saved passenger based on travellerId
+      const matchingSavedPassenger = savedPassengers.find(
+        (savedPassenger) => savedPassenger.id === userDetails.travellerId?.toString()
+      );
+
+      if (matchingSavedPassenger) {
+        console.log("📋 Review Widget - Initial userDetails matches saved passenger:", matchingSavedPassenger);
+        // Set up tracking for the initially populated saved passenger
+        setSelectedSavedPassenger(matchingSavedPassenger);
+        setOriginalFirstName(matchingSavedPassenger.firstName);
+        setOriginalLastName(matchingSavedPassenger.lastName);
+      } else {
+        console.log("📋 Review Widget - Initial userDetails does not match any saved passenger");
+        console.log("📋 Review Widget - userDetails.travellerId:", userDetails.travellerId);
+        console.log("📋 Review Widget - Available saved passenger IDs:", savedPassengers.map(p => p.id));
+
+        // If userDetails doesn't match any saved passenger, set up tracking for user details
+        setSelectedSavedPassenger(null);
+        setOriginalFirstName(userDetails.firstName || "");
+        setOriginalLastName(userDetails.lastName || "");
+      }
+    }
+  }, [userDetails, savedPassengers]);
 
   // Form state - initialize directly from effectiveArgs-derived variables
   const [passenger, setPassenger] = useState(() => {
@@ -1482,6 +1514,38 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
     }
   }, [contactDetails]);
 
+  // Helper function to check if first name or last name have been modified
+  const hasNameBeenModified = (): boolean => {
+    if (!selectedSavedPassenger && !userDetails) return true; // If no saved passenger or user details, treat as new
+
+    const currentFirstName = passenger.firstName?.trim() || "";
+    const currentLastName = passenger.lastName?.trim() || "";
+
+    return (
+      currentFirstName !== originalFirstName ||
+      currentLastName !== originalLastName
+    );
+  };
+
+  // Helper function to handle passenger field changes and clear saved passenger tracking if names change
+  const handlePassengerFieldChange = (field: string, value: string) => {
+    setPassenger(prev => ({ ...prev, [field]: value }));
+
+    // If first name or last name is being changed and we have a selected saved passenger,
+    // we need to track this for submission logic
+    if ((field === 'firstName' || field === 'lastName') && selectedSavedPassenger) {
+      // The tracking will be handled by hasNameBeenModified() function
+      // No need to clear selectedSavedPassenger here as we need it for comparison
+    }
+  };
+
+  // Helper function to clear saved passenger tracking (for manual form reset)
+  const clearSavedPassengerTracking = () => {
+    setSelectedSavedPassenger(null);
+    setOriginalFirstName("");
+    setOriginalLastName("");
+  };
+
   // Validation state
   const [validationErrors, setValidationErrors] = useState<{
     [key: string]: boolean;
@@ -1537,31 +1601,61 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
         ]
       : [];
 
-    const travellersDetail = [
-      {
-        id: 1, // Use number instead of string (matching whosTravelling)
-        dateOfBirth: passenger.dateOfBirth
-          ? formatDate(passenger.dateOfBirth)
-          : null,
-        gender: formattedGender,
-        name: {
-          firstName: passenger.firstName?.toUpperCase() || "",
-          lastName: passenger.lastName?.toUpperCase() || "",
-        },
-        documents: documents,
-        contact: {
-          purpose: "STANDARD",
-          phones: [
-            {
-              deviceType: "MOBILE",
-              countryCallingCode: phoneCountryCode,
-              number: phoneNumber || "",
-            },
-          ],
-          emailAddress: contact.email || "",
-        },
+    // Determine travellerId based on name modification logic
+    const nameModified = hasNameBeenModified();
+    let travellerId: number | null = null;
+
+    if (!nameModified && selectedSavedPassenger) {
+      // Names unchanged - use existing saved traveller ID
+      travellerId = parseInt(selectedSavedPassenger.id);
+      console.log("📋 Review Widget - Using existing saved traveller ID:", selectedSavedPassenger.id);
+    } else if (!nameModified && userDetails?.travellerId) {
+      // Names unchanged and userDetails has travellerId - use user's travellerId
+      travellerId = parseInt(userDetails.travellerId);
+      console.log("📋 Review Widget - Using user's traveller ID:", userDetails.travellerId);
+    } else {
+      // Names modified or no saved passenger/user details - treat as new passenger
+      travellerId =  1;
+      console.log("📋 Review Widget - Treating as new passenger (names modified or no saved passenger/user details)");
+    }
+
+    console.log("📋 Review Widget - Name modification check:", {
+      nameModified,
+      selectedSavedPassenger: selectedSavedPassenger?.id,
+      userDetailsTravellerId: userDetails?.travellerId,
+      originalFirstName,
+      originalLastName,
+      currentFirstName: passenger.firstName,
+      currentLastName: passenger.lastName,
+      finalTravellerId: travellerId,
+    });
+
+    const travellerDetail = {
+      id: travellerId, // Use number instead of string (matching whosTravelling)
+      //travellerId: travellerId, // Add the new travellerId field
+      dateOfBirth: passenger.dateOfBirth
+        ? formatDate(passenger.dateOfBirth)
+        : null,
+      gender: formattedGender,
+      name: {
+        firstName: passenger.firstName?.toUpperCase() || "",
+        lastName: passenger.lastName?.toUpperCase() || "",
       },
-    ];
+      documents: documents,
+      contact: {
+        purpose: "STANDARD",
+        phones: [
+          {
+            deviceType: "MOBILE",
+            countryCallingCode: phoneCountryCode,
+            number: phoneNumber || "",
+          },
+        ],
+        emailAddress: contact.email || "",
+      },
+    };
+
+    const travellersDetail = [travellerDetail];
 
     const contactInfo = {
       email: contact.email || "",
@@ -1936,6 +2030,11 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
       }
     }
 
+    // Track the selected saved passenger and original names for submission logic
+    setSelectedSavedPassenger(savedPassenger);
+    setOriginalFirstName(savedPassenger.firstName);
+    setOriginalLastName(savedPassenger.lastName);
+
     setIsSavedPassengersExpanded(false); // Collapse the section after selection
   };
 
@@ -2226,7 +2325,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
                     type="text"
                     value={passenger.firstName}
                     onChange={(e) => {
-                      setPassenger({ ...passenger, firstName: e.target.value });
+                      handlePassengerFieldChange("firstName", e.target.value);
                       validateField(e.target.value, "firstName");
                     }}
                     className={cn(
@@ -2257,7 +2356,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
                     type="text"
                     value={passenger.lastName}
                     onChange={(e) => {
-                      setPassenger({ ...passenger, lastName: e.target.value });
+                      handlePassengerFieldChange("lastName", e.target.value);
                       validateField(e.target.value, "lastName");
                     }}
                     className={cn(
@@ -3138,7 +3237,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
                   type="text"
                   value={passenger.firstName}
                   onChange={(e) => {
-                    setPassenger({ ...passenger, firstName: e.target.value });
+                    handlePassengerFieldChange("firstName", e.target.value);
                     validateField(e.target.value, "firstName");
                   }}
                   className={cn(
@@ -3169,7 +3268,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
                   type="text"
                   value={passenger.lastName}
                   onChange={(e) => {
-                    setPassenger({ ...passenger, lastName: e.target.value });
+                    handlePassengerFieldChange("lastName", e.target.value);
                     validateField(e.target.value, "lastName");
                   }}
                   className={cn(
