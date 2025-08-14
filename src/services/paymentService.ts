@@ -35,6 +35,9 @@ export interface TransactionVerifyResponse {
   data: {
     paymentStatus: "SUCCESS" | "FAILED" | "PENDING";
     bookingStatus: "SUCCESS" | "FAILED" | "PENDING";
+    paymentData?: {
+      method?: string;
+    };
     bookingError?: string;
   };
 }

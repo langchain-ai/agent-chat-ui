@@ -366,6 +366,7 @@ const NonAgentFlowWidgetContent: React.FC<
         // Step 1: Execute prepayment API
         console.log("Initiating prepayment for tripId:", tripId);
         const prepaymentResponse = await executePrepayment(tripId);
+        console.log("Prepayment response:", JSON.stringify(prepaymentResponse, null, 2));
 
         if (!prepaymentResponse.success) {
           throw new Error(prepaymentResponse.message || "Prepayment failed");
@@ -388,6 +389,10 @@ const NonAgentFlowWidgetContent: React.FC<
           handler: async function (response: any) {
             try {
               console.log("Razorpay payment successful:", response);
+              const transaction_id =
+                prepaymentResponse.data.transaction.transaction_id;
+                console.log("Transaction ID:", transaction_id);
+                console.log('tripId:', tripId);
 
               // Step 3: Verify transaction
               const verificationResponse = await verifyTransaction({
@@ -446,10 +451,14 @@ const NonAgentFlowWidgetContent: React.FC<
                 try {
                   try {
                     setIsSubmittingInterrupt(true);
+                    const paymentMethod=verificationResponse.data?.paymentData?.method || '';
 
                     const interruptPromise = submitVerificationResult({
                       paymentStatus: verificationResponse.data.paymentStatus,
                       bookingStatus: verificationResponse.data.bookingStatus,
+                      pnr,
+                      transactionId: transaction_id,
+                      paymentMethod,
                     });
 
                     const timeoutPromise = new Promise((_, reject) => {
