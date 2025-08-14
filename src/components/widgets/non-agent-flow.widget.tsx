@@ -9,7 +9,6 @@ import {
 import { useNonAgentFlow } from "@/providers/NonAgentFlowContext";
 import { useStreamContext } from "@/providers/Stream";
 import { useTabContext } from "@/providers/TabContext";
-import { submitInterruptResponse } from "@/components/widgets/util";
 
 // Utility function to switch to chat tab with a small delay
 const switchToChatWithDelay = (
@@ -190,7 +189,7 @@ const NonAgentFlowWidgetContent: React.FC<
   onPaymentFailure,
   apiData,
 }) => {
-  const { closeWidget } = useNonAgentFlow();
+  const { closeWidget, submitVerificationResult } = useNonAgentFlow();
   const thread = useStreamContext();
   const { switchToChat } = useTabContext();
 
@@ -443,50 +442,34 @@ const NonAgentFlowWidgetContent: React.FC<
               // Show success message
               if (isPaymentAndBookingSuccessful(verificationResponse)) {
                 toast.success("Payment and booking completed successfully!");
-
-                // If this is an interrupt widget, submit compact success response
-                if (isInterruptWidget) {
+                // Submit compact success response
+                try {
                   try {
-                    const submission = {
+                    setIsSubmittingInterrupt(true);
+
+                    const interruptPromise = submitVerificationResult({
                       paymentStatus: verificationResponse.data.paymentStatus,
                       bookingStatus: verificationResponse.data.bookingStatus,
-                      transactionId:
-                        prepaymentResponse.data.transaction.transaction_id,
-                    };
+                    });
 
-                    try {
-                      setIsSubmittingInterrupt(true);
-
-                      if (!submission || typeof submission !== "object") {
-                        throw new Error("Invalid response data structure");
-                      }
-
-                      const interruptPromise = submitInterruptResponse(
-                        thread,
-                        "response",
-                        submission,
+                    const timeoutPromise = new Promise((_, reject) => {
+                      setTimeout(
+                        () => reject(new Error("Interrupt submission timeout")),
+                        5000,
                       );
+                    });
 
-                      const timeoutPromise = new Promise((_, reject) => {
-                        setTimeout(
-                          () =>
-                            reject(new Error("Interrupt submission timeout")),
-                          5000,
-                        );
-                      });
-
-                      await Promise.race([interruptPromise, timeoutPromise]);
-                    } catch (interruptError) {
-                      console.error(
-                        "Failed to submit interrupt response:",
-                        interruptError,
-                      );
-                    } finally {
-                      setIsSubmittingInterrupt(false);
-                    }
-                  } catch (error) {
-                    console.error("Error solving interrupt:", error);
+                    await Promise.race([interruptPromise, timeoutPromise]);
+                  } catch (interruptError) {
+                    console.error(
+                      "Failed to submit interrupt response:",
+                      interruptError,
+                    );
+                  } finally {
+                    setIsSubmittingInterrupt(false);
                   }
+                } catch (error) {
+                  console.error("Error solving interrupt:", error);
                 }
 
                 // Don't show reopen button on successful payment
@@ -507,38 +490,24 @@ const NonAgentFlowWidgetContent: React.FC<
                 error: errorMessage,
               });
 
-              // If this is an interrupt widget, submit compact failure response
-              if (isInterruptWidget) {
-                try {
-                  const submission = {
-                    paymentStatus: "FAILED",
-                    bookingStatus: "FAILED",
-                    transactionId:
-                      prepaymentResponse.data.transaction.transaction_id,
-                  };
+              // Submit compact failure response
+              try {
+                await submitVerificationResult({
+                  paymentStatus: "FAILED",
+                  bookingStatus: "FAILED",
+                });
 
-                  if (!submission || typeof submission !== "object") {
-                    console.error(
-                      "Invalid response data for payment failure:",
-                      submission,
-                    );
-                    return;
-                  }
-
-                  await submitInterruptResponse(thread, "response", submission);
-
-                  // Switch to chat tab after error interrupt resolution
-                  console.log(
-                    "Switching to chat tab after payment verification error",
-                  );
-                  switchToChatWithDelay(
-                    switchToChat,
-                    hasSwitchedToChat,
-                    setHasSwitchedToChat,
-                  );
-                } catch (interruptError) {
-                  console.error("Error solving interrupt:", interruptError);
-                }
+                // Switch to chat tab after error interrupt resolution
+                console.log(
+                  "Switching to chat tab after payment verification error",
+                );
+                switchToChatWithDelay(
+                  switchToChat,
+                  hasSwitchedToChat,
+                  setHasSwitchedToChat,
+                );
+              } catch (interruptError) {
+                console.error("Error solving interrupt:", interruptError);
               }
 
               onPaymentFailure?.(errorMessage);
@@ -571,50 +540,27 @@ const NonAgentFlowWidgetContent: React.FC<
                 error: errorMessage,
               });
 
-              // If this is an interrupt widget, solve the interrupt with cancellation data
-              if (isInterruptWidget) {
-                (async () => {
-                  try {
-                    const submission = {
-                      paymentStatus: "FAILED",
-                      bookingStatus: "FAILED",
-                      transactionId:
-                        prepaymentResponse.data.transaction.transaction_id,
-                    };
+              // Submit compact cancellation response
+              (async () => {
+                try {
+                  await submitVerificationResult({
+                    paymentStatus: "FAILED",
+                    bookingStatus: "FAILED",
+                  });
 
-                    // Validate response data before submission
-                    if (!submission || typeof submission !== "object") {
-                      console.error(
-                        "Invalid response data for cancellation:",
-                        submission,
-                      );
-                      return;
-                    }
-
-                    console.log(
-                      "Submitting cancellation interrupt:",
-                      JSON.stringify(submission, null, 2),
-                    );
-                    await submitInterruptResponse(
-                      thread,
-                      "response",
-                      submission,
-                    );
-
-                    // Switch to chat tab after cancellation interrupt resolution
-                    console.log(
-                      "Switching to chat tab after payment cancellation",
-                    );
-                    switchToChatWithDelay(
-                      switchToChat,
-                      hasSwitchedToChat,
-                      setHasSwitchedToChat,
-                    );
-                  } catch (interruptError) {
-                    console.error("Error solving interrupt:", interruptError);
-                  }
-                })();
-              }
+                  // Switch to chat tab after cancellation interrupt resolution
+                  console.log(
+                    "Switching to chat tab after payment cancellation",
+                  );
+                  switchToChatWithDelay(
+                    switchToChat,
+                    hasSwitchedToChat,
+                    setHasSwitchedToChat,
+                  );
+                } catch (interruptError) {
+                  console.error("Error solving interrupt:", interruptError);
+                }
+              })();
 
               onPaymentFailure?.(errorMessage);
             },
@@ -650,49 +596,22 @@ const NonAgentFlowWidgetContent: React.FC<
           error: errorMessage,
         });
 
-        // If this is an interrupt widget, solve the interrupt with failure data
-        if (isInterruptWidget) {
-          try {
-            const responseData = {
-              status: "failed",
-              paymentStatus: "FAILED",
-              bookingStatus: "FAILED",
-              tripId,
-              pnr: "", // No PNR available on payment initiation failure
-              error: errorMessage,
-              transactionData: {
-                paymentStatus: "FAILED",
-                bookingStatus: "FAILED",
-                error: errorMessage,
-                bookingData: null,
-              },
-            };
+        // Submit compact failure response for initiation error
+        try {
+          await submitVerificationResult({
+            paymentStatus: "FAILED",
+            bookingStatus: "FAILED",
+          });
 
-            // Validate response data before submission
-            if (!responseData || typeof responseData !== "object") {
-              console.error(
-                "Invalid response data for payment initiation error:",
-                responseData,
-              );
-              return;
-            }
-
-            console.log(
-              "Submitting payment initiation error interrupt:",
-              JSON.stringify(responseData, null, 2),
-            );
-            await submitInterruptResponse(thread, "response", responseData);
-
-            // Switch to chat tab after payment initiation error interrupt resolution
-            console.log("Switching to chat tab after payment initiation error");
-            switchToChatWithDelay(
-              switchToChat,
-              hasSwitchedToChat,
-              setHasSwitchedToChat,
-            );
-          } catch (interruptError) {
-            console.error("Error solving interrupt:", interruptError);
-          }
+          // Switch to chat tab after payment initiation error interrupt resolution
+          console.log("Switching to chat tab after payment initiation error");
+          switchToChatWithDelay(
+            switchToChat,
+            hasSwitchedToChat,
+            setHasSwitchedToChat,
+          );
+        } catch (interruptError) {
+          console.error("Error solving interrupt:", interruptError);
         }
 
         onPaymentFailure?.(errorMessage);

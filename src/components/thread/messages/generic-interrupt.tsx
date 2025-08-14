@@ -8,6 +8,7 @@ import { LoadExternalComponent } from "@langchain/langgraph-sdk/react-ui";
 import { useArtifact } from "../artifact";
 import { useTabContext } from "@/providers/TabContext";
 import { useItineraryWidget } from "@/providers/ItineraryWidgetContext";
+import { NonAgentFlowProvider } from "@/providers/NonAgentFlowContext";
 import ReviewWidget from "@/components/widgets/review.widget";
 
 // Debug utility function
@@ -110,11 +111,13 @@ const NonAgentFlowBottomSheet: React.FC<{
 
   const normalizedApiData = normalizeApiDataEnvelope(apiData);
   return (
-    <NonAgentFlowWidget
-      apiData={normalizedApiData}
-      readOnly={readOnly}
-      {...args}
-    />
+    <NonAgentFlowProvider>
+      <NonAgentFlowWidget
+        apiData={normalizedApiData}
+        readOnly={readOnly}
+        {...args}
+      />
+    </NonAgentFlowProvider>
   );
 };
 
