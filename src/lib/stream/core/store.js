@@ -269,6 +269,24 @@ export class Store {
         }
       }
       // ensure insertion position
+      // If there are already interrupts immediately after the anchor (message/ui),
+      // append after the last of those to preserve first-seen ordering among
+      // interrupts that share the same anchor.
+      if (afterBlockId) {
+        const afterIndex = state.blockOrder.indexOf(afterBlockId);
+        if (afterIndex !== -1) {
+          let scanIndex = afterIndex + 1;
+          let tailAnchor = afterBlockId;
+          while (scanIndex < state.blockOrder.length) {
+            const nextBlockId = state.blockOrder[scanIndex];
+            const nextBlock = state.blocksById.get(nextBlockId);
+            if (!nextBlock || nextBlock.kind !== "interrupt") break;
+            tailAnchor = nextBlockId;
+            scanIndex += 1;
+          }
+          afterBlockId = tailAnchor;
+        }
+      }
       this._insertBlockAfter(threadId, blockId, afterBlockId);
     } else {
       const prev = state.blocksById.get(blockId) || {};
