@@ -28,6 +28,9 @@ interface NonAgentFlowContextType {
   submitVerificationResult: (data: {
     paymentStatus: string;
     bookingStatus: string;
+    pnr?: string;
+    transactionId?: string;
+    paymentMethod?: string;
   }) => Promise<void>;
 }
 
