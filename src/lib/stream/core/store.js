@@ -200,7 +200,7 @@ export class Store {
     // Upsert messages if provided
     if (Array.isArray(values?.messages)) {
       for (const msg of values.messages) {
-        const id = msg?.id;
+        const id = msg?.id || `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
         if (!id) continue;
         const wrapped = { toDict: () => ({ type: msg.type, data: msg }) };
         state.messagesById.set(id, { chunk: wrapped });
