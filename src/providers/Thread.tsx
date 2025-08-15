@@ -61,39 +61,43 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
   const [threadsLoading, setThreadsLoading] = useState(false);
 
   const getThreads = useCallback(async (): Promise<Thread[]> => {
-    if (!apiUrl || !assistantId) return [];
+    // Use resolved values with env fallbacks
+    if (!finalApiUrl || !finalAssistantId) return [];
 
+    setThreadsLoading(true);
     try {
-      const client = createClient(finalApiUrl!, getApiKey() ?? undefined);
-      
-      // Try multiple search strategies to find threads
-      let threads: Thread[] = [];
+      const client = createClient(finalApiUrl, getApiKey() ?? undefined);
+
+      let fetchedThreads: Thread[] = [];
 
       // Determine current user id (if available)
       const jwtToken = getJwtToken();
       const currentUserId = jwtToken ? GetUserId(jwtToken) : "";
 
       try {
-        console.log("🔍 ThreadProvider: First Attempt");
-        const metadata = getThreadSearchMetadata(finalAssistantId!);
+        const metadata = getThreadSearchMetadata(finalAssistantId);
         const metadataFilter: Record<string, any> = { ...metadata };
         if (currentUserId) {
           metadataFilter.user_id = currentUserId;
         }
-        threads = await client.threads.search({
+        fetchedThreads = await client.threads.search({
           metadata: metadataFilter,
           limit: 20,
           sortBy: "created_at",
           sortOrder: "desc",
         });
-        console.log("🔍 ThreadProvider: first Found threads:", threads);
       } catch (error) {
         console.warn("ThreadProvider: Metadata search failed:", error);
       }
-      return threads;
+
+      // Update shared state so consumers reflect new data
+      setThreads(fetchedThreads);
+      return fetchedThreads;
     } catch (error) {
       console.error("💥 ThreadProvider: Failed to fetch threads:", error);
       return [];
+    } finally {
+      setThreadsLoading(false);
     }
   }, [finalApiUrl, finalAssistantId]);
 
