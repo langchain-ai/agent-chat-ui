@@ -82,6 +82,9 @@ export function HumanMessage({
       streamMode: ["updates"],
       streamSubgraphs: true,
       optimisticValues: undefined,
+      metadata: {
+        user_id: userId,
+      },
     });
   };
 

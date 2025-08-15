@@ -252,6 +252,9 @@ export function Thread() {
       streamSubgraphs: true,
       optimisticValues: undefined,
       optimisticHumanMessage: newHumanMessage,
+      metadata: {
+        user_id: userId ? String(userId) : "anonymous",
+      },
     };
 
     // Add metadata for thread creation/updating
@@ -261,7 +264,6 @@ export function Thread() {
         assistant_id: assistantId,
         graph_id: assistantId,
         created_at: new Date().toISOString(),
-        user_id: userId || "anonymous",
       };
     }
 
