@@ -1310,7 +1310,8 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
   const isBookingSubmitted = !!readOnly;
 
   // State to track selected saved passenger and name modifications
-  const [selectedSavedPassenger, setSelectedSavedPassenger] = useState<SavedPassenger | null>(null);
+  const [selectedSavedPassenger, setSelectedSavedPassenger] =
+    useState<SavedPassenger | null>(null);
   const [originalFirstName, setOriginalFirstName] = useState<string>("");
   const [originalLastName, setOriginalLastName] = useState<string>("");
 
@@ -1373,19 +1374,31 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
     if (userDetails && savedPassengers.length > 0) {
       // Find matching saved passenger based on travellerId
       const matchingSavedPassenger = savedPassengers.find(
-        (savedPassenger) => savedPassenger.id === userDetails.travellerId?.toString()
+        (savedPassenger) =>
+          savedPassenger.id === userDetails.travellerId?.toString(),
       );
 
       if (matchingSavedPassenger) {
-        console.log("📋 Review Widget - Initial userDetails matches saved passenger:", matchingSavedPassenger);
+        console.log(
+          "📋 Review Widget - Initial userDetails matches saved passenger:",
+          matchingSavedPassenger,
+        );
         // Set up tracking for the initially populated saved passenger
         setSelectedSavedPassenger(matchingSavedPassenger);
         setOriginalFirstName(matchingSavedPassenger.firstName);
         setOriginalLastName(matchingSavedPassenger.lastName);
       } else {
-        console.log("📋 Review Widget - Initial userDetails does not match any saved passenger");
-        console.log("📋 Review Widget - userDetails.travellerId:", userDetails.travellerId);
-        console.log("📋 Review Widget - Available saved passenger IDs:", savedPassengers.map(p => p.id));
+        console.log(
+          "📋 Review Widget - Initial userDetails does not match any saved passenger",
+        );
+        console.log(
+          "📋 Review Widget - userDetails.travellerId:",
+          userDetails.travellerId,
+        );
+        console.log(
+          "📋 Review Widget - Available saved passenger IDs:",
+          savedPassengers.map((p) => p.id),
+        );
 
         // If userDetails doesn't match any saved passenger, set up tracking for user details
         setSelectedSavedPassenger(null);
@@ -1399,8 +1412,8 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
   const [passenger, setPassenger] = useState(() => {
     // If the widget is in read-only mode, prefer frozen args (travellersDetail)
     if (readOnly) {
-      const frozenTravellers =
-        (frozenArgs as any)?.flightItinerary?.userContext?.selectedTravellers;
+      const frozenTravellers = (frozenArgs as any)?.flightItinerary?.userContext
+        ?.selectedTravellers;
 
       const t = Array.isArray(frozenTravellers) ? frozenTravellers[0] : null;
       if (t) {
@@ -1529,11 +1542,14 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
 
   // Helper function to handle passenger field changes and clear saved passenger tracking if names change
   const handlePassengerFieldChange = (field: string, value: string) => {
-    setPassenger(prev => ({ ...prev, [field]: value }));
+    setPassenger((prev) => ({ ...prev, [field]: value }));
 
     // If first name or last name is being changed and we have a selected saved passenger,
     // we need to track this for submission logic
-    if ((field === 'firstName' || field === 'lastName') && selectedSavedPassenger) {
+    if (
+      (field === "firstName" || field === "lastName") &&
+      selectedSavedPassenger
+    ) {
       // The tracking will be handled by hasNameBeenModified() function
       // No need to clear selectedSavedPassenger here as we need it for comparison
     }
@@ -1608,15 +1624,23 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
     if (!nameModified && selectedSavedPassenger) {
       // Names unchanged - use existing saved traveller ID
       travellerId = parseInt(selectedSavedPassenger.id);
-      console.log("📋 Review Widget - Using existing saved traveller ID:", selectedSavedPassenger.id);
+      console.log(
+        "📋 Review Widget - Using existing saved traveller ID:",
+        selectedSavedPassenger.id,
+      );
     } else if (!nameModified && userDetails?.travellerId) {
       // Names unchanged and userDetails has travellerId - use user's travellerId
       travellerId = parseInt(userDetails.travellerId);
-      console.log("📋 Review Widget - Using user's traveller ID:", userDetails.travellerId);
+      console.log(
+        "📋 Review Widget - Using user's traveller ID:",
+        userDetails.travellerId,
+      );
     } else {
       // Names modified or no saved passenger/user details - treat as new passenger
-      travellerId =  1;
-      console.log("📋 Review Widget - Treating as new passenger (names modified or no saved passenger/user details)");
+      travellerId = 1;
+      console.log(
+        "📋 Review Widget - Treating as new passenger (names modified or no saved passenger/user details)",
+      );
     }
 
     console.log("📋 Review Widget - Name modification check:", {
@@ -1895,6 +1919,21 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
     const arrival = formatDateTime(arrivalData.date);
     const firstSegment = segments[0];
 
+    // Compute stops information
+    const totalSegments = segments?.length || 0;
+    const stopsCount = totalSegments > 1 ? totalSegments - 1 : 0;
+    const stopsText =
+      stopsCount === 0
+        ? "Non-stop"
+        : `${stopsCount} stop${stopsCount > 1 ? "s" : ""}`;
+    const stopIataCodes =
+      totalSegments > 1
+        ? segments
+            .slice(0, -1)
+            .map((s: any) => s?.arrival?.airportIata)
+            .filter(Boolean)
+        : [];
+
     return {
       departure: {
         city: departureData.cityCode || departureData.airportIata,
@@ -1926,6 +1965,9 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
             iataCode: "XX",
           },
       duration: parseDuration(duration || ""),
+      stopsCount,
+      stopsText,
+      stopIataCodes,
     };
   };
 
@@ -2276,12 +2318,12 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
                           <div className="mb-1 text-xs text-gray-600">
                             {flightDetails.duration}
                           </div>
-                          <div className="flex w-full items-center">
-                            <div className="h-px w-16 bg-gray-300"></div>
-                            <ArrowRight className="mx-1 h-3 w-3 text-gray-400" />
+                          <div className="relative flex w-full items-center">
+                            <div className="h-px w-full bg-gray-300"></div>
+                            <ArrowRight className="absolute left-1/2 h-3 w-3 -translate-x-1/2 text-gray-400" />
                           </div>
                           <div className="mt-1 text-xs text-gray-600">
-                            Non-stop
+                            {getFlightDetails()?.stopsText}
                           </div>
                         </div>
 
@@ -3185,11 +3227,13 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
                     <div className="mb-1 text-xs text-gray-600">
                       {getFlightDetails()?.duration}
                     </div>
-                    <div className="flex w-full items-center">
-                      <div className="h-px w-20 bg-gray-300"></div>
-                      <ArrowRight className="mx-1 h-3 w-3 text-gray-400" />
+                    <div className="relative flex w-full items-center">
+                      <div className="h-px w-full bg-gray-300"></div>
+                      <ArrowRight className="absolute left-1/2 h-3 w-3 -translate-x-1/2 text-gray-400" />
                     </div>
-                    <div className="mt-1 text-xs text-gray-600">Non-stop</div>
+                    <div className="mt-1 text-xs text-gray-600">
+                      {getFlightDetails()?.stopsText}
+                    </div>
                   </div>
 
                   {/* Arrival */}
