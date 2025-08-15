@@ -2098,8 +2098,6 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
       // Transform data according to backend requirements (matching whosTravelling format)
       const formattedData = transformDataForBackend();
 
-      console.log("---> Formatted Data", JSON.stringify(formattedData));
-
       // Create response in exact same format as whosTravelling widget
       const responseData = [
         {
@@ -2167,7 +2165,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
   };
 
   return (
-    <div className="relative min-h-screen bg-gray-50 lg:min-h-0">
+    <div className="relative bg-gray-50">
       <div className="mx-auto max-w-4xl p-3 pb-4 sm:p-4 sm:pb-4">
         {/* Desktop Two-Column Layout */}
         <div className="hidden lg:grid lg:grid-cols-2 lg:gap-6">
