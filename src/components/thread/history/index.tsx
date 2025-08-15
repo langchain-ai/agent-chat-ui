@@ -18,7 +18,11 @@ import { SquarePen, Grid3X3, X, MoreVertical } from "lucide-react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { getJwtToken, decodeJwtPayload, getUserFullName } from "@/services/authService";
+import {
+  getJwtToken,
+  decodeJwtPayload,
+  getUserFullName,
+} from "@/services/authService";
 import { FlyoLogoSVG } from "@/components/icons/langgraph";
 import { useStreamContext } from "@/providers/Stream";
 import LogoutButton from "@/components/auth/LogoutButton";
@@ -263,10 +267,14 @@ export default function ThreadHistory() {
                 </h3>
               </div>
               <div className="flex-1 overflow-hidden">
-                <ThreadList
-                  threads={threads}
-                  onThreadClick={() => setChatHistoryOpen(false)}
-                />
+                {threadsLoading ? (
+                  <ThreadHistoryLoading />
+                ) : (
+                  <ThreadList
+                    threads={threads}
+                    onThreadClick={() => setChatHistoryOpen(false)}
+                  />
+                )}
               </div>
             </div>
 

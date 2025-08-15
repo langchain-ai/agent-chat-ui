@@ -12,6 +12,7 @@ import {
   SetStateAction,
 } from "react";
 import { createClient } from "./client";
+import { Persistence } from "@/lib/stream/core/persistence.js";
 import {
   getStoredThreads,
   convertStoredThreadsToThreads,
@@ -61,40 +62,61 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
   const [threadsLoading, setThreadsLoading] = useState(false);
 
   const getThreads = useCallback(async (): Promise<Thread[]> => {
-    if (!apiUrl || !assistantId) return [];
+    // Use resolved values with env fallbacks
+    if (!finalApiUrl || !finalAssistantId) return [];
 
+    setThreadsLoading(true);
     try {
-      const client = createClient(finalApiUrl!, getApiKey() ?? undefined);
-      
-      // Try multiple search strategies to find threads
-      let threads: Thread[] = [];
+      const client = createClient(finalApiUrl, getApiKey() ?? undefined);
+
+      let fetchedThreads: Thread[] = [];
 
       // Determine current user id (if available)
       const jwtToken = getJwtToken();
-      const currentUserId = jwtToken ? String(GetUserId(jwtToken)) : "";
+      const currentUserId = jwtToken ? GetUserId(jwtToken) : "";
 
       try {
-        const metadata = getThreadSearchMetadata(finalAssistantId!);
-        console.log("🔍 ThreadProvider: Searching with metadata:", metadata);
+        const metadata = getThreadSearchMetadata(finalAssistantId);
         const metadataFilter: Record<string, any> = { ...metadata };
         if (currentUserId) {
           metadataFilter.user_id = currentUserId;
         }
-        console.log("🔍 ThreadProvider: Metadata filter:", metadataFilter);
-        threads = await client.threads.search({
+        fetchedThreads = await client.threads.search({
           metadata: metadataFilter,
           limit: 20,
           sortBy: "created_at",
           sortOrder: "desc",
         });
-        console.log("🔍 ThreadProvider: Found threads:", threads);
       } catch (error) {
         console.warn("ThreadProvider: Metadata search failed:", error);
       }
-      return threads;
+
+      // Filter to only threads that have cached data in localStorage
+      let filteredThreads: Thread[] = fetchedThreads;
+      try {
+        if (typeof window !== "undefined") {
+          const persistence = new Persistence();
+          const { threads: cached } = persistence.loadAll();
+          const cachedIds = new Set(Object.keys(cached ?? {}));
+          filteredThreads = fetchedThreads.filter((t) =>
+            cachedIds.has(t.thread_id),
+          );
+        }
+      } catch (e) {
+        console.warn(
+          "ThreadProvider: failed to read cached threads from localStorage",
+          e,
+        );
+      }
+
+      // Update shared state so consumers reflect new data (only cached ones)
+      setThreads(filteredThreads);
+      return filteredThreads;
     } catch (error) {
       console.error("💥 ThreadProvider: Failed to fetch threads:", error);
       return [];
+    } finally {
+      setThreadsLoading(false);
     }
   }, [finalApiUrl, finalAssistantId]);
 
