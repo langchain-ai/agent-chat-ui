@@ -189,7 +189,7 @@ export function AirportCombobox({
       } finally {
         setIsLoading(false);
       }
-    }, 300); // 300ms debounce
+    }, 100); // 300ms debounce
 
     return () => clearTimeout(timeoutId);
   }, [searchQuery, disabled]);
@@ -243,10 +243,15 @@ export function AirportCombobox({
     console.log("🔍 AirportCombobox Debug - useEffect triggered");
     console.log("🔍 AirportCombobox Debug - value:", value);
     console.log("🔍 AirportCombobox Debug - apiResults:", apiResults);
-    console.log("🔍 AirportCombobox Debug - selectedAirportInfo:", selectedAirportInfo);
+    console.log(
+      "🔍 AirportCombobox Debug - selectedAirportInfo:",
+      selectedAirportInfo,
+    );
 
     if (!value) {
-      console.log("🔍 AirportCombobox Debug - No value, setting selectedAirportInfo to null");
+      console.log(
+        "🔍 AirportCombobox Debug - No value, setting selectedAirportInfo to null",
+      );
       setSelectedAirportInfo(null);
       return;
     }
@@ -257,12 +262,23 @@ export function AirportCombobox({
     );
     if (popularAirport) {
       const displayName = `${popularAirport.code} - ${popularAirport.city}`;
-      console.log("🔍 AirportCombobox Debug - Found in popular airports:", popularAirport);
-      console.log("🔍 AirportCombobox Debug - Setting displayName:", displayName);
+      console.log(
+        "🔍 AirportCombobox Debug - Found in popular airports:",
+        popularAirport,
+      );
+      console.log(
+        "🔍 AirportCombobox Debug - Setting displayName:",
+        displayName,
+      );
 
       // Cache this airport information
       airportCacheRef.current.set(value, displayName);
-      console.log("🔍 AirportCombobox Debug - Cached popular airport info:", value, "->", displayName);
+      console.log(
+        "🔍 AirportCombobox Debug - Cached popular airport info:",
+        value,
+        "->",
+        displayName,
+      );
 
       setSelectedAirportInfo({ code: popularAirport.code, displayName });
       return;
@@ -278,15 +294,26 @@ export function AirportCombobox({
       const cityName = cityCountry.split(",")[0].trim();
       const displayName = `${apiAirport.k} - ${cityName}`;
 
-      console.log("🔍 AirportCombobox Debug - Found in API results:", apiAirport);
+      console.log(
+        "🔍 AirportCombobox Debug - Found in API results:",
+        apiAirport,
+      );
       console.log("🔍 AirportCombobox Debug - API result parts:", parts);
       console.log("🔍 AirportCombobox Debug - cityCountry:", cityCountry);
       console.log("🔍 AirportCombobox Debug - extracted cityName:", cityName);
-      console.log("🔍 AirportCombobox Debug - Setting displayName:", displayName);
+      console.log(
+        "🔍 AirportCombobox Debug - Setting displayName:",
+        displayName,
+      );
 
       // Cache this airport information
       airportCacheRef.current.set(value, displayName);
-      console.log("🔍 AirportCombobox Debug - Cached airport info:", value, "->", displayName);
+      console.log(
+        "🔍 AirportCombobox Debug - Cached airport info:",
+        value,
+        "->",
+        displayName,
+      );
 
       setSelectedAirportInfo({ code: apiAirport.k, displayName });
       return;
@@ -295,7 +322,12 @@ export function AirportCombobox({
     // Check cache before falling back
     const cachedDisplayName = airportCacheRef.current.get(value);
     if (cachedDisplayName) {
-      console.log("🔍 AirportCombobox Debug - Found in cache:", value, "->", cachedDisplayName);
+      console.log(
+        "🔍 AirportCombobox Debug - Found in cache:",
+        value,
+        "->",
+        cachedDisplayName,
+      );
       setSelectedAirportInfo({ code: value, displayName: cachedDisplayName });
       return;
     }
@@ -304,11 +336,19 @@ export function AirportCombobox({
     // BUT only if we don't already have valid info for this airport code
     if (!selectedAirportInfo || selectedAirportInfo.code !== value) {
       const fallbackDisplay = `${value} - Airport`;
-      console.log("🔍 AirportCombobox Debug - Using fallback display:", fallbackDisplay);
-      console.log("🔍 AirportCombobox Debug - Reason: Not found in popular or API results");
+      console.log(
+        "🔍 AirportCombobox Debug - Using fallback display:",
+        fallbackDisplay,
+      );
+      console.log(
+        "🔍 AirportCombobox Debug - Reason: Not found in popular or API results",
+      );
       setSelectedAirportInfo({ code: value, displayName: fallbackDisplay });
     } else {
-      console.log("🔍 AirportCombobox Debug - Keeping existing selectedAirportInfo:", selectedAirportInfo);
+      console.log(
+        "🔍 AirportCombobox Debug - Keeping existing selectedAirportInfo:",
+        selectedAirportInfo,
+      );
       // Don't override existing valid info - this prevents the fallback from overriding
       // previously stored airport information when apiResults is cleared
     }
@@ -317,7 +357,10 @@ export function AirportCombobox({
   const selectedAirport = React.useMemo(() => {
     console.log("🔍 AirportCombobox Debug - selectedAirport useMemo triggered");
     console.log("🔍 AirportCombobox Debug - value in useMemo:", value);
-    console.log("🔍 AirportCombobox Debug - selectedAirportInfo in useMemo:", selectedAirportInfo);
+    console.log(
+      "🔍 AirportCombobox Debug - selectedAirportInfo in useMemo:",
+      selectedAirportInfo,
+    );
 
     if (!value) {
       console.log("🔍 AirportCombobox Debug - No value, returning null");
@@ -325,7 +368,10 @@ export function AirportCombobox({
     }
 
     const result = selectedAirportInfo?.displayName || value;
-    console.log("🔍 AirportCombobox Debug - Final selectedAirport result:", result);
+    console.log(
+      "🔍 AirportCombobox Debug - Final selectedAirport result:",
+      result,
+    );
     return result;
   }, [value, selectedAirportInfo]);
 
@@ -375,11 +421,22 @@ export function AirportCombobox({
                     value={airport.value}
                     onSelect={(currentValue) => {
                       if (disabled) return;
-                      console.log("🔍 AirportCombobox Debug - Popular airport selected:", currentValue);
-                      console.log("🔍 AirportCombobox Debug - Airport data:", airport);
-                      onValueChange?.(
-                        currentValue === value ? "" : currentValue,
+                      console.log(
+                        "🔍 AirportCombobox Debug - Popular airport selected:",
+                        currentValue,
                       );
+                      console.log(
+                        "🔍 AirportCombobox Debug - Airport data:",
+                        airport,
+                      );
+                      // Immediately set selected info from the chosen option to avoid fallback display
+                      const displayName = airport.label;
+                      airportCacheRef.current.set(currentValue, displayName);
+                      setSelectedAirportInfo({
+                        code: currentValue,
+                        displayName,
+                      });
+                      onValueChange?.(currentValue);
                       setOpen(false);
                       setSearchQuery("");
                       setApiResults([]);
@@ -409,11 +466,18 @@ export function AirportCombobox({
                     value={airport.value}
                     onSelect={(currentValue) => {
                       if (disabled) return;
-                      console.log("🔍 AirportCombobox Debug - API airport selected:", currentValue);
-                      console.log("🔍 AirportCombobox Debug - Airport data:", airport);
-                      onValueChange?.(
-                        currentValue === value ? "" : currentValue,
+                      console.log(
+                        "🔍 AirportCombobox Debug - API airport selected:",
+                        currentValue,
                       );
+                      // Immediately set selected info from the chosen option to avoid fallback display
+                      const displayName = airport.label;
+                      airportCacheRef.current.set(currentValue, displayName);
+                      setSelectedAirportInfo({
+                        code: currentValue,
+                        displayName,
+                      });
+                      onValueChange?.(currentValue);
                       setOpen(false);
                       setSearchQuery("");
                       setApiResults([]);
