@@ -18,7 +18,7 @@ import { SquarePen, Grid3X3, X, MoreVertical } from "lucide-react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { getJwtToken, decodeJwtPayload } from "@/services/authService";
+import { getJwtToken, decodeJwtPayload, getUserFullName } from "@/services/authService";
 import { FlyoLogoSVG } from "@/components/icons/langgraph";
 import { useStreamContext } from "@/providers/Stream";
 
@@ -35,9 +35,7 @@ function Logo() {
 
 // User Profile Component
 function UserProfile() {
-  const token = getJwtToken();
-  const userData = token ? decodeJwtPayload(token) : null;
-  const userName = userData?.name || userData?.email?.split("@")[0] || "User";
+  const userName = getUserFullName();
   const userInitial = userName.charAt(0).toUpperCase();
 
   return (

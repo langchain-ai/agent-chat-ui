@@ -7,6 +7,8 @@ export interface AuthTokens {
 export interface LoginResponse {
   jwtToken: string;
   userType: string;
+  first_name: string;
+  last_name: string;
 }
 
 /**
@@ -71,6 +73,8 @@ export const isAuthenticated = (): boolean => {
 export const storeJwtTokenWithValidation = (
   jwtToken: string,
   userType: string,
+  firstName?: string,
+  lastName?: string,
 ): void => {
   try {
     if (!jwtToken) {
@@ -80,6 +84,14 @@ export const storeJwtTokenWithValidation = (
     // Store the JWT token
     window.localStorage.setItem("flyo:jwt:token", jwtToken);
     window.localStorage.setItem("flyo:user:type", userType);
+
+    // Store user name information if provided
+    if (firstName) {
+      window.localStorage.setItem("flyo:user:first_name", firstName);
+    }
+    if (lastName) {
+      window.localStorage.setItem("flyo:user:last_name", lastName);
+    }
 
     console.log("JWT token stored successfully");
   } catch (error) {
@@ -101,6 +113,55 @@ export const getJwtToken = (): string | null => {
 };
 
 /**
+ * Get stored user first name
+ */
+export const getUserFirstName = (): string | null => {
+  try {
+    if (typeof window === "undefined") return null;
+    return window.localStorage.getItem("flyo:user:first_name");
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Get stored user last name
+ */
+export const getUserLastName = (): string | null => {
+  try {
+    if (typeof window === "undefined") return null;
+    return window.localStorage.getItem("flyo:user:last_name");
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Get user's full name
+ */
+export const getUserFullName = (): string => {
+  const firstName = getUserFirstName();
+  const lastName = getUserLastName();
+
+  if (firstName && lastName) {
+    return `${firstName} ${lastName}`;
+  } else if (firstName) {
+    return firstName;
+  } else if (lastName) {
+    return lastName;
+  }
+
+  // Fallback to JWT token data if name not stored
+  const token = getJwtToken();
+  if (token) {
+    const userData = decodeJwtPayload(token);
+    return userData?.name || userData?.email?.split("@")[0] || "User";
+  }
+
+  return "User";
+};
+
+/**
  * Clear authentication data
  */
 export const clearAuthData = (): void => {
@@ -108,6 +169,8 @@ export const clearAuthData = (): void => {
     if (typeof window === "undefined") return;
     window.localStorage.removeItem("flyo:jwt:token");
     window.localStorage.removeItem("flyo:user:type");
+    window.localStorage.removeItem("flyo:user:first_name");
+    window.localStorage.removeItem("flyo:user:last_name");
   } catch (error) {
     console.error("Error clearing auth data:", error);
   }
