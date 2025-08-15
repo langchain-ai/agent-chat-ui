@@ -11,10 +11,10 @@ interface LogoutButtonProps {
   className?: string;
 }
 
-const LogoutButton: React.FC<LogoutButtonProps> = ({ 
-  variant = "outline", 
+const LogoutButton: React.FC<LogoutButtonProps> = ({
+  variant = "outline",
   size = "default",
-  className 
+  className
 }) => {
   const handleLogout = () => {
     if (confirm("Are you sure you want to logout?")) {
@@ -27,7 +27,7 @@ const LogoutButton: React.FC<LogoutButtonProps> = ({
       onClick={handleLogout}
       variant={variant}
       size={size}
-      className={cn(className,'w-full')}
+      className={cn(className)}
     >
       Logout
     </Button>
