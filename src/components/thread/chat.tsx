@@ -466,7 +466,7 @@ export function Thread() {
                           // optionally render UI blocks here if desired
                           return null;
                         })}
-                        {isLoading && !firstTokenReceived && (
+                        {isLoading && (
                           <AssistantMessageLoading />
                         )}
                       </>
