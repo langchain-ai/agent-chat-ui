@@ -197,18 +197,17 @@ export function useStream(options) {
     suspendWhenNullRef.current = false;
     await consumeStream(async (signal) => {
       let usableThreadId = threadId;
-      if (!usableThreadId) {
-        const thread = await client.threads.create({
-          threadId: submitOptions?.threadId,
-          metadata: submitOptions?.metadata,
-        });
-        setThreadId(thread.thread_id);
-        usableThreadId = thread.thread_id;
-      }
-      if (!usableThreadId) throw new Error("Failed to obtain valid thread ID.");
 
-      // Optimistic values (blocks-only): allow immediate human echo if provided on submitOptions
-      if (submitOptions?.optimisticHumanMessage) {
+      // If there's no active thread yet but a client-supplied threadId exists,
+      // assign it immediately so we can render optimistic content without waiting
+      // for the server roundtrip to create the thread.
+      if (!usableThreadId && submitOptions?.threadId) {
+        setThreadId(submitOptions.threadId);
+        usableThreadId = submitOptions.threadId;
+      }
+
+      // Optimistic echo ASAP if we already have a usable thread id
+      if (submitOptions?.optimisticHumanMessage && usableThreadId) {
         const optimistic = submitOptions.optimisticHumanMessage;
         actorRef.current.enqueue(usableThreadId, async () => {
           storeRef.current.addOptimisticHumanBlock(usableThreadId, optimistic);
@@ -219,6 +218,27 @@ export function useStream(options) {
           }
         });
       }
+
+      // Ensure the thread exists server-side. If we pre-assigned a client
+      // thread id above, create the server thread with that id.
+      if (!threadId) {
+        const thread = await client.threads.create({
+          threadId: usableThreadId ?? submitOptions?.threadId,
+          metadata: submitOptions?.metadata,
+        });
+        setThreadId(thread.thread_id);
+        usableThreadId = thread.thread_id;
+      }
+      if (!usableThreadId) {
+        // Fallback: if for any reason we still do not have a thread, create one now
+        const thread = await client.threads.create({
+          threadId: submitOptions?.threadId,
+          metadata: submitOptions?.metadata,
+        });
+        setThreadId(thread.thread_id);
+        usableThreadId = thread.thread_id;
+      }
+      if (!usableThreadId) throw new Error("Failed to obtain valid thread ID.");
 
       const streamMode = unique([...(submitOptions?.streamMode ?? []), ...defaultStreamModes]);
 

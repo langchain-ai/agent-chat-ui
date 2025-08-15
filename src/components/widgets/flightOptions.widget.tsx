@@ -1121,12 +1121,16 @@ const FlightCard = ({
         className={cn(
           "w-full border border-gray-300 bg-white py-3 text-black transition-colors duration-200 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50",
           flight.reason ? "mt-1" : "mt-3",
-          readOnly && "bg-gray-100 text-gray-600 border-gray-200",
+          readOnly && "border-gray-200 bg-gray-100 text-gray-600",
         )}
       >
         <span className="flex items-center justify-center gap-2">
           <span className="font-normal">
-            {readOnly ? "Selected" : isLoading ? "Selecting..." : "Select Flight"}
+            {readOnly
+              ? "Selected"
+              : isLoading
+                ? "Selecting..."
+                : "Select Flight"}
           </span>
           <span className="font-bold">
             {currencySymbol}
@@ -1689,7 +1693,7 @@ const FlightListItem = ({
         "border-b border-gray-200 bg-white px-3 py-4 transition-colors duration-200 sm:px-4",
         readOnly
           ? "cursor-default bg-gray-50"
-          : "cursor-pointer hover:bg-gray-50"
+          : "cursor-pointer hover:bg-gray-50",
       )}
       onClick={() => !readOnly && onSelect(flight.flightOfferId)}
     >
@@ -2111,9 +2115,8 @@ const FlightOptionsWidget = (args: FlightOptionsProps) => {
   const frozenArgs = (liveArgs as any)?.submission;
   const effectiveArgs = args.readOnly && frozenArgs ? frozenArgs : liveArgs;
 
-  const flightOffers = (effectiveArgs as any)?.flightOffers ??
-    args.flightOffers ??
-    {};
+  const flightOffers =
+    (effectiveArgs as any)?.flightOffers ?? args.flightOffers ?? {};
 
   const readOnly = !!args.readOnly;
 
@@ -2154,19 +2157,21 @@ const FlightOptionsWidget = (args: FlightOptionsProps) => {
 
     setSelectedFlight(flightOfferId);
     setIsLoading(true);
+    // Close the "All Flights" sheet immediately on selection
+    setShowAllFlights(false);
 
     const responseData = {
       selectedFlightId: flightOfferId,
     };
 
     try {
-      const selectedFlightOffer=flightOffers.find(
+      const selectedFlightOffer = flightOffers.find(
         (offer: any) => offer.flightOfferId === flightOfferId,
       );
       const frozen = {
         widget: {
           type: "FlightOptionsWidget",
-          args: { flightOffers: [selectedFlightOffer]},
+          args: { flightOffers: [selectedFlightOffer] },
         },
         value: {
           type: "widget",
@@ -2342,7 +2347,9 @@ const FlightOptionsWidget = (args: FlightOptionsProps) => {
                 Available Flights
               </h2>
               <p className="text-sm text-gray-600">
-                {readOnly ? "Your selected flight option" : "Choose from the best options"}
+                {readOnly
+                  ? "Your selected flight option"
+                  : "Choose from the best options"}
               </p>
             </div>
             {readOnly && (
