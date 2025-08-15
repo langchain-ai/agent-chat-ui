@@ -25,8 +25,6 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   cancelText = "Cancel",
   confirmVariant = "default",
 }) => {
-  if (!isOpen) return null;
-
   const handleConfirm = () => {
     onConfirm();
     onClose();
@@ -55,6 +53,9 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
       document.body.style.overflow = "unset";
     };
   }, [isOpen, onClose]);
+
+  // Early return after all hooks
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
