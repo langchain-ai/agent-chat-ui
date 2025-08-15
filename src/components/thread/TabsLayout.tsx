@@ -7,8 +7,13 @@ import { ItineraryView } from "@/components/flight/ItineraryComponent";
 import { Thread } from "@/components/thread/chat";
 import { useQueryState } from "nuqs";
 import { Button } from "@/components/ui/button";
-import { SquarePen, PanelRightClose, PanelRightOpen, LogOut } from "lucide-react";
-import { useRouter } from "next/navigation";
+import {
+  SquarePen,
+  PanelRightClose,
+  PanelRightOpen,
+  LogOut,
+} from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { parseAsBoolean } from "nuqs";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
@@ -17,6 +22,7 @@ import { useTabContext } from "@/providers/TabContext";
 import { logout } from "@/services/authService";
 import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
 import { useConfirmation } from "@/hooks/useConfirmation";
+import { useStreamContext } from "@/providers/Stream";
 
 const tabs = [
   // { name: "Map", component: <MapView /> }, // Commented out - can be easily restored later
@@ -25,7 +31,9 @@ const tabs = [
 ];
 
 export const TabsLayout = () => {
-  const [threadId] = useQueryState("threadId");
+  const [threadId, setThreadId] = useQueryState("threadId");
+  const stream = useStreamContext();
+  const searchParams = useSearchParams();
   const [chatHistoryOpen, setChatHistoryOpen] = useQueryState(
     "chatHistoryOpen",
     parseAsBoolean.withDefault(false),
@@ -33,13 +41,16 @@ export const TabsLayout = () => {
   const router = useRouter();
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
   const { activeTab, setActiveTab } = useTabContext();
-  const { isOpen, options, confirm, handleConfirm, handleCancel } = useConfirmation();
+  const { isOpen, options, confirm, handleConfirm, handleCancel } =
+    useConfirmation();
 
   // Debug logging for TabsLayout
   console.log("🔍 TabsLayout Debug - Component rendering");
   console.log("🔍 TabsLayout Debug - isLargeScreen:", isLargeScreen);
   console.log("🔍 TabsLayout Debug - chatHistoryOpen:", chatHistoryOpen);
-  console.log("🔍 TabsLayout Debug - About to render TabsLayout with logout button");
+  console.log(
+    "🔍 TabsLayout Debug - About to render TabsLayout with logout button",
+  );
 
   return (
     <div className="flex h-full w-full overflow-hidden">
@@ -89,9 +100,7 @@ export const TabsLayout = () => {
       >
         <Tabs
           value={activeTab}
-          onValueChange={(value) =>
-            setActiveTab(value as "Chat" | "Review")
-          }
+          onValueChange={(value) => setActiveTab(value as "Chat" | "Review")}
           className="flex h-full w-full flex-col"
         >
           <div className="flex items-center justify-between p-2">
@@ -103,9 +112,9 @@ export const TabsLayout = () => {
                 onClick={() => setChatHistoryOpen((p) => !p)}
               >
                 {chatHistoryOpen ? (
-                  <PanelRightOpen className="size-4" />
+                  <PanelRightOpen className="size-6" />
                 ) : (
-                  <PanelRightClose className="size-4" />
+                  <PanelRightClose className="size-6" />
                 )}
               </Button>
             </div>
@@ -127,7 +136,13 @@ export const TabsLayout = () => {
                 size="lg"
                 className="p-2"
                 variant="ghost"
-                onClick={() => router.push("/")}
+                onClick={() => {
+                  try {
+                    stream?.stop?.();
+                    stream?.clearInMemoryValues?.();
+                  } catch {}
+                  setThreadId(null);
+                }}
               >
                 <SquarePen className="size-6" />
               </Button>
