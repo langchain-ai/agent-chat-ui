@@ -71,23 +71,22 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
 
       // Determine current user id (if available)
       const jwtToken = getJwtToken();
-      const currentUserId = jwtToken ? String(GetUserId(jwtToken)) : "";
+      const currentUserId = jwtToken ? GetUserId(jwtToken) : "";
 
       try {
+        console.log("🔍 ThreadProvider: First Attempt");
         const metadata = getThreadSearchMetadata(finalAssistantId!);
-        console.log("🔍 ThreadProvider: Searching with metadata:", metadata);
         const metadataFilter: Record<string, any> = { ...metadata };
         if (currentUserId) {
           metadataFilter.user_id = currentUserId;
         }
-        console.log("🔍 ThreadProvider: Metadata filter:", metadataFilter);
         threads = await client.threads.search({
           metadata: metadataFilter,
           limit: 20,
           sortBy: "created_at",
           sortOrder: "desc",
         });
-        console.log("🔍 ThreadProvider: Found threads:", threads);
+        console.log("🔍 ThreadProvider: first Found threads:", threads);
       } catch (error) {
         console.warn("ThreadProvider: Metadata search failed:", error);
       }
