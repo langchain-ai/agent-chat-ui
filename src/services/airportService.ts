@@ -15,6 +15,8 @@ export async function searchAirports(
   try {
     const proxyUrl = `/api/airports/search?string=${encodeURIComponent(trimmedQuery)}`;
     const response = await fetch(proxyUrl);
+    console.log("Airport search API response:", JSON.stringify(response, null, 2));
+
 
     if (!response.ok) {
       throw new Error(
@@ -23,6 +25,7 @@ export async function searchAirports(
     }
 
     const data: AirportApiResponse[] = await response.json();
+    console.log("Airport search API data:", JSON.stringify(data, null, 2));
     return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error("Airport search API call failed:", error);

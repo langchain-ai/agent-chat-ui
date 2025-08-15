@@ -148,6 +148,8 @@ const Login: React.FC = () => {
             storeJwtTokenWithValidation(
               loginResponse.jwtToken,
               loginResponse.userType,
+              loginResponse.first_name,
+              loginResponse.last_name,
             );
             console.log("✅ JWT token stored successfully!");
 

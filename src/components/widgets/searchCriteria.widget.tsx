@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/common/ui/button";
-import { Plus, Minus, CalendarIcon } from "lucide-react";
+import { Plus, Minus, CalendarIcon, Ban } from "lucide-react";
 import { AirportCombobox } from "@/components/common/ui/airportCombobox";
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
@@ -167,6 +167,13 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showTravellerDropdown, setShowTravellerDropdown] = useState(false);
 
+  // Validation function to check if all mandatory fields are filled
+  const isFormValid = () => {
+    return fromAirport.trim() !== "" &&
+           toAirport.trim() !== "" &&
+           departureDate !== undefined;
+  };
+
   // Wrapper functions for date state setters to match DateInput component interface
   const handleDepartureDateChange = (date: Date | undefined) => {
     setDepartureDate(date);
@@ -178,6 +185,12 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Prevent submission if form is invalid
+    if (!isFormValid()) {
+      return;
+    }
+
     setIsLoading(true);
 
     // Ensure departure date is not in the past
@@ -517,7 +530,12 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
             <Button
               type="submit"
               disabled={isLoading || readOnly}
-              className="w-full rounded-lg bg-black py-3 text-base font-semibold text-white hover:bg-gray-800"
+              className={`w-full rounded-lg bg-black py-3 text-base font-semibold text-white hover:bg-gray-800 ${
+                !isFormValid() && !readOnly ? "cursor-not-allowed" : ""
+              }`}
+              style={{
+                cursor: !isFormValid() && !readOnly ? "not-allowed" : "pointer"
+              }}
             >
               {isLoading ? "Searching..." : "Search flights"}
             </Button>

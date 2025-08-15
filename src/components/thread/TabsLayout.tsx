@@ -8,13 +8,16 @@ import { Thread } from "@/components/thread/chat";
 import { useQueryState } from "nuqs";
 import { FlyoLogoSVG } from "../icons/langgraph";
 import { Button } from "@/components/ui/button";
-import { SquarePen, PanelRightClose, PanelRightOpen } from "lucide-react";
+import { SquarePen, PanelRightClose, PanelRightOpen, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { parseAsBoolean } from "nuqs";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import ThreadHistory from "./history";
 import { useTabContext } from "@/providers/TabContext";
+import { logout } from "@/services/authService";
+import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
+import { useConfirmation } from "@/hooks/useConfirmation";
 
 const tabs = [
   // { name: "Map", component: <MapView /> }, // Commented out - can be easily restored later
@@ -31,6 +34,13 @@ export const TabsLayout = () => {
   const router = useRouter();
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
   const { activeTab, setActiveTab } = useTabContext();
+  const { isOpen, options, confirm, handleConfirm, handleCancel } = useConfirmation();
+
+  // Debug logging for TabsLayout
+  console.log("🔍 TabsLayout Debug - Component rendering");
+  console.log("🔍 TabsLayout Debug - isLargeScreen:", isLargeScreen);
+  console.log("🔍 TabsLayout Debug - chatHistoryOpen:", chatHistoryOpen);
+  console.log("🔍 TabsLayout Debug - About to render TabsLayout with logout button");
 
   return (
     <div className="flex h-full w-full overflow-hidden">
@@ -113,14 +123,43 @@ export const TabsLayout = () => {
               ))}
             </TabsList> */}
 
-            <Button
-              size="lg"
-              className="p-2"
-              variant="ghost"
-              onClick={() => router.push("/")}
-            >
-              <SquarePen className="size-6" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                size="lg"
+                className="p-2"
+                variant="ghost"
+                onClick={() => router.push("/")}
+              >
+                <SquarePen className="size-6" />
+              </Button>
+
+              {/* Logout Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-gray-600 hover:text-gray-900 border-gray-300 hover:border-gray-400 flex items-center gap-2"
+                onClick={async () => {
+                  console.log("🔍 TabsLayout Logout button clicked!");
+                  const confirmed = await confirm({
+                    title: "Confirm Logout",
+                    message: "Are you sure you want to logout? You will need to sign in again to access your account.",
+                    confirmText: "Yes, Logout",
+                    cancelText: "Cancel",
+                  });
+
+                  if (confirmed) {
+                    console.log("🔍 User confirmed logout, calling logout function");
+                    logout();
+                  } else {
+                    console.log("🔍 User cancelled logout");
+                  }
+                }}
+                title="Logout"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline">Logout</span>
+              </Button>
+            </div>
           </div>
 
           <div className="flex flex-1 flex-col overflow-hidden">
@@ -136,6 +175,18 @@ export const TabsLayout = () => {
           </div>
         </Tabs>
       </motion.div>
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={isOpen}
+        onClose={handleCancel}
+        onConfirm={handleConfirm}
+        title={options.title}
+        message={options.message}
+        confirmText={options.confirmText}
+        cancelText={options.cancelText}
+        confirmVariant={options.confirmVariant}
+      />
     </div>
   );
 };

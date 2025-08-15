@@ -143,6 +143,14 @@ export function AirportCombobox({
   const [isLoading, setIsLoading] = React.useState(false);
   const [triggerWidth, setTriggerWidth] = React.useState<number>(0);
   const triggerRef = React.useRef<HTMLButtonElement>(null);
+  // Store selected airport info to maintain display even when not in current results
+  const [selectedAirportInfo, setSelectedAirportInfo] = React.useState<{
+    code: string;
+    displayName: string;
+  } | null>(null);
+
+  // Keep a cache of airport information to prevent losing data when apiResults is cleared
+  const airportCacheRef = React.useRef<Map<string, string>>(new Map());
 
   // Update trigger width when component mounts or window resizes
   React.useEffect(() => {
@@ -215,24 +223,49 @@ export function AirportCombobox({
         const cityCountry = parts[0] || result.v;
         const airportInfo = parts[1] || "";
 
+        // Extract just the city name (part before the comma)
+        const cityName = cityCountry.split(",")[0].trim();
+        console.log("🔍 AirportCombobox Debug - Parsing API result:", result.v);
+        console.log("🔍 AirportCombobox Debug - cityCountry:", cityCountry);
+        console.log("🔍 AirportCombobox Debug - extracted cityName:", cityName);
+
         return {
           value: result.k,
-          label: `${result.k} - ${cityCountry}`,
+          label: `${result.k} - ${cityName}`,
           description: airportInfo || result.v,
           isPopular: false,
         };
       });
   }, [searchQuery, excludeAirport, apiResults]);
 
-  const selectedAirport = React.useMemo(() => {
-    if (!value) return null;
+  // Update selectedAirportInfo when value or apiResults change
+  React.useEffect(() => {
+    console.log("🔍 AirportCombobox Debug - useEffect triggered");
+    console.log("🔍 AirportCombobox Debug - value:", value);
+    console.log("🔍 AirportCombobox Debug - apiResults:", apiResults);
+    console.log("🔍 AirportCombobox Debug - selectedAirportInfo:", selectedAirportInfo);
+
+    if (!value) {
+      console.log("🔍 AirportCombobox Debug - No value, setting selectedAirportInfo to null");
+      setSelectedAirportInfo(null);
+      return;
+    }
 
     // First check popular airports
     const popularAirport = POPULAR_AIRPORTS.find(
       (airport) => airport.code === value,
     );
     if (popularAirport) {
-      return `${popularAirport.code} - ${popularAirport.city}`;
+      const displayName = `${popularAirport.code} - ${popularAirport.city}`;
+      console.log("🔍 AirportCombobox Debug - Found in popular airports:", popularAirport);
+      console.log("🔍 AirportCombobox Debug - Setting displayName:", displayName);
+
+      // Cache this airport information
+      airportCacheRef.current.set(value, displayName);
+      console.log("🔍 AirportCombobox Debug - Cached popular airport info:", value, "->", displayName);
+
+      setSelectedAirportInfo({ code: popularAirport.code, displayName });
+      return;
     }
 
     // Then check API results
@@ -240,12 +273,61 @@ export function AirportCombobox({
     if (apiAirport) {
       const parts = apiAirport.v.split(" - ");
       const cityCountry = parts[0] || apiAirport.v;
-      return `${apiAirport.k} - ${cityCountry}`;
+
+      // Extract just the city name (part before the comma)
+      const cityName = cityCountry.split(",")[0].trim();
+      const displayName = `${apiAirport.k} - ${cityName}`;
+
+      console.log("🔍 AirportCombobox Debug - Found in API results:", apiAirport);
+      console.log("🔍 AirportCombobox Debug - API result parts:", parts);
+      console.log("🔍 AirportCombobox Debug - cityCountry:", cityCountry);
+      console.log("🔍 AirportCombobox Debug - extracted cityName:", cityName);
+      console.log("🔍 AirportCombobox Debug - Setting displayName:", displayName);
+
+      // Cache this airport information
+      airportCacheRef.current.set(value, displayName);
+      console.log("🔍 AirportCombobox Debug - Cached airport info:", value, "->", displayName);
+
+      setSelectedAirportInfo({ code: apiAirport.k, displayName });
+      return;
     }
 
-    // Fallback - just show the code
-    return value;
+    // Check cache before falling back
+    const cachedDisplayName = airportCacheRef.current.get(value);
+    if (cachedDisplayName) {
+      console.log("🔍 AirportCombobox Debug - Found in cache:", value, "->", cachedDisplayName);
+      setSelectedAirportInfo({ code: value, displayName: cachedDisplayName });
+      return;
+    }
+
+    // If we don't have info for this airport yet, set a fallback
+    // BUT only if we don't already have valid info for this airport code
+    if (!selectedAirportInfo || selectedAirportInfo.code !== value) {
+      const fallbackDisplay = `${value} - Airport`;
+      console.log("🔍 AirportCombobox Debug - Using fallback display:", fallbackDisplay);
+      console.log("🔍 AirportCombobox Debug - Reason: Not found in popular or API results");
+      setSelectedAirportInfo({ code: value, displayName: fallbackDisplay });
+    } else {
+      console.log("🔍 AirportCombobox Debug - Keeping existing selectedAirportInfo:", selectedAirportInfo);
+      // Don't override existing valid info - this prevents the fallback from overriding
+      // previously stored airport information when apiResults is cleared
+    }
   }, [value, apiResults]);
+
+  const selectedAirport = React.useMemo(() => {
+    console.log("🔍 AirportCombobox Debug - selectedAirport useMemo triggered");
+    console.log("🔍 AirportCombobox Debug - value in useMemo:", value);
+    console.log("🔍 AirportCombobox Debug - selectedAirportInfo in useMemo:", selectedAirportInfo);
+
+    if (!value) {
+      console.log("🔍 AirportCombobox Debug - No value, returning null");
+      return null;
+    }
+
+    const result = selectedAirportInfo?.displayName || value;
+    console.log("🔍 AirportCombobox Debug - Final selectedAirport result:", result);
+    return result;
+  }, [value, selectedAirportInfo]);
 
   return (
     <Popover
@@ -293,6 +375,8 @@ export function AirportCombobox({
                     value={airport.value}
                     onSelect={(currentValue) => {
                       if (disabled) return;
+                      console.log("🔍 AirportCombobox Debug - Popular airport selected:", currentValue);
+                      console.log("🔍 AirportCombobox Debug - Airport data:", airport);
                       onValueChange?.(
                         currentValue === value ? "" : currentValue,
                       );
@@ -325,6 +409,8 @@ export function AirportCombobox({
                     value={airport.value}
                     onSelect={(currentValue) => {
                       if (disabled) return;
+                      console.log("🔍 AirportCombobox Debug - API airport selected:", currentValue);
+                      console.log("🔍 AirportCombobox Debug - Airport data:", airport);
                       onValueChange?.(
                         currentValue === value ? "" : currentValue,
                       );
