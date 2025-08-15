@@ -2168,20 +2168,6 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
 
   return (
     <div className="relative min-h-screen bg-gray-50 lg:min-h-0">
-      {/* Loading Overlay */}
-      {isSubmitting && (
-        <div className="bg-opacity-75 absolute inset-0 z-50 flex items-center justify-center bg-white">
-          <div className="text-center">
-            <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
-            <p className="font-medium text-gray-600">
-              Submitting booking details...
-            </p>
-            <p className="mt-2 text-sm text-gray-500">
-              Please wait while we process your request
-            </p>
-          </div>
-        </div>
-      )}
       <div className="mx-auto max-w-4xl p-3 pb-4 sm:p-4 sm:pb-4">
         {/* Desktop Two-Column Layout */}
         <div className="hidden lg:grid lg:grid-cols-2 lg:gap-6">
@@ -3802,14 +3788,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
                   : "cursor-not-allowed bg-gray-400 text-white",
               )}
             >
-              {isSubmitting ? (
-                <div className="flex items-center space-x-2">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                  <span>Submitting...</span>
-                </div>
-              ) : (
-                "Confirm Booking"
-              )}
+              {isSubmitting ? "Submitting..." : "Confirm Booking"}
             </Button>
           ) : (
             <div></div>

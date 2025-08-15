@@ -264,7 +264,7 @@ const NonAgentFlowWidgetContent: React.FC<
   );
   const [countdown, setCountdown] = useState(10);
   const [isCountdownActive, setIsCountdownActive] = useState(false);
-  const [hasUserClicked, setHasUserClicked] = useState(false);
+  const [hasUserClicked, setHasUserClicked] = useState<boolean>(false);
   const [hasSwitchedToChat, setHasSwitchedToChat] = useState(false);
   const [isSubmittingInterrupt, setIsSubmittingInterrupt] = useState(false);
 
@@ -346,6 +346,20 @@ const NonAgentFlowWidgetContent: React.FC<
     }
 
     setHasUserClicked(true);
+    // Mark in existing payment_state that auto-trigger should not re-run
+    try {
+      const key = `payment_state_${tripId}`;
+      const existing = localStorage.getItem(key);
+      const obj = existing ? JSON.parse(existing) : {};
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          ...obj,
+          preventAutoTrigger: true,
+          status: obj.status || "attempted",
+        }),
+      );
+    } catch {}
     setIsCountdownActive(false);
     setHasSwitchedToChat(false); // Reset the flag when starting new payment
     clearPaymentState(); // Clear any existing localStorage state when starting new payment
@@ -366,7 +380,10 @@ const NonAgentFlowWidgetContent: React.FC<
         // Step 1: Execute prepayment API
         console.log("Initiating prepayment for tripId:", tripId);
         const prepaymentResponse = await executePrepayment(tripId);
-        console.log("Prepayment response:", JSON.stringify(prepaymentResponse, null, 2));
+        console.log(
+          "Prepayment response:",
+          JSON.stringify(prepaymentResponse, null, 2),
+        );
 
         if (!prepaymentResponse.success) {
           throw new Error(prepaymentResponse.message || "Prepayment failed");
@@ -391,8 +408,8 @@ const NonAgentFlowWidgetContent: React.FC<
               console.log("Razorpay payment successful:", response);
               const transaction_id =
                 prepaymentResponse.data.transaction.transaction_id;
-                console.log("Transaction ID:", transaction_id);
-                console.log('tripId:', tripId);
+              console.log("Transaction ID:", transaction_id);
+              console.log("tripId:", tripId);
 
               // Step 3: Verify transaction
               const verificationResponse = await verifyTransaction({
@@ -451,7 +468,8 @@ const NonAgentFlowWidgetContent: React.FC<
                 try {
                   try {
                     setIsSubmittingInterrupt(true);
-                    const paymentMethod=verificationResponse.data?.paymentData?.method || '';
+                    const paymentMethod =
+                      verificationResponse.data?.paymentData?.method || "";
 
                     const interruptPromise = submitVerificationResult({
                       paymentStatus: verificationResponse.data.paymentStatus,
@@ -498,6 +516,21 @@ const NonAgentFlowWidgetContent: React.FC<
                 prepaymentData: prepaymentResponse.data,
                 error: errorMessage,
               });
+
+              // Persist flag to prevent auto re-trigger after failure
+              try {
+                const key = `payment_state_${tripId}`;
+                const existing = localStorage.getItem(key);
+                const obj = existing ? JSON.parse(existing) : {};
+                localStorage.setItem(
+                  key,
+                  JSON.stringify({
+                    ...obj,
+                    preventAutoTrigger: true,
+                    status: "failed",
+                  }),
+                );
+              } catch {}
 
               // Submit compact failure response
               try {
@@ -548,6 +581,21 @@ const NonAgentFlowWidgetContent: React.FC<
                 status: "failed",
                 error: errorMessage,
               });
+
+              // Persist flag to prevent auto re-trigger after cancellation
+              try {
+                const key = `payment_state_${tripId}`;
+                const existing = localStorage.getItem(key);
+                const obj = existing ? JSON.parse(existing) : {};
+                localStorage.setItem(
+                  key,
+                  JSON.stringify({
+                    ...obj,
+                    preventAutoTrigger: true,
+                    status: "failed",
+                  }),
+                );
+              } catch {}
 
               // Submit compact cancellation response
               (async () => {
@@ -644,11 +692,20 @@ const NonAgentFlowWidgetContent: React.FC<
   // Auto-trigger payment effect - only when payment state is idle
   useEffect(() => {
     // Only trigger payment if the state is idle (not success, failed, loading, or processing)
-    if (paymentState.status === "idle" && !hasUserClicked) {
+    let preventAuto = false;
+    try {
+      const key = `payment_state_${tripId}`;
+      const existing = localStorage.getItem(key);
+      if (existing) {
+        const obj = JSON.parse(existing);
+        preventAuto = !!obj?.preventAutoTrigger;
+      }
+    } catch {}
+    if (paymentState.status === "idle" && !hasUserClicked && !preventAuto) {
       console.log("🚀 Auto-triggering payment for idle state");
       handlePaymentClick();
     }
-  }, [paymentState.status, hasUserClicked, handlePaymentClick]);
+  }, [paymentState.status, hasUserClicked, handlePaymentClick, tripId]);
 
   // Countdown effect (currently disabled but preserved for future use)
   useEffect(() => {
