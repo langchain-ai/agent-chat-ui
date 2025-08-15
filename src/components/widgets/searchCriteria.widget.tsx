@@ -95,7 +95,8 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
   const frozenArgs = (liveArgs as any)?.submission;
   const effectiveArgs = args.readOnly && frozenArgs ? frozenArgs : liveArgs;
 
-  const flightSearchCriteria = (effectiveArgs as any)?.flightSearchCriteria ??
+  const flightSearchCriteria =
+    (effectiveArgs as any)?.flightSearchCriteria ??
     args.flightSearchCriteria ??
     {};
 
@@ -132,6 +133,14 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
   const [toAirport, setToAirport] = useState<string>(
     flightSearchCriteria.destinationAirport || "",
   );
+
+  // Prevent accidental clearing on same selection; ignore empty values
+  const handleFromAirportChange = (code: string) => {
+    setFromAirport((prev) => (code && code.trim().length > 0 ? code : prev));
+  };
+  const handleToAirportChange = (code: string) => {
+    setToAirport((prev) => (code && code.trim().length > 0 ? code : prev));
+  };
   // Helper function to get tomorrow's date
   const getTomorrowDate = () => {
     const tomorrow = new Date();
@@ -169,9 +178,11 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
 
   // Validation function to check if all mandatory fields are filled
   const isFormValid = () => {
-    return fromAirport.trim() !== "" &&
-           toAirport.trim() !== "" &&
-           departureDate !== undefined;
+    return (
+      fromAirport.trim() !== "" &&
+      toAirport.trim() !== "" &&
+      departureDate !== undefined
+    );
   };
 
   // Wrapper functions for date state setters to match DateInput component interface
@@ -304,7 +315,6 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
             >
               Round trip
             </button> */}
-           
           </div>
 
           {/* Flight Details - From/To */}
@@ -312,7 +322,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
             <div className="flex-1">
               <AirportCombobox
                 value={fromAirport}
-                onValueChange={setFromAirport}
+                onValueChange={handleFromAirportChange}
                 placeholder="From - City or Airport"
                 excludeAirport={toAirport}
                 disabled={readOnly}
@@ -322,7 +332,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
             <div className="flex-1">
               <AirportCombobox
                 value={toAirport}
-                onValueChange={setToAirport}
+                onValueChange={handleToAirportChange}
                 placeholder="To - City or Airport"
                 excludeAirport={fromAirport}
                 disabled={readOnly}
@@ -336,9 +346,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
             <div className="flex-1">
               <div
                 className={
-                  readOnly
-                    ? "pointer-events-none opacity-60"
-                    : undefined
+                  readOnly ? "pointer-events-none opacity-60" : undefined
                 }
               >
                 <DateInput
@@ -354,9 +362,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
               <div className="flex-1">
                 <div
                   className={
-                    readOnly
-                      ? "pointer-events-none opacity-60"
-                      : undefined
+                    readOnly ? "pointer-events-none opacity-60" : undefined
                   }
                 >
                   <DateInput
@@ -534,7 +540,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                 !isFormValid() && !readOnly ? "cursor-not-allowed" : ""
               }`}
               style={{
-                cursor: !isFormValid() && !readOnly ? "not-allowed" : "pointer"
+                cursor: !isFormValid() && !readOnly ? "not-allowed" : "pointer",
               }}
             >
               {isLoading ? "Searching..." : "Search flights"}

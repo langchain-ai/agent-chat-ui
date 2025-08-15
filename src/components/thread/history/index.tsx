@@ -21,6 +21,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getJwtToken, decodeJwtPayload, getUserFullName } from "@/services/authService";
 import { FlyoLogoSVG } from "@/components/icons/langgraph";
 import { useStreamContext } from "@/providers/Stream";
+import LogoutButton from "@/components/auth/LogoutButton";
 
 // Logo component
 function Logo() {
@@ -47,7 +48,7 @@ function UserProfile() {
       </Avatar>
       <div className="flex flex-col">
         <span className="text-sm font-medium text-gray-900">{userName}</span>
-        <span className="text-xs text-gray-500">Free</span>
+        <LogoutButton className="text-xs text-gray-500 no-underline hover:text-gray-900" />
       </div>
     </div>
   );

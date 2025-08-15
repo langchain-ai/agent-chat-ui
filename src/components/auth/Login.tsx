@@ -9,6 +9,7 @@ import {
   type AuthTokens,
 } from "@/services/authService";
 import { getUserLocation } from "@/lib/utils";
+import { FlyoLogoSVG } from "../icons/langgraph";
 
 const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -201,33 +202,20 @@ const Login: React.FC = () => {
   }, [CLIENT_ID, CLIENT_SECRET, REDIRECT_URI]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 px-4 py-12 sm:px-6 lg:px-8">
+    <div className="flex min-h-screen items-center justify-center bg-white px-4 py-12 sm:px-6 lg:px-8">
       <div className="w-full max-w-md">
         {/* Logo/Brand Section */}
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg">
-            <svg
-              className="h-8 w-8 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-              />
-            </svg>
-          </div>
-          <h1 className="mb-2 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-3xl font-bold text-transparent">
-            Flyo Chat
-          </h1>
+        <div className="mb-8 flex flex-col items-center justify-center text-center">
+          <FlyoLogoSVG
+            className="h-13"
+            height={130}
+            width={130}
+          />
           <p className="text-gray-600">Welcome! Please sign in to continue.</p>
         </div>
 
         {/* Login Card */}
-        <div className="rounded-2xl border border-white/20 bg-white/80 p-8 shadow-xl backdrop-blur-sm">
+        <div className="rounded-2xl border bg-white/20 p-8 shadow-xl backdrop-blur-lg">
           <div className="space-y-6">
             {/* Error Message */}
             {error && (
@@ -258,7 +246,7 @@ const Login: React.FC = () => {
               <Button
                 onClick={handleGoogleLogin}
                 disabled={isLoading}
-                className="group relative flex w-full items-center justify-center rounded-xl border border-gray-300 bg-white px-6 py-4 text-sm font-medium text-gray-700 shadow-sm transition-all duration-200 hover:bg-gray-50 hover:shadow-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                className="group relative flex w-full items-center justify-center rounded-xl border border-gray-300 bg-gray-50 px-6 py-2 text-sm font-medium text-gray-700 shadow-sm transition-all duration-200 hover:bg-gray-100 hover:shadow-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 variant="outline"
                 size="lg"
               >
@@ -294,6 +282,11 @@ const Login: React.FC = () => {
                   </div>
                 )}
               </Button>
+              <div className="mt-4 h-0 text-center">
+                <p className="text-sm text-gray-500">
+                  Secure login with Google authentication
+                </p>
+              </div>
             </div>
 
             {/* Try Again Button */}
@@ -311,13 +304,6 @@ const Login: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-8 text-center">
-          <p className="text-sm text-gray-500">
-            Secure login with Google authentication
-          </p>
         </div>
       </div>
     </div>

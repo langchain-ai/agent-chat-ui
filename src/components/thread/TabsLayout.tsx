@@ -6,7 +6,6 @@ import { MapView } from "@/components/flight/MapComponent";
 import { ItineraryView } from "@/components/flight/ItineraryComponent";
 import { Thread } from "@/components/thread/chat";
 import { useQueryState } from "nuqs";
-import { FlyoLogoSVG } from "../icons/langgraph";
 import { Button } from "@/components/ui/button";
 import { SquarePen, PanelRightClose, PanelRightOpen, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -131,33 +130,6 @@ export const TabsLayout = () => {
                 onClick={() => router.push("/")}
               >
                 <SquarePen className="size-6" />
-              </Button>
-
-              {/* Logout Button */}
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-gray-600 hover:text-gray-900 border-gray-300 hover:border-gray-400 flex items-center gap-2"
-                onClick={async () => {
-                  console.log("🔍 TabsLayout Logout button clicked!");
-                  const confirmed = await confirm({
-                    title: "Confirm Logout",
-                    message: "Are you sure you want to logout? You will need to sign in again to access your account.",
-                    confirmText: "Yes, Logout",
-                    cancelText: "Cancel",
-                  });
-
-                  if (confirmed) {
-                    console.log("🔍 User confirmed logout, calling logout function");
-                    logout();
-                  } else {
-                    console.log("🔍 User cancelled logout");
-                  }
-                }}
-                title="Logout"
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Logout</span>
               </Button>
             </div>
           </div>

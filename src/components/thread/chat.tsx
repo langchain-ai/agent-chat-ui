@@ -279,6 +279,7 @@ export function Thread() {
 
     if (!threadId) {
       submitOptions.metadata = {
+        ...(submitOptions.metadata ?? {}),
         assistant_id: assistantId,
         graph_id: assistantId,
         created_at: new Date().toISOString(),

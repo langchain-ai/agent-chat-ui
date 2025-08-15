@@ -17,6 +17,7 @@ import {
   convertStoredThreadsToThreads,
   StoredThread,
 } from "@/utils/thread-storage";
+import { getJwtToken, GetUserId } from "@/services/authService";
 
 interface ThreadContextType {
   getThreads: () => Promise<Thread[]>;
@@ -68,41 +69,28 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
       // Try multiple search strategies to find threads
       let threads: Thread[] = [];
 
-      // Strategy 1: Search with metadata
+      // Determine current user id (if available)
+      const jwtToken = getJwtToken();
+      const currentUserId = jwtToken ? String(GetUserId(jwtToken)) : "";
+
       try {
         const metadata = getThreadSearchMetadata(finalAssistantId!);
         console.log("🔍 ThreadProvider: Searching with metadata:", metadata);
+        const metadataFilter: Record<string, any> = { ...metadata };
+        if (currentUserId) {
+          metadataFilter.user_id = currentUserId;
+        }
+        console.log("🔍 ThreadProvider: Metadata filter:", metadataFilter);
         threads = await client.threads.search({
-          metadata: {
-            ...metadata,
-          },
-          limit: 100,
+          metadata: metadataFilter,
+          limit: 20,
+          sortBy: "created_at",
+          sortOrder: "desc",
         });
-        
+        console.log("🔍 ThreadProvider: Found threads:", threads);
       } catch (error) {
         console.warn("ThreadProvider: Metadata search failed:", error);
       }
-
-      // Strategy 2: If no threads found, try without metadata (fallback)
-      if (threads.length === 0) {
-        try {
-          threads = await client.threads.search({
-            limit: 15,
-          });
-          console.log(
-            `✅ ThreadProvider: Found ${threads.length} threads with general search`,
-          );
-        } catch (error) {
-          console.warn("ThreadProvider: General search failed:", error);
-        }
-      }
-
-      // Strategy 3: If server search fails, use local storage as fallback
-      if (threads.length === 0) {
-        const storedThreads = getStoredThreads();
-        threads = convertStoredThreadsToThreads(storedThreads);
-      }
-
       return threads;
     } catch (error) {
       console.error("💥 ThreadProvider: Failed to fetch threads:", error);
