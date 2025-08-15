@@ -2167,7 +2167,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
   };
 
   return (
-    <div className="relative min-h-screen bg-gray-50">
+    <div className="relative min-h-screen bg-gray-50 lg:min-h-0">
       {/* Loading Overlay */}
       {isSubmitting && (
         <div className="bg-opacity-75 absolute inset-0 z-50 flex items-center justify-center bg-white">
