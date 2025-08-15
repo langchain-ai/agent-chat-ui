@@ -433,6 +433,8 @@ export function Thread() {
                           if (
                             block.kind === "message" &&
                             block.data &&
+                            block.data.content &&
+                            block.data.content.length > 0 &&
                             isDisplayableMessage(block.data as Message)
                           ) {
                             const message = block.data as Message;
