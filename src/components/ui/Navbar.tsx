@@ -40,7 +40,7 @@ export const Navbar = () => {
         <div className="absolute left-0 z-10">
           {(!chatHistoryOpen || !isLargeScreen) && (
             <Button
-              className="h-12 w-12 p-0 hover:bg-gray-100"
+              className="h-12 w-12 p-0 size-6 hover:bg-gray-100"
               variant="ghost"
               onClick={() => setChatHistoryOpen((p) => !p)}
             >
@@ -89,31 +89,6 @@ export const Navbar = () => {
           }}
         >
           <SquarePen className="size-6" />
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="text-gray-600 hover:text-gray-900 border-gray-300 hover:border-gray-400 flex items-center gap-2"
-          onClick={async () => {
-            console.log("🔍 Logout button clicked!");
-            const confirmed = await confirm({
-              title: "Confirm Logout",
-              message: "Are you sure you want to logout? You will need to sign in again to access your account.",
-              confirmText: "Yes, Logout",
-              cancelText: "Cancel",
-            });
-
-            if (confirmed) {
-              console.log("🔍 User confirmed logout, calling logout function");
-              logout();
-            } else {
-              console.log("🔍 User cancelled logout");
-            }
-          }}
-          title="Logout"
-        >
-          <LogOut className="h-4 w-4" />
-          <span className="hidden sm:inline">Logout</span>
         </Button>
       </div>
 
