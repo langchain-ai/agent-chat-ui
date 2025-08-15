@@ -6,7 +6,6 @@ import { MapView } from "@/components/flight/MapComponent";
 import { ItineraryView } from "@/components/flight/ItineraryComponent";
 import { Thread } from "@/components/thread/chat";
 import { useQueryState } from "nuqs";
-import { FlyoLogoSVG } from "../icons/langgraph";
 import { Button } from "@/components/ui/button";
 import { SquarePen, PanelRightClose, PanelRightOpen, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
