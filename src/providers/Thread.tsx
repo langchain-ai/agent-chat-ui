@@ -12,6 +12,7 @@ import {
   SetStateAction,
 } from "react";
 import { createClient } from "./client";
+import { Persistence } from "@/lib/stream/core/persistence.js";
 import {
   getStoredThreads,
   convertStoredThreadsToThreads,
@@ -90,9 +91,27 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
         console.warn("ThreadProvider: Metadata search failed:", error);
       }
 
-      // Update shared state so consumers reflect new data
-      setThreads(fetchedThreads);
-      return fetchedThreads;
+      // Filter to only threads that have cached data in localStorage
+      let filteredThreads: Thread[] = fetchedThreads;
+      try {
+        if (typeof window !== "undefined") {
+          const persistence = new Persistence();
+          const { threads: cached } = persistence.loadAll();
+          const cachedIds = new Set(Object.keys(cached ?? {}));
+          filteredThreads = fetchedThreads.filter((t) =>
+            cachedIds.has(t.thread_id),
+          );
+        }
+      } catch (e) {
+        console.warn(
+          "ThreadProvider: failed to read cached threads from localStorage",
+          e,
+        );
+      }
+
+      // Update shared state so consumers reflect new data (only cached ones)
+      setThreads(filteredThreads);
+      return filteredThreads;
     } catch (error) {
       console.error("💥 ThreadProvider: Failed to fetch threads:", error);
       return [];
