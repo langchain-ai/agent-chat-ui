@@ -143,16 +143,13 @@ export default function ThreadHistory() {
       {/* Desktop Sidebar */}
       <div className="hidden h-screen w-[260px] shrink-0 flex-col border-r border-gray-200 bg-white lg:flex">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-200 p-3">
-          <Logo />
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 hover:bg-gray-100"
-            >
-              <Grid3X3 className="h-4 w-4" />
-            </Button>
+        <div className="relative flex items-center justify-center border-b border-gray-200 p-0">
+          <FlyoLogoSVG
+            width={60}
+            height={60}
+            className="sm:h-[60px] sm:w-[60px]"
+          />
+          <div className="absolute right-3 flex items-center gap-2">
             <Button
               variant="ghost"
               size="sm"
@@ -166,27 +163,24 @@ export default function ThreadHistory() {
 
         {/* Navigation */}
         <div className="flex flex-col gap-1 p-2">
-          <Button
-            variant="ghost"
-            className="h-10 justify-start gap-3 px-3 text-sm font-normal hover:bg-gray-100"
-            onClick={() => {
-              const params = new URLSearchParams(searchParams.toString());
-              params.delete("threadId");
-              router.replace(
-                `${window.location.pathname}?${params.toString()}`,
-              );
-              setChatHistoryOpen(false);
-              // Stop any in-flight stream and clear in-memory snapshot
-              try {
-                stream?.stop?.();
-                stream?.clearInMemoryValues?.();
-              } catch {}
-              _setThreadId(null);
-            }}
-          >
-            <SquarePen className="h-4 w-4" />
-            New chat
-          </Button>
+          <div className="rounded-md border border-gray-300 p-1 shadow-sm">
+            <Button
+              variant="ghost"
+              className="h-10 w-full justify-start gap-3 px-3 text-sm font-normal hover:bg-gray-100"
+              onClick={() => {
+                const params = new URLSearchParams(searchParams.toString());
+                params.delete("threadId");
+                router.replace(
+                  `${window.location.pathname}?${params.toString()}`,
+                );
+                setChatHistoryOpen(false);
+                _setThreadId(null);
+              }}
+            >
+              <SquarePen className="h-4 w-4" />
+              New chat
+            </Button>
+          </div>
         </div>
 
         {/* Chats Section */}
