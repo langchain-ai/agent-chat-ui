@@ -278,6 +278,9 @@ export function Thread() {
     };
 
     if (!threadId) {
+      // Generate a valid UUID thread id for immediate optimistic render and server creation
+      const clientThreadId = uuidv4();
+      submitOptions.threadId = clientThreadId;
       submitOptions.metadata = {
         ...(submitOptions.metadata ?? {}),
         assistant_id: assistantId,

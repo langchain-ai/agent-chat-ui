@@ -259,7 +259,9 @@ export function Thread() {
 
     // Add metadata for thread creation/updating
     if (!threadId) {
-      // For new threads, add metadata to ensure they're searchable
+      // Generate a valid UUID thread id for immediate optimistic render and server creation
+      const clientThreadId = uuidv4();
+      submitOptions.threadId = clientThreadId;
       submitOptions.metadata = {
         assistant_id: assistantId,
         graph_id: assistantId,
