@@ -89,6 +89,12 @@ const POPULAR_AIRPORTS: Airport[] = [
     country: "India",
   },
   {
+    code: "IXC",
+    name: "Chandigarh International Airport",
+    city: "Chandigarh",
+    country: "India",
+  },
+  {
     code: "DXB",
     name: "Dubai International Airport",
     city: "Dubai",
@@ -237,6 +243,39 @@ export function AirportCombobox({
         };
       });
   }, [searchQuery, excludeAirport, apiResults]);
+
+  // Effect to automatically search for airport info when value is set but not found in popular airports
+  React.useEffect(() => {
+    if (!value || disabled) return;
+
+    // Check if we already have info for this airport
+    const popularAirport = POPULAR_AIRPORTS.find(
+      (airport) => airport.code === value,
+    );
+    const cachedDisplayName = airportCacheRef.current.get(value);
+
+    // If we have info from popular airports or cache, no need to search
+    if (popularAirport || cachedDisplayName) return;
+
+    // If we don't have info and there's no active search, perform a search
+    if (!isLoading && apiResults.length === 0) {
+      console.log("🔍 AirportCombobox Debug - Auto-searching for airport:", value);
+
+      const performAutoSearch = async () => {
+        setIsLoading(true);
+        try {
+          const results = await searchAirports(value);
+          setApiResults(results);
+        } catch (error) {
+          console.error("Failed to auto-search airport:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      performAutoSearch();
+    }
+  }, [value, disabled, isLoading, apiResults.length]);
 
   // Update selectedAirportInfo when value or apiResults change
   React.useEffect(() => {
