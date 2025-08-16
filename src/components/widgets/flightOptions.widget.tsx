@@ -2211,20 +2211,24 @@ const FlightOptionsWidget = (args: FlightOptionsProps) => {
         );
       case "fastest":
         // Sort by duration (convert ISO duration to minutes for comparison)
+        // Use journey[0]?.duration for journey-based flights, fallback to flight.duration
         return flightsCopy.sort((a, b) => {
           const getDurationMinutes = (duration: string) => {
+            if (!duration) return Infinity; // Put flights without duration at the end
             const match = duration.match(/PT(\d+)H(\d+)?M?/);
             if (match) {
               const hours = parseInt(match[1]) || 0;
               const minutes = parseInt(match[2]) || 0;
               return hours * 60 + minutes;
             }
-            return 0;
+            return Infinity; // Put flights with invalid duration format at the end
           };
-          return (
-            getDurationMinutes(a.duration || "") -
-            getDurationMinutes(b.duration || "")
-          );
+
+          // Get duration from journey[0] if available, otherwise use flight.duration
+          const aDuration = a.journey?.[0]?.duration || a.duration || "";
+          const bDuration = b.journey?.[0]?.duration || b.duration || "";
+
+          return getDurationMinutes(aDuration) - getDurationMinutes(bDuration);
         });
       case "recommended":
         // Sort by ranking score (higher is better)
@@ -2571,7 +2575,7 @@ const FlightOptionsWidget = (args: FlightOptionsProps) => {
                       icon: DollarSign,
                     },
                     { id: "fastest" as const, label: "Fastest", icon: Zap },
-                    { id: "recommended" as const, label: "Best", icon: Star },
+                    // { id: "recommended" as const, label: "Best", icon: Star },
                   ].map((tab) => {
                     const Icon = tab.icon;
                     const isActive = bottomSheetFilter === tab.id;
@@ -2644,7 +2648,7 @@ const FlightOptionsWidget = (args: FlightOptionsProps) => {
                     icon: DollarSign,
                   },
                   { id: "fastest" as const, label: "Fastest", icon: Zap },
-                  { id: "recommended" as const, label: "Best", icon: Star },
+                  // { id: "recommended" as const, label: "Best", icon: Star },
                 ].map((tab) => {
                   const Icon = tab.icon;
                   const isActive = bottomSheetFilter === tab.id;
