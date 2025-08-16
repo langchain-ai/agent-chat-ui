@@ -46,7 +46,7 @@ import {
   ArtifactTitle,
   useArtifactContext,
 } from "./artifact";
-import { APP_TITLE } from "@/lib/app-config";
+import { APP_TITLE, ENABLE_FILE_UPLOAD } from "@/lib/app-config";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -444,10 +444,10 @@ export function Thread() {
                   <ScrollToBottom className="animate-in fade-in-0 zoom-in-95 absolute bottom-full left-1/2 mb-4 -translate-x-1/2" />
 
                   <div
-                    ref={dropRef}
+                    ref={ENABLE_FILE_UPLOAD ? dropRef : null}
                     className={cn(
                       "bg-muted relative z-10 mx-auto mb-8 w-full max-w-3xl rounded-2xl shadow-xs transition-all",
-                      dragOver
+                      ENABLE_FILE_UPLOAD && dragOver
                         ? "border-primary border-2 border-dotted"
                         : "border border-solid",
                     )}
@@ -456,14 +456,16 @@ export function Thread() {
                       onSubmit={handleSubmit}
                       className="mx-auto grid max-w-3xl grid-rows-[1fr_auto] gap-2"
                     >
-                      <ContentBlocksPreview
-                        blocks={contentBlocks}
-                        onRemove={removeBlock}
-                      />
+                      {ENABLE_FILE_UPLOAD && (
+                        <ContentBlocksPreview
+                          blocks={contentBlocks}
+                          onRemove={removeBlock}
+                        />
+                      )}
                       <textarea
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        onPaste={handlePaste}
+                        onPaste={ENABLE_FILE_UPLOAD ? handlePaste : undefined}
                         onKeyDown={(e) => {
                           if (
                             e.key === "Enter" &&
@@ -497,23 +499,27 @@ export function Thread() {
                             </Label>
                           </div>
                         </div>
-                        <Label
-                          htmlFor="file-input"
-                          className="flex cursor-pointer items-center gap-2"
-                        >
-                          <Plus className="size-5 text-gray-600" />
-                          <span className="text-sm text-gray-600">
-                            Upload PDF or Image
-                          </span>
-                        </Label>
-                        <input
-                          id="file-input"
-                          type="file"
-                          onChange={handleFileUpload}
-                          multiple
-                          accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
-                          className="hidden"
-                        />
+                        {ENABLE_FILE_UPLOAD && (
+                          <>
+                            <Label
+                              htmlFor="file-input"
+                              className="flex cursor-pointer items-center gap-2"
+                            >
+                              <Plus className="size-5 text-gray-600" />
+                              <span className="text-sm text-gray-600">
+                                Upload PDF or Image
+                              </span>
+                            </Label>
+                            <input
+                              id="file-input"
+                              type="file"
+                              onChange={handleFileUpload}
+                              multiple
+                              accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
+                              className="hidden"
+                            />
+                          </>
+                        )}
                         {stream.isLoading ? (
                           <Button
                             key="stop"
