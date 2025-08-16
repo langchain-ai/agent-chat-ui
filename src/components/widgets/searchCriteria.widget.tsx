@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/common/ui/button";
-import { Plus, Minus, CalendarIcon, Ban } from "lucide-react";
+import { Plus, Minus, CalendarIcon } from "lucide-react";
 import { AirportCombobox } from "@/components/common/ui/airportCombobox";
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
@@ -44,6 +44,11 @@ const DateInput = ({
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  // Get tomorrow's date for minimum selectable date
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(0, 0, 0, 0);
+
   return (
     <Popover
       open={isOpen}
@@ -73,8 +78,7 @@ const DateInput = ({
             onDateChange?.(selectedDate);
             setIsOpen(false);
           }}
-          disabled={(date: Date) => date < today}
-          initialFocus
+          disabled={(date: Date) => date < tomorrow}
         />
       </PopoverContent>
     </Popover>
@@ -149,18 +153,19 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
     return tomorrow;
   };
 
-  // Helper function to check if a date is in the past
-  const isDateInPast = (date: Date) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return date < today;
+  // Helper function to check if a date is in the past or today (not allowed)
+  const isDateNotAllowed = (date: Date) => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    return date < tomorrow;
   };
 
   const [departureDate, setDepartureDate] = useState<Date | undefined>(() => {
     if (flightSearchCriteria.departureDate) {
       const serverDate = new Date(flightSearchCriteria.departureDate);
-      // If server date is in the past, use tomorrow's date instead
-      return isDateInPast(serverDate) ? getTomorrowDate() : serverDate;
+      // If server date is not allowed (past or today), use tomorrow's date instead
+      return isDateNotAllowed(serverDate) ? getTomorrowDate() : serverDate;
     }
     return undefined;
   });
@@ -168,8 +173,8 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
   const [returnDate, setReturnDate] = useState<Date | undefined>(() => {
     if (flightSearchCriteria.returnDate) {
       const serverDate = new Date(flightSearchCriteria.returnDate);
-      // If server date is in the past, use tomorrow's date instead
-      return isDateInPast(serverDate) ? getTomorrowDate() : serverDate;
+      // If server date is not allowed (past or today), use tomorrow's date instead
+      return isDateNotAllowed(serverDate) ? getTomorrowDate() : serverDate;
     }
     return undefined;
   });
@@ -204,15 +209,15 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
 
     setIsLoading(true);
 
-    // Ensure departure date is not in the past
+    // Ensure departure date is not in the past or today
     let finalDepartureDate = departureDate;
-    if (finalDepartureDate && isDateInPast(finalDepartureDate)) {
+    if (finalDepartureDate && isDateNotAllowed(finalDepartureDate)) {
       finalDepartureDate = getTomorrowDate();
     }
 
-    // Ensure return date is not in the past
+    // Ensure return date is not in the past or today
     let finalReturnDate = returnDate;
-    if (finalReturnDate && isDateInPast(finalReturnDate)) {
+    if (finalReturnDate && isDateNotAllowed(finalReturnDate)) {
       finalReturnDate = getTomorrowDate();
     }
 
