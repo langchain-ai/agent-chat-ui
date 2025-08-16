@@ -694,15 +694,26 @@ interface ApiTravelerRequirement {
   residenceRequired: boolean;
 }
 
+// New passenger type requirements structure
+interface PassengerTypeRequirements {
+  passportRequired: boolean;
+  dateOfBirthRequired: boolean;
+}
+
 interface ApiBookingRequirements {
-  emailAddressRequired: boolean;
-  invoiceAddressRequired: boolean;
-  mailingAddressRequired: boolean;
-  phoneCountryCodeRequired: boolean;
-  mobilePhoneNumberRequired: boolean;
-  phoneNumberRequired: boolean;
-  postalCodeRequired: boolean;
-  travelerRequirements: ApiTravelerRequirement[] | null;
+  emailAddressRequired?: boolean;
+  invoiceAddressRequired?: boolean;
+  mailingAddressRequired?: boolean;
+  phoneCountryCodeRequired?: boolean;
+  mobilePhoneNumberRequired?: boolean;
+  phoneNumberRequired?: boolean;
+  postalCodeRequired?: boolean;
+  // Legacy structure
+  travelerRequirements?: ApiTravelerRequirement[] | null;
+  // New structure
+  adult?: PassengerTypeRequirements;
+  children?: PassengerTypeRequirements;
+  infant?: PassengerTypeRequirements;
 }
 
 interface ApiWidgetArgs {
@@ -1315,6 +1326,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
   const [originalLastName, setOriginalLastName] = useState<string>("");
 
   console.log("$$$$$$$ Review Widget - effectiveArgs:", effectiveArgs);
+  console.log("📋 Review Widget - bookingRequirements:", JSON.stringify(bookingRequirements, null, 2));
 
   // Extract isRefundable from selectedFlightOffers
   const isRefundable =
@@ -1330,10 +1342,27 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
     travelerRequirement?.dateOfBirthRequired ?? true; // Default to true for backward compatibility
 
   // Determine if travel documents component should be shown
-  // Hide if travelerRequirements is null in API data
-  const showTravelDocuments = bookingRequirements
-    ? bookingRequirements.travelerRequirements !== null
-    : true; // Show by default when requirements are absent
+  // Check for new bookingRequirements structure with adult.passportRequired
+  // Note: We focus only on adult passengers and ignore dateOfBirthRequired as requested
+  const showTravelDocuments = (() => {
+    // Handle new structure: { adult: { passportRequired: boolean, dateOfBirthRequired: boolean }, ... }
+    if (bookingRequirements?.adult?.passportRequired !== undefined) {
+      console.log("📋 Review Widget - Using new bookingRequirements structure");
+      console.log("📋 Review Widget - adult.passportRequired:", bookingRequirements.adult.passportRequired);
+      console.log("📋 Review Widget - Ignoring dateOfBirthRequired and children/infant requirements as requested");
+      return bookingRequirements.adult.passportRequired;
+    }
+
+    // Handle legacy structure: { travelerRequirements: [...] }
+    if (bookingRequirements?.travelerRequirements !== undefined) {
+      console.log("📋 Review Widget - Using legacy bookingRequirements structure");
+      return bookingRequirements.travelerRequirements !== null;
+    }
+
+    // Default fallback when no booking requirements are present
+    console.log("📋 Review Widget - No bookingRequirements found, defaulting to show travel documents");
+    return true;
+  })();
 
   // Determine if seat component should be shown (only if seatAllocation is provided)
   const showSeatComponent = false; // No seat allocation in this widget
@@ -2591,7 +2620,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
               )}
             </div>
 
-            {/* Travel Documents - Only show if travelerRequirements is not null */}
+            {/* Travel Documents - Only show if adult.passportRequired is true */}
             {showTravelDocuments && (
               <div className="rounded-lg bg-white p-4 shadow">
                 <div
@@ -3491,7 +3520,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
             )}
           </div>
 
-          {/* Travel Documents - Only show if travelerRequirements is not null */}
+          {/* Travel Documents - Only show if adult.passportRequired is true */}
           {showTravelDocuments && (
             <div className="rounded-lg bg-white p-4 shadow">
               <div
