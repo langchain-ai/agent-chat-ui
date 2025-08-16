@@ -46,6 +46,7 @@ import {
   ArtifactTitle,
   useArtifactContext,
 } from "./artifact";
+import { APP_TITLE } from "@/lib/app-config";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -362,7 +363,7 @@ export function Thread() {
                     height={32}
                   />
                   <span className="text-xl font-semibold tracking-tight">
-                    Agent Chat
+                    {APP_TITLE}
                   </span>
                 </motion.button>
               </div>
@@ -435,7 +436,7 @@ export function Thread() {
                     <div className="flex items-center gap-3">
                       <LangGraphLogoSVG className="h-8 flex-shrink-0" />
                       <h1 className="text-2xl font-semibold tracking-tight">
-                        Agent Chat
+                        {APP_TITLE}
                       </h1>
                     </div>
                   )}
