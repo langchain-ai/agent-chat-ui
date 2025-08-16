@@ -1272,7 +1272,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
   // Everything else must always come from live data
   const userDetails = liveArgs?.flightItinerary?.userContext?.userDetails;
   const selectedFlightOffers =
-    [liveArgs?.flightItinerary?.selectionContext?.selectedFlightOffers] || [];
+    liveArgs?.flightItinerary?.selectionContext?.selectedFlightOffers ? [liveArgs?.flightItinerary?.selectionContext?.selectedFlightOffers] : [];
     console.log('selectedFlightOffers', JSON.stringify(selectedFlightOffers,null,2));
   const bookingRequirements = liveArgs?.bookingRequirements;
 
