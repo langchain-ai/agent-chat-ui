@@ -35,6 +35,7 @@ import {
   MapPin,
   Shield,
   AlertTriangle,
+  AlertCircle,
   Check,
   ChevronsUpDown,
 } from "lucide-react";
@@ -115,7 +116,16 @@ const DateInput = ({
             setIsOpen(false);
           }}
           disabled={getDisabledDates}
-          initialFocus
+          captionLayout="dropdown"
+          startMonth={new Date(1900, 0)}
+          endMonth={new Date(new Date().getFullYear() + 10, 11)}
+          className="bg-white"
+          classNames={{
+            day_selected: "bg-black text-white hover:bg-black focus:bg-black",
+            day_today: "bg-gray-100 text-black font-medium",
+            button_previous: "text-black hover:bg-gray-100",
+            button_next: "text-black hover:bg-gray-100",
+          }}
         />
       </PopoverContent>
     </Popover>
@@ -1271,10 +1281,9 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
 
   // Everything else must always come from live data
   const userDetails = liveArgs?.flightItinerary?.userContext?.userDetails;
-  const selectedFlightOffers = liveArgs?.flightItinerary?.selectionContext?.selectedFlightOffers ? 
-  [liveArgs?.flightItinerary?.selectionContext?.selectedFlightOffers] : [];
-  console.log('selectedFlightOffers', JSON.stringify(selectedFlightOffers,null,2));
-
+  const selectedFlightOffers =
+    liveArgs?.flightItinerary?.selectionContext?.selectedFlightOffers ? [liveArgs?.flightItinerary?.selectionContext?.selectedFlightOffers] : [];
+    console.log('selectedFlightOffers', JSON.stringify(selectedFlightOffers,null,2));
   const bookingRequirements = liveArgs?.bookingRequirements;
 
   // Compose an effectiveArgs view for downstream usage without changing UI
@@ -1329,10 +1338,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
   const [originalLastName, setOriginalLastName] = useState<string>("");
 
   console.log("$$$$$$$ Review Widget - effectiveArgs:", effectiveArgs);
-  console.log(
-    "📋 Review Widget - bookingRequirements:",
-    JSON.stringify(bookingRequirements, null, 2),
-  );
+  console.log("📋 Review Widget - bookingRequirements:", JSON.stringify(bookingRequirements, null, 2));
 
   // Extract isRefundable from selectedFlightOffers
   const isRefundable =
@@ -1354,28 +1360,19 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
     // Handle new structure: { adult: { passportRequired: boolean, dateOfBirthRequired: boolean }, ... }
     if (bookingRequirements?.adult?.passportRequired !== undefined) {
       console.log("📋 Review Widget - Using new bookingRequirements structure");
-      console.log(
-        "📋 Review Widget - adult.passportRequired:",
-        bookingRequirements.adult.passportRequired,
-      );
-      console.log(
-        "📋 Review Widget - Ignoring dateOfBirthRequired and children/infant requirements as requested",
-      );
+      console.log("📋 Review Widget - adult.passportRequired:", bookingRequirements.adult.passportRequired);
+      console.log("📋 Review Widget - Ignoring dateOfBirthRequired and children/infant requirements as requested");
       return bookingRequirements.adult.passportRequired;
     }
 
     // Handle legacy structure: { travelerRequirements: [...] }
     if (bookingRequirements?.travelerRequirements !== undefined) {
-      console.log(
-        "📋 Review Widget - Using legacy bookingRequirements structure",
-      );
+      console.log("📋 Review Widget - Using legacy bookingRequirements structure");
       return bookingRequirements.travelerRequirements !== null;
     }
 
     // Default fallback when no booking requirements are present
-    console.log(
-      "📋 Review Widget - No bookingRequirements found, defaulting to show travel documents",
-    );
+    console.log("📋 Review Widget - No bookingRequirements found, defaulting to show travel documents");
     return true;
   })();
 
@@ -1609,6 +1606,125 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
   const [validationErrors, setValidationErrors] = useState<{
     [key: string]: boolean;
   }>({});
+
+  // Validation helper functions
+  const isFieldEmpty = (value: string | undefined | null): boolean => {
+    return !value || value.trim() === "";
+  };
+
+  const isEmailValid = (email: string | undefined | null): boolean => {
+    if (!email) return false;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const isPhoneValid = (phone: string | undefined | null): boolean => {
+    if (!phone) return false;
+    // Remove any non-digit characters for validation
+    const cleanPhone = phone.replace(/\D/g, "");
+    // Check if it's between 7-15 digits (international standard)
+    return cleanPhone.length >= 7 && cleanPhone.length <= 15;
+  };
+
+  const isDateValid = (dateString: string | undefined | null): boolean => {
+    if (!dateString) return false;
+    const date = new Date(dateString);
+    return !isNaN(date.getTime());
+  };
+
+  // Validation functions for different sections
+  const validatePassengerDetails = (): { [key: string]: boolean } => {
+    const errors: { [key: string]: boolean } = {};
+
+    errors.firstName = isFieldEmpty(passenger.firstName);
+    errors.lastName = isFieldEmpty(passenger.lastName);
+
+    if (isDateOfBirthRequired) {
+      errors.dateOfBirth = isFieldEmpty(passenger.dateOfBirth) || !isDateValid(passenger.dateOfBirth);
+    }
+
+    if (isGenderRequired) {
+      errors.gender = isFieldEmpty(passenger.gender);
+    }
+
+    return errors;
+  };
+
+  const validateContactInfo = (): { [key: string]: boolean } => {
+    const errors: { [key: string]: boolean } = {};
+
+    errors.email = isFieldEmpty(contact.email) || !isEmailValid(contact.email);
+    errors.phone = isFieldEmpty(contact.phone) || !isPhoneValid(contact.phone);
+
+    return errors;
+  };
+
+  const validateTravelDocuments = (): { [key: string]: boolean } => {
+    const errors: { [key: string]: boolean } = {};
+
+    if (!showTravelDocuments || !document) return errors;
+
+    errors.documentType = isFieldEmpty(document.type);
+    errors.documentNumber = isFieldEmpty(document.number);
+    errors.issuingCountry = isFieldEmpty(document.issuingCountry);
+    errors.nationality = isFieldEmpty(document.nationality);
+    errors.expiryDate = isFieldEmpty(document.expiryDate) || !isDateValid(document.expiryDate);
+
+    // Optional fields - only validate if they have values
+    if (document.issuanceDate) {
+      errors.issuanceDate = !isDateValid(document.issuanceDate);
+    }
+
+    return errors;
+  };
+
+
+
+  // Check if any section has validation errors
+  const hasPassengerErrors = (): boolean => {
+    const errors = validatePassengerDetails();
+    return Object.values(errors).some(error => error);
+  };
+
+  const hasContactErrors = (): boolean => {
+    const errors = validateContactInfo();
+    return Object.values(errors).some(error => error);
+  };
+
+  const hasTravelDocumentErrors = (): boolean => {
+    const errors = validateTravelDocuments();
+    return Object.values(errors).some(error => error);
+  };
+
+  // Red warning icon component for validation
+  const ValidationWarningIcon: React.FC<{ show: boolean; className?: string }> = ({
+    show,
+    className = "h-4 w-4"
+  }) => {
+    if (!show) return null;
+    return (
+      <AlertCircle className={cn("text-red-500", className)} />
+    );
+  };
+
+  // Get all validation errors as an object
+  const getAllValidationErrors = (): { [key: string]: boolean } => {
+    const passengerErrors = validatePassengerDetails();
+    const contactErrors = validateContactInfo();
+    const documentErrors = validateTravelDocuments();
+
+    return {
+      ...passengerErrors,
+      ...contactErrors,
+      ...documentErrors,
+    };
+  };
+
+  // Run validation when component mounts and when key fields change
+  React.useEffect(() => {
+    const errors = getAllValidationErrors();
+    setValidationErrors(errors);
+  }, [passenger, contact, document, showTravelDocuments, isDocumentRequired, isGenderRequired, isDateOfBirthRequired]);
 
   // Data transformation function to format data according to backend requirements (matching whosTravelling widget)
   const transformDataForBackend = () => {
@@ -2378,17 +2494,26 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
 
             {/* Passenger Details */}
             <div className="rounded-lg bg-white p-4 shadow">
-              <h2 className="mb-4 text-lg font-semibold">Passenger Details</h2>
+              <div className="mb-4 flex items-center space-x-2">
+                <h2 className="text-lg font-semibold">Passenger Details</h2>
+                <ValidationWarningIcon show={hasPassengerErrors()} />
+              </div>
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                 {/* First Name */}
                 <div>
-                  <Label
-                    htmlFor="firstName"
-                    className="mb-0.5 text-xs font-medium text-gray-700"
-                  >
-                    First Name *
-                  </Label>
+                  <div className="mb-0.5 flex items-center space-x-1">
+                    <Label
+                      htmlFor="firstName"
+                      className="text-xs font-medium text-gray-700"
+                    >
+                      First Name *
+                    </Label>
+                    <ValidationWarningIcon
+                      show={validationErrors.firstName}
+                      className="h-3 w-3"
+                    />
+                  </div>
                   <Input
                     id="firstName"
                     type="text"
@@ -2414,12 +2539,18 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
 
                 {/* Last Name */}
                 <div>
-                  <Label
-                    htmlFor="lastName"
-                    className="mb-0.5 text-xs font-medium text-gray-700"
-                  >
-                    Last Name *
-                  </Label>
+                  <div className="mb-0.5 flex items-center space-x-1">
+                    <Label
+                      htmlFor="lastName"
+                      className="text-xs font-medium text-gray-700"
+                    >
+                      Last Name *
+                    </Label>
+                    <ValidationWarningIcon
+                      show={validationErrors.lastName}
+                      className="h-3 w-3"
+                    />
+                  </div>
                   <Input
                     id="lastName"
                     type="text"
@@ -2565,9 +2696,12 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <h2 className="text-lg font-semibold">
-                      Contact Information
-                    </h2>
+                    <div className="flex items-center space-x-2">
+                      <h2 className="text-lg font-semibold">
+                        Contact Information
+                      </h2>
+                      <ValidationWarningIcon show={hasContactErrors()} />
+                    </div>
                     {!isContactExpanded && (
                       <div className="mt-1 text-sm text-gray-600">
                         {contact.phone} • {contact.email}
@@ -2589,12 +2723,18 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     {/* Phone Number */}
                     <div>
-                      <Label
-                        htmlFor="phone"
-                        className="mb-0.5 text-xs font-medium text-gray-700"
-                      >
-                        Phone Number *
-                      </Label>
+                      <div className="mb-0.5 flex items-center space-x-1">
+                        <Label
+                          htmlFor="phone"
+                          className="text-xs font-medium text-gray-700"
+                        >
+                          Phone Number *
+                        </Label>
+                        <ValidationWarningIcon
+                          show={validationErrors.phone}
+                          className="h-3 w-3"
+                        />
+                      </div>
                       <Input
                         id="phone"
                         type="tel"
@@ -2620,12 +2760,18 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
 
                     {/* Email Address */}
                     <div>
-                      <Label
-                        htmlFor="email"
-                        className="mb-0.5 text-xs font-medium text-gray-700"
-                      >
-                        Email Address *
-                      </Label>
+                      <div className="mb-0.5 flex items-center space-x-1">
+                        <Label
+                          htmlFor="email"
+                          className="text-xs font-medium text-gray-700"
+                        >
+                          Email Address *
+                        </Label>
+                        <ValidationWarningIcon
+                          show={validationErrors.email}
+                          className="h-3 w-3"
+                        />
+                      </div>
                       <Input
                         id="email"
                         type="email"
@@ -2669,9 +2815,12 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <h2 className="text-lg font-semibold">
-                        Travel Documents
-                      </h2>
+                      <div className="flex items-center space-x-2">
+                        <h2 className="text-lg font-semibold">
+                          Travel Documents
+                        </h2>
+                        <ValidationWarningIcon show={hasTravelDocumentErrors()} />
+                      </div>
                       {!isTravelDocsExpanded &&
                         document &&
                         document.type &&
@@ -2741,12 +2890,18 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
                         <>
                           {/* Document Type */}
                           <div>
-                            <Label
-                              htmlFor="documentType"
-                              className="mb-0.5 text-xs font-medium text-gray-700"
-                            >
-                              Document Type *
-                            </Label>
+                            <div className="mb-0.5 flex items-center space-x-1">
+                              <Label
+                                htmlFor="documentType"
+                                className="text-xs font-medium text-gray-700"
+                              >
+                                Document Type *
+                              </Label>
+                              <ValidationWarningIcon
+                                show={validationErrors.documentType}
+                                className="h-3 w-3"
+                              />
+                            </div>
                             <Select
                               value={document?.type || ""}
                               onValueChange={(value) => {
@@ -2788,12 +2943,18 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
 
                           {/* Document Number */}
                           <div className="relative">
-                            <Label
-                              htmlFor="documentNumber"
-                              className="mb-0.5 text-xs font-medium text-gray-700"
-                            >
-                              {document?.type || "Document"} Number *
-                            </Label>
+                            <div className="mb-0.5 flex items-center space-x-1">
+                              <Label
+                                htmlFor="documentNumber"
+                                className="text-xs font-medium text-gray-700"
+                              >
+                                {document?.type || "Document"} Number *
+                              </Label>
+                              <ValidationWarningIcon
+                                show={validationErrors.documentNumber}
+                                className="h-3 w-3"
+                              />
+                            </div>
                             <Input
                               id="documentNumber"
                               type="text"
@@ -2822,12 +2983,18 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
 
                           {/* Issuing Country */}
                           <div>
-                            <Label
-                              htmlFor="issuingCountry"
-                              className="mb-0.5 text-xs font-medium text-gray-700"
-                            >
-                              Issuing Country *
-                            </Label>
+                            <div className="mb-0.5 flex items-center space-x-1">
+                              <Label
+                                htmlFor="issuingCountry"
+                                className="text-xs font-medium text-gray-700"
+                              >
+                                Issuing Country *
+                              </Label>
+                              <ValidationWarningIcon
+                                show={validationErrors.issuingCountry}
+                                className="h-3 w-3"
+                              />
+                            </div>
                             <CountryCombobox
                               value={document?.issuingCountry || ""}
                               onValueChange={(value) => {
@@ -2853,12 +3020,18 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
 
                           {/* Nationality */}
                           <div>
-                            <Label
-                              htmlFor="nationality"
-                              className="mb-0.5 text-xs font-medium text-gray-700"
-                            >
-                              Nationality *
-                            </Label>
+                            <div className="mb-0.5 flex items-center space-x-1">
+                              <Label
+                                htmlFor="nationality"
+                                className="text-xs font-medium text-gray-700"
+                              >
+                                Nationality *
+                              </Label>
+                              <ValidationWarningIcon
+                                show={validationErrors.nationality}
+                                className="h-3 w-3"
+                              />
+                            </div>
                             <CountryCombobox
                               value={document?.nationality || ""}
                               onValueChange={(value) => {
@@ -2884,12 +3057,18 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
 
                           {/* Expiry Date */}
                           <div className="relative">
-                            <Label
-                              htmlFor="expiryDate"
-                              className="mb-0.5 text-xs font-medium text-gray-700"
-                            >
-                              Expiry Date *
-                            </Label>
+                            <div className="mb-0.5 flex items-center space-x-1">
+                              <Label
+                                htmlFor="expiryDate"
+                                className="text-xs font-medium text-gray-700"
+                              >
+                                Expiry Date *
+                              </Label>
+                              <ValidationWarningIcon
+                                show={validationErrors.expiryDate}
+                                className="h-3 w-3"
+                              />
+                            </div>
                             <DateInput
                               date={
                                 document?.expiryDate
@@ -3292,7 +3471,10 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
 
           {/* Passenger Details */}
           <div className="rounded-lg bg-white p-4 shadow">
-            <h2 className="mb-4 text-lg font-semibold">Passenger Details</h2>
+            <div className="mb-4 flex items-center space-x-2">
+              <h2 className="text-lg font-semibold">Passenger Details</h2>
+              <ValidationWarningIcon show={hasPassengerErrors()} />
+            </div>
 
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               {/* First Name */}
@@ -3469,7 +3651,10 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <h2 className="text-lg font-semibold">Contact Information</h2>
+                  <div className="flex items-center space-x-2">
+                    <h2 className="text-lg font-semibold">Contact Information</h2>
+                    <ValidationWarningIcon show={hasContactErrors()} />
+                  </div>
                   {!isContactExpanded && (
                     <div className="mt-1 text-sm text-gray-600">
                       {contact.phone} • {contact.email}
@@ -3571,7 +3756,10 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <h2 className="text-lg font-semibold">Travel Documents</h2>
+                    <div className="flex items-center space-x-2">
+                      <h2 className="text-lg font-semibold">Travel Documents</h2>
+                      <ValidationWarningIcon show={hasTravelDocumentErrors()} />
+                    </div>
                     {!isTravelDocsExpanded &&
                       document &&
                       document.type &&
