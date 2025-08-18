@@ -300,6 +300,14 @@ const getAirlineLogoPath = (airlineIata: string): string => {
   return `/airlines/${airlineIata.toUpperCase()}.png`;
 };
 
+// Case-insensitive tag checker
+const hasTag = (
+  tags: string[] | undefined,
+  tag: "best" | "cheapest" | "fastest",
+): boolean => {
+  return (tags ?? []).some((t) => t.toLowerCase() === tag);
+};
+
 // Airline Logo Component
 const AirlineLogo = ({
   airlineIata,
@@ -352,38 +360,32 @@ const AirlineLogo = ({
   );
 };
 
-const getBadgeConfigs = (tags: string[]) => {
-  // Priority order: recommended > cheapest > fastest
-  // Only show one badge per flight
-  if (tags.includes("recommended")) {
-    return [
-      {
-        emoji: "⭐",
-        text: "Best",
-        color: "bg-black text-white border-black",
-      },
-    ];
+const getBadgeConfigs = (tags: string[] = []) => {
+  // Show all present tags on the same card, ordered: best, cheapest, fastest
+  const present = new Set(tags.map((t) => t.toLowerCase()));
+  const badges: { emoji: string; text: string; color: string }[] = [];
+  if (present.has("best")) {
+    badges.push({
+      emoji: "⭐",
+      text: "Best",
+      color: "bg-black text-white border-black",
+    });
   }
-  if (tags.includes("cheapest")) {
-    return [
-      {
-        emoji: "💰",
-        text: "Cheapest",
-        color: "bg-black text-white border-black",
-      },
-    ];
+  if (present.has("cheapest")) {
+    badges.push({
+      emoji: "💰",
+      text: "Cheapest",
+      color: "bg-black text-white border-black",
+    });
   }
-  if (tags.includes("fastest")) {
-    return [
-      {
-        emoji: "⚡",
-        text: "Fastest",
-        color: "bg-black text-white border-black",
-      },
-    ];
+  if (present.has("fastest")) {
+    badges.push({
+      emoji: "⚡",
+      text: "Fastest",
+      color: "bg-black text-white border-black",
+    });
   }
-
-  return [];
+  return badges;
 };
 
 // Get baggage data from API or fallback to mock data
@@ -394,8 +396,8 @@ const getBaggageInfo = (flight: FlightOption): BaggageInfo => {
   }
 
   // Fallback to mock data for backward compatibility
-  const isLowCost = flight.tags?.includes("cheapest");
-  const isPremium = flight.tags?.includes("recommended");
+  const isLowCost = hasTag(flight.tags, "cheapest");
+  const isPremium = hasTag(flight.tags, "best");
 
   // Mock scenarios
   const scenarios = [
@@ -738,13 +740,13 @@ const FlightCard = ({
     const highlights = [];
 
     // Add tag-based highlights
-    if (flight.tags?.includes("recommended")) {
+    if (hasTag(flight.tags, "best")) {
       highlights.push("Your usual flight, travelled 12 times");
     }
-    if (flight.tags?.includes("cheapest")) {
+    if (hasTag(flight.tags, "cheapest")) {
       highlights.push("Cheapest option with short layover");
     }
-    if (flight.tags?.includes("fastest")) {
+    if (hasTag(flight.tags, "fastest")) {
       highlights.push("Fastest route to your destination");
     }
 
@@ -1423,7 +1425,7 @@ const ResponsiveCarousel = ({
   );
 };
 
-// Direct Flight Display Component - Shows exactly 3 distinct flights
+// Direct Flight Display Component - Shows up to 3 tagged flights in order: best, cheapest, fastest
 const DirectFlightDisplay = ({
   flights,
   onSelect,
@@ -1437,123 +1439,36 @@ const DirectFlightDisplay = ({
   readOnly?: boolean;
   selectedFlightId?: string | null;
 }) => {
-  // Helper function to get flights sorted by different criteria
-  const getSortedFlights = (
-    flights: FlightOption[],
-    sortBy: "price" | "duration" | "ranking",
-  ) => {
-    const flightsCopy = [...flights];
+  // Pick only tagged flights in strict order and deduplicate when a flight has multiple tags
+  const getTaggedFlightsOrdered = () => {
+    if (flights.length === 0) return [] as FlightOption[];
 
-    switch (sortBy) {
-      case "price":
-        return flightsCopy.sort(
-          (a, b) => (a.totalAmount || 0) - (b.totalAmount || 0),
-        );
-      case "duration":
-        return flightsCopy.sort((a, b) => {
-          const getDurationMinutes = (duration: string) => {
-            const match = duration.match(/PT(\d+)H(\d+)?M?/);
-            if (match) {
-              const hours = parseInt(match[1]) || 0;
-              const minutes = parseInt(match[2]) || 0;
-              return hours * 60 + minutes;
-            }
-            return 0;
-          };
-          return (
-            getDurationMinutes(a.duration || "") -
-            getDurationMinutes(b.duration || "")
-          );
-        });
-      case "ranking":
-        return flightsCopy.sort(
-          (a, b) => (b.rankingScore || 0) - (a.rankingScore || 0),
-        );
-      default:
-        return flightsCopy;
-    }
+    const selected: FlightOption[] = [];
+    const usedIds = new Set<string>();
+
+    const pickFirstByTag = (tag: "best" | "cheapest" | "fastest") => {
+      const flight = flights.find(
+        (f) => hasTag(f.tags, tag) && !usedIds.has(f.flightOfferId),
+      );
+      if (flight) {
+        selected.push(flight);
+        usedIds.add(flight.flightOfferId);
+      }
+    };
+
+    pickFirstByTag("best");
+    pickFirstByTag("cheapest");
+    pickFirstByTag("fastest");
+
+    return selected;
   };
 
-  // Get the three distinct flights to display
-  const getThreeDistinctFlights = () => {
-    if (flights.length === 0) return [];
+  const flightsToShow = getTaggedFlightsOrdered();
 
-    const selectedFlights: FlightOption[] = [];
-    const usedFlightIds = new Set<string>();
-
-    // 1. First priority: Best flight (highest ranking or recommended)
-    const recommendedFlight = flights.find((flight) =>
-      flight.tags?.includes("recommended"),
-    );
-    const bestFlight =
-      recommendedFlight || getSortedFlights(flights, "ranking")[0];
-
-    if (bestFlight) {
-      // Ensure this flight has the "recommended" tag for display
-      const flightWithBestTag = {
-        ...bestFlight,
-        tags: [...(bestFlight.tags || []), "recommended"].filter(
-          (tag, index, arr) => arr.indexOf(tag) === index,
-        ),
-      };
-      selectedFlights.push(flightWithBestTag);
-      usedFlightIds.add(bestFlight.flightOfferId);
-    }
-
-    // 2. Second priority: Cheapest flight (not already selected)
-    const cheapestFlights = getSortedFlights(flights, "price");
-    const cheapestFlight = cheapestFlights.find(
-      (flight) => !usedFlightIds.has(flight.flightOfferId),
-    );
-
-    if (cheapestFlight) {
-      // Ensure this flight has the "cheapest" tag for display
-      const flightWithCheapestTag = {
-        ...cheapestFlight,
-        tags: [...(cheapestFlight.tags || []), "cheapest"].filter(
-          (tag, index, arr) => arr.indexOf(tag) === index,
-        ),
-      };
-      selectedFlights.push(flightWithCheapestTag);
-      usedFlightIds.add(cheapestFlight.flightOfferId);
-    }
-
-    // 3. Third priority: Fastest flight (not already selected)
-    const fastestFlights = getSortedFlights(flights, "duration");
-    const fastestFlight = fastestFlights.find(
-      (flight) => !usedFlightIds.has(flight.flightOfferId),
-    );
-
-    if (fastestFlight) {
-      // Ensure this flight has the "fastest" tag for display
-      const flightWithFastestTag = {
-        ...fastestFlight,
-        tags: [...(fastestFlight.tags || []), "fastest"].filter(
-          (tag, index, arr) => arr.indexOf(tag) === index,
-        ),
-      };
-      selectedFlights.push(flightWithFastestTag);
-      usedFlightIds.add(fastestFlight.flightOfferId);
-    }
-
-    // If we still don't have 3 flights, add more from the remaining flights
-    if (selectedFlights.length < 3) {
-      const remainingFlights = flights.filter(
-        (flight) => !usedFlightIds.has(flight.flightOfferId),
-      );
-      const additionalFlights = remainingFlights.slice(
-        0,
-        3 - selectedFlights.length,
-      );
-      selectedFlights.push(...additionalFlights);
-    }
-
-    return selectedFlights;
-  };
-
-  const flightsToShow = getThreeDistinctFlights();
-
-  console.log("DirectFlightDisplay - Flights to show:", flightsToShow.length);
+  console.log(
+    "DirectFlightDisplay - Tagged flights to show:",
+    flightsToShow.length,
+  );
 
   // Always use ResponsiveCarousel for consistent display
   return (
