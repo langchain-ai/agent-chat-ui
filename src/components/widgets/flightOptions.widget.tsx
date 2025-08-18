@@ -2543,7 +2543,7 @@ const FlightOptionsWidget = (args: FlightOptionsProps) => {
               </div>
 
               {/* Refundable Filter */}
-              <div className="mb-6">
+              {/* <div className="mb-6">
                 <label className="flex cursor-pointer items-center gap-2">
                   <input
                     type="checkbox"
@@ -2555,7 +2555,7 @@ const FlightOptionsWidget = (args: FlightOptionsProps) => {
                     Refundable fares only
                   </span>
                 </label>
-              </div>
+              </div> */}
 
               {/* Clear Filters Button */}
               <Button
