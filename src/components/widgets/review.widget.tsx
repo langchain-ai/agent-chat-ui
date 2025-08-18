@@ -1271,9 +1271,10 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
 
   // Everything else must always come from live data
   const userDetails = liveArgs?.flightItinerary?.userContext?.userDetails;
-  const selectedFlightOffers =
-    liveArgs?.flightItinerary?.selectionContext?.selectedFlightOffers ? [liveArgs?.flightItinerary?.selectionContext?.selectedFlightOffers] : [];
-    console.log('selectedFlightOffers', JSON.stringify(selectedFlightOffers,null,2));
+  const selectedFlightOffers = liveArgs?.flightItinerary?.selectionContext?.selectedFlightOffers ? 
+  [liveArgs?.flightItinerary?.selectionContext?.selectedFlightOffers] : [];
+  console.log('selectedFlightOffers', JSON.stringify(selectedFlightOffers,null,2));
+
   const bookingRequirements = liveArgs?.bookingRequirements;
 
   // Compose an effectiveArgs view for downstream usage without changing UI
@@ -1328,7 +1329,10 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
   const [originalLastName, setOriginalLastName] = useState<string>("");
 
   console.log("$$$$$$$ Review Widget - effectiveArgs:", effectiveArgs);
-  console.log("📋 Review Widget - bookingRequirements:", JSON.stringify(bookingRequirements, null, 2));
+  console.log(
+    "📋 Review Widget - bookingRequirements:",
+    JSON.stringify(bookingRequirements, null, 2),
+  );
 
   // Extract isRefundable from selectedFlightOffers
   const isRefundable =
@@ -1350,19 +1354,28 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
     // Handle new structure: { adult: { passportRequired: boolean, dateOfBirthRequired: boolean }, ... }
     if (bookingRequirements?.adult?.passportRequired !== undefined) {
       console.log("📋 Review Widget - Using new bookingRequirements structure");
-      console.log("📋 Review Widget - adult.passportRequired:", bookingRequirements.adult.passportRequired);
-      console.log("📋 Review Widget - Ignoring dateOfBirthRequired and children/infant requirements as requested");
+      console.log(
+        "📋 Review Widget - adult.passportRequired:",
+        bookingRequirements.adult.passportRequired,
+      );
+      console.log(
+        "📋 Review Widget - Ignoring dateOfBirthRequired and children/infant requirements as requested",
+      );
       return bookingRequirements.adult.passportRequired;
     }
 
     // Handle legacy structure: { travelerRequirements: [...] }
     if (bookingRequirements?.travelerRequirements !== undefined) {
-      console.log("📋 Review Widget - Using legacy bookingRequirements structure");
+      console.log(
+        "📋 Review Widget - Using legacy bookingRequirements structure",
+      );
       return bookingRequirements.travelerRequirements !== null;
     }
 
     // Default fallback when no booking requirements are present
-    console.log("📋 Review Widget - No bookingRequirements found, defaulting to show travel documents");
+    console.log(
+      "📋 Review Widget - No bookingRequirements found, defaulting to show travel documents",
+    );
     return true;
   })();
 

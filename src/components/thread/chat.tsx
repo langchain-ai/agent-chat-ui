@@ -434,7 +434,7 @@ export function Thread() {
                             block.kind === "message" &&
                             block.data &&
                             block.data.content &&
-                            block.data.content.length > 0 &&
+                              (block.data.content.length > 0 || block.data.id) &&
                             isDisplayableMessage(block.data as Message)
                           ) {
                             const message = block.data as Message;

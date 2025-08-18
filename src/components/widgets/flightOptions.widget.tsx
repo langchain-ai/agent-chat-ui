@@ -722,11 +722,13 @@ const FlightCard = ({
   onSelect,
   isLoading,
   readOnly = false,
+  selectedFlightId,
 }: {
   flight: FlightOption;
   onSelect: (flightOfferId: string) => void;
   isLoading?: boolean;
   readOnly?: boolean;
+  selectedFlightId?: string | null;
 }) => {
   const badgeConfigs =
     flight.tags && flight.tags.length > 0 ? getBadgeConfigs(flight.tags) : [];
@@ -1128,7 +1130,7 @@ const FlightCard = ({
           <span className="font-normal">
             {readOnly
               ? "Selected"
-              : isLoading
+              : isLoading && selectedFlightId === flight.flightOfferId
                 ? "Selecting..."
                 : "Select Flight"}
           </span>
@@ -1207,11 +1209,13 @@ const ResponsiveCarousel = ({
   onSelect,
   isLoading,
   readOnly = false,
+  selectedFlightId,
 }: {
   flights: FlightOption[];
   onSelect: (flightOfferId: string) => void;
   isLoading: boolean;
   readOnly?: boolean;
+  selectedFlightId?: string | null;
 }) => {
   const carouselRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -1409,6 +1413,7 @@ const ResponsiveCarousel = ({
                 onSelect={onSelect}
                 isLoading={isLoading}
                 readOnly={readOnly}
+                selectedFlightId={selectedFlightId}
               />
             </div>
           );
@@ -1424,11 +1429,13 @@ const DirectFlightDisplay = ({
   onSelect,
   isLoading,
   readOnly = false,
+  selectedFlightId,
 }: {
   flights: FlightOption[];
   onSelect: (flightOfferId: string) => void;
   isLoading: boolean;
   readOnly?: boolean;
+  selectedFlightId?: string | null;
 }) => {
   // Helper function to get flights sorted by different criteria
   const getSortedFlights = (
@@ -1555,6 +1562,7 @@ const DirectFlightDisplay = ({
       onSelect={onSelect}
       isLoading={isLoading}
       readOnly={readOnly}
+      selectedFlightId={selectedFlightId}
     />
   );
 };
@@ -2372,6 +2380,7 @@ const FlightOptionsWidget = (args: FlightOptionsProps) => {
               onSelect={handleSelectFlight}
               isLoading={isLoading}
               readOnly={readOnly}
+              selectedFlightId={selectedFlight}
             />
           ) : (
             // Show loading state when no flights are available
