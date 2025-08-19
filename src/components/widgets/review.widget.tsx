@@ -2139,7 +2139,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
     const taxes = flightOffer.tax || Math.round(total * 0.2);
     const serviceFee = flightOffer.serviceFee || 0;
     const convenienceFee = flightOffer.convenienceFee || 0;
-    const fees = serviceFee + convenienceFee || Math.round(total * 0.05);
+    const fees = serviceFee + convenienceFee
 
     return {
       baseFare: baseFare,
@@ -2819,7 +2819,9 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
                         <h2 className="text-lg font-semibold">
                           Travel Documents
                         </h2>
-                        <ValidationWarningIcon show={hasTravelDocumentErrors()} />
+                        <ValidationWarningIcon
+                          show={hasTravelDocumentErrors()}
+                        />
                       </div>
                       {!isTravelDocsExpanded &&
                         document &&
@@ -3128,15 +3130,15 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
                       )}
                     </div>
 
-                    {/* Verification Status */}
-                    <div className="mt-4 border-t pt-4">
-                      <div className="flex items-center space-x-2 rounded-lg border border-green-200 bg-green-50 p-3">
-                        <Shield className="h-4 w-4 text-green-600" />
-                        <span className="text-sm font-medium text-green-700">
-                          Document verified
-                        </span>
-                      </div>
-                    </div>
+                    {/*/!* Verification Status *!/*/}
+                    {/*<div className="mt-4 border-t pt-4">*/}
+                    {/*  <div className="flex items-center space-x-2 rounded-lg border border-green-200 bg-green-50 p-3">*/}
+                    {/*    <Shield className="h-4 w-4 text-green-600" />*/}
+                    {/*    <span className="text-sm font-medium text-green-700">*/}
+                    {/*      Document verified*/}
+                    {/*    </span>*/}
+                    {/*  </div>*/}
+                    {/*</div>*/}
                   </div>
                 )}
               </div>
@@ -3225,15 +3227,17 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
                       </div>
 
                       {/* Service Fees */}
-                      <div className="flex justify-between">
-                        <span className="text-xs text-gray-600">
-                          Service fees
-                        </span>
-                        <span className="text-xs font-medium">
-                          {paymentSummary.currency === "INR" ? "₹" : "$"}
-                          {paymentSummary.fees.toFixed(2)}
-                        </span>
-                      </div>
+                      {paymentSummary.fees > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-xs text-gray-600">
+                            Service fees
+                          </span>
+                          <span className="text-xs font-medium">
+                            {paymentSummary.currency === "INR" ? "₹" : "$"}
+                            {paymentSummary.fees.toFixed(2)}
+                          </span>
+                        </div>
+                      )}
 
                       {/* Discount */}
                       {paymentSummary.discount > 0 && (
@@ -3249,18 +3253,18 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
                       )}
 
                       {/* Refundable Status */}
-                      {isRefundable !== null && (
-                        <div className="flex justify-between">
-                          <span className="text-xs text-gray-600">
-                            Ticket Status
-                          </span>
-                          <span
-                            className={`text-xs font-medium ${isRefundable ? "text-green-600" : "text-red-600"}`}
-                          >
-                            {isRefundable ? "Refundable" : "Non-refundable"}
-                          </span>
-                        </div>
-                      )}
+                      {/*{isRefundable !== null && (*/}
+                      {/*  <div className="flex justify-between">*/}
+                      {/*    <span className="text-xs text-gray-600">*/}
+                      {/*      Ticket Status*/}
+                      {/*    </span>*/}
+                      {/*    <span*/}
+                      {/*      className={`text-xs font-medium ${isRefundable ? "text-green-600" : "text-red-600"}`}*/}
+                      {/*    >*/}
+                      {/*      {isRefundable ? "Refundable" : "Non-refundable"}*/}
+                      {/*    </span>*/}
+                      {/*  </div>*/}
+                      {/*)}*/}
 
                       {/* Total */}
                       <div className="mt-2 border-t pt-2">
@@ -3652,7 +3656,9 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-2">
-                    <h2 className="text-lg font-semibold">Contact Information</h2>
+                    <h2 className="text-lg font-semibold">
+                      Contact Information
+                    </h2>
                     <ValidationWarningIcon show={hasContactErrors()} />
                   </div>
                   {!isContactExpanded && (
@@ -3757,7 +3763,9 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
-                      <h2 className="text-lg font-semibold">Travel Documents</h2>
+                      <h2 className="text-lg font-semibold">
+                        Travel Documents
+                      </h2>
                       <ValidationWarningIcon show={hasTravelDocumentErrors()} />
                     </div>
                     {!isTravelDocsExpanded &&
@@ -3875,15 +3883,15 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
                     )}
                   </div>
 
-                  {/* Verification Status */}
-                  <div className="mt-4 border-t pt-4">
-                    <div className="flex items-center space-x-2 rounded-lg border border-green-200 bg-green-50 p-3">
-                      <Shield className="h-4 w-4 text-green-600" />
-                      <span className="text-sm font-medium text-green-700">
-                        Document verified
-                      </span>
-                    </div>
-                  </div>
+                  {/*/!* Verification Status *!/*/}
+                  {/*<div className="mt-4 border-t pt-4">*/}
+                  {/*  <div className="flex items-center space-x-2 rounded-lg border border-green-200 bg-green-50 p-3">*/}
+                  {/*    <Shield className="h-4 w-4 text-green-600" />*/}
+                  {/*    <span className="text-sm font-medium text-green-700">*/}
+                  {/*      Document verified*/}
+                  {/*    </span>*/}
+                  {/*  </div>*/}
+                  {/*</div>*/}
                 </div>
               )}
             </div>
@@ -3955,13 +3963,15 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
                 </div>
 
                 {/* Service Fees */}
-                <div className="flex justify-between">
-                  <span className="text-xs text-gray-600">Service fees</span>
-                  <span className="text-xs font-medium">
-                    {getPaymentSummary()?.currency === "INR" ? "₹" : "$"}
-                    {(getPaymentSummary()?.fees ?? 0).toFixed(2)}
-                  </span>
-                </div>
+                {getPaymentSummary()?.fees > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-xs text-gray-600">Service fees</span>
+                    <span className="text-xs font-medium">
+                      {getPaymentSummary()?.currency === "INR" ? "₹" : "$"}
+                      {(getPaymentSummary()?.fees ?? 0).toFixed(2)}
+                    </span>
+                  </div>
+                )}
 
                 {/* Seat selection removed */}
 
@@ -3977,16 +3987,16 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
                 )}
 
                 {/* Refundable Status */}
-                {isRefundable !== null && (
-                  <div className="flex justify-between">
-                    <span className="text-xs text-gray-600">Ticket Status</span>
-                    <span
-                      className={`text-xs font-medium ${isRefundable ? "text-green-600" : "text-red-600"}`}
-                    >
-                      {isRefundable ? "Refundable" : "Non-refundable"}
-                    </span>
-                  </div>
-                )}
+                {/*{isRefundable !== null && (*/}
+                {/*  <div className="flex justify-between">*/}
+                {/*    <span className="text-xs text-gray-600">Ticket Status</span>*/}
+                {/*    <span*/}
+                {/*      className={`text-xs font-medium ${isRefundable ? "text-green-600" : "text-red-600"}`}*/}
+                {/*    >*/}
+                {/*      {isRefundable ? "Refundable" : "Non-refundable"}*/}
+                {/*    </span>*/}
+                {/*  </div>*/}
+                {/*)}*/}
 
                 {/* Total */}
                 <div className="mt-2 border-t pt-2">
