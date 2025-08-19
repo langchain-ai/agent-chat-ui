@@ -52,7 +52,7 @@
     "nuqs": "^2.4.1",
     "razorpay": "^2.9.6",
     "react": "^19.0.0",
-    "react-day-picker": "^9.8.1",
+    "react-day-picker": "^9.9.0",
     "react-dom": "^19.0.0",
     "react-markdown": "^10.0.1",
     "react-syntax-highlighter": "^15.5.0",
