@@ -8,8 +8,9 @@ import WeatherWidget from "@/components/widgets/weather.widget";
 // Import the actual widgets
 import SearchCriteriaWidget from "@/components/widgets/searchCriteria.widget";
 import FlightOptionsWidget from "@/components/widgets/flightOptions.widget";
+import FlightOptionsV0Widget from "@/components/widgets/flight-options-v0.widget";
 import ReviewWidget from "@/components/widgets/review.widget";
-import PaymentWidget from "@/components/widgets/payment.widget";
+// import PaymentWidget from "@/components/widgets/payment.widget";
 import SeatPreferenceWidget from "@/components/widgets/seatPreference.widget";
 import SeatSelectionWidget from "@/components/widgets/seatSelection.widget";
 import SeatPaymentWidget from "@/components/widgets/seatPayment.widget";
@@ -634,16 +635,16 @@ const mockFlightOptionsData = {
 };
 
 // Mock data for PaymentWidget
-const mockPaymentData = {
-  transaction_id: "TXN123456789",
-  reference_id: "REF987654321",
-  razorpay_order_id: "order_123456789",
-  amount: 30225, // Amount in paise (₹302.25)
-  currency: "INR",
-  razorpayKey: "rzp_test_1234567890",
-  name: "Flight Booking Payment",
-  description: "Payment for flight booking from Delhi to Mumbai",
-};
+// const mockPaymentData = {
+//   transaction_id: "TXN123456789",
+//   reference_id: "REF987654321",
+//   razorpay_order_id: "order_123456789",
+//   amount: 30225, // Amount in paise (₹302.25)
+//   currency: "INR",
+//   razorpayKey: "rzp_test_1234567890",
+//   name: "Flight Booking Payment",
+//   description: "Payment for flight booking from Delhi to Mumbai",
+// };
 
 
 
@@ -771,17 +772,17 @@ const StandaloneReviewWidget = () => {
 };
 
 // Wrapper component for PaymentWidget
-const StandalonePaymentWidget = () => {
-  return (
-    <ThreadProvider>
-      <StreamProvider>
-        <div className="w-full">
-          <PaymentWidget {...mockPaymentData} />
-        </div>
-      </StreamProvider>
-    </ThreadProvider>
-  );
-};
+// const StandalonePaymentWidget = () => {
+//   return (
+//     <ThreadProvider>
+//       <StreamProvider>
+//         <div className="w-full">
+//           <PaymentWidget {...mockPaymentData} />
+//         </div>
+//       </StreamProvider>
+//     </ThreadProvider>
+//   );
+// };
 
 // Simple demo component for NonAgentFlowWidget (avoiding context issues)
 const StandaloneNonAgentFlowWidget = () => {
@@ -974,6 +975,22 @@ export default function WidgetsPage(): React.ReactNode {
               </div>
             </section>
 
+            {/* Flight Options V0 Widget */}
+            <section className="rounded-lg bg-white p-6 shadow-md">
+              <div className="mb-6">
+                <h3 className="mb-2 text-2xl font-semibold text-gray-800">
+                  Flight Options V0 Widget
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Modern flight options widget with responsive design, tabs for mobile,
+                  grid layout for desktop, and bottom sheet for all flights with advanced filtering.
+                </p>
+              </div>
+              <div className="w-full">
+                <FlightOptionsV0Widget />
+              </div>
+            </section>
+
             {/* Display Widgets Section */}
             <div className="mt-16 mb-8">
               <h2 className="mb-4 text-center text-3xl font-bold text-gray-900">
@@ -1088,7 +1105,7 @@ export default function WidgetsPage(): React.ReactNode {
           </section>
 
           {/* Payment Widget */}
-          <section className="rounded-lg bg-white p-6 shadow-md">
+          {/* <section className="rounded-lg bg-white p-6 shadow-md">
             <div className="mb-6">
               <h3 className="mb-2 text-2xl font-semibold text-gray-800">
                 Payment Widget
@@ -1100,7 +1117,7 @@ export default function WidgetsPage(): React.ReactNode {
             <div className="w-full">
               <StandalonePaymentWidget />
             </div>
-          </section>
+          </section> */}
 
           {/* Non-Agent Flow Widget */}
           <section className="rounded-lg bg-white p-6 shadow-md">
