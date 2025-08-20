@@ -17,7 +17,7 @@ import BookingStatusWidget from "./bookingStatus";
 
 export const componentMap = {
   SearchCriteriaWidget, // Add mapping for SearchCriteria type
-  FlightOptionsWidget,
+  FlightOptionsWidget: FlightOptionsV0Widget,
   FlightOptionsV0Widget, /// V0 Flight options widget with responsive design and bottom sheet
   FlightStatusWidget, /// simple widget needs to send from server
   LoungeWidget, ///  simple widget needs to send from server
