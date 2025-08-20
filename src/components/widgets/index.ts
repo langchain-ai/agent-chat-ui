@@ -1,4 +1,3 @@
-import FlightOptionsWidget from "./flightOptions.widget";
 import FlightOptionsV0Widget from "./flight-options-v0.widget";
 import FlightStatusWidget from "./flightStatus.wdiget";
 import SearchCriteriaWidget from "./searchCriteria.widget";
@@ -17,7 +16,7 @@ import BookingStatusWidget from "./bookingStatus";
 
 export const componentMap = {
   SearchCriteriaWidget, // Add mapping for SearchCriteria type
-  FlightOptionsWidget,
+  FlightOptionsWidget: FlightOptionsV0Widget, // Updated to use the v0 widget with tags support
   FlightOptionsV0Widget, /// V0 Flight options widget with responsive design and bottom sheet
   FlightStatusWidget, /// simple widget needs to send from server
   LoungeWidget, ///  simple widget needs to send from server

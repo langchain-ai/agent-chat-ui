@@ -12,12 +12,14 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Filter, ArrowUpDown } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { FlightOffer } from "../../types/flightOptionsV0"
 
 interface AllFlightsSheetProps {
+  flights: FlightOffer[]
   children: React.ReactNode
 }
 
-export function AllFlightsSheet({ children }: AllFlightsSheetProps) {
+export function AllFlightsSheet({flights,children }: AllFlightsSheetProps) {
   const [showFilters, setShowFilters] = useState(false)
   const [sortBy, setSortBy] = useState<"cheapest" | "fastest">("cheapest")
   const [priceRange, setPriceRange] = useState([1800, 3300])
@@ -38,100 +40,7 @@ export function AllFlightsSheet({ children }: AllFlightsSheetProps) {
     }, 1000);
   };
 
-  const allFlights = [
-    {
-      flightOfferId: "sheet-flight-1",
-      type: "best" as const,
-      price: "$2,141.24",
-      duration: "23h 35m",
-      stops: 2,
-      airline: "Cathay Pacific",
-      airlineCode: "CX",
-      departureTime: "01:15",
-      arrivalTime: "01:50",
-      nextDay: true,
-      layovers: [
-        { city: "Hong Kong", duration: "1h 20m layover", iataCode: "HKG" },
-        { city: "Tokyo", duration: "4h 35m layover", iataCode: "NRT" },
-      ],
-    },
-    {
-      flightOfferId: "sheet-flight-2",
-      type: "cheapest" as const,
-      price: "$1,892.50",
-      duration: "28h 15m",
-      stops: 2,
-      airline: "Air India",
-      airlineCode: "AI",
-      departureTime: "14:30",
-      arrivalTime: "06:45",
-      nextDay: true,
-      layovers: [
-        { city: "Mumbai", duration: "3h 45m layover", iataCode: "BOM" },
-        { city: "Los Angeles", duration: "2h 30m layover", iataCode: "LAX" },
-      ],
-    },
-    {
-      flightOfferId: "sheet-flight-3",
-      type: "fastest" as const,
-      price: "$3,245.80",
-      duration: "18h 20m",
-      stops: 1,
-      airline: "United Airlines",
-      airlineCode: "UA",
-      departureTime: "22:45",
-      arrivalTime: "11:05",
-      nextDay: true,
-      layovers: [{ city: "San Francisco", duration: "2h 15m layover", iataCode: "SFO" }],
-    },
-    {
-      flightOfferId: "sheet-flight-4",
-      type: "best" as const,
-      price: "$2,567.90",
-      duration: "25h 10m",
-      stops: 2,
-      airline: "Emirates",
-      airlineCode: "EK",
-      departureTime: "08:20",
-      arrivalTime: "21:30",
-      nextDay: true,
-      layovers: [
-        { city: "Dubai", duration: "2h 45m layover", iataCode: "DXB" },
-        { city: "Los Angeles", duration: "3h 20m layover", iataCode: "LAX" },
-      ],
-    },
-    {
-      flightOfferId: "sheet-flight-5",
-      type: "best" as const,
-      price: "$2,890.15",
-      duration: "26h 45m",
-      stops: 2,
-      airline: "Lufthansa",
-      airlineCode: "LH",
-      departureTime: "16:15",
-      arrivalTime: "07:00",
-      nextDay: true,
-      layovers: [
-        { city: "Frankfurt", duration: "4h 15m layover", iataCode: "FRA" },
-        { city: "San Francisco", duration: "1h 50m layover", iataCode: "SFO" },
-      ],
-    },
-    {
-      flightOfferId: "sheet-flight-6",
-      type: "best" as const,
-      price: "$3,120.40",
-      duration: "21h 30m",
-      stops: 1,
-      airline: "Singapore Airlines",
-      airlineCode: "SQ",
-      departureTime: "23:30",
-      arrivalTime: "13:00",
-      nextDay: true,
-      layovers: [{ city: "Singapore", duration: "3h 10m layover", iataCode: "SIN" }],
-    },
-  ]
-
-  const airlines = Array.from(new Set(allFlights.map((flight) => flight.airline)))
+  const airlines = Array.from(new Set(flights.map((flight) => flight.airline)))
   const departureTimeSlots = [
     { label: "Early Morning (00:00 - 06:00)", value: "early" },
     { label: "Morning (06:00 - 12:00)", value: "morning" },
@@ -139,7 +48,7 @@ export function AllFlightsSheet({ children }: AllFlightsSheetProps) {
     { label: "Evening (18:00 - 24:00)", value: "evening" },
   ]
 
-  const filteredFlights = allFlights.filter((flight) => {
+  const filteredFlights = flights.filter((flight) => {
     const price = Number.parseFloat(flight.price.replace("$", "").replace(",", ""))
     const priceInRange = price >= priceRange[0] && price <= priceRange[1]
 

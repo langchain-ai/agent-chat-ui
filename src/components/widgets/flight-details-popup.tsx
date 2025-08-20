@@ -3,52 +3,15 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Plane, Clock } from "lucide-react"
+import { Segment } from "../../types/flightOptionsV0"
 
 interface FlightDetailsPopupProps {
   open: boolean
+  flightSegments: Segment[]
   onOpenChange: (open: boolean) => void
 }
 
-export function FlightDetailsPopup({ open, onOpenChange }: FlightDetailsPopupProps) {
-  const flightSegments = [
-    {
-      from: "New Delhi (DEL)",
-      to: "Hong Kong (HKG)",
-      departure: "01:15",
-      arrival: "08:30",
-      flight: "CX 694",
-      duration: "5h 45m",
-      date: "Today",
-    },
-    {
-      layover: "Hong Kong",
-      duration: "1h 20m",
-      details: "Terminal change required",
-    },
-    {
-      from: "Hong Kong (HKG)",
-      to: "Tokyo (NRT)",
-      departure: "09:50",
-      arrival: "15:25",
-      flight: "CX 520",
-      duration: "3h 35m",
-      date: "Today",
-    },
-    {
-      layover: "Tokyo",
-      duration: "4h 35m",
-      details: "International transit",
-    },
-    {
-      from: "Tokyo (NRT)",
-      to: "Honolulu (HNL)",
-      departure: "20:00",
-      arrival: "01:50",
-      flight: "CX 278",
-      duration: "7h 15m",
-      date: "Tomorrow",
-    },
-  ]
+export function FlightDetailsPopup({ flightSegments,open, onOpenChange }: FlightDetailsPopupProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -63,7 +26,7 @@ export function FlightDetailsPopup({ open, onOpenChange }: FlightDetailsPopupPro
         <div className="space-y-4">
           {flightSegments.map((segment, index) => (
             <div key={index}>
-              {segment.layover ? (
+              {"layover" in segment ? (
                 <div className="flex items-center gap-3 py-2 px-3 bg-muted/50 rounded-lg">
                   <Clock className="w-4 h-4 text-muted-foreground" />
                   <div>

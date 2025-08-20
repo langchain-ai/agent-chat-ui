@@ -4,13 +4,26 @@ import { useState } from "react"
 import { Info } from "lucide-react"
 import { FlightDetailsPopup } from "./flight-details-popup"
 import Image from "next/image"
+import { Segment } from "../../types/flightOptionsV0"
 
 interface FlightCardProps {
   type?: "best" | "cheapest" | "fastest"
+  tags?: string[]
+  departure:{
+    date: string
+    iata: string
+    city: string
+  }
+  arrival: {
+    date: string
+    iata: string
+    city: string
+  },
   price: string
   duration: string
   stops: number
   airline: string
+  segments: Segment[]
   airlineCode?: string
   departureTime: string
   arrivalTime: string
@@ -121,6 +134,9 @@ const getBadgeConfigs = (tags: string[] = []) => {
 
 export function FlightCard({
   type = "best",
+  tags,
+  departure,
+  arrival,
   price,
   duration,
   stops,
@@ -130,6 +146,7 @@ export function FlightCard({
   arrivalTime,
   nextDay = false,
   layovers,
+  segments,
   compact = false,
   flightOfferId,
   onSelect,
@@ -138,8 +155,8 @@ export function FlightCard({
 }: FlightCardProps) {
   const [showDetails, setShowDetails] = useState(false)
 
-  const airlineIata = getAirlineIata(airline, airlineCode);
-  const badgeConfigs = getBadgeConfigs([type]);
+  const airlineIata = airlineCode as string;
+  const badgeConfigs = getBadgeConfigs(tags);
 
   const handleCardClick = () => {
     if (onSelect && flightOfferId && !isLoading) {
@@ -178,7 +195,7 @@ export function FlightCard({
             </div>
 
             <div className="flex flex-col items-center w-16 flex-shrink-0">
-              <div className="text-xs md:text-[10px] text-muted-foreground">DEL</div>
+              <div className="text-xs md:text-[10px] text-muted-foreground">{departure.iata}</div>
               <div className="font-semibold text-sm md:text-xs text-foreground">{departureTime}</div>
             </div>
 
@@ -188,7 +205,7 @@ export function FlightCard({
             </div>
 
             <div className="flex flex-col items-center w-16 flex-shrink-0">
-              <div className="text-xs md:text-[10px] text-muted-foreground">HNL</div>
+              <div className="text-xs md:text-[10px] text-muted-foreground">{arrival.iata}</div>
               <div className="font-semibold text-sm md:text-xs text-foreground">{arrivalTime}</div>
               {nextDay && (
                 <span className="bg-red-50 text-red-600 px-1.5 py-0.5 rounded border border-red-200 text-xs md:text-[10px] mt-1">
@@ -203,7 +220,7 @@ export function FlightCard({
           </div>
         </div>
 
-        <FlightDetailsPopup open={showDetails} onOpenChange={setShowDetails} />
+        <FlightDetailsPopup flightSegments={segments} open={showDetails} onOpenChange={setShowDetails} />
       </>
     )
   }
@@ -244,7 +261,7 @@ export function FlightCard({
             <div className="text-left">
               <div className="text-muted-foreground text-xs">Departure</div>
               <div className="font-semibold text-foreground text-sm">{departureTime}</div>
-              <div className="text-muted-foreground text-xs">New Delhi (DEL)</div>
+              <div className="text-muted-foreground text-xs">{departure.city} ({departure.iata})</div>
             </div>
             <div className="text-center">
               <div className="font-semibold text-foreground text-sm">{duration}</div>
@@ -263,7 +280,7 @@ export function FlightCard({
             <div className="text-right">
               <div className="text-muted-foreground text-xs">Arrival</div>
               <div className="font-semibold text-foreground text-sm">{arrivalTime}</div>
-              <div className="text-muted-foreground text-xs">Honolulu (HNL)</div>
+              <div className="text-muted-foreground text-xs">{arrival.city} ({arrival.iata})</div>
               {nextDay && (
                 <div className="mt-1">
                   <span className="bg-red-50 text-red-600 px-1.5 py-0.5 rounded border border-red-200 text-[10px]">
@@ -287,7 +304,7 @@ export function FlightCard({
         </div>
       </div>
 
-      <FlightDetailsPopup open={showDetails} onOpenChange={setShowDetails} />
+      <FlightDetailsPopup  flightSegments={segments} open={showDetails} onOpenChange={setShowDetails} />
     </>
   )
 }
