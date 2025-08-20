@@ -216,12 +216,12 @@ export function AllFlightsSheet({ children }: AllFlightsSheetProps) {
         }}
       >
         <div className="flex-shrink-0 border-b bg-background">
-          <SheetHeader className="mb-4">
+          <SheetHeader className="mb-2">
             <SheetTitle>Flights</SheetTitle>
           </SheetHeader>
 
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-4">
+          <div className="mb-3 px-4">
+            <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"

@@ -1625,7 +1625,7 @@ const FlightListItem = ({
         {/* Main Flight Row */}
         <div className="flex min-h-[80px] items-start gap-3">
           {/* Left: Airline Info */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col items-center gap-1">
             {/* Airline Logo - only show if we have airline data */}
             {(airline || airlineIata) && (
               <div className="flex-shrink-0">
@@ -1638,9 +1638,9 @@ const FlightListItem = ({
             )}
 
             {/* Airline Details */}
-            <div className="min-w-0">
+            <div className="min-w-0 text-center">
               {(airline || airlineIata) && (
-                <div className="truncate text-xs font-medium text-gray-900">
+                <div className="truncate text-xs text-gray-500" style={{ fontSize: "10px" }}>
                   {(airline || airlineIata).length > 12
                     ? (airline || airlineIata).substring(0, 12) + "..."
                     : airline || airlineIata}
@@ -1670,7 +1670,7 @@ const FlightListItem = ({
             <div className="min-w-0 text-center">
               {duration && (
                 <div
-                  className="text-xs text-gray-700"
+                  className="text-xs text-gray-700 font-light"
                   style={{ fontSize: "12px" }}
                 >
                   {duration}
@@ -1746,8 +1746,8 @@ const FlightListItem = ({
           </div>
 
           {/* Right: Price */}
-          <div className="flex flex-shrink-0 flex-col justify-center text-right">
-            <div className="text-lg font-bold text-gray-900">
+          <div className="flex flex-shrink-0 flex-col justify-center text-right max-w-[80px]">
+            <div className="text-sm font-bold text-gray-900 truncate">
               {currencySymbol}
               {price.toLocaleString()}
             </div>
@@ -2373,8 +2373,8 @@ const FlightOptionsWidget = (args: FlightOptionsProps) => {
           side="bottom"
           className="flex h-[90vh] flex-col overflow-hidden sm:h-[85vh]"
         >
-          <SheetHeader className="flex-shrink-0 border-b border-gray-200 pb-4">
-            <SheetTitle className="text-xl font-semibold">
+          <SheetHeader className="flex-shrink-0 border-b border-gray-200 pb-2">
+            <SheetTitle className="text-lg font-semibold">
               All Flights ({filteredFlights.length} of {allFlightTuples.length}{" "}
               flights)
             </SheetTitle>
@@ -2543,8 +2543,8 @@ const FlightOptionsWidget = (args: FlightOptionsProps) => {
           {/* Mobile Layout */}
           <div className="flex flex-1 flex-col overflow-hidden lg:hidden">
             {/* Combined Pill Tabs and Filter Button */}
-            <div className="flex-shrink-0 border-b border-gray-200 p-4">
-              <div className="flex items-center justify-center gap-2">
+            <div className="flex-shrink-0 border-b border-gray-200 px-4 py-3">
+              <div className="flex items-center justify-start gap-2">
                 {/* Filter Button as Pill */}
                 <button
                   onClick={() => setShowMobileFilters(true)}
