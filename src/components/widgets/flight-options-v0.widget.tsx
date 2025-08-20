@@ -5,9 +5,12 @@ import { FlightCard } from "./flight-card"
 import { AllFlightsSheet } from "./all-flights-sheet"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useStreamContext } from "@/providers/Stream";
+import { submitInterruptResponse } from "./util";
+import { useEffect } from "react";
 
 // Mock flight data based on the guide
-const mockFlights = [
+const flightOffers = [
   {
     flightOfferId: "flight-1",
     type: "best" as const,
@@ -55,20 +58,86 @@ const mockFlights = [
   },
 ]
 
-export default function FlightOptionsV0Widget() {
+interface FlightOptionsProps extends Record<string, any> {
+  apiData?: any;
+  readOnly?: boolean;
+  interruptId?: string;
+}
+
+export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
+  const thread = useStreamContext();
+
+  const liveArgs = args.apiData?.value?.widget?.args ?? {};
+  const frozenArgs = (liveArgs as any)?.submission;
+  const effectiveArgs = args.readOnly && frozenArgs ? frozenArgs : liveArgs;
+
+  const flightOffers =
+    (effectiveArgs as any)?.flightOffers ?? args.flightOffers ?? {};
+
+  const readOnly = !!args.readOnly;
   const [selectedFlight, setSelectedFlight] = useState<string | null>(null);
+  const [showAllFlights, setShowAllFlights] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // const handleSelectFlight = async (flightOfferId: string) => {
+  //   setSelectedFlight(flightOfferId);
+  //   setIsLoading(true);
+
+  //   // Simulate API call
+  //   setTimeout(() => {
+  //     setIsLoading(false);
+  //     console.log("Selected flight:", flightOfferId);
+  //   }, 1000);
+  // };
+
   const handleSelectFlight = async (flightOfferId: string) => {
+// Prevent selection in read-only mode
+    if (readOnly) return;
+
     setSelectedFlight(flightOfferId);
     setIsLoading(true);
+    setShowAllFlights(false);
+    const responseData = {
+      selectedFlightId: flightOfferId,
+    };
 
-    // Simulate API call
-    setTimeout(() => {
+
+   try {
+      const selectedFlightOffer = flightOffers.find(
+        (offer: any) => offer.flightOfferId === flightOfferId,
+      );
+      const frozen = {
+        widget: {
+          type: "FlightOptionsWidget",
+          args: { flightOffers: [selectedFlightOffer] },
+        },
+        value: {
+          type: "widget",
+          widget: {
+            type: "FlightOptionsWidget",
+            args: { flightOffers: [selectedFlightOffer] },
+          },
+        },
+      };
+      await submitInterruptResponse(thread, "response", responseData, {
+        interruptId: args.interruptId,
+        frozenValue: frozen,
+      });
+    } catch (error) {
+      // Optional: already handled inside the utility
+    } finally {
       setIsLoading(false);
-      console.log("Selected flight:", flightOfferId);
-    }, 1000);
-  };
+    }
+  }; 
+
+  useEffect(() => {
+    if (!readOnly) {
+      setShowAllFlights(true);
+    }
+    if (readOnly) {
+      setShowAllFlights(false);
+    }
+  }, [readOnly]);
 
   return (
     <div
@@ -80,13 +149,13 @@ export default function FlightOptionsV0Widget() {
       {/* Header */}
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Flight Options</h2>
-        <p className="text-gray-600">New Delhi (DEL) → Honolulu (HNL)</p>
+        <p className="text-gray-600">{flightOffers[0]?.journey[0]?.departure?.airportName} ({flightOffers[0]?.journey[0]?.departure?.airportIata}) → {flightOffers[0]?.journey[0]?.arrival?.airportName} ({flightOffers[0]?.journey[0]?.arrival?.airportIata})</p>
       </div>
 
       {/* Desktop Layout - Three cards side by side */}
       <div className="hidden md:block">
         <div className="grid grid-cols-3 gap-4 mb-6">
-          {mockFlights.map((flight, index) => (
+          {flightOffers.map((flight: any, index: number) => (
             <div key={index} className="bg-white rounded-lg border shadow-sm">
               <FlightCard
                 {...flight}
@@ -108,7 +177,7 @@ export default function FlightOptionsV0Widget() {
             <TabsTrigger value="fastest">Fastest</TabsTrigger>
           </TabsList>
           
-          {mockFlights.map((flight, index) => (
+          {flightOffers.map((flight: any, index: number) => (
             <TabsContent key={index} value={flight.type} className="mt-4">
               <div className="bg-white rounded-lg border shadow-sm">
                 <FlightCard
@@ -124,13 +193,13 @@ export default function FlightOptionsV0Widget() {
       </div>
 
       {/* Show All Flights Button */}
-      <div className="flex justify-center">
+      {showAllFlights && <div className="flex justify-center">
         <AllFlightsSheet>
           <Button variant="outline" className="w-full md:w-auto">
             Show all flights
           </Button>
         </AllFlightsSheet>
-      </div>
+      </div>}
     </div>
   )
 }
