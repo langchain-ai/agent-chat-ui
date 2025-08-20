@@ -194,7 +194,7 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
 
       {/* Show All Flights Button */}
       {showAllFlights && <div className="flex justify-center">
-        <AllFlightsSheet>
+        <AllFlightsSheet flightData={flightOffers}>
           <Button variant="outline" className="w-full md:w-auto">
             Show all flights
           </Button>
