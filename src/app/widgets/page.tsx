@@ -24,204 +24,6 @@ import BookingStatusWidget from "@/components/widgets/bookingStatus";
 import { StreamProvider } from "@/providers/Stream";
 import { ThreadProvider } from "@/providers/Thread";
 import { TabProvider } from "@/providers/TabContext";
-import { FlightOffer } from "@/types/flightOptionsV0";
-
-const flightOffers: FlightOffer[] = [
-    {
-      flightOfferId: "flight-1",
-      departure: {
-        iata: "DEL",
-        city: "new Delhi",
-        date: "2024-07-20",
-      },
-      arrival: {
-        iata: "HNL",
-        city: "Honolulu",
-        date: "2024-07-20",
-      },
-      tags: ["best", "recommended"],
-      price: "$2,141.24",
-      duration: "23h 35m",
-      stops: 2,
-      airline: "Cathay Pacific",
-      airlineCode: "CX",
-      departureTime: "01:15",
-      arrivalTime: "01:50",
-      nextDay: true,
-      layovers: [
-        { city: "Hong Kong", duration: "1h 20m layover", iataCode: "HKG" },
-        { city: "Tokyo", duration: "4h 35m layover", iataCode: "NRT" },
-      ],
-      segments: [
-        {
-          from: "New Delhi (DEL)",
-          to: "Hong Kong (HKG)",
-          departure: "01:15",
-          arrival: "08:30",
-          flight: "CX 694",
-          duration: "5h 45m",
-          date: "Today",
-        },
-        {
-          layover: "Hong Kong",
-          duration: "1h 20m",
-          details: "Terminal change required",
-        },
-        {
-          from: "Hong Kong (HKG)",
-          to: "Tokyo (NRT)",
-          departure: "09:50",
-          arrival: "15:25",
-          flight: "CX 520",
-          duration: "3h 35m",
-          date: "Today",
-        },
-        {
-          layover: "Tokyo",
-          duration: "4h 35m",
-          details: "International transit",
-        },
-        {
-          from: "Tokyo (NRT)",
-          to: "Honolulu (HNL)",
-          departure: "20:00",
-          arrival: "01:50",
-          flight: "CX 278",
-          duration: "7h 15m",
-          date: "Tomorrow",
-        },
-      ],
-    },
-    {
-      flightOfferId: "flight-2",
-      departure: {
-        iata: "DEL",
-        city: "new Delhi",
-        date: "2024-07-20",
-      },
-      arrival: {
-        iata: "HNL",
-        city: "Honolulu",
-        date: "2024-07-20",
-      },
-      tags: ["cheapest"],
-      price: "$1,892.50",
-      duration: "28h 15m",
-      stops: 2,
-      airline: "Air India",
-      airlineCode: "AI",
-      departureTime: "14:30",
-      arrivalTime: "06:45",
-      nextDay: true,
-      layovers: [
-        { city: "Mumbai", duration: "3h 45m layover", iataCode: "BOM" },
-        { city: "Los Angeles", duration: "2h 30m layover", iataCode: "LAX" },
-      ],
-      segments: [
-        {
-          from: "New Delhi (DEL)",
-          to: "Hong Kong (HKG)",
-          departure: "01:15",
-          arrival: "08:30",
-          flight: "CX 694",
-          duration: "5h 45m",
-          date: "Today",
-        },
-        {
-          layover: "Hong Kong",
-          duration: "1h 20m",
-          details: "Terminal change required",
-        },
-        {
-          from: "Hong Kong (HKG)",
-          to: "Tokyo (NRT)",
-          departure: "09:50",
-          arrival: "15:25",
-          flight: "CX 520",
-          duration: "3h 35m",
-          date: "Today",
-        },
-        {
-          layover: "Tokyo",
-          duration: "4h 35m",
-          details: "International transit",
-        },
-        {
-          from: "Tokyo (NRT)",
-          to: "Honolulu (HNL)",
-          departure: "20:00",
-          arrival: "01:50",
-          flight: "CX 278",
-          duration: "7h 15m",
-          date: "Tomorrow",
-        },
-      ],
-    },
-    {
-      flightOfferId: "flight-3",
-      departure: {
-        iata: "DEL",
-        city: "new Delhi",
-        date: "2024-07-20",
-      },
-      arrival: {
-        iata: "HNL",
-        city: "Honolulu",
-        date: "2024-07-20",
-      },
-      tags: ["fastest", "recommended"],
-      price: "$3,245.80",
-      duration: "18h 20m",
-      stops: 1,
-      airline: "United Airlines",
-      airlineCode: "UA",
-      departureTime: "22:45",
-      arrivalTime: "11:05",
-      nextDay: true,
-      layovers: [
-        { city: "San Francisco", duration: "2h 15m layover", iataCode: "SFO" },
-      ],
-      segments: [
-        {
-          from: "New Delhi (DEL)",
-          to: "Hong Kong (HKG)",
-          departure: "01:15",
-          arrival: "08:30",
-          flight: "CX 694",
-          duration: "5h 45m",
-          date: "Today",
-        },
-        {
-          layover: "Hong Kong",
-          duration: "1h 20m",
-          details: "Terminal change required",
-        },
-        {
-          from: "Hong Kong (HKG)",
-          to: "Tokyo (NRT)",
-          departure: "09:50",
-          arrival: "15:25",
-          flight: "CX 520",
-          duration: "3h 35m",
-          date: "Today",
-        },
-        {
-          layover: "Tokyo",
-          duration: "4h 35m",
-          details: "International transit",
-        },
-        {
-          from: "Tokyo (NRT)",
-          to: "Honolulu (HNL)",
-          departure: "20:00",
-          arrival: "01:50",
-          flight: "CX 278",
-          duration: "7h 15m",
-          date: "Tomorrow",
-        },
-      ],
-    },
-  ]
 
 // Mock data for SearchCriteriaWidget
 const mockSearchCriteriaData = {
@@ -956,13 +758,149 @@ const StandaloneFlightOptionsWidget = () => {
   );
 };
 
+// Mock data for ReviewWidget
+const mockReviewData = {
+  apiData: {
+    __block: {
+      value: [
+        {
+          value: {
+            value: {
+              widget: {
+                args: {
+                  flightItinerary: {
+                    userContext: {
+                      userDetails: {
+                        travellerId: 1,
+                        firstName: "John",
+                        lastName: "Doe",
+                        gender: "Male",
+                        dateOfBirth: "1990-01-15",
+                        nationality: "Indian",
+                        email: "john.doe@example.com",
+                        phone: [{ countryCode: "91", number: "9876543210" }],
+                        numberOfFlights: 5,
+                        isPrimaryTraveller: true,
+                        documents: [
+                          {
+                            documentId: 1,
+                            documentType: "passport",
+                            documentNumber: "A12345678",
+                            nationality: "Indian",
+                            expiryDate: "2029-01-11",
+                            issuingCountry: "India",
+                            issuingDate: "2019-01-11",
+                            documentUrl: "",
+                          },
+                        ],
+                      },
+                      savedTravellers: [
+                        {
+                          travellerId: 1,
+                          firstName: "John",
+                          lastName: "Doe",
+                          gender: "Male",
+                          dateOfBirth: "1990-01-15",
+                          nationality: "Indian",
+                          email: "john.doe@example.com",
+                          phone: [{ countryCode: "91", number: "9876543210" }],
+                          numberOfFlights: 5,
+                          isPrimaryTraveller: true,
+                          documents: [
+                            {
+                              documentId: 1,
+                              documentType: "passport",
+                              documentNumber: "A12345678",
+                              nationality: "Indian",
+                              expiryDate: "2029-01-11",
+                              issuingCountry: "India",
+                              issuingDate: "2019-01-11",
+                              documentUrl: "",
+                            },
+                          ],
+                        },
+                        {
+                          travellerId: 2,
+                          firstName: "Jane",
+                          lastName: "Smith",
+                          gender: "Female",
+                          dateOfBirth: "1985-03-22",
+                          nationality: "Indian",
+                          email: "jane.smith@example.com",
+                          phone: [{ countryCode: "91", number: "9876543211" }],
+                          numberOfFlights: 3,
+                          isPrimaryTraveller: false,
+                          documents: [
+                            {
+                              documentId: 2,
+                              documentType: "passport",
+                              documentNumber: "B87654321",
+                              nationality: "Indian",
+                              expiryDate: "2028-05-15",
+                              issuingCountry: "India",
+                              issuingDate: "2018-05-15",
+                              documentUrl: "",
+                            },
+                          ],
+                        },
+                      ],
+                      contactDetails: {
+                        countryCode: "91",
+                        mobileNumber: "9876543210",
+                        email: "john.doe@example.com",
+                      },
+                    },
+                    selectionContext: {
+                      selectedFlightOffers: mockFlights[0], // Use first flight from existing mock data
+                    },
+                  },
+                  bookingRequirements: {
+                    adult: {
+                      passportRequired: true,
+                      dateOfBirthRequired: true,
+                    },
+                    travelerRequirements: [
+                      {
+                        travelerId: "1",
+                        genderRequired: true,
+                        documentRequired: true,
+                        documentIssuanceCityRequired: false,
+                        dateOfBirthRequired: true,
+                        redressRequiredIfAny: false,
+                        airFranceDiscountRequired: false,
+                        spanishResidentDiscountRequired: false,
+                        residenceRequired: false,
+                      },
+                      {
+                        travelerId: "2",
+                        genderRequired: true,
+                        documentRequired: true,
+                        documentIssuanceCityRequired: false,
+                        dateOfBirthRequired: true,
+                        redressRequiredIfAny: false,
+                        airFranceDiscountRequired: false,
+                        spanishResidentDiscountRequired: false,
+                        residenceRequired: false,
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+          },
+        },
+      ],
+    },
+  },
+};
+
 // Wrapper component for ReviewWidget
 const StandaloneReviewWidget = () => {
   return (
     <ThreadProvider>
       <StreamProvider>
         <div className="w-full">
-          <ReviewWidget />
+          <ReviewWidget {...mockReviewData} />
         </div>
       </StreamProvider>
     </ThreadProvider>
@@ -1185,7 +1123,7 @@ export default function WidgetsPage(): React.ReactNode {
                 </p>
               </div>
               <div className="w-full">
-                <FlightOptionsV0Widget  />
+                <FlightOptionsV0Widget />
               </div>
             </section>
 

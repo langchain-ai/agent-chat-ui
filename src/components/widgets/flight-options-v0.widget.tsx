@@ -1,215 +1,17 @@
-"use client";
+"use client"
 
-import React, { useEffect, useState } from "react";
-import { FlightCard } from "./flight-card";
-import { AllFlightsSheet } from "./all-flights-sheet";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FlightOffer } from "../../types/flightOptionsV0";
-import { submitInterruptResponse } from "./util";
+import React, { useState } from "react"
+import { FlightCard } from "./flight-card"
+import { AllFlightsSheet } from "./all-flights-sheet"
+import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useStreamContext } from "@/providers/Stream";
-
-// Mock flight data based on the guide - updated to use tags array
-
-const flightOffers: FlightOffer[] = [
-    {
-      flightOfferId: "flight-1",
-      departure: {
-        iata: "DEL",
-        city: "new Delhi",
-        date: "2024-07-20",
-      },
-      arrival: {
-        iata: "HNL",
-        city: "Honolulu",
-        date: "2024-07-20",
-      },
-      tags: ["best", "recommended"],
-      price: "$2,141.24",
-      duration: "23h 35m",
-      stops: 2,
-      airline: "Cathay Pacific",
-      airlineCode: "CX",
-      departureTime: "01:15",
-      arrivalTime: "01:50",
-      nextDay: true,
-      layovers: [
-        { city: "Hong Kong", duration: "1h 20m layover", iataCode: "HKG" },
-        { city: "Tokyo", duration: "4h 35m layover", iataCode: "NRT" },
-      ],
-      segments: [
-        {
-          from: "New Delhi (DEL)",
-          to: "Hong Kong (HKG)",
-          departure: "01:15",
-          arrival: "08:30",
-          flight: "CX 694",
-          duration: "5h 45m",
-          date: "Today",
-        },
-        {
-          layover: "Hong Kong",
-          duration: "1h 20m",
-          details: "Terminal change required",
-        },
-        {
-          from: "Hong Kong (HKG)",
-          to: "Tokyo (NRT)",
-          departure: "09:50",
-          arrival: "15:25",
-          flight: "CX 520",
-          duration: "3h 35m",
-          date: "Today",
-        },
-        {
-          layover: "Tokyo",
-          duration: "4h 35m",
-          details: "International transit",
-        },
-        {
-          from: "Tokyo (NRT)",
-          to: "Honolulu (HNL)",
-          departure: "20:00",
-          arrival: "01:50",
-          flight: "CX 278",
-          duration: "7h 15m",
-          date: "Tomorrow",
-        },
-      ],
-    },
-    {
-      flightOfferId: "flight-2",
-      departure: {
-        iata: "DEL",
-        city: "new Delhi",
-        date: "2024-07-20",
-      },
-      arrival: {
-        iata: "HNL",
-        city: "Honolulu",
-        date: "2024-07-20",
-      },
-      tags: ["cheapest"],
-      price: "$1,892.50",
-      duration: "28h 15m",
-      stops: 2,
-      airline: "Air India",
-      airlineCode: "AI",
-      departureTime: "14:30",
-      arrivalTime: "06:45",
-      nextDay: true,
-      layovers: [
-        { city: "Mumbai", duration: "3h 45m layover", iataCode: "BOM" },
-        { city: "Los Angeles", duration: "2h 30m layover", iataCode: "LAX" },
-      ],
-      segments: [
-        {
-          from: "New Delhi (DEL)",
-          to: "Hong Kong (HKG)",
-          departure: "01:15",
-          arrival: "08:30",
-          flight: "CX 694",
-          duration: "5h 45m",
-          date: "Today",
-        },
-        {
-          layover: "Hong Kong",
-          duration: "1h 20m",
-          details: "Terminal change required",
-        },
-        {
-          from: "Hong Kong (HKG)",
-          to: "Tokyo (NRT)",
-          departure: "09:50",
-          arrival: "15:25",
-          flight: "CX 520",
-          duration: "3h 35m",
-          date: "Today",
-        },
-        {
-          layover: "Tokyo",
-          duration: "4h 35m",
-          details: "International transit",
-        },
-        {
-          from: "Tokyo (NRT)",
-          to: "Honolulu (HNL)",
-          departure: "20:00",
-          arrival: "01:50",
-          flight: "CX 278",
-          duration: "7h 15m",
-          date: "Tomorrow",
-        },
-      ],
-    },
-    {
-      flightOfferId: "flight-3",
-      departure: {
-        iata: "DEL",
-        city: "new Delhi",
-        date: "2024-07-20",
-      },
-      arrival: {
-        iata: "HNL",
-        city: "Honolulu",
-        date: "2024-07-20",
-      },
-      tags: ["fastest", "recommended"],
-      price: "$3,245.80",
-      duration: "18h 20m",
-      stops: 1,
-      airline: "United Airlines",
-      airlineCode: "UA",
-      departureTime: "22:45",
-      arrivalTime: "11:05",
-      nextDay: true,
-      layovers: [
-        { city: "San Francisco", duration: "2h 15m layover", iataCode: "SFO" },
-      ],
-      segments: [
-        {
-          from: "New Delhi (DEL)",
-          to: "Hong Kong (HKG)",
-          departure: "01:15",
-          arrival: "08:30",
-          flight: "CX 694",
-          duration: "5h 45m",
-          date: "Today",
-        },
-        {
-          layover: "Hong Kong",
-          duration: "1h 20m",
-          details: "Terminal change required",
-        },
-        {
-          from: "Hong Kong (HKG)",
-          to: "Tokyo (NRT)",
-          departure: "09:50",
-          arrival: "15:25",
-          flight: "CX 520",
-          duration: "3h 35m",
-          date: "Today",
-        },
-        {
-          layover: "Tokyo",
-          duration: "4h 35m",
-          details: "International transit",
-        },
-        {
-          from: "Tokyo (NRT)",
-          to: "Honolulu (HNL)",
-          departure: "20:00",
-          arrival: "01:50",
-          flight: "CX 278",
-          duration: "7h 15m",
-          date: "Tomorrow",
-        },
-      ],
-    },
-  ]
+import { submitInterruptResponse } from "./util";
+import { useEffect } from "react";
 
 
-  interface FlightOptionsProps extends Record<string, any> {
+
+interface FlightOptionsProps extends Record<string, any> {
   apiData?: any;
   readOnly?: boolean;
   interruptId?: string;
@@ -217,21 +19,76 @@ const flightOffers: FlightOffer[] = [
 
 export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
   const thread = useStreamContext();
+
   const liveArgs = args.apiData?.value?.widget?.args ?? {};
   const frozenArgs = (liveArgs as any)?.submission;
   const effectiveArgs = args.readOnly && frozenArgs ? frozenArgs : liveArgs;
+
+  const allFlightOffers =
+    (effectiveArgs as any)?.flightOffers ?? args.flightOffers ?? {};
+
+  // Filter to show only 3 cards maximum with priority tags
+  const getFilteredFlightOffers = (offers: any[]) => {
+    if (!Array.isArray(offers)) return [];
+
+    const filteredOffers: any[] = [];
+    const seenTags = new Set();
+
+    // Priority order: best, cheapest, fastest (as per requirements)
+    const priorityTags = ['best', 'cheapest', 'fastest'];
+
+    for (const tag of priorityTags) {
+      const offer = offers.find(offer => {
+        const hasTag = offer.type === tag || (offer.tags && offer.tags.includes(tag));
+        const offerAlreadyUsed = filteredOffers.some(existing => existing.flightOfferId === offer.flightOfferId);
+        return hasTag && !offerAlreadyUsed;
+      });
+      if (offer) {
+        filteredOffers.push(offer);
+        seenTags.add(tag);
+      }
+    }
+
+    return filteredOffers;
+  };
+
+  const flightOffers = getFilteredFlightOffers(allFlightOffers);
+
+  // Get flights by tag type for mobile tabs
+  const getFlightByTag = (tag: string) => {
+    if (!Array.isArray(allFlightOffers)) return null;
+    return allFlightOffers.find((offer: any) =>
+      offer.type === tag || (offer.tags && offer.tags.includes(tag))
+    );
+  };
+
+  const bestFlight = getFlightByTag('best');
+  const cheapestFlight = getFlightByTag('cheapest');
+  const fastestFlight = getFlightByTag('fastest');
+
+  // Determine the default tab based on available flights
+  const getDefaultTab = () => {
+    if (bestFlight) return 'best';
+    if (cheapestFlight) return 'cheapest';
+    if (fastestFlight) return 'fastest';
+    return 'best'; // fallback
+  };
+
   const readOnly = !!args.readOnly;
-
-  const flightOffers: FlightOffer[] =
-    (effectiveArgs as any)?.flightOffers ?? args.flightOffers ?? [];
-
-  const flightOffersHavingTag = readOnly
-  ? flightOffers
-  : flightOffers.filter((flight) => flight.tags?.length > 0);
-
   const [selectedFlight, setSelectedFlight] = useState<string | null>(null);
-  const [showAllFlights, setShowAllFlights] = useState(true);
+  const [showAllFlights, setShowAllFlights] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // const handleSelectFlight = async (flightOfferId: string) => {
+  //   setSelectedFlight(flightOfferId);
+  //   setIsLoading(true);
+
+  //   // Simulate API call
+  //   setTimeout(() => {
+  //     setIsLoading(false);
+  //     console.log("Selected flight:", flightOfferId);
+  //   }, 1000);
+  // };
 
   const handleSelectFlight = async (flightOfferId: string) => {
 // Prevent selection in read-only mode
@@ -282,46 +139,30 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
     }
   }, [readOnly]);
 
-  // Handle empty flight data
-  if (!flightOffers || flightOffers.length === 0) {
-    return (
-      <div className="container mx-auto max-w-6xl p-4">
-        <div className="text-center py-8">
-          <p className="text-gray-600">No flight options available.</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div
-      className="container mx-auto max-w-6xl p-4"
+      className="container mx-auto p-4 max-w-6xl"
       style={{
         fontFamily: "Uber Move, Arial, Helvetica, sans-serif",
       }}
     >
       {/* Header */}
       <div className="mb-6">
-        <h2 className="mb-2 text-2xl font-bold text-gray-900">
-          Flight Options
-        </h2>
-        {flightOffers.length > 0 && (
-          <p className="text-gray-600">
-            {flightOffers[0].departure.city} ({flightOffers[0].departure.iata}) → {flightOffers[0].arrival.city} ({flightOffers[0].arrival.iata})
-          </p>
-        )}
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Flight Options</h2>
+        <p className="text-gray-600">{flightOffers[0]?.journey[0]?.departure?.airportName} ({flightOffers[0]?.journey[0]?.departure?.airportIata}) → {flightOffers[0]?.journey[0]?.arrival?.airportName} ({flightOffers[0]?.journey[0]?.arrival?.airportIata})</p>
       </div>
 
-      {/* Desktop Layout - Three cards side by side */}
+      {/* Desktop Layout - Show 2-3 cards based on available tag types */}
       <div className="hidden md:block">
-        <div className="mb-6 grid grid-cols-3 gap-4">
-          {flightOffersHavingTag.map((flight, index) => (
-            <div
-              key={index}
-              className="rounded-lg border bg-white shadow-sm"
-            >
+        <div className={`grid gap-4 mb-6 ${
+          flightOffers.length === 3 ? 'grid-cols-3' :
+          flightOffers.length === 2 ? 'grid-cols-2' :
+          'grid-cols-1'
+        }`}>
+          {flightOffers.map((flight: any, index: number) => (
+            <div key={index} className="bg-white rounded-lg border shadow-sm">
               <FlightCard
-                {...(flight)}
+                {...flight}
                 onSelect={handleSelectFlight}
                 isLoading={isLoading}
                 selectedFlightId={selectedFlight}
@@ -332,63 +173,87 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
       </div>
 
       {/* Mobile Layout - Tabs */}
-      <div className="mb-6 md:hidden">
-        <Tabs
-          defaultValue="best"
-          className="w-full"
-        >
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="best">Best</TabsTrigger>
-            <TabsTrigger value="cheapest">Cheapest</TabsTrigger>
-            <TabsTrigger value="fastest">Fastest</TabsTrigger>
-          </TabsList>
+      <div className="md:hidden mb-6">
+        {(bestFlight || cheapestFlight || fastestFlight) ? (
+          <Tabs defaultValue={getDefaultTab()} className="w-full">
+            <TabsList className={`grid w-full ${
+              [bestFlight, cheapestFlight, fastestFlight].filter(Boolean).length === 3 ? 'grid-cols-3' :
+              [bestFlight, cheapestFlight, fastestFlight].filter(Boolean).length === 2 ? 'grid-cols-2' :
+              'grid-cols-1'
+            }`}>
+              {bestFlight && (
+                <TabsTrigger value="best">
+                  Best
+                </TabsTrigger>
+              )}
+              {cheapestFlight && (
+                <TabsTrigger value="cheapest">
+                  Cheapest
+                </TabsTrigger>
+              )}
+              {fastestFlight && (
+                <TabsTrigger value="fastest">
+                  Fastest
+                </TabsTrigger>
+              )}
+            </TabsList>
 
-          {flightOffersHavingTag.map((flight, index) => {
-            // Determine the primary tab value based on tags
-            const primaryTag = flight.tags.includes("best")
-              ? "best"
-              : flight.tags.includes("cheapest")
-                ? "cheapest"
-                : flight.tags.includes("fastest")
-                  ? "fastest"
-                  : "best";
+          {bestFlight && (
+            <TabsContent value="best" className="mt-4">
+              <div className="bg-white rounded-lg border shadow-sm">
+                <FlightCard
+                  {...bestFlight}
+                  onSelect={handleSelectFlight}
+                  isLoading={isLoading}
+                  selectedFlightId={selectedFlight}
+                />
+              </div>
+            </TabsContent>
+          )}
 
-            return (
-              <TabsContent
-                key={index}
-                value={primaryTag}
-                className="mt-4"
-              >
-                <div className="rounded-lg border bg-white shadow-sm">
-                  <FlightCard
-                    {...flight}
-                    onSelect={handleSelectFlight}
-                    isLoading={isLoading}
-                    selectedFlightId={selectedFlight}
-                  />
-                </div>
-              </TabsContent>
-            );
-          })}
-        </Tabs>
+          {cheapestFlight && (
+            <TabsContent value="cheapest" className="mt-4">
+              <div className="bg-white rounded-lg border shadow-sm">
+                <FlightCard
+                  {...cheapestFlight}
+                  onSelect={handleSelectFlight}
+                  isLoading={isLoading}
+                  selectedFlightId={selectedFlight}
+                />
+              </div>
+            </TabsContent>
+          )}
+
+          {fastestFlight && (
+            <TabsContent value="fastest" className="mt-4">
+              <div className="bg-white rounded-lg border shadow-sm">
+                <FlightCard
+                  {...fastestFlight}
+                  onSelect={handleSelectFlight}
+                  isLoading={isLoading}
+                  selectedFlightId={selectedFlight}
+                />
+              </div>
+            </TabsContent>
+          )}
+
+          </Tabs>
+        ) : (
+          /* Empty state if no flights available */
+          <div className="mt-4 p-8 text-center text-gray-500">
+            <p>No flights available for the selected criteria.</p>
+          </div>
+        )}
       </div>
 
       {/* Show All Flights Button */}
       {showAllFlights && <div className="flex justify-center">
-        <AllFlightsSheet
-          flights={flightOffers}
-          onFlightSelect={handleSelectFlight}
-          selectedFlightId={selectedFlight}
-          isLoading={isLoading}
-        >
-          <Button
-            variant="outline"
-            className="w-full md:w-auto"
-          >
+        <AllFlightsSheet flightData={allFlightOffers} onFlightSelect={handleSelectFlight}>
+          <Button variant="outline" className="w-full md:w-auto">
             Show all flights
           </Button>
         </AllFlightsSheet>
       </div>}
     </div>
-  );
+  )
 }

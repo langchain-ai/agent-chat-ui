@@ -10,25 +10,18 @@ import { AssistantMessage, AssistantMessageLoading } from "./messages/ai";
 import { HumanMessage } from "./messages/human";
 import {
   DO_NOT_RENDER_ID_PREFIX,
-  ensureToolCallsHaveResponses,
+  ensureToolCallsHaveResponses, UI_WIDGET_PREFIX,
 } from "@/lib/ensure-tool-responses";
 import { FlyoLogoSVG } from "../icons/langgraph";
 import { TooltipIconButton } from "./tooltip-icon-button";
 import {
   ArrowDown,
   LoaderCircle,
-  PanelRightClose,
-  PanelRightOpen,
-  Plus,
-  SquarePen,
   XIcon,
 } from "lucide-react";
 import { parseAsBoolean, useQueryState } from "nuqs";
-
-import ThreadHistory from "./history";
 import { toast } from "sonner";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { Label } from "../ui/label";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { ContentBlocksPreview } from "./ContentBlocksPreview";
 import {
@@ -37,9 +30,7 @@ import {
   useArtifactContext,
   useArtifactOpen,
 } from "./artifact";
-import { LogoutButton } from "@/components/auth";
 import { getJwtToken, GetUserId } from "@/services/authService";
-import { updateThreadWithMessage } from "@/utils/thread-storage";
 import { InterruptManager } from "./messages/interrupt-manager";
 import { GenericInterruptView } from "./messages/generic-interrupt";
 import { NonAgentFlowReopenButton } from "./NonAgentFlowReopenButton";
@@ -89,6 +80,8 @@ function ScrollToBottom(props: { className?: string }) {
 // Add this utility function to filter out tool call messages with empty content
 function isDisplayableMessage(m: Message) {
   if (m.id?.startsWith(DO_NOT_RENDER_ID_PREFIX)) return false;
+  if (m.id?.startsWith(UI_WIDGET_PREFIX)) return true;
+
   // Hide tool call messages with empty content
   if (
     (m.type === "ai" &&
