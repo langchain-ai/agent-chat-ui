@@ -85,9 +85,11 @@ interface FlightData {
 interface AllFlightsSheetProps {
   children: React.ReactNode
   flightData?: FlightData[]
+  onFlightSelect?: (flightOfferId: string) => void
 }
 
-export function AllFlightsSheet({ children, flightData = [] }: AllFlightsSheetProps) {
+export function AllFlightsSheet({ children, flightData = [], onFlightSelect }: AllFlightsSheetProps) {
+  const [open, setOpen] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [sortBy, setSortBy] = useState<"cheapest" | "fastest">("cheapest")
   const [priceRange, setPriceRange] = useState([1800, 3300])
@@ -97,15 +99,24 @@ export function AllFlightsSheet({ children, flightData = [] }: AllFlightsSheetPr
   const [selectedFlight, setSelectedFlight] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
-  const handleSelectFlight = async (flightOfferId: string) => {
-    setSelectedFlight(flightOfferId);
-    setIsLoading(true);
+  // const handleSelectFlight = async (flightOfferId: string) => {
+  //   setSelectedFlight(flightOfferId);
+  //   setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      console.log("Selected flight from sheet:", flightOfferId);
-    }, 1000);
+  //   // Simulate API call
+  //   setTimeout(() => {
+  //     setIsLoading(false);
+  //     console.log("Selected flight from sheet:", flightOfferId);
+  //   }, 1000);
+  // };
+
+  const handleSelectFlight = (flightOfferId: string) => {
+    // Call the parent's flight selection handler
+    if (onFlightSelect) {
+      onFlightSelect(flightOfferId);
+    }
+    // Close the sheet after selection
+    setOpen(false);
   };
 
   // Helper functions to transform new data structure to legacy format for FlightCard
@@ -274,7 +285,7 @@ export function AllFlightsSheet({ children, flightData = [] }: AllFlightsSheetPr
     },
   ]
 
-  const airlines = Array.from(new Set(allFlights.map((flight) => flight.airline)))
+  const airlines = Array.from(new Set(allFlights.map((flight) => flight?.airline)))
   const departureTimeSlots = [
     { label: "Early Morning (00:00 - 06:00)", value: "early" },
     { label: "Morning (06:00 - 12:00)", value: "morning" },
@@ -283,47 +294,54 @@ export function AllFlightsSheet({ children, flightData = [] }: AllFlightsSheetPr
   ]
 
   const filteredFlights = allFlights.filter((flight) => {
-    const price = Number.parseFloat(flight.price.replace("$", "").replace(",", ""))
-    const priceInRange = price >= priceRange[0] && price <= priceRange[1]
+    return true
+    // if(!flight) return false
+    // const price = Number.parseFloat(flight.price.replace("$", "").replace(",", ""))
+    // const priceInRange = price >= priceRange[0] && price <= priceRange[1]
 
-    const airlineMatch = selectedAirlines.length === 0 || selectedAirlines.includes(flight.airline)
-    const stopsMatch = flight.stops <= maxStops
+    // const airlineMatch = selectedAirlines.length === 0 || selectedAirlines.includes(flight.airline)
+    // const stopsMatch = flight.stops <= maxStops
 
-    let timeMatch = true
-    if (selectedDepartureTime.length > 0) {
-      const hour = Number.parseInt(flight.departureTime.split(":")[0])
-      timeMatch = selectedDepartureTime.some((slot) => {
-        switch (slot) {
-          case "early":
-            return hour >= 0 && hour < 6
-          case "morning":
-            return hour >= 6 && hour < 12
-          case "afternoon":
-            return hour >= 12 && hour < 18
-          case "evening":
-            return hour >= 18 && hour < 24
-          default:
-            return true
-        }
-      })
-    }
+    // let timeMatch = true
+    // if (selectedDepartureTime.length > 0) {
+    //   const hour = Number.parseInt(flight.departureTime.split(":")[0])
+    //   timeMatch = selectedDepartureTime.some((slot) => {
+    //     switch (slot) {
+    //       case "early":
+    //         return hour >= 0 && hour < 6
+    //       case "morning":
+    //         return hour >= 6 && hour < 12
+    //       case "afternoon":
+    //         return hour >= 12 && hour < 18
+    //       case "evening":
+    //         return hour >= 18 && hour < 24
+    //       default:
+    //         return true
+    //     }
+    //   })
+    // }
 
-    return priceInRange && airlineMatch && stopsMatch && timeMatch
+    // return priceInRange && airlineMatch && stopsMatch && timeMatch
   })
 
-  const sortedFlights = [...filteredFlights].sort((a, b) => {
-    if (sortBy === "cheapest") {
-      const priceA = Number.parseFloat(a.price.replace("$", "").replace(",", ""))
-      const priceB = Number.parseFloat(b.price.replace("$", "").replace(",", ""))
-      return priceA - priceB
-    } else {
-      const durationA =
-        Number.parseInt(a.duration.split("h")[0]) * 60 + Number.parseInt(a.duration.split("h")[1].split("m")[0])
-      const durationB =
-        Number.parseInt(b.duration.split("h")[0]) * 60 + Number.parseInt(b.duration.split("h")[1].split("m")[0])
-      return durationA - durationB
-    }
-  })
+ const sortedFlights = [...filteredFlights].sort((a, b) => {
+  if (!a || !b) return 0; // if either is null, treat them as equal
+
+  if (sortBy === "cheapest") {
+    const priceA = Number.parseFloat(a.price.replace("$", "").replace(",", ""));
+    const priceB = Number.parseFloat(b.price.replace("$", "").replace(",", ""));
+    return priceA - priceB;
+  } else {
+    const durationA =
+      Number.parseInt(a.duration.split("h")[0]) * 60 +
+      Number.parseInt(a.duration.split("h")[1].split("m")[0]);
+    const durationB =
+      Number.parseInt(b.duration.split("h")[0]) * 60 +
+      Number.parseInt(b.duration.split("h")[1].split("m")[0]);
+    return durationA - durationB;
+  }
+});
+
 
   const toggleAirline = (airline: string) => {
     setSelectedAirlines((prev) => (prev.includes(airline) ? prev.filter((a) => a !== airline) : [...prev, airline]))
@@ -349,7 +367,7 @@ export function AllFlightsSheet({ children, flightData = [] }: AllFlightsSheetPr
     (priceRange[0] > 1800 || priceRange[1] < 3300 ? 1 : 0)
 
   return (
-    <Sheet>
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>{children}</SheetTrigger>
       <SheetContent
         side="bottom"
@@ -366,7 +384,7 @@ export function AllFlightsSheet({ children, flightData = [] }: AllFlightsSheetPr
           <div className="mb-3 px-4">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <Button
+                {/* <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setShowFilters(!showFilters)}
@@ -379,7 +397,7 @@ export function AllFlightsSheet({ children, flightData = [] }: AllFlightsSheetPr
                       {activeFiltersCount}
                     </Badge>
                   )}
-                </Button>
+                </Button> */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
@@ -425,8 +443,8 @@ export function AllFlightsSheet({ children, flightData = [] }: AllFlightsSheetPr
                       <div key={airline} className="flex items-center space-x-2">
                         <Checkbox
                           id={airline}
-                          checked={selectedAirlines.includes(airline)}
-                          onCheckedChange={() => toggleAirline(airline)}
+                          checked={selectedAirlines.includes(airline as string)}
+                          onCheckedChange={() => toggleAirline(airline as string)}
                         />
                         <Label htmlFor={airline} className="text-sm">
                           {airline}

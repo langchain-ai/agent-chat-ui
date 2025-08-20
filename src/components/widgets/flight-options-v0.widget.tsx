@@ -71,8 +71,34 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
   const frozenArgs = (liveArgs as any)?.submission;
   const effectiveArgs = args.readOnly && frozenArgs ? frozenArgs : liveArgs;
 
-  const flightOffers =
+  const allFlightOffers =
     (effectiveArgs as any)?.flightOffers ?? args.flightOffers ?? {};
+
+  // Filter to show only 3 cards maximum with priority tags
+  const getFilteredFlightOffers = (offers: any[]) => {
+    if (!Array.isArray(offers)) return [];
+
+    const filteredOffers = [];
+    const seenTags = new Set();
+
+    // Priority order: fastest, cheapest, best
+    const priorityTags = ['fastest', 'cheapest', 'best'];
+
+    for (const tag of priorityTags) {
+      const offer = offers.find(offer =>
+        (offer.type === tag || (offer.tags && offer.tags.includes(tag))) &&
+        !seenTags.has(tag)
+      );
+      if (offer) {
+        filteredOffers.push(offer);
+        seenTags.add(tag);
+      }
+    }
+
+    return filteredOffers;
+  };
+
+  const flightOffers = getFilteredFlightOffers(allFlightOffers);
 
   const readOnly = !!args.readOnly;
   const [selectedFlight, setSelectedFlight] = useState<string | null>(null);
@@ -194,7 +220,7 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
 
       {/* Show All Flights Button */}
       {showAllFlights && <div className="flex justify-center">
-        <AllFlightsSheet flightData={flightOffers}>
+        <AllFlightsSheet flightData={allFlightOffers} onFlightSelect={handleSelectFlight}>
           <Button variant="outline" className="w-full md:w-auto">
             Show all flights
           </Button>
