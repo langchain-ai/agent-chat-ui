@@ -28,6 +28,7 @@ interface PassengerDetailsCardProps {
   isDesktop?: boolean;
   passengerIndex?: number;
   passengerTitle?: string;
+  passengerType?: 'adult' | 'children' | 'infant';
   onPassengerChange: (field: string, value: string) => void;
   onDocumentChange: (field: string, value: string) => void;
   onSelectSavedPassenger: (passenger: SavedPassenger) => void;
@@ -46,6 +47,7 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
   isDesktop = false,
   passengerIndex = 0,
   passengerTitle = "Passenger Details",
+  passengerType = 'adult',
   onPassengerChange,
   onDocumentChange,
   onSelectSavedPassenger,
@@ -65,13 +67,16 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
   };
 
   const hasTravelDocumentErrors = (): boolean => {
-    if (!showTravelDocuments || !isDocumentRequired) return false;
+    if (!showTravelDocuments) return false;
     const errors = [
-      validationErrors.documentType,
-      validationErrors.documentNumber,
-      validationErrors.issuingCountry,
-      validationErrors.expiryDate,
-      validationErrors.nationality,
+      // Only check document-related errors if documents are required
+      isDocumentRequired && validationErrors.documentType,
+      isDocumentRequired && validationErrors.documentNumber,
+      isDocumentRequired && validationErrors.issuingCountry,
+      isDocumentRequired && validationErrors.expiryDate,
+      isDocumentRequired && validationErrors.nationality,
+      // Always check date of birth if it's required
+      isDateOfBirthRequired && validationErrors.dateOfBirth,
     ].filter(Boolean);
     return errors.some(error => error);
   };
@@ -215,11 +220,11 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
         </div>
       </div>
 
-      {/* Travel Documents - Show inline if required */}
+      {/* Additional Information - Show if date of birth or documents are required */}
       {showTravelDocuments && (
         <div className="mt-3 border-t pt-3">
           <div className="mb-2 flex items-center space-x-2">
-            <h3 className="text-sm font-medium text-gray-700">Travel Documents</h3>
+            {/* <h3 className="text-sm font-medium text-gray-700">Additional Information</h3> */}
             <ValidationWarningIcon show={hasTravelDocumentErrors()} />
           </div>
 
@@ -462,11 +467,11 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
       )}
 
       {/* Footer Note */}
-      <div className="mt-3 border-t pt-2">
+      {/* <div className="mt-3 border-t pt-2">
         <p className="text-xs text-gray-600">
           Please ensure all details match your travel documents exactly.
         </p>
-      </div>
+      </div> */}
 
       {/* Saved Passengers Button */}
       <div className="mt-3">
@@ -496,7 +501,10 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
                 {savedPassengers.map((savedPassenger) => (
                   <button
                     key={savedPassenger.id}
-                    onClick={() => onSelectSavedPassenger(savedPassenger)}
+                    onClick={() => {
+                      onSelectSavedPassenger(savedPassenger);
+                      setIsSavedPassengersExpanded(false); // Auto-close the dropdown
+                    }}
                     className="w-full rounded-md border bg-white p-3 text-left transition-colors duration-200 hover:border-blue-200 hover:bg-blue-50"
                   >
                     <div className="flex items-center justify-between">

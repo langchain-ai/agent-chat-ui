@@ -46,20 +46,18 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
   // Attempt to read frozen submission either from args.submission or from __block.frozenValue
   const frozenArgs =
     args.apiData?.__block?.frozenValue?.value?.widget?.args || {};
+    const readOnly = !!args.readOnly;
 
-  const readOnly = !!args.readOnly;
+   const effectiveArgs = readOnly && frozenArgs ? frozenArgs : liveArgs
 
   console.log("---> Live Args", JSON.stringify(liveArgs));
   console.log("---> Frozen Args", JSON.stringify(frozenArgs));
 
-  // Build an effectiveArgs where ONLY savedTravellers and contactDetails may come from submission
+  // Build an effectiveArgs where ONLY savedTravellers and contactDetails may come from frozen submission
   const savedTravellers =
-    liveArgs?.flightItinerary?.userContext?.savedTravellers || [];
+    effectiveArgs?.flightItinerary?.userContext?.savedTravellers || [];
 
-  const contactDetails =
-    readOnly && frozenArgs?.flightItinerary?.userContext?.contactDetails
-      ? frozenArgs.flightItinerary.userContext.contactDetails
-      : liveArgs?.flightItinerary?.userContext?.contactDetails;
+  const contactDetails =effectiveArgs?.flightItinerary?.userContext?.contactDetails;
 
   // Everything else must always come from live data
   const userDetails = liveArgs?.flightItinerary?.userContext?.userDetails;
@@ -173,7 +171,27 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
 
   // State management for multiple passengers
   const [passengers, setPassengers] = useState<PassengerDetails[]>(() => {
-    // Initialize passengers based on numberOfTravellers
+    // If in read-only mode, prepopulate from savedTravellers
+    if (readOnly && savedTravellers && savedTravellers.length > 0) {
+      return savedTravellers.map((savedTraveller: any) => {
+        // Derive title from gender if not explicitly provided
+        const derivedTitle = savedTraveller.gender?.toLowerCase() === 'female' || savedTraveller.gender?.toLowerCase() === 'f'
+          ? 'Ms'
+          : savedTraveller.gender?.toLowerCase() === 'male' || savedTraveller.gender?.toLowerCase() === 'm'
+          ? 'Mr'
+          : '';
+
+        return {
+          firstName: savedTraveller.firstName || "",
+          lastName: savedTraveller.lastName || "",
+          dateOfBirth: savedTraveller.dateOfBirth || "",
+          gender: savedTraveller.gender || "",
+          title: derivedTitle,
+        };
+      });
+    }
+
+    // Default initialization for non-read-only mode
     const passengerArray: PassengerDetails[] = [];
 
     // Add the primary passenger (from userDetails if available)
@@ -201,7 +219,27 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
   });
 
   const [documents, setDocuments] = useState<(TravelDocument | null)[]>(() => {
-    // Initialize documents based on number of passengers
+    // If in read-only mode, prepopulate from savedTravellers documents
+    if (readOnly && savedTravellers && savedTravellers.length > 0) {
+      return savedTravellers.map((savedTraveller: any) => {
+        // Get the first document if available
+        const firstDocument = savedTraveller.documents?.[0];
+        if (firstDocument) {
+          return {
+            type: firstDocument.documentType || "",
+            number: firstDocument.documentNumber || "",
+            issuingCountry: firstDocument.issuingCountry || "",
+            expiryDate: firstDocument.expiryDate || "",
+            nationality: firstDocument.nationality || "",
+            issuanceDate: firstDocument.issuingDate || "",
+          };
+        }
+        // Return null if no document available
+        return null;
+      });
+    }
+
+    // Default initialization for non-read-only mode
     const documentsArray: (TravelDocument | null)[] = [];
 
     // Add the primary document (from userDetails if available)
@@ -229,6 +267,20 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
   });
 
   const [contact, setContact] = useState<ContactInformation>(() => {
+    // If in read-only mode, prepopulate from frozen contactDetails
+    if (readOnly && contactDetails) {
+      // Format phone number with country code if available
+      const formattedPhone = contactDetails.countryCode && contactDetails.mobileNumber
+        ? `+${contactDetails.countryCode} ${contactDetails.mobileNumber}`
+        : contactDetails.mobileNumber || "";
+
+      return {
+        phone: formattedPhone,
+        email: contactDetails.email || "",
+      };
+    }
+
+    // Default initialization for non-read-only mode
     return (
       initialContact || {
         phone: "",
@@ -239,21 +291,42 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
 
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
 
-  // Helper function to determine if a field is required for a specific passenger
-  const getFieldRequirement = (passengerIndex: number, fieldType: 'gender' | 'dateOfBirth' | 'passport') => {
-    // Determine passenger type based on index and numberOfTravellers
-    let passengerType: 'adult' | 'children' | 'infant' = 'adult';
+  // Helper function to determine passenger type based on index
+  const getPassengerType = (passengerIndex: number): 'adult' | 'children' | 'infant' => {
     const adults = numberOfTravellers?.adults || 1;
     const children = numberOfTravellers?.children || 0;
 
     if (passengerIndex < adults) {
-      passengerType = 'adult';
+      return 'adult';
     } else if (passengerIndex < adults + children) {
-      passengerType = 'children';
+      return 'children';
     } else {
-      passengerType = 'infant';
+      return 'infant';
     }
+  };
 
+  // Helper function to generate passenger label based on type and sequence
+  const getPassengerLabel = (passengerIndex: number): string => {
+    const adults = numberOfTravellers?.adults || 1;
+    const children = numberOfTravellers?.children || 0;
+
+    if (passengerIndex < adults) {
+      // Adult passengers: "Adult 1", "Adult 2", etc.
+      return `Adult ${passengerIndex + 1}`;
+    } else if (passengerIndex < adults + children) {
+      // Children passengers: "Children 1", "Children 2", etc.
+      const childIndex = passengerIndex - adults + 1;
+      return `Children ${childIndex}`;
+    } else {
+      // Infant passengers: "Infants 1", "Infants 2", etc.
+      const infantIndex = passengerIndex - adults - children + 1;
+      return `Infants ${infantIndex}`;
+    }
+  };
+
+  // Helper function to determine if a field is required for a specific passenger
+  const getFieldRequirement = (passengerIndex: number, fieldType: 'gender' | 'dateOfBirth' | 'passport') => {
+    const passengerType = getPassengerType(passengerIndex);
     const requirements = bookingRequirements?.[passengerType];
 
     switch (fieldType) {
@@ -317,6 +390,61 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
     );
   };
 
+  // Helper function to normalize document type for case-insensitive matching
+  const normalizeDocumentType = (docType: string): string => {
+    if (!docType) return "";
+
+    const lowerType = docType.toLowerCase().trim();
+
+    // Map common variations to expected values
+    if (lowerType.includes("passport")) {
+      return "Passport";
+    } else if (lowerType.includes("national") && lowerType.includes("id")) {
+      return "National ID";
+    } else if (lowerType.includes("driver") && lowerType.includes("license")) {
+      return "Driver's License";
+    } else if (lowerType.includes("id")) {
+      return "National ID";
+    }
+
+    // If no match found, return the original with proper capitalization
+    return docType.charAt(0).toUpperCase() + docType.slice(1).toLowerCase();
+  };
+
+  // Helper function to normalize country code/name
+  const normalizeCountryCode = (country: string): string => {
+    if (!country) return "IN"; // Default to India
+
+    const upperCountry = country.toUpperCase().trim();
+
+    // If it's already a 2-letter code, return it
+    if (upperCountry.length === 2) {
+      return upperCountry;
+    }
+
+    // Map common country names to codes
+    const countryMap: { [key: string]: string } = {
+      "INDIA": "IN",
+      "UNITED STATES": "US",
+      "UNITED KINGDOM": "GB",
+      "CANADA": "CA",
+      "AUSTRALIA": "AU",
+      "GERMANY": "DE",
+      "FRANCE": "FR",
+      "JAPAN": "JP",
+      "CHINA": "CN",
+      "BRAZIL": "BR",
+      "MEXICO": "MX",
+      "ITALY": "IT",
+      "SPAIN": "ES",
+      "NETHERLANDS": "NL",
+      "SINGAPORE": "SG",
+      "UNITED ARAB EMIRATES": "AE",
+    };
+
+    return countryMap[upperCountry] || upperCountry.substring(0, 2);
+  };
+
   const handleSelectSavedPassenger = (passengerIndex: number, savedPassenger: SavedPassenger) => {
     // Update passenger details
     setPassengers((prev) =>
@@ -341,18 +469,21 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
     // Update document if available
     if (savedPassenger.documents && savedPassenger.documents.length > 0) {
       const doc = savedPassenger.documents[0];
+
+      const normalizedDocType = normalizeDocumentType(doc.documentType);
+
+      const mappedDocument = {
+        type: normalizedDocType,
+        number: doc.documentNumber,
+        issuingCountry: normalizeCountryCode(doc.issuingCountry),
+        expiryDate: doc.expiryDate,
+        nationality: normalizeCountryCode(doc.nationality),
+        issuanceDate: doc.issuingDate, // Map issuingDate correctly
+      };
+
       setDocuments((prev) =>
         prev.map((document, index) =>
-          index === passengerIndex
-            ? {
-                type: doc.documentType,
-                number: doc.documentNumber,
-                issuingCountry: doc.issuingCountry,
-                expiryDate: doc.expiryDate,
-                nationality: doc.nationality,
-                issuanceDate: doc.issuingDate,
-              }
-            : document
+          index === passengerIndex ? mappedDocument : document
         )
       );
     }
@@ -448,39 +579,129 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
     setIsSubmitting(true);
 
     try {
+      // Parse phone number to extract country code and number
+      const phoneMatch = contact.phone.match(/^\+?(\d{1,4})\s*(.+)$/);
+      const countryCode = phoneMatch ? phoneMatch[1] : "91";
+      const phoneNumber = phoneMatch ? phoneMatch[2].replace(/\s+/g, "") : contact.phone.replace(/\s+/g, "");
+
       // Prepare submission data for all passengers
-      const submissionData = {
+      const formattedData = {
         travellersDetail: passengers.map((passenger, index) => {
           // Calculate dynamic requirements for this specific passenger
           const passengerDocumentRequired = getFieldRequirement(index, 'passport');
 
           return {
-            name: {
-              firstName: passenger.firstName,
-              lastName: passenger.lastName,
-            },
-            gender: passenger.gender,
+            id: index + 1,
             dateOfBirth: passenger.dateOfBirth,
+            gender: passenger.gender?.toUpperCase() || "",
+            name: {
+              firstName: passenger.firstName?.toUpperCase() || "",
+              lastName: passenger.lastName?.toUpperCase() || "",
+            },
             documents: passengerDocumentRequired && documents[index] ? [
               {
-                documentType: documents[index]?.type?.toLowerCase() || "",
+                documentType: documents[index]?.type?.toUpperCase() || "",
+                birthPlace: "India", // Default value as per requirement
+                issuanceLocation: "India", // Default value as per requirement
+                issuanceDate: documents[index]?.issuanceDate || "",
                 number: documents[index]?.number || "",
-                nationality: documents[index]?.nationality || "",
                 expiryDate: documents[index]?.expiryDate || "",
                 issuanceCountry: documents[index]?.issuingCountry || "",
-                issuanceDate: documents[index]?.issuanceDate || "",
+                validityCountry: documents[index]?.issuingCountry || "", // Same as issuanceCountry
+                nationality: documents[index]?.nationality || "",
+                holder: true,
               },
             ] : [],
+            contact: {
+              purpose: "STANDARD",
+              phones: [
+                {
+                  deviceType: "MOBILE",
+                  countryCallingCode: countryCode,
+                  number: phoneNumber,
+                }
+              ],
+              emailAddress: contact.email,
+            },
           };
         }),
         contactInfo: {
           email: contact.email,
           phone: {
-            countryCode: contact.phone.split(" ")[0]?.replace("+", "") || "91",
-            number: contact.phone.split(" ").slice(1).join(" ") || "",
+            countryCode: countryCode,
+            number: phoneNumber,
           },
         },
       };
+
+      // Create submission data in the required format
+      const submissionData = [
+        {
+          type: "response",
+          data: formattedData,
+        }
+      ];
+
+      // Transform the submitted data to match the SavedPassenger interface format
+      const savedTravellersData = formattedData.travellersDetail.map((traveller, index) => ({
+        travellerId: traveller.id,
+        firstName: traveller.name.firstName,
+        lastName: traveller.name.lastName,
+        dateOfBirth: traveller.dateOfBirth,
+        gender: traveller.gender,
+        nationality: traveller.documents?.[0]?.nationality || "IN",
+        numberOfFlights: 0, // Default value for new submissions
+        email: traveller.contact.emailAddress,
+        phone: traveller.contact.phones.map(phone => ({
+          countryCode: phone.countryCallingCode,
+          number: phone.number,
+        })),
+        isPrimaryTraveller: index === 0, // First traveller is primary
+        documents: (traveller.documents || []).map(doc => ({
+          documentId: index + 1, // Sequential ID
+          documentType: doc.documentType,
+          documentNumber: doc.number,
+          nationality: doc.nationality,
+          expiryDate: doc.expiryDate,
+          issuingDate: doc.issuanceDate || "",
+          issuingCountry: doc.issuanceCountry,
+          birthPlace: doc.birthPlace || "India",
+          issuanceLocation: doc.issuanceLocation || "India",
+          documentUrl: "", // Default empty for new submissions
+        })),
+      }));
+
+      // Transform contact details to match expected format
+      const contactDetailsData = {
+        countryCode: formattedData.contactInfo.phone.countryCode,
+        mobileNumber: formattedData.contactInfo.phone.number,
+        email: formattedData.contactInfo.email,
+      };
+
+      const frozenArgs = {
+        flightItinerary: {
+          userContext: {
+            savedTravellers: savedTravellersData,
+            contactDetails: contactDetailsData,
+          },
+        },
+      };
+
+      const frozen = {
+        widget: {
+          type: "TravelerDetailsWidget",
+          args: frozenArgs,
+        },
+        value: {
+          type: "widget",
+          widget: {
+            type: "TravelerDetailsWidget",
+            args: frozenArgs,
+          },
+        },
+      };
+
+      console.log("Frozen Args:", JSON.stringify(frozenArgs,null,2));
 
       console.log("Submitting review data:", submissionData);
 
@@ -489,6 +710,10 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
           thread,
           args.interruptId,
           submissionData,
+          {
+            interruptId: args.interruptId,
+            frozenValue: frozen,
+          }
         );
       }
     } catch (error) {
@@ -508,9 +733,24 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
           <div className="space-y-3">
             {passengers.map((passenger, index) => {
               // Calculate dynamic requirements for this specific passenger
+              const passengerType = getPassengerType(index);
               const passengerGenderRequired = getFieldRequirement(index, 'gender');
               const passengerDateOfBirthRequired = getFieldRequirement(index, 'dateOfBirth');
               const passengerDocumentRequired = getFieldRequirement(index, 'passport');
+
+              // Create passenger-specific validation errors
+              const prefix = `passenger${index}_`;
+              const passengerValidationErrors = {
+                firstName: validationErrors[`${prefix}firstName`] || false,
+                lastName: validationErrors[`${prefix}lastName`] || false,
+                gender: validationErrors[`${prefix}gender`] || false,
+                dateOfBirth: validationErrors[`${prefix}dateOfBirth`] || false,
+                documentType: validationErrors[`${prefix}documentType`] || false,
+                documentNumber: validationErrors[`${prefix}documentNumber`] || false,
+                nationality: validationErrors[`${prefix}nationality`] || false,
+                expiryDate: validationErrors[`${prefix}expiryDate`] || false,
+                issuingCountry: validationErrors[`${prefix}issuingCountry`] || false,
+              };
 
               return (
                 <PassengerDetailsCard
@@ -518,18 +758,19 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
                   passenger={passenger}
                   document={documents[index]}
                   savedPassengers={savedPassengers}
-                  validationErrors={validationErrors}
+                  validationErrors={passengerValidationErrors}
                   isGenderRequired={passengerGenderRequired}
                   isDateOfBirthRequired={passengerDateOfBirthRequired}
                   isDocumentRequired={passengerDocumentRequired}
-                  showTravelDocuments={passengerDocumentRequired}
+                  showTravelDocuments={passengerDocumentRequired || passengerDateOfBirthRequired}
                   isDesktop={isDesktop}
                   passengerIndex={index}
-                  passengerTitle={totalPassengers === 1 ? "Passenger Details" : `Passenger ${index + 1}`}
+                  passengerTitle={totalPassengers === 1 ? "Passenger Details" : getPassengerLabel(index)}
+                  passengerType={passengerType}
                   onPassengerChange={(field: string, value: string) => handlePassengerChange(index, field, value)}
                   onDocumentChange={(field: string, value: string) => handleDocumentChange(index, field, value)}
                   onSelectSavedPassenger={(savedPassenger: SavedPassenger) => handleSelectSavedPassenger(index, savedPassenger)}
-                  onValidateField={validateField}
+                  onValidateField={(value: string, fieldName: string) => validateField(value, `${prefix}${fieldName}`)}
                 />
               );
             })}
@@ -580,9 +821,24 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
           />
           {passengers.map((passenger, index) => {
             // Calculate dynamic requirements for this specific passenger
+            const passengerType = getPassengerType(index);
             const passengerGenderRequired = getFieldRequirement(index, 'gender');
             const passengerDateOfBirthRequired = getFieldRequirement(index, 'dateOfBirth');
             const passengerDocumentRequired = getFieldRequirement(index, 'passport');
+
+            // Create passenger-specific validation errors
+            const prefix = `passenger${index}_`;
+            const passengerValidationErrors = {
+              firstName: validationErrors[`${prefix}firstName`] || false,
+              lastName: validationErrors[`${prefix}lastName`] || false,
+              gender: validationErrors[`${prefix}gender`] || false,
+              dateOfBirth: validationErrors[`${prefix}dateOfBirth`] || false,
+              documentType: validationErrors[`${prefix}documentType`] || false,
+              documentNumber: validationErrors[`${prefix}documentNumber`] || false,
+              nationality: validationErrors[`${prefix}nationality`] || false,
+              expiryDate: validationErrors[`${prefix}expiryDate`] || false,
+              issuingCountry: validationErrors[`${prefix}issuingCountry`] || false,
+            };
 
             return (
               <PassengerDetailsCard
@@ -590,18 +846,19 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
                 passenger={passenger}
                 document={documents[index]}
                 savedPassengers={savedPassengers}
-                validationErrors={validationErrors}
+                validationErrors={passengerValidationErrors}
                 isGenderRequired={passengerGenderRequired}
                 isDateOfBirthRequired={passengerDateOfBirthRequired}
                 isDocumentRequired={passengerDocumentRequired}
-                showTravelDocuments={passengerDocumentRequired}
+                showTravelDocuments={passengerDocumentRequired || passengerDateOfBirthRequired}
                 isDesktop={isDesktop}
                 passengerIndex={index}
-                passengerTitle={totalPassengers === 1 ? "Passenger Details" : `Passenger ${index + 1}`}
+                passengerTitle={totalPassengers === 1 ? "Passenger Details" : getPassengerLabel(index)}
+                passengerType={passengerType}
                 onPassengerChange={(field: string, value: string) => handlePassengerChange(index, field, value)}
                 onDocumentChange={(field: string, value: string) => handleDocumentChange(index, field, value)}
                 onSelectSavedPassenger={(savedPassenger: SavedPassenger) => handleSelectSavedPassenger(index, savedPassenger)}
-                onValidateField={validateField}
+                onValidateField={(value: string, fieldName: string) => validateField(value, `${prefix}${fieldName}`)}
               />
             );
           })}
