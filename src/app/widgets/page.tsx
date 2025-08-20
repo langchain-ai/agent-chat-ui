@@ -758,13 +758,149 @@ const StandaloneFlightOptionsWidget = () => {
   );
 };
 
+// Mock data for ReviewWidget
+const mockReviewData = {
+  apiData: {
+    __block: {
+      value: [
+        {
+          value: {
+            value: {
+              widget: {
+                args: {
+                  flightItinerary: {
+                    userContext: {
+                      userDetails: {
+                        travellerId: 1,
+                        firstName: "John",
+                        lastName: "Doe",
+                        gender: "Male",
+                        dateOfBirth: "1990-01-15",
+                        nationality: "Indian",
+                        email: "john.doe@example.com",
+                        phone: [{ countryCode: "91", number: "9876543210" }],
+                        numberOfFlights: 5,
+                        isPrimaryTraveller: true,
+                        documents: [
+                          {
+                            documentId: 1,
+                            documentType: "passport",
+                            documentNumber: "A12345678",
+                            nationality: "Indian",
+                            expiryDate: "2029-01-11",
+                            issuingCountry: "India",
+                            issuingDate: "2019-01-11",
+                            documentUrl: "",
+                          },
+                        ],
+                      },
+                      savedTravellers: [
+                        {
+                          travellerId: 1,
+                          firstName: "John",
+                          lastName: "Doe",
+                          gender: "Male",
+                          dateOfBirth: "1990-01-15",
+                          nationality: "Indian",
+                          email: "john.doe@example.com",
+                          phone: [{ countryCode: "91", number: "9876543210" }],
+                          numberOfFlights: 5,
+                          isPrimaryTraveller: true,
+                          documents: [
+                            {
+                              documentId: 1,
+                              documentType: "passport",
+                              documentNumber: "A12345678",
+                              nationality: "Indian",
+                              expiryDate: "2029-01-11",
+                              issuingCountry: "India",
+                              issuingDate: "2019-01-11",
+                              documentUrl: "",
+                            },
+                          ],
+                        },
+                        {
+                          travellerId: 2,
+                          firstName: "Jane",
+                          lastName: "Smith",
+                          gender: "Female",
+                          dateOfBirth: "1985-03-22",
+                          nationality: "Indian",
+                          email: "jane.smith@example.com",
+                          phone: [{ countryCode: "91", number: "9876543211" }],
+                          numberOfFlights: 3,
+                          isPrimaryTraveller: false,
+                          documents: [
+                            {
+                              documentId: 2,
+                              documentType: "passport",
+                              documentNumber: "B87654321",
+                              nationality: "Indian",
+                              expiryDate: "2028-05-15",
+                              issuingCountry: "India",
+                              issuingDate: "2018-05-15",
+                              documentUrl: "",
+                            },
+                          ],
+                        },
+                      ],
+                      contactDetails: {
+                        countryCode: "91",
+                        mobileNumber: "9876543210",
+                        email: "john.doe@example.com",
+                      },
+                    },
+                    selectionContext: {
+                      selectedFlightOffers: mockFlights[0], // Use first flight from existing mock data
+                    },
+                  },
+                  bookingRequirements: {
+                    adult: {
+                      passportRequired: true,
+                      dateOfBirthRequired: true,
+                    },
+                    travelerRequirements: [
+                      {
+                        travelerId: "1",
+                        genderRequired: true,
+                        documentRequired: true,
+                        documentIssuanceCityRequired: false,
+                        dateOfBirthRequired: true,
+                        redressRequiredIfAny: false,
+                        airFranceDiscountRequired: false,
+                        spanishResidentDiscountRequired: false,
+                        residenceRequired: false,
+                      },
+                      {
+                        travelerId: "2",
+                        genderRequired: true,
+                        documentRequired: true,
+                        documentIssuanceCityRequired: false,
+                        dateOfBirthRequired: true,
+                        redressRequiredIfAny: false,
+                        airFranceDiscountRequired: false,
+                        spanishResidentDiscountRequired: false,
+                        residenceRequired: false,
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+          },
+        },
+      ],
+    },
+  },
+};
+
 // Wrapper component for ReviewWidget
 const StandaloneReviewWidget = () => {
   return (
     <ThreadProvider>
       <StreamProvider>
         <div className="w-full">
-          <ReviewWidget />
+          <ReviewWidget {...mockReviewData} />
         </div>
       </StreamProvider>
     </ThreadProvider>

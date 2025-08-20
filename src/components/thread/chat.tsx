@@ -10,7 +10,7 @@ import { AssistantMessage, AssistantMessageLoading } from "./messages/ai";
 import { HumanMessage } from "./messages/human";
 import {
   DO_NOT_RENDER_ID_PREFIX,
-  ensureToolCallsHaveResponses,
+  ensureToolCallsHaveResponses, UI_WIDGET_PREFIX,
 } from "@/lib/ensure-tool-responses";
 import { FlyoLogoSVG } from "../icons/langgraph";
 import { TooltipIconButton } from "./tooltip-icon-button";
@@ -89,6 +89,8 @@ function ScrollToBottom(props: { className?: string }) {
 // Add this utility function to filter out tool call messages with empty content
 function isDisplayableMessage(m: Message) {
   if (m.id?.startsWith(DO_NOT_RENDER_ID_PREFIX)) return false;
+  if (m.id?.startsWith(UI_WIDGET_PREFIX)) return true;
+
   // Hide tool call messages with empty content
   if (
     (m.type === "ai" &&
