@@ -9,54 +9,7 @@ import { useStreamContext } from "@/providers/Stream";
 import { submitInterruptResponse } from "./util";
 import { useEffect } from "react";
 
-// Mock flight data based on the guide
-const flightOffers = [
-  {
-    flightOfferId: "flight-1",
-    type: "best" as const,
-    price: "$2,141.24",
-    duration: "23h 35m",
-    stops: 2,
-    airline: "Cathay Pacific",
-    airlineCode: "CX",
-    departureTime: "01:15",
-    arrivalTime: "01:50",
-    nextDay: true,
-    layovers: [
-      { city: "Hong Kong", duration: "1h 20m layover", iataCode: "HKG" },
-      { city: "Tokyo", duration: "4h 35m layover", iataCode: "NRT" },
-    ],
-  },
-  {
-    flightOfferId: "flight-2",
-    type: "cheapest" as const,
-    price: "$1,892.50",
-    duration: "28h 15m",
-    stops: 2,
-    airline: "Air India",
-    airlineCode: "AI",
-    departureTime: "14:30",
-    arrivalTime: "06:45",
-    nextDay: true,
-    layovers: [
-      { city: "Mumbai", duration: "3h 45m layover", iataCode: "BOM" },
-      { city: "Los Angeles", duration: "2h 30m layover", iataCode: "LAX" },
-    ],
-  },
-  {
-    flightOfferId: "flight-3",
-    type: "fastest" as const,
-    price: "$3,245.80",
-    duration: "18h 20m",
-    stops: 1,
-    airline: "United Airlines",
-    airlineCode: "UA",
-    departureTime: "22:45",
-    arrivalTime: "11:05",
-    nextDay: true,
-    layovers: [{ city: "San Francisco", duration: "2h 15m layover", iataCode: "SFO" }],
-  },
-]
+
 
 interface FlightOptionsProps extends Record<string, any> {
   apiData?: any;
@@ -78,17 +31,18 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
   const getFilteredFlightOffers = (offers: any[]) => {
     if (!Array.isArray(offers)) return [];
 
-    const filteredOffers = [];
+    const filteredOffers: any[] = [];
     const seenTags = new Set();
 
-    // Priority order: fastest, cheapest, best
-    const priorityTags = ['fastest', 'cheapest', 'best'];
+    // Priority order: best, cheapest, fastest (as per requirements)
+    const priorityTags = ['best', 'cheapest', 'fastest'];
 
     for (const tag of priorityTags) {
-      const offer = offers.find(offer =>
-        (offer.type === tag || (offer.tags && offer.tags.includes(tag))) &&
-        !seenTags.has(tag)
-      );
+      const offer = offers.find(offer => {
+        const hasTag = offer.type === tag || (offer.tags && offer.tags.includes(tag));
+        const offerAlreadyUsed = filteredOffers.some(existing => existing.flightOfferId === offer.flightOfferId);
+        return hasTag && !offerAlreadyUsed;
+      });
       if (offer) {
         filteredOffers.push(offer);
         seenTags.add(tag);
@@ -99,6 +53,26 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
   };
 
   const flightOffers = getFilteredFlightOffers(allFlightOffers);
+
+  // Get flights by tag type for mobile tabs
+  const getFlightByTag = (tag: string) => {
+    if (!Array.isArray(allFlightOffers)) return null;
+    return allFlightOffers.find((offer: any) =>
+      offer.type === tag || (offer.tags && offer.tags.includes(tag))
+    );
+  };
+
+  const bestFlight = getFlightByTag('best');
+  const cheapestFlight = getFlightByTag('cheapest');
+  const fastestFlight = getFlightByTag('fastest');
+
+  // Determine the default tab based on available flights
+  const getDefaultTab = () => {
+    if (bestFlight) return 'best';
+    if (cheapestFlight) return 'cheapest';
+    if (fastestFlight) return 'fastest';
+    return 'best'; // fallback
+  };
 
   const readOnly = !!args.readOnly;
   const [selectedFlight, setSelectedFlight] = useState<string | null>(null);
@@ -178,9 +152,13 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
         <p className="text-gray-600">{flightOffers[0]?.journey[0]?.departure?.airportName} ({flightOffers[0]?.journey[0]?.departure?.airportIata}) → {flightOffers[0]?.journey[0]?.arrival?.airportName} ({flightOffers[0]?.journey[0]?.arrival?.airportIata})</p>
       </div>
 
-      {/* Desktop Layout - Three cards side by side */}
+      {/* Desktop Layout - Show 2-3 cards based on available tag types */}
       <div className="hidden md:block">
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className={`grid gap-4 mb-6 ${
+          flightOffers.length === 3 ? 'grid-cols-3' :
+          flightOffers.length === 2 ? 'grid-cols-2' :
+          'grid-cols-1'
+        }`}>
           {flightOffers.map((flight: any, index: number) => (
             <div key={index} className="bg-white rounded-lg border shadow-sm">
               <FlightCard
@@ -196,26 +174,76 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
 
       {/* Mobile Layout - Tabs */}
       <div className="md:hidden mb-6">
-        <Tabs defaultValue="best" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="best">Best</TabsTrigger>
-            <TabsTrigger value="cheapest">Cheapest</TabsTrigger>
-            <TabsTrigger value="fastest">Fastest</TabsTrigger>
-          </TabsList>
-          
-          {flightOffers.map((flight: any, index: number) => (
-            <TabsContent key={index} value={flight.type} className="mt-4">
+        {(bestFlight || cheapestFlight || fastestFlight) ? (
+          <Tabs defaultValue={getDefaultTab()} className="w-full">
+            <TabsList className={`grid w-full ${
+              [bestFlight, cheapestFlight, fastestFlight].filter(Boolean).length === 3 ? 'grid-cols-3' :
+              [bestFlight, cheapestFlight, fastestFlight].filter(Boolean).length === 2 ? 'grid-cols-2' :
+              'grid-cols-1'
+            }`}>
+              {bestFlight && (
+                <TabsTrigger value="best">
+                  Best
+                </TabsTrigger>
+              )}
+              {cheapestFlight && (
+                <TabsTrigger value="cheapest">
+                  Cheapest
+                </TabsTrigger>
+              )}
+              {fastestFlight && (
+                <TabsTrigger value="fastest">
+                  Fastest
+                </TabsTrigger>
+              )}
+            </TabsList>
+
+          {bestFlight && (
+            <TabsContent value="best" className="mt-4">
               <div className="bg-white rounded-lg border shadow-sm">
                 <FlightCard
-                  {...flight}
+                  {...bestFlight}
                   onSelect={handleSelectFlight}
                   isLoading={isLoading}
                   selectedFlightId={selectedFlight}
                 />
               </div>
             </TabsContent>
-          ))}
-        </Tabs>
+          )}
+
+          {cheapestFlight && (
+            <TabsContent value="cheapest" className="mt-4">
+              <div className="bg-white rounded-lg border shadow-sm">
+                <FlightCard
+                  {...cheapestFlight}
+                  onSelect={handleSelectFlight}
+                  isLoading={isLoading}
+                  selectedFlightId={selectedFlight}
+                />
+              </div>
+            </TabsContent>
+          )}
+
+          {fastestFlight && (
+            <TabsContent value="fastest" className="mt-4">
+              <div className="bg-white rounded-lg border shadow-sm">
+                <FlightCard
+                  {...fastestFlight}
+                  onSelect={handleSelectFlight}
+                  isLoading={isLoading}
+                  selectedFlightId={selectedFlight}
+                />
+              </div>
+            </TabsContent>
+          )}
+
+          </Tabs>
+        ) : (
+          /* Empty state if no flights available */
+          <div className="mt-4 p-8 text-center text-gray-500">
+            <p>No flights available for the selected criteria.</p>
+          </div>
+        )}
       </div>
 
       {/* Show All Flights Button */}
