@@ -2067,6 +2067,11 @@ const FlightOptionsWidget = (args: FlightOptionsProps) => {
 
   const allFlightTuples = flightOffers || [];
 
+  // Only show the "Show all flights" button if there exists at least one flight without any tags
+  const hasUntaggedFlight = (allFlightTuples ?? []).some(
+    (f: any) => !(Array.isArray(f?.tags) && f.tags.length > 0),
+  );
+
   // Note: Removed journey type detection to match widgets page design
 
   // Debug: Log flight tags
@@ -2326,8 +2331,8 @@ const FlightOptionsWidget = (args: FlightOptionsProps) => {
           )}
         </div>
 
-        {/* Show All Flights Button */}
-        {allFlightTuples.length > 0 && !readOnly && (
+        {/* Show All Flights Button - show only if there is at least one untagged flight */}
+        {allFlightTuples.length > 0 && hasUntaggedFlight && !readOnly && (
           <div className="text-center">
             <Button
               onClick={handleShowAllFlights}
