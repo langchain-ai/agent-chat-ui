@@ -6,6 +6,79 @@ import { AllFlightsSheet } from "./all-flights-sheet"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
+interface FlightData {
+  flightOfferId: string
+  totalEmission?: number
+  totalEmissionUnit?: string
+  currency: string
+  totalAmount: number
+  tax?: number
+  baseAmount?: number
+  serviceFee?: number
+  convenienceFee?: number
+  journey: Array<{
+    id: string
+    duration: string
+    departure: {
+      date: string
+      airportIata: string
+      airportName: string
+      cityCode?: string
+      countryCode?: string
+    }
+    arrival: {
+      date: string
+      airportIata: string
+      airportName: string
+      cityCode?: string
+      countryCode?: string
+    }
+    segments: Array<{
+      id: string
+      airlineIata: string
+      flightNumber: string
+      aircraftType?: string
+      airlineName: string
+      duration: string
+      departure: {
+        date: string
+        airportIata: string
+        airportName: string
+        cityCode?: string
+        countryCode?: string
+      }
+      arrival: {
+        date: string
+        airportIata: string
+        airportName: string
+        cityCode?: string
+        countryCode?: string
+      }
+    }>
+  }>
+  offerRules?: {
+    isRefundable: boolean
+  }
+  baggage?: {
+    check_in_baggage?: {
+      weight: number
+      weightUnit: string
+    }
+    cabin_baggage?: {
+      weight: number
+      weightUnit: string
+    }
+  }
+  rankingScore?: number
+  pros?: string[]
+  cons?: string[]
+  tags?: string[]
+}
+
+interface FlightOptionsV0Props {
+  taggedFlights?: FlightData[]
+}
+
 // Mock flight data based on the guide
 const mockFlights = [
   {
@@ -55,9 +128,147 @@ const mockFlights = [
   },
 ]
 
-export default function FlightOptionsV0Widget() {
+export default function FlightOptionsV0Widget({ taggedFlights = [] }: FlightOptionsV0Props) {
   const [selectedFlight, setSelectedFlight] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Helper functions to transform new data structure to legacy format for FlightCard
+  const formatTime = (dateString: string) => {
+    return new Date(dateString).toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+  };
+
+  const formatDuration = (duration: string) => {
+    // Convert PT1H45M to 1h 45m
+    const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
+    if (match) {
+      const hours = match[1] ? `${match[1]}h` : '';
+      const minutes = match[2] ? `${match[2]}m` : '';
+      return `${hours} ${minutes}`.trim();
+    }
+    return duration;
+  };
+
+  const getCurrencySymbol = (currency: string) => {
+    const symbols: { [key: string]: string } = {
+      'USD': '$',
+      'INR': '₹',
+      'EUR': '€',
+      'GBP': '£'
+    };
+    return symbols[currency] || currency;
+  };
+
+  const transformFlightData = (flight: FlightData) => {
+    if (!flight.journey || flight.journey.length === 0) return null;
+
+    const firstJourney = flight.journey[0];
+    const firstSegment = firstJourney.segments[0];
+    const stops = firstJourney.segments.length - 1;
+
+    // Determine flight type based on tags or price
+    let type: "best" | "cheapest" | "fastest" = "best";
+    if (flight.tags?.includes('cheapest')) type = "cheapest";
+    else if (flight.tags?.includes('fastest')) type = "fastest";
+
+    // Create layovers array
+    const layovers = firstJourney.segments.slice(0, -1).map(segment => ({
+      city: segment.arrival.airportName.split(' ')[0], // Get city name
+      duration: '', // We don't have layover duration in this structure
+      iataCode: segment.arrival.airportIata
+    }));
+
+    return {
+      flightOfferId: flight.flightOfferId,
+      type,
+      price: `${getCurrencySymbol(flight.currency)}${flight.totalAmount.toLocaleString()}`,
+      duration: formatDuration(firstJourney.duration),
+      stops,
+      airline: firstSegment.airlineName,
+      airlineCode: firstSegment.airlineIata,
+      departureTime: formatTime(firstJourney.departure.date),
+      arrivalTime: formatTime(firstJourney.arrival.date),
+      nextDay: false, // Calculate if needed
+      layovers,
+      // Pass through new data structure for FlightCard
+      totalAmount: flight.totalAmount,
+      currency: flight.currency,
+      journey: flight.journey,
+      offerRules: flight.offerRules,
+      tags: flight.tags
+    };
+  };
+
+  // Function to select 3 flights based on tags
+  const selectThreeFlights = (flights: FlightData[]) => {
+    if (flights.length === 0) return [];
+
+    const transformedFlights = flights.map(transformFlightData).filter((f): f is NonNullable<typeof f> => f !== null);
+
+    if (transformedFlights.length <= 3) {
+      return transformedFlights;
+    }
+
+    // Find flights with specific tags
+    const cheapestFlights = transformedFlights.filter(f => f.tags?.includes('cheapest'));
+    const fastestFlights = transformedFlights.filter(f => f.tags?.includes('fastest'));
+    const recommendedFlights = transformedFlights.filter(f => f.tags?.includes('recommended'));
+    const bestFlights = transformedFlights.filter(f => f.tags?.includes('best'));
+
+    const selectedFlights: typeof transformedFlights = [];
+    const usedIds = new Set<string>();
+
+    // Priority 1: Get the cheapest flight
+    if (cheapestFlights.length > 0) {
+      const cheapest = cheapestFlights[0];
+      selectedFlights.push(cheapest);
+      usedIds.add(cheapest.flightOfferId);
+    }
+
+    // Priority 2: Get fastest flight (if different from cheapest)
+    if (selectedFlights.length < 3 && fastestFlights.length > 0) {
+      const fastest = fastestFlights.find(f => !usedIds.has(f.flightOfferId));
+      if (fastest) {
+        selectedFlights.push(fastest);
+        usedIds.add(fastest.flightOfferId);
+      }
+    }
+
+    // Priority 3: Get recommended flight (if different from above)
+    if (selectedFlights.length < 3 && recommendedFlights.length > 0) {
+      const recommended = recommendedFlights.find(f => !usedIds.has(f.flightOfferId));
+      if (recommended) {
+        selectedFlights.push(recommended);
+        usedIds.add(recommended.flightOfferId);
+      }
+    }
+
+    // Priority 4: Get best flight (if different from above)
+    if (selectedFlights.length < 3 && bestFlights.length > 0) {
+      const best = bestFlights.find(f => !usedIds.has(f.flightOfferId));
+      if (best) {
+        selectedFlights.push(best);
+        usedIds.add(best.flightOfferId);
+      }
+    }
+
+    // Fill remaining slots with any other flights
+    if (selectedFlights.length < 3) {
+      const remainingFlights = transformedFlights.filter(f => !usedIds.has(f.flightOfferId));
+      const needed = 3 - selectedFlights.length;
+      selectedFlights.push(...remainingFlights.slice(0, needed));
+    }
+
+    return selectedFlights.slice(0, 3); // Ensure exactly 3 flights
+  };
+
+  // Use new data structure if provided, otherwise fallback to mock data
+  const displayFlights = taggedFlights.length > 0
+    ? selectThreeFlights(taggedFlights)
+    : mockFlights.slice(0, 3);
 
   const handleSelectFlight = async (flightOfferId: string) => {
     setSelectedFlight(flightOfferId);
@@ -86,7 +297,7 @@ export default function FlightOptionsV0Widget() {
       {/* Desktop Layout - Three cards side by side */}
       <div className="hidden md:block">
         <div className="grid grid-cols-3 gap-4 mb-6">
-          {mockFlights.map((flight, index) => (
+          {displayFlights.map((flight, index) => (
             <div key={index} className="bg-white rounded-lg border shadow-sm">
               <FlightCard
                 {...flight}
@@ -107,25 +318,27 @@ export default function FlightOptionsV0Widget() {
             <TabsTrigger value="cheapest">Cheapest</TabsTrigger>
             <TabsTrigger value="fastest">Fastest</TabsTrigger>
           </TabsList>
-          
-          {mockFlights.map((flight, index) => (
-            <TabsContent key={index} value={flight.type} className="mt-4">
-              <div className="bg-white rounded-lg border shadow-sm">
-                <FlightCard
-                  {...flight}
-                  onSelect={handleSelectFlight}
-                  isLoading={isLoading}
-                  selectedFlightId={selectedFlight}
-                />
-              </div>
-            </TabsContent>
-          ))}
+
+          {displayFlights.map((flight, index) =>
+            flight ? (
+              <TabsContent key={index} value={flight.type} className="mt-4">
+                <div className="bg-white rounded-lg border shadow-sm">
+                  <FlightCard
+                    {...flight}
+                    onSelect={handleSelectFlight}
+                    isLoading={isLoading}
+                    selectedFlightId={selectedFlight}
+                  />
+                </div>
+              </TabsContent>
+            ) : null
+          )}
         </Tabs>
       </div>
 
       {/* Show All Flights Button */}
       <div className="flex justify-center">
-        <AllFlightsSheet>
+        <AllFlightsSheet flightData={taggedFlights}>
           <Button variant="outline" className="w-full md:w-auto">
             Show all flights
           </Button>

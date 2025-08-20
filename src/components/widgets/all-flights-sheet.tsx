@@ -13,11 +13,81 @@ import { Separator } from "@/components/ui/separator"
 import { Filter, ArrowUpDown } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
-interface AllFlightsSheetProps {
-  children: React.ReactNode
+interface FlightData {
+  flightOfferId: string
+  totalEmission?: number
+  totalEmissionUnit?: string
+  currency: string
+  totalAmount: number
+  tax?: number
+  baseAmount?: number
+  serviceFee?: number
+  convenienceFee?: number
+  journey: Array<{
+    id: string
+    duration: string
+    departure: {
+      date: string
+      airportIata: string
+      airportName: string
+      cityCode?: string
+      countryCode?: string
+    }
+    arrival: {
+      date: string
+      airportIata: string
+      airportName: string
+      cityCode?: string
+      countryCode?: string
+    }
+    segments: Array<{
+      id: string
+      airlineIata: string
+      flightNumber: string
+      aircraftType?: string
+      airlineName: string
+      duration: string
+      departure: {
+        date: string
+        airportIata: string
+        airportName: string
+        cityCode?: string
+        countryCode?: string
+      }
+      arrival: {
+        date: string
+        airportIata: string
+        airportName: string
+        cityCode?: string
+        countryCode?: string
+      }
+    }>
+  }>
+  offerRules?: {
+    isRefundable: boolean
+  }
+  baggage?: {
+    check_in_baggage?: {
+      weight: number
+      weightUnit: string
+    }
+    cabin_baggage?: {
+      weight: number
+      weightUnit: string
+    }
+  }
+  rankingScore?: number
+  pros?: string[]
+  cons?: string[]
+  tags?: string[]
 }
 
-export function AllFlightsSheet({ children }: AllFlightsSheetProps) {
+interface AllFlightsSheetProps {
+  children: React.ReactNode
+  flightData?: FlightData[]
+}
+
+export function AllFlightsSheet({ children, flightData = [] }: AllFlightsSheetProps) {
   const [showFilters, setShowFilters] = useState(false)
   const [sortBy, setSortBy] = useState<"cheapest" | "fastest">("cheapest")
   const [priceRange, setPriceRange] = useState([1800, 3300])
@@ -38,7 +108,80 @@ export function AllFlightsSheet({ children }: AllFlightsSheetProps) {
     }, 1000);
   };
 
-  const allFlights = [
+  // Helper functions to transform new data structure to legacy format for FlightCard
+  const formatTime = (dateString: string) => {
+    return new Date(dateString).toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+  };
+
+  const formatDuration = (duration: string) => {
+    // Convert PT1H45M to 1h 45m
+    const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
+    if (match) {
+      const hours = match[1] ? `${match[1]}h` : '';
+      const minutes = match[2] ? `${match[2]}m` : '';
+      return `${hours} ${minutes}`.trim();
+    }
+    return duration;
+  };
+
+  const getCurrencySymbol = (currency: string) => {
+    const symbols: { [key: string]: string } = {
+      'USD': '$',
+      'INR': '₹',
+      'EUR': '€',
+      'GBP': '£'
+    };
+    return symbols[currency] || currency;
+  };
+
+  const transformFlightData = (flight: FlightData) => {
+    if (!flight.journey || flight.journey.length === 0) return null;
+
+    const firstJourney = flight.journey[0];
+    const firstSegment = firstJourney.segments[0];
+    const stops = firstJourney.segments.length - 1;
+
+    // Determine flight type based on tags or price
+    let type: "best" | "cheapest" | "fastest" = "best";
+    if (flight.tags?.includes('cheapest')) type = "cheapest";
+    else if (flight.tags?.includes('fastest')) type = "fastest";
+
+    // Create layovers array
+    const layovers = firstJourney.segments.slice(0, -1).map(segment => ({
+      city: segment.arrival.airportName.split(' ')[0], // Get city name
+      duration: '', // We don't have layover duration in this structure
+      iataCode: segment.arrival.airportIata
+    }));
+
+    return {
+      flightOfferId: flight.flightOfferId,
+      type,
+      price: `${getCurrencySymbol(flight.currency)}${flight.totalAmount.toLocaleString()}`,
+      duration: formatDuration(firstJourney.duration),
+      stops,
+      airline: firstSegment.airlineName,
+      airlineCode: firstSegment.airlineIata,
+      departureTime: formatTime(firstJourney.departure.date),
+      arrivalTime: formatTime(firstJourney.arrival.date),
+      nextDay: false, // Calculate if needed
+      layovers,
+      // Pass through new data structure for FlightCard
+      totalAmount: flight.totalAmount,
+      currency: flight.currency,
+      journey: flight.journey,
+      offerRules: flight.offerRules,
+      tags: flight.tags
+    };
+  };
+
+  // Transform flight data or use mock data as fallback
+  const allFlights = flightData.length > 0
+    ? flightData.map(transformFlightData).filter(Boolean)
+    : [
     {
       flightOfferId: "sheet-flight-1",
       type: "best" as const,
