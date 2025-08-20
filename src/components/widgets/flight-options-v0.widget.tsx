@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { FlightCard } from "./flight-card";
 import { AllFlightsSheet } from "./all-flights-sheet";
 import { Button } from "@/components/ui/button";
@@ -223,8 +223,12 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
   const readOnly = !!args.readOnly;
 
   const flightOffers: FlightOffer[] =
-    (effectiveArgs as any)?.flightOffers ?? args.flightOffers ?? {};
-  
+    (effectiveArgs as any)?.flightOffers ?? args.flightOffers ?? [];
+
+  const flightOffersHavingTag = readOnly
+  ? flightOffers
+  : flightOffers.filter((flight) => flight.tags?.length > 0);
+
   const [selectedFlight, setSelectedFlight] = useState<string | null>(null);
   const [showAllFlights, setShowAllFlights] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -235,8 +239,7 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
 
     setSelectedFlight(flightOfferId);
     setIsLoading(true);
-
-   setShowAllFlights(false);
+    setShowAllFlights(false);
     const responseData = {
       selectedFlightId: flightOfferId,
     };
@@ -270,6 +273,26 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
     }
   }; 
 
+  useEffect(() => {
+    if (!readOnly) {
+      setShowAllFlights(true);
+    }
+    if (readOnly) {
+      setShowAllFlights(false);
+    }
+  }, [readOnly]);
+
+  // Handle empty flight data
+  if (!flightOffers || flightOffers.length === 0) {
+    return (
+      <div className="container mx-auto max-w-6xl p-4">
+        <div className="text-center py-8">
+          <p className="text-gray-600">No flight options available.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="container mx-auto max-w-6xl p-4"
@@ -282,15 +305,17 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
         <h2 className="mb-2 text-2xl font-bold text-gray-900">
           Flight Options
         </h2>
-        <p className="text-gray-600">
-          {flightOffers[0].departure.city} ({flightOffers[0].departure.iata}) → {flightOffers[0].arrival.city} ({flightOffers[0].arrival.iata})
-        </p>
+        {flightOffers.length > 0 && (
+          <p className="text-gray-600">
+            {flightOffers[0].departure.city} ({flightOffers[0].departure.iata}) → {flightOffers[0].arrival.city} ({flightOffers[0].arrival.iata})
+          </p>
+        )}
       </div>
 
       {/* Desktop Layout - Three cards side by side */}
       <div className="hidden md:block">
         <div className="mb-6 grid grid-cols-3 gap-4">
-          {flightOffers.map((flight, index) => (
+          {flightOffersHavingTag.map((flight, index) => (
             <div
               key={index}
               className="rounded-lg border bg-white shadow-sm"
@@ -318,7 +343,7 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
             <TabsTrigger value="fastest">Fastest</TabsTrigger>
           </TabsList>
 
-          {flightOffers.map((flight, index) => {
+          {flightOffersHavingTag.map((flight, index) => {
             // Determine the primary tab value based on tags
             const primaryTag = flight.tags.includes("best")
               ? "best"
@@ -349,9 +374,13 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
       </div>
 
       {/* Show All Flights Button */}
-     { showAllFlights && (
-        <div className="flex justify-center">
-        <AllFlightsSheet flights={flightOffers}>
+      {showAllFlights && <div className="flex justify-center">
+        <AllFlightsSheet
+          flights={flightOffers}
+          onFlightSelect={handleSelectFlight}
+          selectedFlightId={selectedFlight}
+          isLoading={isLoading}
+        >
           <Button
             variant="outline"
             className="w-full md:w-auto"
@@ -359,7 +388,7 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
             Show all flights
           </Button>
         </AllFlightsSheet>
-      </div> )}
+      </div>}
     </div>
   );
 }

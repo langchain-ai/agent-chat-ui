@@ -17,27 +17,57 @@ import { FlightOffer } from "../../types/flightOptionsV0"
 interface AllFlightsSheetProps {
   flights: FlightOffer[]
   children: React.ReactNode
+  onFlightSelect?: (flightOfferId: string) => void
+  selectedFlightId?: string | null
+  isLoading?: boolean
 }
 
-export function AllFlightsSheet({flights,children }: AllFlightsSheetProps) {
+export function AllFlightsSheet({flights, children, onFlightSelect, selectedFlightId, isLoading }: AllFlightsSheetProps) {
+  // Helper function to parse price from string using regex
+  const parsePrice = (priceString: string): number => {
+    // Extract only numeric values (including decimals) from the price string
+    const numericMatch = priceString.match(/[\d,]+\.?\d*/);
+    if (numericMatch) {
+      // Remove commas and convert to number
+      return parseFloat(numericMatch[0].replace(/,/g, ''));
+    }
+    return 0;
+  };
+
+  // Calculate min and max prices from flights data
+  const calculatePriceRange = () => {
+    if (!flights || flights.length === 0) {
+      return [0, 10000]; // Default range if no flights
+    }
+
+    const prices = flights.map(flight => parsePrice(flight.price));
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+
+    console.log("minPrice: ", minPrice, "maxPrice: ", maxPrice)
+    console.log('allprices',JSON.stringify(prices))
+
+    // Add some padding to ensure all flights are included
+    const padding = (maxPrice - minPrice) * 0.1;
+    return [Math.floor(minPrice), Math.ceil(maxPrice)];
+  };
+
+  const [open, setOpen] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [sortBy, setSortBy] = useState<"cheapest" | "fastest">("cheapest")
-  const [priceRange, setPriceRange] = useState([1800, 3300])
+  const [priceRange, setPriceRange] = useState(() => calculatePriceRange())
   const [selectedAirlines, setSelectedAirlines] = useState<string[]>([])
   const [maxStops, setMaxStops] = useState(2)
   const [selectedDepartureTime, setSelectedDepartureTime] = useState<string[]>([])
-  const [selectedFlight, setSelectedFlight] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
 
-  const handleSelectFlight = async (flightOfferId: string) => {
-    setSelectedFlight(flightOfferId);
-    setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      console.log("Selected flight from sheet:", flightOfferId);
-    }, 1000);
+
+  const handleSelectFlight = (flightOfferId: string) => {
+    if (onFlightSelect) {
+      onFlightSelect(flightOfferId);
+    }
+    // Close the sheet after selection
+    setOpen(false);
   };
 
   const airlines = Array.from(new Set(flights.map((flight) => flight.airline)))
@@ -49,7 +79,7 @@ export function AllFlightsSheet({flights,children }: AllFlightsSheetProps) {
   ]
 
   const filteredFlights = flights.filter((flight) => {
-    const price = Number.parseFloat(flight.price.replace("$", "").replace(",", ""))
+    const price = parsePrice(flight.price)
     const priceInRange = price >= priceRange[0] && price <= priceRange[1]
 
     const airlineMatch = selectedAirlines.length === 0 || selectedAirlines.includes(flight.airline)
@@ -79,8 +109,8 @@ export function AllFlightsSheet({flights,children }: AllFlightsSheetProps) {
 
   const sortedFlights = [...filteredFlights].sort((a, b) => {
     if (sortBy === "cheapest") {
-      const priceA = Number.parseFloat(a.price.replace("$", "").replace(",", ""))
-      const priceB = Number.parseFloat(b.price.replace("$", "").replace(",", ""))
+      const priceA = parsePrice(a.price)
+      const priceB = parsePrice(b.price)
       return priceA - priceB
     } else {
       const durationA =
@@ -102,7 +132,7 @@ export function AllFlightsSheet({flights,children }: AllFlightsSheetProps) {
   }
 
   const clearAllFilters = () => {
-    setPriceRange([1800, 3300])
+    setPriceRange(calculatePriceRange())
     setSelectedAirlines([])
     setMaxStops(2)
     setSelectedDepartureTime([])
@@ -115,7 +145,7 @@ export function AllFlightsSheet({flights,children }: AllFlightsSheetProps) {
     (priceRange[0] > 1800 || priceRange[1] < 3300 ? 1 : 0)
 
   return (
-    <Sheet>
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>{children}</SheetTrigger>
       <SheetContent
         side="bottom"
@@ -170,13 +200,13 @@ export function AllFlightsSheet({flights,children }: AllFlightsSheetProps) {
               <div className="bg-muted/50 rounded-lg p-4 space-y-6">
                 <div>
                   <Label className="text-sm font-medium mb-3 block">
-                    Price Range: ${priceRange[0]} - ${priceRange[1]}
+                    Price Range: {priceRange[0]} - {priceRange[1]}
                   </Label>
                   <Slider
                     value={priceRange}
                     onValueChange={setPriceRange}
-                    max={3300}
-                    min={1800}
+                    max={calculatePriceRange()[1]}
+                    min={calculatePriceRange()[0]}
                     step={50}
                     className="w-full"
                   />
@@ -252,7 +282,7 @@ export function AllFlightsSheet({flights,children }: AllFlightsSheetProps) {
                     compact
                     onSelect={handleSelectFlight}
                     isLoading={isLoading}
-                    selectedFlightId={selectedFlight}
+                    selectedFlightId={selectedFlightId}
                   />
                 </div>
               </div>
