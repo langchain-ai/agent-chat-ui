@@ -9,6 +9,7 @@ import { MultimodalPreview } from "@/components/thread/MultimodalPreview";
 import { isBase64ContentBlock } from "@/lib/multimodal-utils";
 import { getJwtToken, GetUserId } from "@/services/authService";
 import { getCachedLocation } from "@/lib/location-cache";
+import { v4 as uuidv4 } from "uuid";
 
 function EditableContent({
   value,
@@ -54,6 +55,16 @@ export function HumanMessage({
   const handleSubmitEdit = async () => {
     setIsEditing(false);
 
+    // Prune any cached messages/UI/interrupts that occur after this message
+    try {
+      if (
+        (message as any)?.id &&
+        typeof thread?.pruneAfterMessage === "function"
+      ) {
+        thread.pruneAfterMessage((message as any).id as string);
+      }
+    } catch {}
+
     // Get user ID from JWT token
     const jwtToken = getJwtToken();
     const userId = jwtToken ? GetUserId(jwtToken) : null;
@@ -61,7 +72,12 @@ export function HumanMessage({
     // Get location data from cache
     const locationData = await getCachedLocation();
 
-    const newMessage: Message = { type: "human", content: value };
+    // Use a stable id so repeated values/events do not create duplicates
+    const newMessage: Message = {
+      id: (message as any)?.id ?? uuidv4(),
+      type: "human",
+      content: [{ type: "text", text: value }] as Message["content"],
+    };
 
     // Include userId and location in the submission
     const submissionData: any = { messages: [newMessage] };

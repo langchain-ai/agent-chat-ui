@@ -36,6 +36,8 @@ import { Persistence } from "./core/persistence.js";
  * @property {(threadIdToClear: string) => void} clearThreadCache
  * @property {(interruptId: string, frozenValue?: any) => void} completeInterrupt
  * @property {(humanMessage: any) => void} addOptimisticHumanBlock
+ * @property {(messageId: string) => void} pruneAfterMessage
+ * @property {(interruptIdOrValue: string | any) => void} pruneAfterInterrupt
  */
 
 function unique(array) {
@@ -338,6 +340,30 @@ export function useStream(options) {
       if (!tid || !humanMessage) return;
       actorRef.current.enqueue(tid, async () => {
         storeRef.current.addOptimisticHumanBlock(tid, humanMessage);
+        const snap = storeRef.current.snapshot(tid);
+        persistRef.current.saveThread(tid, snap);
+        setValues(snap);
+      });
+    },
+    pruneAfterMessage(messageId) {
+      const tid = threadId;
+      if (!tid || !messageId) return;
+      actorRef.current.enqueue(tid, async () => {
+        storeRef.current.pruneAfterMessage(tid, messageId);
+        const snap = storeRef.current.snapshot(tid);
+        persistRef.current.saveThread(tid, snap);
+        setValues(snap);
+      });
+    },
+    pruneAfterInterrupt(interruptIdOrValue) {
+      const tid = threadId;
+      if (!tid || !interruptIdOrValue) return;
+      actorRef.current.enqueue(tid, async () => {
+        if (typeof interruptIdOrValue === "string") {
+          storeRef.current.pruneAfterInterruptId(tid, interruptIdOrValue);
+        } else {
+          storeRef.current.pruneAfterInterruptValue(tid, interruptIdOrValue);
+        }
         const snap = storeRef.current.snapshot(tid);
         persistRef.current.saveThread(tid, snap);
         setValues(snap);

@@ -181,6 +181,20 @@ export default function useInterruptedActions({
           return;
         }
 
+        // Before resuming the run, prune cached timeline after the current interrupt
+        try {
+          const interruptId =
+            (interrupt as any)?.interrupt_id || (interrupt as any)?.id;
+          if (
+            interruptId &&
+            typeof thread?.pruneAfterInterrupt === "function"
+          ) {
+            thread.pruneAfterInterrupt(String(interruptId));
+          } else if (typeof thread?.pruneAfterInterrupt === "function") {
+            thread.pruneAfterInterrupt(interrupt);
+          }
+        } catch {}
+
         setLoading(true);
         setStreaming(true);
         const resumedSuccessfully = await resumeRun([input]);

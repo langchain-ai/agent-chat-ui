@@ -309,6 +309,72 @@ export class Store {
     state.lastUpdatedAt = Date.now();
   }
 
+  /**
+   * Prune the timeline (blocks + associated structures) to keep only up to and including
+   * the specified block. Everything after will be removed from in-memory state.
+   */
+  _pruneAfterBlock(threadId, anchorBlockId) {
+    const state = this._ensure(threadId);
+    if (!anchorBlockId) return;
+    const idx = state.blockOrder.indexOf(anchorBlockId);
+    if (idx === -1) return;
+
+    // Keep up to and including the anchor
+    const keepBlockOrder = state.blockOrder.slice(0, idx + 1);
+    const keepBlockIds = new Set(keepBlockOrder);
+
+    // Determine referenced message/ui ids to keep based on remaining blocks
+    const keepMessageIds = new Set();
+    const keepUiIds = new Set();
+    for (const bid of keepBlockOrder) {
+      const b = state.blocksById.get(bid);
+      if (!b) continue;
+      if (b.kind === "message") keepMessageIds.add(b.refId);
+      if (b.kind === "ui") keepUiIds.add(b.refId);
+    }
+
+    // Prune blocksById
+    for (const bid of Array.from(state.blocksById.keys())) {
+      if (!keepBlockIds.has(bid)) state.blocksById.delete(bid);
+    }
+    state.blockOrder = keepBlockOrder;
+
+    // Prune messages
+    for (const mid of Array.from(state.messagesById.keys())) {
+      if (!keepMessageIds.has(mid)) state.messagesById.delete(mid);
+    }
+    state.messageOrder = state.messageOrder.filter((mid) => keepMessageIds.has(mid));
+    state.displayedMessageIds = new Set(
+      Array.from(state.displayedMessageIds).filter((mid) => keepMessageIds.has(mid)),
+    );
+
+    // Prune UI
+    for (const uid of Array.from(state.uiById.keys())) {
+      if (!keepUiIds.has(uid)) state.uiById.delete(uid);
+    }
+    state.uiOrder = state.uiOrder.filter((uid) => keepUiIds.has(uid));
+
+    state.lastUpdatedAt = Date.now();
+  }
+
+  /** Prune everything after and excluding the specified message id. */
+  pruneAfterMessage(threadId, messageId) {
+    const blockId = this._blockIdFor("message", messageId);
+    this._pruneAfterBlock(threadId, blockId);
+  }
+
+  /** Prune everything after and excluding the specified interrupt id. */
+  pruneAfterInterruptId(threadId, interruptId) {
+    const blockId = this._blockIdFor("interrupt", String(interruptId));
+    this._pruneAfterBlock(threadId, blockId);
+  }
+
+  /** Convenience: derive interrupt id from value and prune after it. */
+  pruneAfterInterruptValue(threadId, interruptValue) {
+    const interruptId = this._deriveInterruptId(interruptValue);
+    this.pruneAfterInterruptId(threadId, interruptId);
+  }
+
   snapshot(threadId) {
     const state = this._ensure(threadId);
     const messages = state.messageOrder

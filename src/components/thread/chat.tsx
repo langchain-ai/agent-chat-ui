@@ -17,18 +17,11 @@ import { TooltipIconButton } from "./tooltip-icon-button";
 import {
   ArrowDown,
   LoaderCircle,
-  PanelRightClose,
-  PanelRightOpen,
-  Plus,
-  SquarePen,
   XIcon,
 } from "lucide-react";
 import { parseAsBoolean, useQueryState } from "nuqs";
-
-import ThreadHistory from "./history";
 import { toast } from "sonner";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { Label } from "../ui/label";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { ContentBlocksPreview } from "./ContentBlocksPreview";
 import {
@@ -37,9 +30,7 @@ import {
   useArtifactContext,
   useArtifactOpen,
 } from "./artifact";
-import { LogoutButton } from "@/components/auth";
 import { getJwtToken, GetUserId } from "@/services/authService";
-import { updateThreadWithMessage } from "@/utils/thread-storage";
 import { InterruptManager } from "./messages/interrupt-manager";
 import { GenericInterruptView } from "./messages/generic-interrupt";
 import { NonAgentFlowReopenButton } from "./NonAgentFlowReopenButton";
