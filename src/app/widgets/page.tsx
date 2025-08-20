@@ -8,9 +8,8 @@ import WeatherWidget from "@/components/widgets/weather.widget";
 // Import the actual widgets
 import SearchCriteriaWidget from "@/components/widgets/searchCriteria.widget";
 import FlightOptionsWidget from "@/components/widgets/flightOptions.widget";
-import FlightOptionsV0Widget from "@/components/widgets/flight-options-v0.widget";
 import ReviewWidget from "@/components/widgets/review.widget";
-// import PaymentWidget from "@/components/widgets/payment.widget";
+import PaymentWidget from "@/components/widgets/payment.widget";
 import SeatPreferenceWidget from "@/components/widgets/seatPreference.widget";
 import SeatSelectionWidget from "@/components/widgets/seatSelection.widget";
 import SeatPaymentWidget from "@/components/widgets/seatPayment.widget";
@@ -24,204 +23,6 @@ import BookingStatusWidget from "@/components/widgets/bookingStatus";
 import { StreamProvider } from "@/providers/Stream";
 import { ThreadProvider } from "@/providers/Thread";
 import { TabProvider } from "@/providers/TabContext";
-import { FlightOffer } from "@/types/flightOptionsV0";
-
-const flightOffers: FlightOffer[] = [
-    {
-      flightOfferId: "flight-1",
-      departure: {
-        iata: "DEL",
-        city: "new Delhi",
-        date: "2024-07-20",
-      },
-      arrival: {
-        iata: "HNL",
-        city: "Honolulu",
-        date: "2024-07-20",
-      },
-      tags: ["best", "recommended"],
-      price: "$2,141.24",
-      duration: "23h 35m",
-      stops: 2,
-      airline: "Cathay Pacific",
-      airlineCode: "CX",
-      departureTime: "01:15",
-      arrivalTime: "01:50",
-      nextDay: true,
-      layovers: [
-        { city: "Hong Kong", duration: "1h 20m layover", iataCode: "HKG" },
-        { city: "Tokyo", duration: "4h 35m layover", iataCode: "NRT" },
-      ],
-      segments: [
-        {
-          from: "New Delhi (DEL)",
-          to: "Hong Kong (HKG)",
-          departure: "01:15",
-          arrival: "08:30",
-          flight: "CX 694",
-          duration: "5h 45m",
-          date: "Today",
-        },
-        {
-          layover: "Hong Kong",
-          duration: "1h 20m",
-          details: "Terminal change required",
-        },
-        {
-          from: "Hong Kong (HKG)",
-          to: "Tokyo (NRT)",
-          departure: "09:50",
-          arrival: "15:25",
-          flight: "CX 520",
-          duration: "3h 35m",
-          date: "Today",
-        },
-        {
-          layover: "Tokyo",
-          duration: "4h 35m",
-          details: "International transit",
-        },
-        {
-          from: "Tokyo (NRT)",
-          to: "Honolulu (HNL)",
-          departure: "20:00",
-          arrival: "01:50",
-          flight: "CX 278",
-          duration: "7h 15m",
-          date: "Tomorrow",
-        },
-      ],
-    },
-    {
-      flightOfferId: "flight-2",
-      departure: {
-        iata: "DEL",
-        city: "new Delhi",
-        date: "2024-07-20",
-      },
-      arrival: {
-        iata: "HNL",
-        city: "Honolulu",
-        date: "2024-07-20",
-      },
-      tags: ["cheapest"],
-      price: "$1,892.50",
-      duration: "28h 15m",
-      stops: 2,
-      airline: "Air India",
-      airlineCode: "AI",
-      departureTime: "14:30",
-      arrivalTime: "06:45",
-      nextDay: true,
-      layovers: [
-        { city: "Mumbai", duration: "3h 45m layover", iataCode: "BOM" },
-        { city: "Los Angeles", duration: "2h 30m layover", iataCode: "LAX" },
-      ],
-      segments: [
-        {
-          from: "New Delhi (DEL)",
-          to: "Hong Kong (HKG)",
-          departure: "01:15",
-          arrival: "08:30",
-          flight: "CX 694",
-          duration: "5h 45m",
-          date: "Today",
-        },
-        {
-          layover: "Hong Kong",
-          duration: "1h 20m",
-          details: "Terminal change required",
-        },
-        {
-          from: "Hong Kong (HKG)",
-          to: "Tokyo (NRT)",
-          departure: "09:50",
-          arrival: "15:25",
-          flight: "CX 520",
-          duration: "3h 35m",
-          date: "Today",
-        },
-        {
-          layover: "Tokyo",
-          duration: "4h 35m",
-          details: "International transit",
-        },
-        {
-          from: "Tokyo (NRT)",
-          to: "Honolulu (HNL)",
-          departure: "20:00",
-          arrival: "01:50",
-          flight: "CX 278",
-          duration: "7h 15m",
-          date: "Tomorrow",
-        },
-      ],
-    },
-    {
-      flightOfferId: "flight-3",
-      departure: {
-        iata: "DEL",
-        city: "new Delhi",
-        date: "2024-07-20",
-      },
-      arrival: {
-        iata: "HNL",
-        city: "Honolulu",
-        date: "2024-07-20",
-      },
-      tags: ["fastest", "recommended"],
-      price: "$3,245.80",
-      duration: "18h 20m",
-      stops: 1,
-      airline: "United Airlines",
-      airlineCode: "UA",
-      departureTime: "22:45",
-      arrivalTime: "11:05",
-      nextDay: true,
-      layovers: [
-        { city: "San Francisco", duration: "2h 15m layover", iataCode: "SFO" },
-      ],
-      segments: [
-        {
-          from: "New Delhi (DEL)",
-          to: "Hong Kong (HKG)",
-          departure: "01:15",
-          arrival: "08:30",
-          flight: "CX 694",
-          duration: "5h 45m",
-          date: "Today",
-        },
-        {
-          layover: "Hong Kong",
-          duration: "1h 20m",
-          details: "Terminal change required",
-        },
-        {
-          from: "Hong Kong (HKG)",
-          to: "Tokyo (NRT)",
-          departure: "09:50",
-          arrival: "15:25",
-          flight: "CX 520",
-          duration: "3h 35m",
-          date: "Today",
-        },
-        {
-          layover: "Tokyo",
-          duration: "4h 35m",
-          details: "International transit",
-        },
-        {
-          from: "Tokyo (NRT)",
-          to: "Honolulu (HNL)",
-          departure: "20:00",
-          arrival: "01:50",
-          flight: "CX 278",
-          duration: "7h 15m",
-          date: "Tomorrow",
-        },
-      ],
-    },
-  ]
 
 // Mock data for SearchCriteriaWidget
 const mockSearchCriteriaData = {
@@ -833,16 +634,16 @@ const mockFlightOptionsData = {
 };
 
 // Mock data for PaymentWidget
-// const mockPaymentData = {
-//   transaction_id: "TXN123456789",
-//   reference_id: "REF987654321",
-//   razorpay_order_id: "order_123456789",
-//   amount: 30225, // Amount in paise (₹302.25)
-//   currency: "INR",
-//   razorpayKey: "rzp_test_1234567890",
-//   name: "Flight Booking Payment",
-//   description: "Payment for flight booking from Delhi to Mumbai",
-// };
+const mockPaymentData = {
+  transaction_id: "TXN123456789",
+  reference_id: "REF987654321",
+  razorpay_order_id: "order_123456789",
+  amount: 30225, // Amount in paise (₹302.25)
+  currency: "INR",
+  razorpayKey: "rzp_test_1234567890",
+  name: "Flight Booking Payment",
+  description: "Payment for flight booking from Delhi to Mumbai",
+};
 
 
 
@@ -970,17 +771,17 @@ const StandaloneReviewWidget = () => {
 };
 
 // Wrapper component for PaymentWidget
-// const StandalonePaymentWidget = () => {
-//   return (
-//     <ThreadProvider>
-//       <StreamProvider>
-//         <div className="w-full">
-//           <PaymentWidget {...mockPaymentData} />
-//         </div>
-//       </StreamProvider>
-//     </ThreadProvider>
-//   );
-// };
+const StandalonePaymentWidget = () => {
+  return (
+    <ThreadProvider>
+      <StreamProvider>
+        <div className="w-full">
+          <PaymentWidget {...mockPaymentData} />
+        </div>
+      </StreamProvider>
+    </ThreadProvider>
+  );
+};
 
 // Simple demo component for NonAgentFlowWidget (avoiding context issues)
 const StandaloneNonAgentFlowWidget = () => {
@@ -1173,22 +974,6 @@ export default function WidgetsPage(): React.ReactNode {
               </div>
             </section>
 
-            {/* Flight Options V0 Widget */}
-            <section className="rounded-lg bg-white p-6 shadow-md">
-              <div className="mb-6">
-                <h3 className="mb-2 text-2xl font-semibold text-gray-800">
-                  Flight Options V0 Widget
-                </h3>
-                <p className="text-sm text-gray-600">
-                  Modern flight options widget with responsive design, tabs for mobile,
-                  grid layout for desktop, and bottom sheet for all flights with advanced filtering.
-                </p>
-              </div>
-              <div className="w-full">
-                <FlightOptionsV0Widget  />
-              </div>
-            </section>
-
             {/* Display Widgets Section */}
             <div className="mt-16 mb-8">
               <h2 className="mb-4 text-center text-3xl font-bold text-gray-900">
@@ -1303,7 +1088,7 @@ export default function WidgetsPage(): React.ReactNode {
           </section>
 
           {/* Payment Widget */}
-          {/* <section className="rounded-lg bg-white p-6 shadow-md">
+          <section className="rounded-lg bg-white p-6 shadow-md">
             <div className="mb-6">
               <h3 className="mb-2 text-2xl font-semibold text-gray-800">
                 Payment Widget
@@ -1315,7 +1100,7 @@ export default function WidgetsPage(): React.ReactNode {
             <div className="w-full">
               <StandalonePaymentWidget />
             </div>
-          </section> */}
+          </section>
 
           {/* Non-Agent Flow Widget */}
           <section className="rounded-lg bg-white p-6 shadow-md">
