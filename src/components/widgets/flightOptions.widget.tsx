@@ -2034,12 +2034,16 @@ interface FlightOptionsProps extends Record<string, any> {
 const FlightOptionsWidget = (args: FlightOptionsProps) => {
   const thread = useStreamContext();
 
+  console.log("FlightOptionsWidget - args:", args);
+
   const liveArgs = args.apiData?.value?.widget?.args ?? {};
   const frozenArgs = (liveArgs as any)?.submission;
   const effectiveArgs = args.readOnly && frozenArgs ? frozenArgs : liveArgs;
 
   const flightOffers =
     (effectiveArgs as any)?.flightOffers ?? args.flightOffers ?? {};
+
+  console.log("FlightOptionsWidget - flightOffers:", flightOffers);
 
   const readOnly = !!args.readOnly;
 
@@ -2323,7 +2327,7 @@ const FlightOptionsWidget = (args: FlightOptionsProps) => {
         </div>
 
         {/* Show All Flights Button */}
-        {allFlightTuples.length > 6 && !readOnly && (
+        {allFlightTuples.length > 0 && !readOnly && (
           <div className="text-center">
             <Button
               onClick={handleShowAllFlights}
