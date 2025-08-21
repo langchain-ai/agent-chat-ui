@@ -15,7 +15,17 @@ import {
 } from "@/lib/ensure-tool-responses";
 import { FlyoLogoSVG } from "../icons/langgraph";
 import { TooltipIconButton } from "./tooltip-icon-button";
-import { ArrowDown, LoaderCircle, XIcon } from "lucide-react";
+import {
+  ArrowDown,
+  LoaderCircle,
+  XIcon,
+  Plane,
+  CalendarDays,
+  ArrowLeftRight,
+  Ticket,
+  Clock,
+  Armchair,
+} from "lucide-react";
 import { parseAsBoolean, useQueryState } from "nuqs";
 import { toast } from "sonner";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
@@ -298,6 +308,104 @@ export function Thread() {
     setContentBlocks([]);
   };
 
+  // Quick Actions: one-click prompts to guide users
+  const quickActions: Array<{ label: string; text: string; icon?: ReactNode }> =
+    [
+      {
+        label: "Book me a flight",
+        text: "Book me a flight",
+        icon: <Plane className="h-3.5 w-3.5" />,
+      },
+      // {
+      //   label: "Flexible dates",
+      //   text: "Show cheapest month from BLR to GOI",
+      //   icon: <CalendarDays className="h-3.5 w-3.5" />,
+      // },
+      // {
+      //   label: "Round trip",
+      //   text: "Round trip NYC to SFO for 2 adults in premium economy",
+      //   icon: <ArrowLeftRight className="h-3.5 w-3.5" />,
+      // },
+      {
+        label: "Show Past Flights",
+        text: "Show me my past flights",
+        icon: <Ticket className="h-3.5 w-3.5" />,
+      },
+      {
+        label: "Show Free Lounge Access",
+        text: "Show me free lounge access for Delhi airport Terminal 1",
+        icon: <Armchair className="h-3.5 w-3.5" />,
+      },
+      // {
+      //   label: "Flight status",
+      //   text: "What is the status of AI 102 tomorrow?",
+      //   icon: <Clock className="h-3.5 w-3.5" />,
+      // },
+    ];
+
+  const handleQuickActionClick = (text: string) => {
+    if (isLoading) return;
+    setFirstTokenReceived(false);
+
+    const jwtToken = getJwtToken();
+    const userId = jwtToken ? GetUserId(jwtToken) : null;
+
+    const newHumanMessage: Message = {
+      id: uuidv4(),
+      type: "human",
+      content: [{ type: "text", text }],
+    };
+
+    const existingMessages: Message[] = threadId
+      ? messageBlocks.map((b) => b.data as Message)
+      : [];
+    const toolMessages = threadId
+      ? ensureToolCallsHaveResponses(existingMessages)
+      : [];
+
+    const context =
+      Object.keys(artifactContext).length > 0 ? artifactContext : undefined;
+
+    const submissionData: any = {
+      messages: [...toolMessages, newHumanMessage],
+      context,
+    };
+
+    if (userId) {
+      submissionData.userId = userId;
+    }
+    if (locationData) {
+      submissionData.userLocation = {
+        latitude: locationData.latitude,
+        longitude: locationData.longitude,
+        accuracy: locationData.accuracy,
+        timestamp: locationData.timestamp,
+      };
+    }
+
+    const submitOptions: any = {
+      streamMode: ["updates"],
+      streamSubgraphs: true,
+      optimisticHumanMessage: newHumanMessage,
+    };
+
+    if (!threadId) {
+      const clientThreadId = uuidv4();
+      submitOptions.threadId = clientThreadId;
+      submitOptions.metadata = {
+        ...(submitOptions.metadata ?? {}),
+        assistant_id: assistantId,
+        graph_id: assistantId,
+        created_at: new Date().toISOString(),
+        user_id: userId || "anonymous",
+      };
+    }
+
+    stream.submit(submissionData, submitOptions);
+    setInput("");
+    setContentBlocks([]);
+  };
+
   const handleRegenerate = (
     parentCheckpoint: Checkpoint | null | undefined,
   ) => {
@@ -361,7 +469,23 @@ export function Thread() {
                   }
 
                   {/* Centered Chat Input */}
-                  <div className="w-full max-w-3xl">
+                  <div className="w-full max-w-3xl py-8">
+                    <div className="mx-auto mb-3 w-full max-w-3xl overflow-x-auto px-1 text-center [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:h-0 [&::-webkit-scrollbar]:w-0">
+                      <div className="inline-flex items-center gap-2 whitespace-nowrap">
+                        {quickActions.map((qa) => (
+                          <button
+                            key={qa.label}
+                            type="button"
+                            onClick={() => handleQuickActionClick(qa.text)}
+                            className="group hover:text-primary inline-flex shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-white/80 px-3 py-1 text-xs font-medium text-gray-700 shadow-sm backdrop-blur hover:bg-white focus-visible:ring-2 focus-visible:ring-blue-600/30 focus-visible:outline-none"
+                            aria-label={qa.label}
+                          >
+                            {qa.icon}
+                            <span>{qa.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                     <div
                       ref={dropRef}
                       className={cn(
