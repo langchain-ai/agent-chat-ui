@@ -103,7 +103,7 @@ export const TabsLayout = () => {
           onValueChange={(value) => setActiveTab(value as "Chat" | "Review")}
           className="flex h-full w-full flex-col"
         >
-          <div className="flex items-center justify-between p-2">
+          <div className="sticky top-0 z-40 flex items-center justify-between border-b bg-white/95 p-2 backdrop-blur supports-[backdrop-filter]:bg-white/60">
             <div className="flex items-center gap-2">
               {/* Sidebar Toggle Button */}
               <Button
