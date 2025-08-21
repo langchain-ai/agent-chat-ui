@@ -10,15 +10,12 @@ import { AssistantMessage, AssistantMessageLoading } from "./messages/ai";
 import { HumanMessage } from "./messages/human";
 import {
   DO_NOT_RENDER_ID_PREFIX,
-  ensureToolCallsHaveResponses, UI_WIDGET_PREFIX,
+  ensureToolCallsHaveResponses,
+  UI_WIDGET_PREFIX,
 } from "@/lib/ensure-tool-responses";
 import { FlyoLogoSVG } from "../icons/langgraph";
 import { TooltipIconButton } from "./tooltip-icon-button";
-import {
-  ArrowDown,
-  LoaderCircle,
-  XIcon,
-} from "lucide-react";
+import { ArrowDown, LoaderCircle, XIcon } from "lucide-react";
 import { parseAsBoolean, useQueryState } from "nuqs";
 import { toast } from "sonner";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
@@ -419,7 +416,7 @@ export function Thread() {
                       "absolute inset-0 overflow-y-scroll px-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent",
                       chatStarted && "grid grid-rows-[1fr_auto]",
                     )}
-                    contentClassName="pt-8 pb-24 max-w-3xl mx-auto flex flex-col gap-4 w-full"
+                    contentClassName="pt-4 pb-16 sm:pt-8 sm:pb-24 max-w-3xl mx-auto flex flex-col gap-4 w-full"
                     content={
                       <>
                         {blocks.map((block, index) => {
@@ -427,7 +424,7 @@ export function Thread() {
                             block.kind === "message" &&
                             block.data &&
                             block.data.content &&
-                              (block.data.content.length > 0 || block.data.id) &&
+                            (block.data.content.length > 0 || block.data.id) &&
                             isDisplayableMessage(block.data as Message)
                           ) {
                             const message = block.data as Message;
@@ -461,19 +458,17 @@ export function Thread() {
                           // optionally render UI blocks here if desired
                           return null;
                         })}
-                        {isLoading && (
-                          <AssistantMessageLoading />
-                        )}
+                        {isLoading && <AssistantMessageLoading />}
                       </>
                     }
                     footer={
-                      <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-gradient-to-t from-white/80 via-white/40 to-transparent pt-8">
-                        <ScrollToBottom className="animate-in fade-in-0 zoom-in-95 absolute bottom-full left-1/2 mb-4 -translate-x-1/2" />
+                      <div className="sticky bottom-0 flex flex-col items-center gap-3 bg-gradient-to-t from-white/80 via-white/40 to-transparent pt-3 pb-[env(safe-area-inset-bottom)] sm:gap-8 sm:pt-8">
+                        <ScrollToBottom className="animate-in fade-in-0 zoom-in-95 absolute bottom-full left-1/2 mb-2 -translate-x-1/2 sm:mb-4" />
 
                         <div
                           ref={dropRef}
                           className={cn(
-                            "relative z-10 mx-auto mb-8 w-full max-w-3xl rounded-2xl border border-gray-200/50 bg-white/95 shadow-xl backdrop-blur-md transition-all",
+                            "relative z-10 mx-auto mb-3 w-full max-w-3xl rounded-2xl border border-gray-200/50 bg-white/95 shadow-xl backdrop-blur-md transition-all sm:mb-8",
                             dragOver
                               ? "border-primary border-2 border-dotted"
                               : "border border-solid",

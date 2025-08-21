@@ -84,14 +84,14 @@ export const TabsLayout = () => {
       <motion.div
         className="flex min-w-0 flex-1 flex-col overflow-hidden"
         layout={isLargeScreen}
-        animate={{
-          marginLeft: chatHistoryOpen ? (isLargeScreen ? 260 : 0) : 0,
-          width: chatHistoryOpen
-            ? isLargeScreen
-              ? "calc(100% - 260px)"
-              : "100%"
-            : "100%",
-        }}
+        animate={
+          isLargeScreen
+            ? {
+                marginLeft: chatHistoryOpen ? 260 : 0,
+                width: chatHistoryOpen ? "calc(100% - 260px)" : "100%",
+              }
+            : undefined
+        }
         transition={
           isLargeScreen
             ? { type: "spring", stiffness: 300, damping: 30 }
@@ -103,7 +103,7 @@ export const TabsLayout = () => {
           onValueChange={(value) => setActiveTab(value as "Chat" | "Review")}
           className="flex h-full w-full flex-col"
         >
-          <div className="flex items-center justify-between p-2">
+          <div className="fixed inset-x-0 top-0 z-40 flex h-12 items-center justify-between border-b bg-white/95 p-2 backdrop-blur supports-[backdrop-filter]:bg-white/60 lg:sticky lg:h-auto">
             <div className="flex items-center gap-2">
               {/* Sidebar Toggle Button */}
               <Button
@@ -149,7 +149,7 @@ export const TabsLayout = () => {
             </div>
           </div>
 
-          <div className="flex flex-1 flex-col overflow-hidden">
+          <div className="mt-12 flex flex-1 flex-col overflow-hidden lg:mt-0">
             {tabs.map((tab) => (
               <TabsContent
                 key={tab.name}

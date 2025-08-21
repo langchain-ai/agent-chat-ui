@@ -19,23 +19,23 @@ export default function DemoPage(): React.ReactNode {
       <Toaster />
       <ProtectedRoute>
         <LocationProvider>
-        <ThreadProvider>
-          <StreamProvider>
-            <ArtifactProvider>
-              <NonAgentFlowProvider>
-                <TabProvider>
-                  <ItineraryWidgetProvider>
-                    <div className="flex h-screen flex-col">
-                      <div className="min-h-0 flex-1">
-                        <TabsLayout />
+          <ThreadProvider>
+            <StreamProvider>
+              <ArtifactProvider>
+                <NonAgentFlowProvider>
+                  <TabProvider>
+                    <ItineraryWidgetProvider>
+                      <div className="flex h-[100dvh] min-h-0 flex-col">
+                        <div className="min-h-0 flex-1 overflow-hidden">
+                          <TabsLayout />
+                        </div>
                       </div>
-                    </div>
-                  </ItineraryWidgetProvider>
-                </TabProvider>
-              </NonAgentFlowProvider>
-            </ArtifactProvider>
-          </StreamProvider>
-        </ThreadProvider>
+                    </ItineraryWidgetProvider>
+                  </TabProvider>
+                </NonAgentFlowProvider>
+              </ArtifactProvider>
+            </StreamProvider>
+          </ThreadProvider>
         </LocationProvider>
       </ProtectedRoute>
     </React.Suspense>
