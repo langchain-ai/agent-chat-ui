@@ -27,7 +27,7 @@ export default function RootLayout({
       className="h-[100dvh]"
     >
       <body
-        className={`${inter.className} h-[100dvh] touch-manipulation overflow-hidden overscroll-none`}
+        className={`${inter.className} fixed inset-0 h-[100dvh] w-full touch-manipulation overflow-hidden overscroll-none`}
       >
         {/* Google Analytics */}
         <Script
