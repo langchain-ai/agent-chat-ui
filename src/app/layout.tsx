@@ -22,14 +22,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html
+      lang="en"
+      className="h-[100dvh]"
+    >
+      <body
+        className={`${inter.className} h-[100dvh] touch-manipulation overflow-hidden overscroll-none`}
+      >
         {/* Google Analytics */}
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-SLRTVD2EYS"
           strategy="afterInteractive"
         />
-        <Script id="google-analytics" strategy="afterInteractive">
+        <Script
+          id="google-analytics"
+          strategy="afterInteractive"
+        >
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
