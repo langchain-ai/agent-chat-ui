@@ -10,15 +10,12 @@ import { AssistantMessage, AssistantMessageLoading } from "./messages/ai";
 import { HumanMessage } from "./messages/human";
 import {
   DO_NOT_RENDER_ID_PREFIX,
-  ensureToolCallsHaveResponses, UI_WIDGET_PREFIX,
+  ensureToolCallsHaveResponses,
+  UI_WIDGET_PREFIX,
 } from "@/lib/ensure-tool-responses";
 import { FlyoLogoSVG } from "../icons/langgraph";
 import { TooltipIconButton } from "./tooltip-icon-button";
-import {
-  ArrowDown,
-  LoaderCircle,
-  XIcon,
-} from "lucide-react";
+import { ArrowDown, LoaderCircle, XIcon } from "lucide-react";
 import { parseAsBoolean, useQueryState } from "nuqs";
 import { toast } from "sonner";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
@@ -427,7 +424,7 @@ export function Thread() {
                             block.kind === "message" &&
                             block.data &&
                             block.data.content &&
-                              (block.data.content.length > 0 || block.data.id) &&
+                            (block.data.content.length > 0 || block.data.id) &&
                             isDisplayableMessage(block.data as Message)
                           ) {
                             const message = block.data as Message;
@@ -461,9 +458,7 @@ export function Thread() {
                           // optionally render UI blocks here if desired
                           return null;
                         })}
-                        {isLoading && (
-                          <AssistantMessageLoading />
-                        )}
+                        {isLoading && <AssistantMessageLoading />}
                       </>
                     }
                     footer={
