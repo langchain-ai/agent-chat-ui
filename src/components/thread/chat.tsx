@@ -27,7 +27,11 @@ import {
   useArtifactContext,
   useArtifactOpen,
 } from "./artifact";
-import { getJwtToken, GetUserId } from "@/services/authService";
+import {
+  getJwtToken,
+  GetUserId,
+  getUserFirstName,
+} from "@/services/authService";
 import { InterruptManager } from "./messages/interrupt-manager";
 import { GenericInterruptView } from "./messages/generic-interrupt";
 import { NonAgentFlowReopenButton } from "./NonAgentFlowReopenButton";
@@ -123,6 +127,14 @@ export function Thread() {
   } = useFileUpload();
   const [firstTokenReceived, setFirstTokenReceived] = useState(false); //TODO: remove if not needed
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
+  const [firstName, setFirstName] = useState<string>("");
+
+  useEffect(() => {
+    try {
+      const name = getUserFirstName();
+      if (name) setFirstName(name);
+    } catch {}
+  }, []);
 
   const stream = useStreamContext();
   const blocks = (stream.values?.blocks ?? []) as Array<{
@@ -325,13 +337,28 @@ export function Thread() {
                 // New thread layout - centered content
                 <div className="flex flex-1 flex-col items-center justify-center px-4">
                   {/* Centered Logo */}
-                  <div className="mb-8 flex items-center justify-center">
+                  <div className="mb-5 flex items-center justify-center">
                     <FlyoLogoSVG
                       width={120}
                       height={120}
                       className="sm:h-[150px] sm:w-[150px]"
                     />
                   </div>
+
+                  {/* Welcome Text */}
+                  {
+                    <div className="mb-6 text-center text-xl font-medium tracking-tight text-neutral-800 sm:text-2xl">
+                      {"Hi "}
+                      {firstName ? (
+                        <span className="text-primary font-semibold">
+                          {firstName}
+                        </span>
+                      ) : (
+                        "Traveller"
+                      )}
+                      {", where are we flying today?"}
+                    </div>
+                  }
 
                   {/* Centered Chat Input */}
                   <div className="w-full max-w-3xl">
