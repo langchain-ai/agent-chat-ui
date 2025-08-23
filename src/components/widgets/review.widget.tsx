@@ -169,17 +169,35 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
                           (numberOfTravellers?.children || 0) +
                           (numberOfTravellers?.infants || 0);
 
+  // Helper function to determine passenger type based on index
+  const getPassengerType = (passengerIndex: number): 'adult' | 'children' | 'infant' => {
+    const adults = numberOfTravellers?.adults || 1;
+    const children = numberOfTravellers?.children || 0;
+
+    if (passengerIndex < adults) {
+      return 'adult';
+    } else if (passengerIndex < adults + children) {
+      return 'children';
+    } else {
+      return 'infant';
+    }
+  };
+
   // State management for multiple passengers
   const [passengers, setPassengers] = useState<PassengerDetails[]>(() => {
     // If in read-only mode, prepopulate from savedTravellers
     if (readOnly && savedTravellers && savedTravellers.length > 0) {
-      return savedTravellers.map((savedTraveller: any) => {
-        // Derive title from gender if not explicitly provided
-        const derivedTitle = savedTraveller.gender?.toLowerCase() === 'female' || savedTraveller.gender?.toLowerCase() === 'f'
-          ? 'Ms'
-          : savedTraveller.gender?.toLowerCase() === 'male' || savedTraveller.gender?.toLowerCase() === 'm'
-          ? 'Mr'
-          : '';
+      return savedTravellers.map((savedTraveller: any, index: number) => {
+        // Derive title from gender with proper logic for different passenger types
+        const passengerType = getPassengerType(index);
+        const genderLower = savedTraveller.gender?.toLowerCase();
+
+        let derivedTitle = '';
+        if (genderLower === 'male' || genderLower === 'm') {
+          derivedTitle = passengerType === 'adult' ? 'Mr' : 'Master';
+        } else if (genderLower === 'female' || genderLower === 'f') {
+          derivedTitle = 'Miss'; // Miss for all passenger types when female
+        }
 
         return {
           firstName: savedTraveller.firstName || "",
@@ -216,6 +234,56 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
     }
 
     return passengerArray;
+  });
+
+  // State to track selected traveller IDs for each passenger
+  const [selectedTravellerIds, setSelectedTravellerIds] = useState<(string | null)[]>(() => {
+    // If in read-only mode, prepopulate from savedTravellers
+    if (readOnly && savedTravellers && savedTravellers.length > 0) {
+      return savedTravellers.map((savedTraveller: any) => savedTraveller.travellerId?.toString() || null);
+    }
+
+    // Default initialization - check if initial passenger has travellerId
+    const initialIds: (string | null)[] = [];
+
+    // For the primary passenger, check if there's a travellerId in the initial data
+    const primaryTravellerId = userDetails?.travellerId?.toString() || null;
+    initialIds.push(primaryTravellerId);
+
+    // Add null for additional passengers
+    for (let i = 1; i < totalPassengers; i++) {
+      initialIds.push(null);
+    }
+
+    return initialIds;
+  });
+
+  // State to track original passenger names for comparison
+  const [originalPassengerNames, setOriginalPassengerNames] = useState<{ firstName: string; lastName: string }[]>(() => {
+    // If in read-only mode, store original names from savedTravellers
+    if (readOnly && savedTravellers && savedTravellers.length > 0) {
+      return savedTravellers.map((savedTraveller: any) => ({
+        firstName: savedTraveller.firstName || "",
+        lastName: savedTraveller.lastName || "",
+      }));
+    }
+
+    // Default initialization - store initial passenger names
+    const initialNames: { firstName: string; lastName: string }[] = [];
+
+    // For the primary passenger, store initial names from userDetails or initialPassenger
+    const primaryNames = {
+      firstName: userDetails?.firstName || initialPassenger?.firstName || "",
+      lastName: userDetails?.lastName || initialPassenger?.lastName || "",
+    };
+    initialNames.push(primaryNames);
+
+    // Add empty names for additional passengers
+    for (let i = 1; i < totalPassengers; i++) {
+      initialNames.push({ firstName: "", lastName: "" });
+    }
+
+    return initialNames;
   });
 
   const [documents, setDocuments] = useState<(TravelDocument | null)[]>(() => {
@@ -290,20 +358,6 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
   });
 
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
-
-  // Helper function to determine passenger type based on index
-  const getPassengerType = (passengerIndex: number): 'adult' | 'children' | 'infant' => {
-    const adults = numberOfTravellers?.adults || 1;
-    const children = numberOfTravellers?.children || 0;
-
-    if (passengerIndex < adults) {
-      return 'adult';
-    } else if (passengerIndex < adults + children) {
-      return 'children';
-    } else {
-      return 'infant';
-    }
-  };
 
   // Helper function to generate passenger label based on type and sequence
   const getPassengerLabel = (passengerIndex: number): string => {
@@ -448,21 +502,44 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
   const handleSelectSavedPassenger = (passengerIndex: number, savedPassenger: SavedPassenger) => {
     // Update passenger details
     setPassengers((prev) =>
-      prev.map((passenger, index) =>
+      prev.map((passenger, index) => {
+        if (index === passengerIndex) {
+          // Derive title from gender with proper logic for different passenger types
+          const passengerType = getPassengerType(index);
+          const genderLower = savedPassenger.gender?.toLowerCase();
+
+          let derivedTitle = '';
+          if (genderLower === 'male' || genderLower === 'm') {
+            derivedTitle = passengerType === 'adult' ? 'Mr' : 'Master';
+          } else if (genderLower === 'female' || genderLower === 'f') {
+            derivedTitle = 'Miss'; // Miss for all passenger types when female
+          }
+
+          return {
+            firstName: savedPassenger.firstName,
+            lastName: savedPassenger.lastName,
+            gender: savedPassenger.gender,
+            dateOfBirth: savedPassenger.dateOfBirth,
+            title: derivedTitle,
+          };
+        }
+        return passenger;
+      })
+    );
+
+    // Update selected traveller ID
+    setSelectedTravellerIds((prev) =>
+      prev.map((id, index) =>
+        index === passengerIndex ? savedPassenger.id : id
+      )
+    );
+
+    // Update original passenger names for comparison
+    setOriginalPassengerNames((prev) =>
+      prev.map((names, index) =>
         index === passengerIndex
-          ? {
-              firstName: savedPassenger.firstName,
-              lastName: savedPassenger.lastName,
-              gender: savedPassenger.gender,
-              dateOfBirth: savedPassenger.dateOfBirth,
-              title:
-                savedPassenger.gender === "Male"
-                  ? "Mr"
-                  : savedPassenger.gender === "Female"
-                    ? "Ms"
-                    : "",
-            }
-          : passenger
+          ? { firstName: savedPassenger.firstName, lastName: savedPassenger.lastName }
+          : names
       )
     );
 
@@ -504,6 +581,28 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
     );
   };
 
+  // Helper function to determine if passenger name has changed
+  const isPassengerNameChanged = (passengerIndex: number): boolean => {
+    const currentPassenger = passengers[passengerIndex];
+    const originalNames = originalPassengerNames[passengerIndex];
+    const travellerId = selectedTravellerIds[passengerIndex];
+
+    // Condition 2: User doesn't select any saved passenger (creates new passenger)
+    if (!travellerId) {
+      return true;
+    }
+
+    // Condition 1: User selects a passenger from the saved list
+    // Compare names case-insensitively
+    const currentFirstName = (currentPassenger?.firstName || "").toLowerCase();
+    const currentLastName = (currentPassenger?.lastName || "").toLowerCase();
+    const originalFirstName = (originalNames?.firstName || "").toLowerCase();
+    const originalLastName = (originalNames?.lastName || "").toLowerCase();
+
+    // If either first name or last name changed, return true
+    return currentFirstName !== originalFirstName || currentLastName !== originalLastName;
+  };
+
   // Check if flight is refundable
   const isRefundable = selectedFlightOffers?.[0]?.offerRules?.isRefundable || null;
 
@@ -530,13 +629,13 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
       const prefix = `passenger${index}_`;
 
       // Calculate dynamic requirements for this specific passenger
-      const passengerGenderRequired = getFieldRequirement(index, 'gender');
       const passengerDateOfBirthRequired = getFieldRequirement(index, 'dateOfBirth');
       const passengerDocumentRequired = getFieldRequirement(index, 'passport');
 
+      // Always validate mandatory fields
       if (isFieldEmpty(passenger.firstName)) errors[`${prefix}firstName`] = true;
       if (isFieldEmpty(passenger.lastName)) errors[`${prefix}lastName`] = true;
-      if (passengerGenderRequired && isFieldEmpty(passenger.gender)) errors[`${prefix}gender`] = true;
+      if (isFieldEmpty(passenger.gender) || isFieldEmpty(passenger.title)) errors[`${prefix}gender`] = true; // Always mandatory
       if (passengerDateOfBirthRequired && isFieldEmpty(passenger.dateOfBirth)) errors[`${prefix}dateOfBirth`] = true;
 
       // Validate documents for each passenger
@@ -558,23 +657,21 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
     return errors;
   };
 
-  // Check if form has validation errors
-  const hasValidationErrors = (): boolean => {
-    const errors = validateAllFields();
-    return Object.values(errors).some(Boolean);
-  };
+
 
   // Submit handler
   const handleSubmit = async () => {
-    // Validate all required fields
+    // Validate all required fields and show visual feedback
     const errors = validateAllFields();
     setValidationErrors(errors);
 
-    // If there are validation errors, don't submit
+    // If there are validation errors, don't submit - just show visual feedback
     if (Object.values(errors).some(Boolean)) {
-      console.log("Validation errors found:", errors);
+      console.log("Validation errors found, not submitting:", errors);
       return;
     }
+
+    console.log("All validation passed, proceeding with submission");
 
     setIsSubmitting(true);
 
@@ -590,10 +687,20 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
           // Calculate dynamic requirements for this specific passenger
           const passengerDocumentRequired = getFieldRequirement(index, 'passport');
 
+          // Map title back to gender for submission
+          let submissionGender = passenger.gender?.toUpperCase() || "";
+          if (passenger.title) {
+            if (passenger.title === "Mr" || passenger.title === "Master") {
+              submissionGender = "MALE";
+            } else if (passenger.title === "Miss" || passenger.title === "Mrs") {
+              submissionGender = "FEMALE";
+            }
+          }
+
           return {
             id: index + 1,
             dateOfBirth: passenger.dateOfBirth,
-            gender: passenger.gender?.toUpperCase() || "",
+            gender: submissionGender,
             name: {
               firstName: passenger.firstName?.toUpperCase() || "",
               lastName: passenger.lastName?.toUpperCase() || "",
@@ -623,6 +730,9 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
               ],
               emailAddress: contact.email,
             },
+            // Add the new required fields
+            isPassengerNameChanged: isPassengerNameChanged(index),
+            travellerId: selectedTravellerIds[index] || null,
           };
         }),
         contactInfo: {
@@ -734,7 +844,6 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
             {passengers.map((passenger, index) => {
               // Calculate dynamic requirements for this specific passenger
               const passengerType = getPassengerType(index);
-              const passengerGenderRequired = getFieldRequirement(index, 'gender');
               const passengerDateOfBirthRequired = getFieldRequirement(index, 'dateOfBirth');
               const passengerDocumentRequired = getFieldRequirement(index, 'passport');
 
@@ -759,7 +868,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
                   document={documents[index]}
                   savedPassengers={savedPassengers}
                   validationErrors={passengerValidationErrors}
-                  isGenderRequired={passengerGenderRequired}
+                  isGenderRequired={true} // Always required now
                   isDateOfBirthRequired={passengerDateOfBirthRequired}
                   isDocumentRequired={passengerDocumentRequired}
                   showTravelDocuments={passengerDocumentRequired || passengerDateOfBirthRequired}
@@ -798,16 +907,14 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
             <div className="rounded-lg bg-white p-4 shadow">
               <Button
                 onClick={handleSubmit}
-                disabled={isSubmitting || isBookingSubmitted || hasValidationErrors()}
+                disabled={isSubmitting || isBookingSubmitted}
                 className="w-full bg-black text-white hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
                 {isSubmitting
                   ? "Processing..."
                   : isBookingSubmitted
                     ? "Booking Confirmed"
-                    : hasValidationErrors()
-                      ? "Please complete all required fields"
-                      : "Confirm Booking"}
+                    : "Confirm Booking"}
               </Button>
             </div>
           </div>
@@ -822,7 +929,6 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
           {passengers.map((passenger, index) => {
             // Calculate dynamic requirements for this specific passenger
             const passengerType = getPassengerType(index);
-            const passengerGenderRequired = getFieldRequirement(index, 'gender');
             const passengerDateOfBirthRequired = getFieldRequirement(index, 'dateOfBirth');
             const passengerDocumentRequired = getFieldRequirement(index, 'passport');
 
@@ -847,7 +953,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
                 document={documents[index]}
                 savedPassengers={savedPassengers}
                 validationErrors={passengerValidationErrors}
-                isGenderRequired={passengerGenderRequired}
+                isGenderRequired={true} // Always required now
                 isDateOfBirthRequired={passengerDateOfBirthRequired}
                 isDocumentRequired={passengerDocumentRequired}
                 showTravelDocuments={passengerDocumentRequired || passengerDateOfBirthRequired}
@@ -878,16 +984,14 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
           <div className="rounded-lg bg-white p-4 shadow">
             <Button
               onClick={handleSubmit}
-              disabled={isSubmitting || isBookingSubmitted || hasValidationErrors()}
+              disabled={isSubmitting || isBookingSubmitted}
               className="w-full bg-black text-white hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {isSubmitting
                 ? "Processing..."
                 : isBookingSubmitted
                   ? "Booking Confirmed"
-                  : hasValidationErrors()
-                    ? "Please complete all required fields"
-                    : "Confirm Booking"}
+                  : "Confirm Booking"}
             </Button>
           </div>
         </div>
