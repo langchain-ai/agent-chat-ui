@@ -207,7 +207,7 @@ export const transformApiDataToPassengerDetails = (
         normalizedGender === "Male"
           ? "Mr"
           : normalizedGender === "Female"
-            ? "Ms"
+            ? "Miss"
             : "",
     };
   }
@@ -224,7 +224,7 @@ export const transformApiDataToPassengerDetails = (
       gender: normalizedGender,
       title:
         normalizedGender === "Female"
-          ? "Ms"
+          ? "Miss"
           : normalizedGender === "Male"
             ? "Mr"
             : "",

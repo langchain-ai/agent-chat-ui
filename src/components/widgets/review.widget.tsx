@@ -236,6 +236,56 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
     return passengerArray;
   });
 
+  // State to track selected traveller IDs for each passenger
+  const [selectedTravellerIds, setSelectedTravellerIds] = useState<(string | null)[]>(() => {
+    // If in read-only mode, prepopulate from savedTravellers
+    if (readOnly && savedTravellers && savedTravellers.length > 0) {
+      return savedTravellers.map((savedTraveller: any) => savedTraveller.travellerId?.toString() || null);
+    }
+
+    // Default initialization - check if initial passenger has travellerId
+    const initialIds: (string | null)[] = [];
+
+    // For the primary passenger, check if there's a travellerId in the initial data
+    const primaryTravellerId = userDetails?.travellerId?.toString() || null;
+    initialIds.push(primaryTravellerId);
+
+    // Add null for additional passengers
+    for (let i = 1; i < totalPassengers; i++) {
+      initialIds.push(null);
+    }
+
+    return initialIds;
+  });
+
+  // State to track original passenger names for comparison
+  const [originalPassengerNames, setOriginalPassengerNames] = useState<{ firstName: string; lastName: string }[]>(() => {
+    // If in read-only mode, store original names from savedTravellers
+    if (readOnly && savedTravellers && savedTravellers.length > 0) {
+      return savedTravellers.map((savedTraveller: any) => ({
+        firstName: savedTraveller.firstName || "",
+        lastName: savedTraveller.lastName || "",
+      }));
+    }
+
+    // Default initialization - store initial passenger names
+    const initialNames: { firstName: string; lastName: string }[] = [];
+
+    // For the primary passenger, store initial names from userDetails or initialPassenger
+    const primaryNames = {
+      firstName: userDetails?.firstName || initialPassenger?.firstName || "",
+      lastName: userDetails?.lastName || initialPassenger?.lastName || "",
+    };
+    initialNames.push(primaryNames);
+
+    // Add empty names for additional passengers
+    for (let i = 1; i < totalPassengers; i++) {
+      initialNames.push({ firstName: "", lastName: "" });
+    }
+
+    return initialNames;
+  });
+
   const [documents, setDocuments] = useState<(TravelDocument | null)[]>(() => {
     // If in read-only mode, prepopulate from savedTravellers documents
     if (readOnly && savedTravellers && savedTravellers.length > 0) {
@@ -477,6 +527,22 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
       })
     );
 
+    // Update selected traveller ID
+    setSelectedTravellerIds((prev) =>
+      prev.map((id, index) =>
+        index === passengerIndex ? savedPassenger.id : id
+      )
+    );
+
+    // Update original passenger names for comparison
+    setOriginalPassengerNames((prev) =>
+      prev.map((names, index) =>
+        index === passengerIndex
+          ? { firstName: savedPassenger.firstName, lastName: savedPassenger.lastName }
+          : names
+      )
+    );
+
     // Update document if available
     if (savedPassenger.documents && savedPassenger.documents.length > 0) {
       const doc = savedPassenger.documents[0];
@@ -513,6 +579,28 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
       paymentSummary.seatFare -
       paymentSummary.discount
     );
+  };
+
+  // Helper function to determine if passenger name has changed
+  const isPassengerNameChanged = (passengerIndex: number): boolean => {
+    const currentPassenger = passengers[passengerIndex];
+    const originalNames = originalPassengerNames[passengerIndex];
+    const travellerId = selectedTravellerIds[passengerIndex];
+
+    // Condition 2: User doesn't select any saved passenger (creates new passenger)
+    if (!travellerId) {
+      return true;
+    }
+
+    // Condition 1: User selects a passenger from the saved list
+    // Compare names case-insensitively
+    const currentFirstName = (currentPassenger?.firstName || "").toLowerCase();
+    const currentLastName = (currentPassenger?.lastName || "").toLowerCase();
+    const originalFirstName = (originalNames?.firstName || "").toLowerCase();
+    const originalLastName = (originalNames?.lastName || "").toLowerCase();
+
+    // If either first name or last name changed, return true
+    return currentFirstName !== originalFirstName || currentLastName !== originalLastName;
   };
 
   // Check if flight is refundable
@@ -642,6 +730,9 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
               ],
               emailAddress: contact.email,
             },
+            // Add the new required fields
+            isPassengerNameChanged: isPassengerNameChanged(index),
+            travellerId: selectedTravellerIds[index] || null,
           };
         }),
         contactInfo: {
