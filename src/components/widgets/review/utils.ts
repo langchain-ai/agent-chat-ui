@@ -339,11 +339,11 @@ export const transformApiDataToPaymentSummary = (
 
   // Use actual breakdown if available, otherwise estimate
   const total = flightOffer.totalAmount;
-  const baseFare = flightOffer.baseAmount || Math.round(total * 0.75);
-  const taxes = flightOffer.tax || Math.round(total * 0.2);
+  const baseFare = flightOffer.baseAmount || 0;
+  const taxes = flightOffer.tax || 0;
   const serviceFee = flightOffer.serviceFee || 0;
   const convenienceFee = flightOffer.convenienceFee || 0;
-  const fees = serviceFee + convenienceFee || Math.round(total * 0.05);
+  const fees = serviceFee + convenienceFee;
 
   return {
     baseFare: baseFare,
