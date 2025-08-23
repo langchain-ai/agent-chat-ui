@@ -180,14 +180,21 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [showTravellerDropdown, setShowTravellerDropdown] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({
+    fromAirport: false,
+    toAirport: false,
+    departureDate: false,
+  });
 
   // Validation function to check if all mandatory fields are filled
-  const isFormValid = () => {
-    return (
-      fromAirport.trim() !== "" &&
-      toAirport.trim() !== "" &&
-      departureDate !== undefined
-    );
+  const validateForm = () => {
+    const errors = {
+      fromAirport: fromAirport.trim() === "",
+      toAirport: toAirport.trim() === "",
+      departureDate: departureDate === undefined,
+    };
+    setValidationErrors(errors);
+    return errors;
   };
 
   // Wrapper functions for date state setters to match DateInput component interface
@@ -202,11 +209,16 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Prevent submission if form is invalid
-    if (!isFormValid()) {
+    // Run validation for visual feedback
+    const errors = validateForm();
+
+    // If there are validation errors, don't submit - just show visual feedback
+    if (Object.values(errors).some(Boolean)) {
+      console.log("Validation errors found, not submitting:", errors);
       return;
     }
 
+    console.log("All validation passed, proceeding with submission");
     setIsLoading(true);
 
     // Ensure departure date is not in the past or today
@@ -327,21 +339,41 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
             <div className="flex-1">
               <AirportCombobox
                 value={fromAirport}
-                onValueChange={handleFromAirportChange}
+                onValueChange={(value) => {
+                  handleFromAirportChange(value);
+                  // Clear validation error when user starts typing
+                  if (value && value.trim().length > 0) {
+                    setValidationErrors(prev => ({ ...prev, fromAirport: false }));
+                  }
+                }}
                 placeholder="From - City or Airport"
                 excludeAirport={toAirport}
                 disabled={readOnly}
+                className={validationErrors.fromAirport ? "border-red-500" : ""}
               />
+              {validationErrors.fromAirport && (
+                <p className="mt-1 text-xs text-red-500">From airport is required</p>
+              )}
             </div>
 
             <div className="flex-1">
               <AirportCombobox
                 value={toAirport}
-                onValueChange={handleToAirportChange}
+                onValueChange={(value) => {
+                  handleToAirportChange(value);
+                  // Clear validation error when user starts typing
+                  if (value && value.trim().length > 0) {
+                    setValidationErrors(prev => ({ ...prev, toAirport: false }));
+                  }
+                }}
                 placeholder="To - City or Airport"
                 excludeAirport={fromAirport}
                 disabled={readOnly}
+                className={validationErrors.toAirport ? "border-red-500" : ""}
               />
+              {validationErrors.toAirport && (
+                <p className="mt-1 text-xs text-red-500">To airport is required</p>
+              )}
             </div>
           </div>
 
@@ -356,10 +388,20 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
               >
                 <DateInput
                   date={departureDate}
-                  onDateChange={handleDepartureDateChange}
+                  onDateChange={(date) => {
+                    handleDepartureDateChange(date);
+                    // Clear validation error when user selects a date
+                    if (date) {
+                      setValidationErrors(prev => ({ ...prev, departureDate: false }));
+                    }
+                  }}
                   placeholder="Select departure date"
+                  className={validationErrors.departureDate ? "border-red-500" : ""}
                 />
               </div>
+              {validationErrors.departureDate && (
+                <p className="mt-1 text-xs text-red-500">Departure date is required</p>
+              )}
             </div>
 
             {/* Return Date - Only show for round trip */}
@@ -541,12 +583,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
             <Button
               type="submit"
               disabled={isLoading || readOnly}
-              className={`w-full rounded-lg bg-black py-3 text-base font-semibold text-white hover:bg-gray-800 ${
-                !isFormValid() && !readOnly ? "cursor-not-allowed" : ""
-              }`}
-              style={{
-                cursor: !isFormValid() && !readOnly ? "not-allowed" : "pointer",
-              }}
+              className="w-full rounded-lg bg-black py-3 text-base font-semibold text-white hover:bg-gray-800"
             >
               {isLoading ? "Searching..." : "Search flights"}
             </Button>
