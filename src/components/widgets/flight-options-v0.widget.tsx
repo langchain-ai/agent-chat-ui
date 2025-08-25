@@ -27,6 +27,8 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
   const allFlightOffers =
     (effectiveArgs as any)?.flightOffers ?? args.flightOffers ?? {};
 
+  console.log(`---> allFlightOffers: ${JSON.stringify(allFlightOffers)}`);
+
   // Filter to show only 3 cards maximum with priority tags
   const getFilteredFlightOffers = (offers: any[]) => {
     if (!Array.isArray(offers)) return [];
@@ -103,7 +105,7 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
 
 
    try {
-      const selectedFlightOffer = flightOffers.find(
+      const selectedFlightOffer = allFlightOffers.find(
         (offer: any) => offer.flightOfferId === flightOfferId,
       );
       const frozen = {
