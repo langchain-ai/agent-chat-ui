@@ -159,6 +159,18 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
         <h2 className="mb-2 text-2xl font-bold text-gray-900">
           Flight Options
         </h2>
+        {flightOffers?.[0]?.journey?.[0]?.departure?.date && (
+          <div className="mb-1 text-sm text-gray-500">
+            {"Departure Date:"}{" "}
+            {new Date(
+              flightOffers[0].journey[0].departure.date,
+            ).toLocaleDateString(undefined, {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })}
+          </div>
+        )}
         <p className="text-gray-600">
           {flightOffers[0]?.journey[0]?.departure?.airportName} (
           {flightOffers[0]?.journey[0]?.departure?.airportIata}) →{" "}
