@@ -400,7 +400,7 @@ export function FlightCard(props: FlightCardProps) {
             </div>
             <div className="text-center">
               <div className="font-semibold text-foreground text-sm">{flightData.duration}</div>
-              <div className="font-medium text-muted-foreground text-xs mt-1">{flightData.stops} stops</div>
+              <div className="font-medium text-muted-foreground text-xs mt-1">{flightData.stops == 0 ? 'Non-stop' : `${flightData.stops} stop${flightData.stops > 1 ? "s" : ""}`}</div>
               <div className="mt-2">
                 <div className="text-muted-foreground text-[10px]">
                   {flightData.layovers.map((layover, index) => (
