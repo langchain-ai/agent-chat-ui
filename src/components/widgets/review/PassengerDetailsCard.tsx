@@ -60,7 +60,7 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
     const errors = [
       validationErrors.firstName,
       validationErrors.lastName,
-      isGenderRequired && validationErrors.gender,
+      validationErrors.gender, // Always check gender/title as it's now mandatory
       isDateOfBirthRequired && validationErrors.dateOfBirth,
     ].filter(Boolean);
     return errors.some(error => error);
@@ -88,56 +88,135 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
         <ValidationWarningIcon show={hasPassengerErrors()} />
       </div>
 
-      {/* Row 1: Title, First Name, Last Name */}
-      <div className={cn(
-        "grid grid-cols-1 gap-2",
-        isGenderRequired ? "md:grid-cols-3" : "md:grid-cols-2"
-      )}>
-        {/* Gender/Title - Only show if required - moved to first position */}
-        {isGenderRequired && (
-          <div className="flex flex-col">
-            <Label
-              htmlFor="title"
-              className="mb-0.5 text-xs font-medium text-gray-700"
-            >
-              Title *
-            </Label>
-            <Select
-              value={passenger.title}
-              onValueChange={(value) => {
-                // Map title to gender for backend compatibility
-                const gender = value === "Mr" ? "Male" : value === "Mrs" || value === "Ms" ? "Female" : "";
-                onPassengerChange("title", value);
-                onPassengerChange("gender", gender);
-                onValidateField(value, "gender");
-              }}
-            >
-              <SelectTrigger
-                className={cn(
-                  "h-9",
-                  validationErrors.gender
-                    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                    : "",
-                )}
-              >
-                <SelectValue placeholder="Select title" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Mr">Mr</SelectItem>
-                <SelectItem value="Mrs">Mrs</SelectItem>
-                <SelectItem value="Ms">Ms</SelectItem>
-              </SelectContent>
-            </Select>
-            {/* Reserve space for error message to maintain alignment */}
-            <div className="mt-0.5 h-3">
-              {validationErrors.gender && (
-                <p className="text-xs text-red-500">
-                  Title is required
-                </p>
-              )}
-            </div>
+      {/* Row 1: Title (full width on desktop, mobile stays same) */}
+      <div className="mb-2">
+        {/* Gender/Title - Always show as mandatory */}
+        <div className="flex flex-col">
+          <Label
+            htmlFor="title"
+            className="mb-0.5 text-xs font-medium text-gray-700"
+          >
+            Title *
+          </Label>
+          <div className="flex gap-2">
+            {/* Title options based on passenger type */}
+            {passengerType === 'adult' ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onPassengerChange("title", "Mr");
+                    onPassengerChange("gender", "Male");
+                    onValidateField("Mr", "gender");
+                  }}
+                  className={cn(
+                    "flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-all duration-200",
+                    passenger.title === "Mr"
+                      ? "border-black bg-black text-white"
+                      : "border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:text-gray-900",
+                    validationErrors.gender && !passenger.title
+                      ? "border-red-500"
+                      : "",
+                  )}
+                >
+                  Mr
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onPassengerChange("title", "Miss");
+                    onPassengerChange("gender", "Female");
+                    onValidateField("Miss", "gender");
+                  }}
+                  className={cn(
+                    "flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-all duration-200",
+                    passenger.title === "Miss"
+                      ? "border-black bg-black text-white"
+                      : "border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:text-gray-900",
+                    validationErrors.gender && !passenger.title
+                      ? "border-red-500"
+                      : "",
+                  )}
+                >
+                  Miss
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onPassengerChange("title", "Mrs");
+                    onPassengerChange("gender", "Female");
+                    onValidateField("Mrs", "gender");
+                  }}
+                  className={cn(
+                    "flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-all duration-200",
+                    passenger.title === "Mrs"
+                      ? "border-black bg-black text-white"
+                      : "border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:text-gray-900",
+                    validationErrors.gender && !passenger.title
+                      ? "border-red-500"
+                      : "",
+                  )}
+                >
+                  Mrs
+                </button>
+              </>
+            ) : (
+              // For children and infants
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onPassengerChange("title", "Master");
+                    onPassengerChange("gender", "Male");
+                    onValidateField("Master", "gender");
+                  }}
+                  className={cn(
+                    "flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-all duration-200",
+                    passenger.title === "Master"
+                      ? "border-black bg-black text-white"
+                      : "border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:text-gray-900",
+                    validationErrors.gender && !passenger.title
+                      ? "border-red-500"
+                      : "",
+                  )}
+                >
+                  Master
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onPassengerChange("title", "Miss");
+                    onPassengerChange("gender", "Female");
+                    onValidateField("Miss", "gender");
+                  }}
+                  className={cn(
+                    "flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-all duration-200",
+                    passenger.title === "Miss"
+                      ? "border-black bg-black text-white"
+                      : "border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:text-gray-900",
+                    validationErrors.gender && !passenger.title
+                      ? "border-red-500"
+                      : "",
+                  )}
+                >
+                  Miss
+                </button>
+              </>
+            )}
           </div>
-        )}
+          {/* Reserve space for error message to maintain alignment */}
+          <div className="mt-0.5 h-3">
+            {validationErrors.gender && (
+              <p className="text-xs text-red-500">
+                Title is required
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Row 2: First Name and Last Name */}
+      <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
 
         {/* First Name */}
         <div className="flex flex-col">
