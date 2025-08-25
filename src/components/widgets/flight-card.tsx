@@ -1,68 +1,69 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Info } from "lucide-react"
-import { FlightDetailsPopup } from "./flight-details-popup"
-import Image from "next/image"
+import { useState } from "react";
+import { Info } from "lucide-react";
+import { FlightDetailsPopup } from "./flight-details-popup";
+import Image from "next/image";
 
 interface FlightCardProps {
   // New data structure props (optional for backward compatibility)
-  flightOfferId?: string
-  totalAmount?: number
-  currency?: string
+  flightOfferId?: string;
+  totalAmount?: number;
+  currency?: string;
   journey?: Array<{
-    id: string
-    duration: string
+    id: string;
+    duration: string;
     departure: {
-      date: string
-      airportIata: string
-      airportName: string
-    }
+      date: string;
+      airportIata: string;
+      airportName: string;
+    };
     arrival: {
-      date: string
-      airportIata: string
-      airportName: string
-    }
+      date: string;
+      airportIata: string;
+      airportName: string;
+    };
     segments: Array<{
-      id: string
-      airlineIata: string
-      flightNumber: string
-      airlineName: string
-      duration: string
+      id: string;
+      airlineIata: string;
+      flightNumber: string;
+      airlineName: string;
+      duration: string;
       departure: {
-        date: string
-        airportIata: string
-        airportName: string
-      }
+        date: string;
+        airportIata: string;
+        airportName: string;
+      };
       arrival: {
-        date: string
-        airportIata: string
-        airportName: string
-      }
-    }>
-  }>
+        date: string;
+        airportIata: string;
+        airportName: string;
+      };
+    }>;
+  }>;
   offerRules?: {
-    isRefundable: boolean
-  }
-  tags?: string[]
+    isRefundable: boolean;
+  };
+  tags?: string[];
 
   // Legacy props for backward compatibility
-  type?: "best" | "cheapest" | "fastest"
-  price?: string
-  duration?: string
-  stops?: number
-  airline?: string
-  airlineCode?: string
-  departureTime?: string
-  arrivalTime?: string
-  nextDay?: boolean
-  layovers?: Array<{ city: string; duration: string; iataCode?: string }>
+  type?: "best" | "cheapest" | "fastest";
+  price?: string;
+  duration?: string;
+  stops?: number;
+  airline?: string;
+  airlineCode?: string;
+  departureTime?: string;
+  arrivalTime?: string;
+  nextDay?: boolean;
+  layovers?: Array<{ city: string; duration: string; iataCode?: string }>;
 
   // Component props
-  compact?: boolean
-  onSelect?: (flightOfferId: string) => void
-  isLoading?: boolean
-  selectedFlightId?: string | null
+  compact?: boolean;
+  onSelect?: (flightOfferId: string) => void;
+  isLoading?: boolean;
+  selectedFlightId?: string | null;
+  readOnly?: boolean;
 }
 
 // Helper function to get airline logo path
@@ -78,13 +79,13 @@ const getAirlineIata = (airline: string, airlineCode?: string) => {
     "Cathay Pacific": "CX",
     "Air India": "AI",
     "United Airlines": "UA",
-    "Emirates": "EK",
-    "Lufthansa": "LH",
-    "Singapore Airlines": "SQ"
-  }
+    Emirates: "EK",
+    Lufthansa: "LH",
+    "Singapore Airlines": "SQ",
+  };
 
-  return airlineCode || airlineCodeMap[airline] || "AI"
-}
+  return airlineCode || airlineCodeMap[airline] || "AI";
+};
 
 // Airline Logo Component (matching flightOptions.widget.tsx)
 const AirlineLogo = ({
@@ -108,21 +109,23 @@ const AirlineLogo = ({
   const { width, height, container } = sizeConfig[size];
 
   return (
-    <div className={`flex-shrink-0 rounded-full overflow-hidden ${container}`}>
+    <div className={`flex-shrink-0 overflow-hidden rounded-full ${container}`}>
       {logoPath ? (
         <Image
           src={logoPath}
           alt={`${airlineName} logo`}
           width={width}
           height={height}
-          className="airline-logo rounded-full object-contain w-full h-full"
+          className="airline-logo h-full w-full rounded-full object-contain"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
-            target.src = '/airlines/AI.png'; // fallback
+            target.src = "/airlines/AI.png"; // fallback
           }}
         />
       ) : (
-        <div className={`${container} rounded-full bg-gray-200 flex items-center justify-center`}>
+        <div
+          className={`${container} flex items-center justify-center rounded-full bg-gray-200`}
+        >
           <span className="text-xs font-medium text-gray-500">
             {airlineName.charAt(0)}
           </span>
@@ -162,7 +165,7 @@ const getBadgeConfigs = (tags: string[] = []) => {
 };
 
 export function FlightCard(props: FlightCardProps) {
-  const [showDetails, setShowDetails] = useState(false)
+  const [showDetails, setShowDetails] = useState(false);
 
   // Helper functions to extract data from new structure or use legacy props
   const getFlightData = () => {
@@ -170,7 +173,8 @@ export function FlightCard(props: FlightCardProps) {
     if (props.journey && props.journey.length > 0) {
       const firstJourney = props.journey[0];
       const firstSegment = firstJourney.segments[0];
-      const lastSegment = firstJourney.segments[firstJourney.segments.length - 1];
+      const lastSegment =
+        firstJourney.segments[firstJourney.segments.length - 1];
 
       const formatTime = (dateString: string) => {
         return new Date(dateString).toLocaleTimeString("en-US", {
@@ -184,8 +188,8 @@ export function FlightCard(props: FlightCardProps) {
         // Convert PT1H45M to 1h 45m
         const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
         if (match) {
-          const hours = match[1] ? `${match[1]}h` : '';
-          const minutes = match[2] ? `${match[2]}m` : '';
+          const hours = match[1] ? `${match[1]}h` : "";
+          const minutes = match[2] ? `${match[2]}m` : "";
           return `${hours} ${minutes}`.trim();
         }
         return duration;
@@ -193,10 +197,10 @@ export function FlightCard(props: FlightCardProps) {
 
       const getCurrencySymbol = (currency: string) => {
         const symbols: { [key: string]: string } = {
-          'USD': '$',
-          'INR': '₹',
-          'EUR': '€',
-          'GBP': '£'
+          USD: "$",
+          INR: "₹",
+          EUR: "€",
+          GBP: "£",
         };
         return symbols[currency] || currency;
       };
@@ -208,40 +212,51 @@ export function FlightCard(props: FlightCardProps) {
         arrivalTime: formatTime(firstJourney.arrival.date),
         duration: formatDuration(firstJourney.duration),
         stops: firstJourney.segments.length - 1,
-        price: `${getCurrencySymbol(props.currency || 'USD')}${(props.totalAmount || 0).toLocaleString()}`,
+        price: `${getCurrencySymbol(props.currency || "USD")}${(props.totalAmount || 0).toLocaleString()}`,
         nextDay: false, // Calculate if needed
-        layovers: firstJourney.segments.slice(0, -1).map(segment => ({
+        layovers: firstJourney.segments.slice(0, -1).map((segment) => ({
           city: segment.arrival.airportName,
-          duration: '',
-          iataCode: segment.arrival.airportIata
+          duration: "",
+          iataCode: segment.arrival.airportIata,
         })),
-        type: props.tags?.includes('cheapest') ? 'cheapest' as const :
-              props.tags?.includes('fastest') ? 'fastest' as const : 'best' as const
+        type: props.tags?.includes("cheapest")
+          ? ("cheapest" as const)
+          : props.tags?.includes("fastest")
+            ? ("fastest" as const)
+            : ("best" as const),
       };
     }
 
     // Use legacy props
     return {
-      airline: props.airline || '',
-      airlineCode: props.airlineCode || '',
-      departureTime: props.departureTime || '',
-      arrivalTime: props.arrivalTime || '',
-      duration: props.duration || '',
+      airline: props.airline || "",
+      airlineCode: props.airlineCode || "",
+      departureTime: props.departureTime || "",
+      arrivalTime: props.arrivalTime || "",
+      duration: props.duration || "",
       stops: props.stops || 0,
-      price: props.price || '',
+      price: props.price || "",
       nextDay: props.nextDay || false,
       layovers: props.layovers || [],
-      type: props.type || 'best' as const
+      type: props.type || ("best" as const),
     };
   };
 
   const flightData = getFlightData();
-  const airlineIata = getAirlineIata(flightData.airline, flightData.airlineCode);
+  const airlineIata = getAirlineIata(
+    flightData.airline,
+    flightData.airlineCode,
+  );
   const badgeConfigs = getBadgeConfigs([flightData.type]);
 
   const handlePriceButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (props.onSelect && props.flightOfferId && !props.isLoading) {
+    if (
+      props.onSelect &&
+      props.flightOfferId &&
+      !props.isLoading &&
+      !props.readOnly
+    ) {
       props.onSelect(props.flightOfferId);
     }
   };
@@ -253,8 +268,8 @@ export function FlightCard(props: FlightCardProps) {
       <>
         <div
           className={`px-3 py-2 transition-colors duration-200 ${
-            isSelected ? 'bg-blue-50 border-blue-200' : ''
-          } ${props.isLoading ? 'opacity-50' : ''}`}
+            isSelected ? "border-blue-200 bg-blue-50" : ""
+          } ${props.isLoading ? "opacity-50" : ""}`}
         >
           {/* Main Flight Row */}
           <div className="flex min-h-[60px] items-center gap-3">
@@ -271,18 +286,23 @@ export function FlightCard(props: FlightCardProps) {
 
               {/* Airline Details */}
               <div className="min-w-0 text-center">
-                <div className="truncate text-xs text-gray-500" style={{ fontSize: "10px" }}>
-                  {flightData.airline && flightData.airline.length > 12 ? flightData.airline.substring(0, 12) + "..." : flightData.airline}
+                <div
+                  className="truncate text-xs text-gray-500"
+                  style={{ fontSize: "10px" }}
+                >
+                  {flightData.airline && flightData.airline.length > 12
+                    ? flightData.airline.substring(0, 12) + "..."
+                    : flightData.airline}
                 </div>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowDetails(true);
                   }}
-                  className="text-blue-500 hover:text-blue-600 hover:underline flex items-center gap-1 text-xs mt-0.5"
+                  className="mt-0.5 flex items-center gap-1 text-xs text-blue-500 hover:text-blue-600 hover:underline"
                   style={{ fontSize: "10px" }}
                 >
-                  <Info className="w-2.5 h-2.5" />
+                  <Info className="h-2.5 w-2.5" />
                   Details
                 </button>
               </div>
@@ -303,7 +323,7 @@ export function FlightCard(props: FlightCardProps) {
               {/* Duration & Stops */}
               <div className="min-w-0 text-center">
                 <div
-                  className="text-xs text-gray-700 font-light"
+                  className="text-xs font-light text-gray-700"
                   style={{ fontSize: "12px" }}
                 >
                   {flightData.duration}
@@ -315,7 +335,9 @@ export function FlightCard(props: FlightCardProps) {
                   className="text-xs whitespace-nowrap text-gray-500"
                   style={{ fontSize: "10px" }}
                 >
-                  {flightData.stops === 0 ? "Non-stop" : `${flightData.stops} stop${flightData.stops > 1 ? "s" : ""}`}
+                  {flightData.stops === 0
+                    ? "Non-stop"
+                    : `${flightData.stops} stop${flightData.stops > 1 ? "s" : ""}`}
                 </div>
               </div>
 
@@ -331,15 +353,15 @@ export function FlightCard(props: FlightCardProps) {
             </div>
 
             {/* Right: Price Button */}
-            <div className="flex flex-shrink-0 flex-col justify-center text-right max-w-[80px]">
+            <div className="flex max-w-[80px] flex-shrink-0 flex-col justify-center text-right">
               <button
                 onClick={handlePriceButtonClick}
-                disabled={props.isLoading}
-                className={`px-3 py-2 rounded-md text-sm font-bold text-white transition-colors duration-200 ${
-                  props.isLoading
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-black hover:bg-gray-800 cursor-pointer'
-                }`}
+                disabled={props.isLoading || props.readOnly}
+                className={`rounded-md px-3 py-2 text-sm font-bold text-white transition-colors duration-200 ${
+                  props.isLoading || props.readOnly
+                    ? "cursor-not-allowed bg-gray-400"
+                    : "cursor-pointer bg-black hover:bg-gray-800"
+                } ${props.readOnly ? "opacity-70" : ""}`}
               >
                 {flightData.price}
               </button>
@@ -356,24 +378,26 @@ export function FlightCard(props: FlightCardProps) {
           flightData={props.journey ? { journey: props.journey } : undefined}
         />
       </>
-    )
+    );
   }
 
   return (
     <>
       <div
-        className={`px-2 py-1 transition-all duration-200 rounded-lg ${
-          isSelected ? 'bg-blue-50 border border-blue-200' : ''
-        } ${props.isLoading ? 'opacity-50' : ''}`}
+        className={`rounded-lg px-2 py-1 transition-all duration-200 ${
+          isSelected ? "border border-blue-200 bg-blue-50" : ""
+        } ${props.isLoading ? "opacity-50" : ""}`}
       >
-        <div className="flex items-center justify-between gap-0.5 mb-4 pt-3">
+        <div className="mb-4 flex items-center justify-between gap-0.5 pt-3">
           <div className="flex items-center gap-2">
             <AirlineLogo
               airlineIata={airlineIata}
               airlineName={flightData.airline}
               size="md"
             />
-            <div className="font-medium text-foreground text-xs">{flightData.airline}</div>
+            <div className="text-foreground text-xs font-medium">
+              {flightData.airline}
+            </div>
           </div>
           <div className="flex flex-wrap gap-2">
             {badgeConfigs.length > 0 &&
@@ -390,17 +414,25 @@ export function FlightCard(props: FlightCardProps) {
         </div>
 
         <div className="mb-3">
-          <div className="grid grid-cols-3 gap-4 items-start mb-2">
+          <div className="mb-2 grid grid-cols-3 items-start gap-4">
             <div className="text-left">
               <div className="text-muted-foreground text-xs">Departure</div>
-              <div className="font-semibold text-foreground text-sm">{flightData.departureTime}</div>
+              <div className="text-foreground text-sm font-semibold">
+                {flightData.departureTime}
+              </div>
               <div className="text-muted-foreground text-xs">
                 {props.journey?.[0]?.departure?.airportIata || "DEL"}
               </div>
             </div>
             <div className="text-center">
-              <div className="font-semibold text-foreground text-sm">{flightData.duration}</div>
-              <div className="font-medium text-muted-foreground text-xs mt-1">{flightData.stops == 0 ? 'Non-stop' : `${flightData.stops} stop${flightData.stops > 1 ? "s" : ""}`}</div>
+              <div className="text-foreground text-sm font-semibold">
+                {flightData.duration}
+              </div>
+              <div className="text-muted-foreground mt-1 text-xs font-medium">
+                {flightData.stops == 0
+                  ? "Non-stop"
+                  : `${flightData.stops} stop${flightData.stops > 1 ? "s" : ""}`}
+              </div>
               <div className="mt-2">
                 <div className="text-muted-foreground text-[10px]">
                   {flightData.layovers.map((layover, index) => (
@@ -414,13 +446,15 @@ export function FlightCard(props: FlightCardProps) {
             </div>
             <div className="text-right">
               <div className="text-muted-foreground text-xs">Arrival</div>
-              <div className="font-semibold text-foreground text-sm">{flightData.arrivalTime}</div>
+              <div className="text-foreground text-sm font-semibold">
+                {flightData.arrivalTime}
+              </div>
               <div className="text-muted-foreground text-xs">
                 {props.journey?.[0]?.arrival?.airportIata || "HNL"}
               </div>
               {flightData.nextDay && (
                 <div className="mt-1">
-                  <span className="bg-red-50 text-red-600 px-1.5 py-0.5 rounded border border-red-200 text-[10px]">
+                  <span className="rounded border border-red-200 bg-red-50 px-1.5 py-0.5 text-[10px] text-red-600">
                     +1 day
                   </span>
                 </div>
@@ -429,22 +463,22 @@ export function FlightCard(props: FlightCardProps) {
           </div>
         </div>
 
-        <div className="flex items-center justify-between mt-4 pb-3">
+        <div className="mt-4 flex items-center justify-between pb-3">
           <button
             onClick={() => setShowDetails(true)}
-            className="text-blue-500 hover:text-blue-600 hover:underline flex items-center gap-1 text-xs"
+            className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-600 hover:underline"
           >
-            <Info className="w-3 h-3" />
+            <Info className="h-3 w-3" />
             Flight Info
           </button>
           <button
             onClick={handlePriceButtonClick}
-            disabled={props.isLoading}
-            className={`px-4 py-2 rounded-md font-bold text-white transition-colors duration-200 text-sm md:text-base ${
-              props.isLoading
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-black hover:bg-gray-800 cursor-pointer'
-            }`}
+            disabled={props.isLoading || props.readOnly}
+            className={`rounded-md px-4 py-2 text-sm font-bold text-white transition-colors duration-200 md:text-base ${
+              props.isLoading || props.readOnly
+                ? "cursor-not-allowed bg-gray-400"
+                : "cursor-pointer bg-black hover:bg-gray-800"
+            } ${props.readOnly ? "opacity-70" : ""}`}
           >
             {flightData.price}
           </button>
@@ -457,5 +491,5 @@ export function FlightCard(props: FlightCardProps) {
         flightData={props.journey ? { journey: props.journey } : undefined}
       />
     </>
-  )
+  );
 }
