@@ -89,7 +89,7 @@ export function FlightDetailsPopup({ open, onOpenChange, flightData }: FlightDet
           const layoverDuration = calculateLayoverDuration(segment.arrival.date, nextSegment.departure.date);
 
           segments.push({
-            layover: segment.arrival.airportName.split(' ')[0], // Get city name
+            layover: segment.arrival.airportIata,
             duration: layoverDuration,
             details: "Connection",
           });

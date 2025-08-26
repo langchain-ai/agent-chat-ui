@@ -77,6 +77,8 @@ export function useStream(options) {
   const actorRef = useRef(new ThreadActor());
   const storeRef = useRef(new Store());
   const persistRef = useRef(new Persistence());
+  const userAbortRef = useRef(false);
+  const rejoinAttemptsRef = useRef(0);
   // When true and threadId is null, do not reflect incoming updates into `values`
   // This avoids leaking old-thread updates into the blank new-chat screen
   const suspendWhenNullRef = useRef(false);
@@ -99,6 +101,20 @@ export function useStream(options) {
   }, [threadId]);
 
   const stopRef = useRef(null);
+
+  function isTransientNetworkError(e) {
+    console.log("Debug: isTransientNetworkError function called", e);
+    if (!e) return false;
+    const message = String(e?.message || "");
+    // Safari/WebKit: TypeError: Load failed
+    // Generic fetch: TypeError: Failed to fetch / NetworkError
+    const looksLikeNetwork =
+      e.name === "TypeError" && /Load failed|Failed to fetch|NetworkError/i.test(message);
+    const abortedButNotUser = e.name === "AbortError" && !userAbortRef.current;
+    console.log("Debug: looksLikeNetwork", looksLikeNetwork);
+    console.log("Debug: abortedButNotUser", abortedButNotUser);
+    return looksLikeNetwork || abortedButNotUser;
+  }
 
   const applyNormalized = useCallback((tid, normalized) => {
     actorRef.current.enqueue(tid, async () => {
@@ -135,6 +151,8 @@ export function useStream(options) {
     try {
       setIsLoading(true);
       setError(undefined);
+      userAbortRef.current = false;
+      rejoinAttemptsRef.current = 0;
       const controller = new AbortController();
       stopRef.current = () => controller.abort();
       const run = await action(controller.signal);
@@ -165,8 +183,37 @@ export function useStream(options) {
       const lastHead = result.at(0);
       if (lastHead) onFinish?.(lastHead, getCallbackMeta?.());
     } catch (e) {
+      //TODO: @Shubham- Make good use of this reconnect feature
+      console.log("Debug: Error in consumeStream", e);
       setError(e);
-      onError?.(e, getCallbackMeta?.());
+      const meta = getCallbackMeta?.();
+      // Attempt a lightweight auto-rejoin for transient network drops
+      if (
+        isTransientNetworkError(e) &&
+        meta?.run_id &&
+        (meta?.thread_id || threadId) &&
+        rejoinAttemptsRef.current < 2
+      ) {
+        console.log("Debug: Transient network error detected, attempting rejoin: ", JSON.stringify(meta), 'tries: ', rejoinAttemptsRef.current);
+        const attempt = ++rejoinAttemptsRef.current;
+        const delayMs = 400 * attempt; // simple backoff
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[STREAM] transient error; attempting rejoin", {
+            attempt,
+            delayMs,
+            error: String(e?.message || e),
+            run_id: meta.run_id,
+            thread_id: meta.thread_id || threadId,
+          });
+        }
+        setTimeout(() => {
+          try {
+            // Use helper which reuses default stream modes
+            joinStream(meta.run_id).catch(() => {});
+          } catch {}
+        }, delayMs);
+      }
+      onError?.(e, meta);
     } finally {
       setIsLoading(false);
       stopRef.current = null;
@@ -255,7 +302,8 @@ export function useStream(options) {
         metadata: submitOptions?.metadata,
         multitaskStrategy: submitOptions?.multitaskStrategy,
         onCompletion: submitOptions?.onCompletion,
-        onDisconnect: submitOptions?.onDisconnect ?? "cancel",
+        // Prefer to continue runs on transient disconnects; we can rejoin later.
+        onDisconnect: submitOptions?.onDisconnect ?? "continue",
         signal,
         streamMode,
         streamSubgraphs: submitOptions?.streamSubgraphs,
@@ -275,7 +323,13 @@ export function useStream(options) {
   };
 
   const stop = () => {
-    try { stopRef.current?.(); } catch {}
+    console.log("Debug: stop function called");
+    try {
+      userAbortRef.current = true;
+      stopRef.current?.();
+    } catch (e) {
+      console.log("Debug: Error in stop", e);
+    }
   };
 
   /** @type {UseStreamReturn} */

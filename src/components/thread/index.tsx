@@ -42,6 +42,7 @@ import { updateThreadWithMessage } from "@/utils/thread-storage";
 import { InterruptManager } from "./messages/interrupt-manager";
 import { GenericInterruptView } from "./messages/generic-interrupt";
 import { NonAgentFlowReopenButton } from "./NonAgentFlowReopenButton";
+import { NetworkStatusBanner } from "@/components/common/ui/NetworkStatusBanner";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -169,15 +170,16 @@ export function Thread() {
         return;
       }
       lastError.current = message;
-      toast.error("An error occurred. Please try again.", {
-        description: (
-          <p>
-            <strong>Error:</strong> <code>{message}</code>
-          </p>
-        ),
-        richColors: true,
-        closeButton: true,
-      });
+      console.error("Error in index.tsx :", message);
+      // toast.error("An error occurred. Please try again.", {
+      //   description: (
+      //     <p>
+      //       <strong>Error:</strong> <code>{message}</code>
+      //     </p>
+      //   ),
+      //   richColors: true,
+      //   closeButton: true,
+      // });
     } catch {
       // no-op
     }
@@ -427,6 +429,7 @@ export function Thread() {
             )}
 
             <StickToBottom className="relative flex-1 overflow-hidden">
+              <NetworkStatusBanner className="px-4" />
               <StickyToBottomContent
                 className={cn(
                   "absolute inset-0 overflow-y-scroll px-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent",

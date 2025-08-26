@@ -46,6 +46,7 @@ import { InterruptManager } from "./messages/interrupt-manager";
 import { GenericInterruptView } from "./messages/generic-interrupt";
 import { NonAgentFlowReopenButton } from "./NonAgentFlowReopenButton";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
+import { NetworkStatusBanner } from "@/components/common/ui/NetworkStatusBanner";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -207,15 +208,16 @@ export function Thread() {
         return;
       }
       lastError.current = message;
-      toast.error("An error occurred. Please try again.", {
-        description: (
-          <p>
-            <strong>Error:</strong> <code>{message}</code>
-          </p>
-        ),
-        richColors: true,
-        closeButton: true,
-      });
+      console.error("Error in Chat.tsx :", message);
+      // toast.error("An error occurred. Please try again.", {
+      //   description: (
+      //     <p>
+      //       <strong>Error:</strong> <code>{message}</code>
+      //     </p>
+      //   ),
+      //   richColors: true,
+      //   closeButton: true,
+      // });
     } catch {
       // no-op
     }
@@ -441,6 +443,7 @@ export function Thread() {
             layout={isLargeScreen}
           >
             <div className="flex h-full min-h-0 flex-col">
+              <NetworkStatusBanner className="px-4" />
               {!chatStarted ? (
                 // New thread layout - centered content
                 <div className="flex flex-1 flex-col items-center justify-center px-4">
