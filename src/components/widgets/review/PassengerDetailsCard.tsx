@@ -16,6 +16,15 @@ import { DateInput } from "./DateInput";
 import { CountryCombobox } from "./CountryCombobox";
 import type { PassengerDetails, SavedPassenger, TravelDocument, ValidationErrors } from "./types";
 
+// Helper function to format date without timezone conversion
+const formatDateForSubmission = (date: Date | undefined): string => {
+  if (!date) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 interface PassengerDetailsCardProps {
   passenger: PassengerDetails;
   document: TravelDocument | null;
@@ -331,9 +340,7 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
                       : undefined
                   }
                   onDateChange={(date) => {
-                    const dateString = date
-                      ? date.toISOString().split("T")[0]
-                      : "";
+                    const dateString = formatDateForSubmission(date);
                     onPassengerChange("dateOfBirth", dateString);
                     onValidateField(dateString, "dateOfBirth");
                   }}
@@ -476,9 +483,7 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
                       : undefined
                   }
                   onDateChange={(date) => {
-                    const dateString = date
-                      ? date.toISOString().split("T")[0]
-                      : "";
+                    const dateString = formatDateForSubmission(date);
                     onDocumentChange("expiryDate", dateString);
                     onValidateField(dateString, "expiryDate");
                   }}

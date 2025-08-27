@@ -206,6 +206,15 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
     setReturnDate(date);
   };
 
+  // Helper function to format date without timezone conversion
+  const formatDateForSubmission = (date: Date | undefined): string | undefined => {
+    if (!date) return undefined;
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -239,8 +248,8 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
         children,
         infants,
         class: flightClass.toLowerCase(),
-        departureDate: finalDepartureDate?.toISOString().split("T")[0],
-        returnDate: finalReturnDate?.toISOString().split("T")[0],
+        departureDate: formatDateForSubmission(finalDepartureDate),
+        returnDate: formatDateForSubmission(finalReturnDate),
         destinationAirport: toAirport,
         originAirport: fromAirport,
         isRoundTrip: tripType === "round",
