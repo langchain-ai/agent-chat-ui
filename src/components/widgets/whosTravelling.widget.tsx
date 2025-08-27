@@ -857,6 +857,14 @@ const WhosTravellingWidget: React.FC<WhosTravellingProps> = (args) => {
   const baseAmount = flightPriceBreakdown.baseAmount;
   const serviceFee = flightPriceBreakdown.serviceFee;
 
+  // Helper function to format date without timezone conversion
+  const formatDateForSubmission = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // Date validation helpers
   const getDateLimits = (passengerType: "adult" | "child" | "infant") => {
     const today = new Date();
@@ -878,8 +886,8 @@ const WhosTravellingWidget: React.FC<WhosTravellingProps> = (args) => {
           currentDate,
         );
         return {
-          min: minAdultDate.toISOString().split("T")[0],
-          max: maxAdultDate.toISOString().split("T")[0],
+          min: formatDateForSubmission(minAdultDate),
+          max: formatDateForSubmission(maxAdultDate),
         };
       case "child":
         // Children: 2-12 years old
@@ -894,19 +902,19 @@ const WhosTravellingWidget: React.FC<WhosTravellingProps> = (args) => {
           currentDate,
         );
         return {
-          min: minChildDate.toISOString().split("T")[0],
-          max: maxChildDate.toISOString().split("T")[0],
+          min: formatDateForSubmission(minChildDate),
+          max: formatDateForSubmission(maxChildDate),
         };
       case "infant":
         // Infants: 0-2 years old
-        const maxInfantDate = today.toISOString().split("T")[0];
+        const maxInfantDate = formatDateForSubmission(today);
         const minInfantDate = new Date(
           currentYear - 2,
           currentMonth,
           currentDate,
         );
         return {
-          min: minInfantDate.toISOString().split("T")[0],
+          min: formatDateForSubmission(minInfantDate),
           max: maxInfantDate,
         };
       default:
@@ -925,7 +933,7 @@ const WhosTravellingWidget: React.FC<WhosTravellingProps> = (args) => {
     try {
       const date = new Date(dateString);
       if (!isNaN(date.getTime())) {
-        return date.toISOString().split("T")[0];
+        return formatDateForSubmission(date);
       }
     } catch (error) {
       console.warn("Invalid date format:", dateString);
@@ -1344,9 +1352,7 @@ const WhosTravellingWidget: React.FC<WhosTravellingProps> = (args) => {
                 issuanceDateCalculated.setFullYear(
                   expiryDate.getFullYear() - 10,
                 ); // 10 years before expiry
-                issuanceDate = issuanceDateCalculated
-                  .toISOString()
-                  .split("T")[0]; // Format as YYYY-MM-DD
+                issuanceDate = formatDateForSubmission(issuanceDateCalculated);
               } catch (error) {
                 console.warn(
                   "Could not calculate issuance date from expiry date:",
@@ -1408,7 +1414,7 @@ const WhosTravellingWidget: React.FC<WhosTravellingProps> = (args) => {
               const expiryDate = new Date(passenger.passportExpiry);
               const issuanceDateCalculated = new Date(expiryDate);
               issuanceDateCalculated.setFullYear(expiryDate.getFullYear() - 10); // 10 years before expiry
-              issuanceDate = issuanceDateCalculated.toISOString().split("T")[0]; // Format as YYYY-MM-DD
+              issuanceDate = formatDateForSubmission(issuanceDateCalculated);
             } catch (error) {
               console.warn(
                 "Could not calculate issuance date from expiry date:",
@@ -2176,7 +2182,7 @@ const WhosTravellingWidget: React.FC<WhosTravellingProps> = (args) => {
                           passportExpiry: value,
                         }))
                       }
-                      min={new Date().toISOString().split("T")[0]} // Block past dates
+                      min={formatDateForSubmission(new Date())} // Block past dates
                       required={isAnyDocumentRequired()}
                     />
                   </>
@@ -2425,7 +2431,7 @@ const WhosTravellingWidget: React.FC<WhosTravellingProps> = (args) => {
                             prev ? { ...prev, documents: newDocuments } : null,
                           );
                         }}
-                        min={new Date().toISOString().split("T")[0]} // Block past dates
+                        min={formatDateForSubmission(new Date())} // Block past dates
                       />
                     </div>
                   )}
