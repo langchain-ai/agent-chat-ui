@@ -192,98 +192,7 @@ export function AllFlightsSheet({ children, flightData = [], onFlightSelect }: A
   // Transform flight data or use mock data as fallback
   const allFlights = flightData.length > 0
     ? flightData.map(transformFlightData).filter(Boolean)
-    : [
-    {
-      flightOfferId: "sheet-flight-1",
-      type: "best" as const,
-      price: "$2,141.24",
-      duration: "23h 35m",
-      stops: 2,
-      airline: "Cathay Pacific",
-      airlineCode: "CX",
-      departureTime: "01:15",
-      arrivalTime: "01:50",
-      nextDay: true,
-      layovers: [
-        { city: "Hong Kong", duration: "1h 20m layover", iataCode: "HKG" },
-        { city: "Tokyo", duration: "4h 35m layover", iataCode: "NRT" },
-      ],
-    },
-    {
-      flightOfferId: "sheet-flight-2",
-      type: "cheapest" as const,
-      price: "$1,892.50",
-      duration: "28h 15m",
-      stops: 2,
-      airline: "Air India",
-      airlineCode: "AI",
-      departureTime: "14:30",
-      arrivalTime: "06:45",
-      nextDay: true,
-      layovers: [
-        { city: "Mumbai", duration: "3h 45m layover", iataCode: "BOM" },
-        { city: "Los Angeles", duration: "2h 30m layover", iataCode: "LAX" },
-      ],
-    },
-    {
-      flightOfferId: "sheet-flight-3",
-      type: "fastest" as const,
-      price: "$3,245.80",
-      duration: "18h 20m",
-      stops: 1,
-      airline: "United Airlines",
-      airlineCode: "UA",
-      departureTime: "22:45",
-      arrivalTime: "11:05",
-      nextDay: true,
-      layovers: [{ city: "San Francisco", duration: "2h 15m layover", iataCode: "SFO" }],
-    },
-    {
-      flightOfferId: "sheet-flight-4",
-      type: "best" as const,
-      price: "$2,567.90",
-      duration: "25h 10m",
-      stops: 2,
-      airline: "Emirates",
-      airlineCode: "EK",
-      departureTime: "08:20",
-      arrivalTime: "21:30",
-      nextDay: true,
-      layovers: [
-        { city: "Dubai", duration: "2h 45m layover", iataCode: "DXB" },
-        { city: "Los Angeles", duration: "3h 20m layover", iataCode: "LAX" },
-      ],
-    },
-    {
-      flightOfferId: "sheet-flight-5",
-      type: "best" as const,
-      price: "$2,890.15",
-      duration: "26h 45m",
-      stops: 2,
-      airline: "Lufthansa",
-      airlineCode: "LH",
-      departureTime: "16:15",
-      arrivalTime: "07:00",
-      nextDay: true,
-      layovers: [
-        { city: "Frankfurt", duration: "4h 15m layover", iataCode: "FRA" },
-        { city: "San Francisco", duration: "1h 50m layover", iataCode: "SFO" },
-      ],
-    },
-    {
-      flightOfferId: "sheet-flight-6",
-      type: "best" as const,
-      price: "$3,120.40",
-      duration: "21h 30m",
-      stops: 1,
-      airline: "Singapore Airlines",
-      airlineCode: "SQ",
-      departureTime: "23:30",
-      arrivalTime: "13:00",
-      nextDay: true,
-      layovers: [{ city: "Singapore", duration: "3h 10m layover", iataCode: "SIN" }],
-    },
-  ]
+    : []
 
   const airlines = Array.from(new Set(allFlights.map((flight) => flight?.airline)))
   const departureTimeSlots = [
@@ -378,7 +287,7 @@ export function AllFlightsSheet({ children, flightData = [], onFlightSelect }: A
       >
         <div className="flex-shrink-0 border-b bg-background">
           <SheetHeader className="mb-2">
-            <SheetTitle>Flights</SheetTitle>
+            <SheetTitle>{allFlights.length > 0 ? "Flights" : "No flights available"}</SheetTitle>
           </SheetHeader>
 
           <div className="mb-3 px-4">
@@ -496,23 +405,28 @@ export function AllFlightsSheet({ children, flightData = [], onFlightSelect }: A
 
         <div className="flex-1 overflow-y-auto px-1">
           <div className="space-y-2 pb-4">
-            {sortedFlights.map((flight, index) => (
-              <div key={index} className="bg-white rounded-lg border shadow-sm">
-                <div className="px-2 py-1">
-                  <FlightCard
-                    {...flight}
-                    compact
-                    onSelect={handleSelectFlight}
-                    isLoading={isLoading}
-                    selectedFlightId={selectedFlight}
-                  />
-                </div>
+            {allFlights.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No flights available for the selected criteria.
               </div>
-            ))}
-            {filteredFlights.length === 0 && (
+            ) : sortedFlights.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 No flights match your current filters. Try adjusting your criteria.
               </div>
+            ) : (
+              sortedFlights.map((flight, index) => (
+                <div key={index} className="bg-white rounded-lg border shadow-sm">
+                  <div className="px-2 py-1">
+                    <FlightCard
+                      {...flight}
+                      compact
+                      onSelect={handleSelectFlight}
+                      isLoading={isLoading}
+                      selectedFlightId={selectedFlight}
+                    />
+                  </div>
+                </div>
+              ))
             )}
           </div>
         </div>
