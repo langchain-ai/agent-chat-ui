@@ -18,6 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
 import { submitInterruptResponse } from "./util";
+import { trackFlightResults, trackFlightSelected, type FlightResultsAnalytics, type FlightSelectedAnalytics } from "@/services/analyticsService";
 import {
   Sheet,
   SheetContent,
@@ -2072,6 +2073,109 @@ const FlightOptionsWidget = (args: FlightOptionsProps) => {
     (f: any) => !(Array.isArray(f?.tags) && f.tags.length > 0),
   );
 
+  // Track flight results when component loads with flight data
+  useEffect(() => {
+    if (allFlightTuples.length > 0 && !readOnly) {
+      try {
+        // Helper function to get airline name from flight
+        const getAirlineName = (flight: any): string => {
+          if (flight.segments && flight.segments.length > 0) {
+            return flight.segments[0].airlineName || flight.segments[0].airlineIata || 'Unknown';
+          }
+          if (flight.journey && flight.journey.length > 0 && flight.journey[0].segments.length > 0) {
+            const segment = flight.journey[0].segments[0];
+            return segment.airlineName || segment.airlineIata || 'Unknown';
+          }
+          return 'Unknown';
+        };
+
+        // Helper function to get stop count from flight
+        const getStopCount = (flight: any): number => {
+          if (flight.journey && flight.journey.length > 0) {
+            return flight.journey.reduce((total: number, j: any) => total + (j.segments?.length || 0), 0) - 1;
+          }
+          if (flight.segments && flight.segments.length > 0) {
+            return flight.segments.length - 1;
+          }
+          return 0;
+        };
+
+        // Helper function to get flight duration
+        const getFlightDurationString = (flight: any): string => {
+          if (flight.journey && flight.journey.length > 0) {
+            return flight.journey[0].duration || flight.duration || '';
+          }
+          return flight.duration || '';
+        };
+
+        // Calculate price metrics
+        const prices = allFlightTuples.map((f: any) => f.totalAmount || 0).filter((p: number) => p > 0);
+        const lowestPrice = Math.min(...prices);
+        const highestPrice = Math.max(...prices);
+        const averagePrice = prices.reduce((sum: number, price: number) => sum + price, 0) / prices.length;
+
+        // Get unique airlines
+        const airlines = [...new Set(allFlightTuples.map((f: any) => getAirlineName(f)))].filter((name): name is string => typeof name === 'string');
+
+        // Check if there are direct flights
+        const hasDirectFlights = allFlightTuples.some((f: any) => getStopCount(f) === 0);
+
+        // Get top 3 flights that would be displayed (tagged flights in order: best, cheapest, fastest)
+        const getTopDisplayedFlights = () => {
+          const topFlights: any[] = [];
+          const usedIds = new Set<string>();
+
+          const pickFirstByTag = (tag: string) => {
+            const flight = allFlightTuples.find(
+              (f: any) => f.tags?.some((t: string) => t.toLowerCase() === tag) && !usedIds.has(f.flightOfferId)
+            );
+            if (flight) {
+              topFlights.push(flight);
+              usedIds.add(flight.flightOfferId);
+            }
+          };
+
+          pickFirstByTag('best');
+          pickFirstByTag('cheapest');
+          pickFirstByTag('fastest');
+
+          return topFlights;
+        };
+
+        const topFlights = getTopDisplayedFlights();
+
+        // Build analytics data
+        const resultsAnalytics: FlightResultsAnalytics = {
+          result_count: allFlightTuples.length,
+          lowest_price: lowestPrice,
+          highest_price: highestPrice,
+          currency: allFlightTuples[0]?.currency || 'USD',
+          top_results: topFlights.map((flight: any) => ({
+            flight_id: flight.flightOfferId,
+            price: flight.totalAmount || 0,
+            airline: getAirlineName(flight),
+            duration: getFlightDurationString(flight),
+            stops: getStopCount(flight),
+            tags: flight.tags || [],
+          })),
+          search_results_summary: {
+            total_flights: allFlightTuples.length,
+            price_range: `${lowestPrice}-${highestPrice}`,
+            airlines: airlines,
+            has_direct_flights: hasDirectFlights,
+            average_price: Math.round(averagePrice),
+          },
+        };
+
+        // Track the event
+        trackFlightResults(resultsAnalytics);
+      } catch (analyticsError) {
+        console.error('Error tracking flight results analytics:', analyticsError);
+        // Don't block the component if analytics fails
+      }
+    }
+  }, [allFlightTuples.length, readOnly]); // Trigger when flight data loads
+
   // Note: Removed journey type detection to match widgets page design
 
   // Debug: Log flight tags
@@ -2089,6 +2193,10 @@ const FlightOptionsWidget = (args: FlightOptionsProps) => {
 
     setSelectedFlight(flightOfferId);
     setIsLoading(true);
+
+    // Determine selection source before closing the sheet
+    const selectedFrom: 'cards' | 'bottomsheet' = showAllFlights ? 'bottomsheet' : 'cards';
+
     // Close the "All Flights" sheet immediately on selection
     setShowAllFlights(false);
 
@@ -2100,6 +2208,101 @@ const FlightOptionsWidget = (args: FlightOptionsProps) => {
       const selectedFlightOffer = flightOffers.find(
         (offer: any) => offer.flightOfferId === flightOfferId,
       );
+
+      // Track flight selection event
+      if (selectedFlightOffer) {
+        try {
+          // Helper function to get airline name from flight
+          const getAirlineName = (flight: any): string => {
+            if (flight.segments && flight.segments.length > 0) {
+              return flight.segments[0].airlineName || flight.segments[0].airlineIata || 'Unknown';
+            }
+            if (flight.journey && flight.journey.length > 0 && flight.journey[0].segments.length > 0) {
+              const segment = flight.journey[0].segments[0];
+              return segment.airlineName || segment.airlineIata || 'Unknown';
+            }
+            return 'Unknown';
+          };
+
+          // Helper function to get flight numbers (IATA numbers)
+          const getFlightNumbers = (flight: any): string => {
+            if (flight.segments && flight.segments.length > 0) {
+              const flightNumbers = flight.segments
+                .map((segment: any) => segment.flightNumber)
+                .filter((num: string) => num && num.trim() !== "")
+                .join(", ");
+              return flightNumbers || 'N/A';
+            }
+            if (flight.journey && flight.journey.length > 0) {
+              const allFlightNumbers = flight.journey
+                .flatMap((journey: any) =>
+                  journey.segments.map((segment: any) => segment.flightNumber)
+                )
+                .filter((num: string) => num && num.trim() !== "")
+                .join(", ");
+              return allFlightNumbers || 'N/A';
+            }
+            return 'N/A';
+          };
+
+          // Helper function to get timing information
+          const getTiming = (flight: any): string => {
+            const isJourneyBased = flight.journey && flight.journey.length > 0;
+            const departureInfo = isJourneyBased
+              ? flight.journey[0]?.departure
+              : flight.departure;
+            const arrivalInfo = isJourneyBased
+              ? flight.journey[flight.journey.length - 1]?.arrival
+              : flight.arrival;
+
+            if (!departureInfo || !arrivalInfo) return 'N/A';
+
+            const formatTime = (isoString: string) => {
+              return new Date(isoString).toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
+              });
+            };
+
+            return `${formatTime(departureInfo.date)} - ${formatTime(arrivalInfo.date)}`;
+          };
+
+          // Helper function to get stop count
+          const getStopCount = (flight: any): number => {
+            if (flight.journey && flight.journey.length > 0) {
+              return flight.journey.reduce((total: number, j: any) => total + (j.segments?.length || 0), 0) - 1;
+            }
+            if (flight.segments && flight.segments.length > 0) {
+              return flight.segments.length - 1;
+            }
+            return 0;
+          };
+
+          // Build selection analytics data
+          const selectionAnalytics: FlightSelectedAnalytics = {
+            flight_offer_id: selectedFlightOffer.flightOfferId,
+            iata_number: getFlightNumbers(selectedFlightOffer),
+            airline: getAirlineName(selectedFlightOffer),
+            timing: getTiming(selectedFlightOffer),
+            stops: getStopCount(selectedFlightOffer),
+            price: selectedFlightOffer.totalAmount || 0,
+            currency: selectedFlightOffer.currency || 'USD',
+            refundable: selectedFlightOffer.offerRules?.isRefundable ? 'yes' : 'no',
+            selected_from: selectedFrom,
+            tags: selectedFlightOffer.tags && selectedFlightOffer.tags.length > 0
+              ? selectedFlightOffer.tags.join(', ')
+              : null,
+          };
+
+          // Track the selection event
+          trackFlightSelected(selectionAnalytics);
+        } catch (analyticsError) {
+          console.error('Error tracking flight selection analytics:', analyticsError);
+          // Don't block the selection if analytics fails
+        }
+      }
+
       const frozen = {
         widget: {
           type: "FlightOptionsWidget",

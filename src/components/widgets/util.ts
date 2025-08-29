@@ -2,26 +2,7 @@
 
 import { toast } from "sonner";
 import { getCachedLocation } from "@/lib/location-cache";
-
-// Mock auth functions for development - replace with actual imports when authService is available
-const getJwtToken = (): string | null => {
-  try {
-    if (typeof window === "undefined") return null;
-    return window.localStorage.getItem("flyo:jwt:token");
-  } catch {
-    return null;
-  }
-};
-
-const GetUserId = (jwtToken: string): string | number => {
-  try {
-    // Simple mock implementation
-    return "mock-user-id";
-  } catch (err) {
-    console.error("Error getting user ID from JWT:", err);
-    return "";
-  }
-};
+import { getJwtToken, GetUserId } from "@/services/authService";
 
 export async function submitInterruptResponse(
   thread: any, // Replace with proper type from your stream context

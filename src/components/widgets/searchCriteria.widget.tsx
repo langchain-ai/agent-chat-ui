@@ -7,6 +7,7 @@ import { AirportCombobox } from "@/components/common/ui/airportCombobox";
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
 import { submitInterruptResponse } from "./util";
+import { trackFlightSearch, type FlightSearchAnalytics } from "@/services/analyticsService";
 import {
   Popover,
   PopoverContent,
@@ -258,6 +259,27 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
       selectedTravellerIds: [],
       allTravellers: [],
     };
+
+    // Track flight search event in Google Analytics
+    try {
+      const searchAnalytics: FlightSearchAnalytics = {
+        originAirport: fromAirport,
+        destinationAirport: toAirport,
+        departureDate: formatDateForSubmission(finalDepartureDate) || '',
+        returnDate: formatDateForSubmission(finalReturnDate) || undefined,
+        isRoundTrip: tripType === "round",
+        adults,
+        children,
+        infants,
+        class: flightClass.toLowerCase(),
+        totalPassengers: adults + children + infants,
+      };
+
+      trackFlightSearch(searchAnalytics);
+    } catch (analyticsError) {
+      console.error("Error tracking flight search analytics:", analyticsError);
+      // Don't block the form submission if analytics fails
+    }
 
     try {
       const frozen = {

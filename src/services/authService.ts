@@ -225,3 +225,19 @@ export const GetUserId = (jwtToken: string): string | number => {
     return "";
   }
 };
+
+/**
+ * Get user email from JWT token
+ */
+export const getUserEmail = (): string | null => {
+  try {
+    const token = getJwtToken();
+    if (!token) return null;
+
+    const decoded = decodeJwtPayload(token);
+    return decoded?.email || null;
+  } catch (err) {
+    console.error("Error getting user email from JWT:", err);
+    return null;
+  }
+};
