@@ -42,7 +42,18 @@ export default function RootLayout({
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-            gtag('config', 'G-SLRTVD2EYS');
+            gtag('config', 'G-SLRTVD2EYS', {
+              // Disable automatic enhanced measurement events
+              send_page_view: true,  // Keep page views
+              enhanced_measurement: {
+                scrolls: false,      // Disable scroll tracking
+                outbound_clicks: false, // Disable outbound click tracking
+                site_search: false,  // Disable site search tracking
+                video_engagement: false, // Disable video tracking
+                file_downloads: false,   // Disable file download tracking
+                form_interactions: false // Disable automatic form tracking (form_start, form_submit)
+              }
+            });
           `}
         </Script>
         <NuqsAdapter>{children}</NuqsAdapter>

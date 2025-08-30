@@ -28,3 +28,8 @@ dist-ssr
 .env
 .next/
 next-env.d.ts
+
+# Analytics test pages and documentation (exclude from git)
+src/app/analytics-test/
+src/app/widgets/
+GOOGLE_ANALYTICS_*.md
