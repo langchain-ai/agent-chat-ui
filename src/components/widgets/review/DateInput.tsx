@@ -74,7 +74,7 @@ export const DateInput = ({
           disabled={getDisabledDates}
           captionLayout="dropdown"
           startMonth={new Date(1900, 0)}
-          endMonth={new Date(new Date().getFullYear() + 10, 11)}
+          endMonth={new Date(2075, 11)}
           className="bg-white"
           classNames={{
             day_selected: "bg-black text-white hover:bg-black focus:bg-black",
