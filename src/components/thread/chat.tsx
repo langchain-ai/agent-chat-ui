@@ -83,7 +83,7 @@ function ScrollToBottom(props: { className?: string }) {
       onClick={() => scrollToBottom()}
     >
       <ArrowDown className="h-4 w-4" />
-      <span>Scroll to bottom</span>
+      <span className="hidden sm:inline">Scroll to bottom</span>
     </Button>
   );
 }
@@ -503,28 +503,56 @@ export function Thread() {
                           blocks={contentBlocks}
                           onRemove={removeBlock}
                         />
-                        <textarea
-                          value={input}
-                          onChange={(e) => setInput(e.target.value)}
-                          onPaste={handlePaste}
-                          onKeyDown={(e) => {
-                            if (
-                              e.key === "Enter" &&
-                              !e.shiftKey &&
-                              !e.metaKey &&
-                              !e.nativeEvent.isComposing
-                            ) {
-                              e.preventDefault();
-                              const el = e.target as HTMLElement | undefined;
-                              const form = el?.closest("form");
-                              form?.requestSubmit();
-                            }
-                          }}
-                          placeholder="Type your message..."
-                          className="field-sizing-content resize-none border-none bg-transparent p-2 pb-0 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none"
-                        />
+                        <div className="relative">
+                          <textarea
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onPaste={handlePaste}
+                            onKeyDown={(e) => {
+                              if (
+                                e.key === "Enter" &&
+                                !e.shiftKey &&
+                                !e.metaKey &&
+                                !e.nativeEvent.isComposing
+                              ) {
+                                e.preventDefault();
+                                const el = e.target as HTMLElement | undefined;
+                                const form = el?.closest("form");
+                                form?.requestSubmit();
+                              }
+                            }}
+                            placeholder="Type your message..."
+                            className="field-sizing-content sm:field-sizing-content resize-none border-none bg-transparent p-2 pb-0 pr-16 sm:pr-2 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none min-h-[2.5rem] max-h-[2.5rem] sm:h-auto sm:max-h-none leading-tight w-full"
+                          />
+                          {/* Mobile: Button inside input area */}
+                          <div className="absolute right-2 top-1/2 -translate-y-1/2 sm:hidden">
+                            {stream.isLoading ? (
+                              <Button
+                                key="stop"
+                                onClick={() => stream.stop()}
+                                size="sm"
+                                className="h-8 px-3"
+                              >
+                                <LoaderCircle className="h-4 w-4 animate-spin" />
+                              </Button>
+                            ) : (
+                              <Button
+                                type="submit"
+                                size="sm"
+                                className="h-8 px-3 shadow-md transition-all"
+                                disabled={
+                                  isLoading ||
+                                  (!input.trim() && contentBlocks.length === 0)
+                                }
+                              >
+                                Send
+                              </Button>
+                            )}
+                          </div>
+                        </div>
 
-                        <div className="flex items-center gap-6 p-2 pt-2">
+                        {/* Desktop: Button below input */}
+                        <div className="hidden sm:flex items-center gap-6 p-2 pt-2">
                           <input
                             id="file-input"
                             type="file"
@@ -614,7 +642,7 @@ export function Thread() {
                     }
                     footer={
                       <div className="sticky bottom-0 flex flex-col items-center gap-3 bg-gradient-to-t from-white/80 via-white/40 to-transparent pt-3 pb-[env(safe-area-inset-bottom)] sm:gap-8 sm:pt-8">
-                        <ScrollToBottom className="animate-in fade-in-0 zoom-in-95 absolute bottom-full left-1/2 mb-2 -translate-x-1/2 sm:mb-4" />
+                        <ScrollToBottom className="animate-in fade-in-0 zoom-in-95 absolute bottom-full right-4 mb-2 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:mb-4 rounded-full sm:rounded-md" />
 
                         <div
                           ref={dropRef}
@@ -633,30 +661,59 @@ export function Thread() {
                               blocks={contentBlocks}
                               onRemove={removeBlock}
                             />
-                            <textarea
-                              value={input}
-                              onChange={(e) => setInput(e.target.value)}
-                              onPaste={handlePaste}
-                              onKeyDown={(e) => {
-                                if (
-                                  e.key === "Enter" &&
-                                  !e.shiftKey &&
-                                  !e.metaKey &&
-                                  !e.nativeEvent.isComposing
-                                ) {
-                                  e.preventDefault();
-                                  const el = e.target as
-                                    | HTMLElement
-                                    | undefined;
-                                  const form = el?.closest("form");
-                                  form?.requestSubmit();
-                                }
-                              }}
-                              placeholder="Type your message...."
-                              className="field-sizing-content resize-none border-none bg-transparent p-3.5 pb-0 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none"
-                            />
+                            <div className="relative">
+                              <textarea
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                onPaste={handlePaste}
+                                onKeyDown={(e) => {
+                                  if (
+                                    e.key === "Enter" &&
+                                    !e.shiftKey &&
+                                    !e.metaKey &&
+                                    !e.nativeEvent.isComposing
+                                  ) {
+                                    e.preventDefault();
+                                    const el = e.target as
+                                      | HTMLElement
+                                      | undefined;
+                                    const form = el?.closest("form");
+                                    form?.requestSubmit();
+                                  }
+                                }}
+                                placeholder="Type your message...."
+                                className="field-sizing-content sm:field-sizing-content resize-none border-none bg-transparent p-3.5 pb-0 pr-20 sm:pr-3.5 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none min-h-[3.5rem] max-h-[3.5rem] sm:h-auto sm:max-h-none leading-tight w-full"
+                              />
+                              {/* Mobile: Button inside input area */}
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2 sm:hidden">
+                                {stream.isLoading ? (
+                                  <Button
+                                    key="stop"
+                                    onClick={() => stream.stop()}
+                                    size="sm"
+                                    className="h-8 px-3"
+                                  >
+                                    <LoaderCircle className="h-4 w-4 animate-spin" />
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    type="submit"
+                                    size="sm"
+                                    className="h-8 px-3 shadow-md transition-all"
+                                    disabled={
+                                      isLoading ||
+                                      (!input.trim() &&
+                                        contentBlocks.length === 0)
+                                    }
+                                  >
+                                    Send
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
 
-                            <div className="flex items-center gap-6 p-2 pt-4">
+                            {/* Desktop: Button below input */}
+                            <div className="hidden sm:flex items-center gap-6 p-2 pt-4">
                               {stream.isLoading ? (
                                 <Button
                                   key="stop"
