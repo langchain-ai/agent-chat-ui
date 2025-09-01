@@ -156,55 +156,40 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
     >
       {/* Header */}
       <div className="mb-6">
-        <h2 className="mb-2 text-2xl font-bold text-gray-900">
-          Flight Options
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          {flightOffers.length > 0 ? "Flight Options" : "No flights available"}
         </h2>
-        {flightOffers?.[0]?.journey?.[0]?.departure?.date && (
-          <div className="mb-1 text-sm text-gray-500">
-            {"Departure Date:"}{" "}
-            {new Date(
-              flightOffers[0].journey[0].departure.date,
-            ).toLocaleDateString(undefined, {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            })}
-          </div>
+        {flightOffers.length > 0 ? (
+          <p className="text-gray-600">{flightOffers[0]?.journey[0]?.departure?.airportName} ({flightOffers[0]?.journey[0]?.departure?.airportIata}) → {flightOffers[0]?.journey[0]?.arrival?.airportName} ({flightOffers[0]?.journey[0]?.arrival?.airportIata})</p>
+        ) : (
+          <p className="text-gray-600">No flights found for the selected criteria.</p>
         )}
-        <p className="text-gray-600">
-          {flightOffers[0]?.journey[0]?.departure?.airportName} (
-          {flightOffers[0]?.journey[0]?.departure?.airportIata}) →{" "}
-          {flightOffers[0]?.journey[0]?.arrival?.airportName} (
-          {flightOffers[0]?.journey[0]?.arrival?.airportIata})
-        </p>
       </div>
 
       {/* Desktop Layout - Show 2-3 cards based on available tag types */}
       <div className="hidden md:block">
-        <div
-          className={`mb-6 grid gap-4 ${
-            flightOffers.length === 3
-              ? "grid-cols-3"
-              : flightOffers.length === 2
-                ? "grid-cols-2"
-                : "grid-cols-1"
-          }`}
-        >
-          {flightOffers.map((flight: any, index: number) => (
-            <div
-              key={index}
-              className="rounded-lg border bg-white shadow-sm"
-            >
-              <FlightCard
-                {...flight}
-                onSelect={handleSelectFlight}
-                isLoading={isLoading}
-                selectedFlightId={selectedFlight}
-                readOnly={readOnly}
-              />
-            </div>
-          ))}
-        </div>
+        {flightOffers.length > 0 ? (
+          <div className={`grid gap-4 mb-6 ${
+            flightOffers.length === 3 ? 'grid-cols-3' :
+            flightOffers.length === 2 ? 'grid-cols-2' :
+            'grid-cols-1'
+          }`}>
+            {flightOffers.map((flight: any, index: number) => (
+              <div key={index} className="bg-white rounded-lg border shadow-sm">
+                <FlightCard
+                  {...flight}
+                  onSelect={handleSelectFlight}
+                  isLoading={isLoading}
+                  selectedFlightId={selectedFlight}
+                />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-4 p-8 text-center text-gray-500">
+            <p>No flights available for the selected criteria.</p>
+          </div>
+        )}
       </div>
 
       {/* Mobile Layout - Tabs */}
