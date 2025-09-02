@@ -111,7 +111,7 @@ function CurrencySearchSelect({ value, onValueChange }: CurrencySearchSelectProp
 
         {filteredCurrencies.length === 0 && (
           <div className="p-4 text-center text-gray-500 text-sm">
-            No currencies found matching "{searchTerm}"
+            No currencies found matching &quot;{searchTerm}&quot;
           </div>
         )}
       </div>
