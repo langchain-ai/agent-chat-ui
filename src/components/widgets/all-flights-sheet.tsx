@@ -14,6 +14,27 @@ import { Filter, ArrowUpDown } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { getCurrencySymbol } from "@/utils/currency-storage";
 
+interface FlightSearchFilters {
+  /**
+   * Number of stops:
+   * 0 for direct flights,
+   * 1 for one stop,
+   * 2 for two stops
+   */
+  stops?: number | null;
+
+  /**
+   * Comma-separated airline codes (e.g., "6E,SG,AI,XY")
+   * when user mentions specific airlines
+   */
+  airlines?: string;
+
+  /**
+   * Preferred departure time category
+   */
+  departureTime?: "EARLY_MORNING" | "MORNING" | "AFTERNOON" | "EVENING" | "NIGHT";
+}
+
 interface FlightData {
   flightOfferId: string
   totalEmission?: number
@@ -87,9 +108,10 @@ interface AllFlightsSheetProps {
   children: React.ReactNode
   flightData?: FlightData[]
   onFlightSelect?: (flightOfferId: string) => void
+  flightSearchFilters?: FlightSearchFilters
 }
 
-export function AllFlightsSheet({ children, flightData = [], onFlightSelect }: AllFlightsSheetProps) {
+export function AllFlightsSheet({ children, flightData = [], onFlightSelect, flightSearchFilters }: AllFlightsSheetProps) {
   const [open, setOpen] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [sortBy, setSortBy] = useState<"cheapest" | "fastest">("cheapest")
@@ -136,6 +158,75 @@ export function AllFlightsSheet({ children, flightData = [], onFlightSelect }: A
   useEffect(() => {
     setMaxStops(maxAvailableStops)
   }, [maxAvailableStops])
+
+  // Initialize filter states from server data
+  useEffect(() => {
+    if (flightSearchFilters) {
+      // Initialize stops filter from server data
+      if (flightSearchFilters.stops !== null && flightSearchFilters.stops !== undefined) {
+        setMaxStops(flightSearchFilters.stops)
+      }
+
+      // Initialize airlines filter from server data
+      if (flightSearchFilters.airlines && flightSearchFilters.airlines.trim() !== '') {
+        const serverAirlines = flightSearchFilters.airlines.split(',').map((a: string) => a.trim())
+
+        // Extract unique airlines from actual flight data for matching
+        const availableAirlines = new Set<string>()
+        flightData.forEach(flight => {
+          if (flight.journey && flight.journey.length > 0) {
+            const firstSegment = flight.journey[0].segments[0]
+            if (firstSegment?.airlineName) {
+              availableAirlines.add(firstSegment.airlineName)
+            }
+          }
+        })
+
+        // Match server airlines with available airlines (case-insensitive)
+        const matchedAirlines = serverAirlines.filter(serverAirline =>
+          Array.from(availableAirlines).some(availableAirline =>
+            availableAirline.toLowerCase().includes(serverAirline.toLowerCase())
+          )
+        ).map(serverAirline => {
+          // Find the exact match from available airlines
+          return Array.from(availableAirlines).find(availableAirline =>
+            availableAirline.toLowerCase().includes(serverAirline.toLowerCase())
+          ) || serverAirline
+        })
+
+        setSelectedAirlines(matchedAirlines)
+      }
+
+      // Initialize departure time filter from server data
+      if (flightSearchFilters.departureTime && flightSearchFilters.departureTime.trim() !== '') {
+        const serverTimeSlot = flightSearchFilters.departureTime
+        let localTimeSlot = ''
+
+        // Convert server time slot to local time slot value
+        switch (serverTimeSlot) {
+          case 'EARLY_MORNING':
+            localTimeSlot = 'early'
+            break
+          case 'MORNING':
+            localTimeSlot = 'morning'
+            break
+          case 'AFTERNOON':
+            localTimeSlot = 'afternoon'
+            break
+          case 'EVENING':
+            localTimeSlot = 'evening'
+            break
+          case 'NIGHT':
+            localTimeSlot = 'night'
+            break
+        }
+
+        if (localTimeSlot) {
+          setSelectedDepartureTime([localTimeSlot])
+        }
+      }
+    }
+  }, [flightSearchFilters, flightData])
 
   // const handleSelectFlight = async (flightOfferId: string) => {
   //   setSelectedFlight(flightOfferId);
@@ -237,10 +328,11 @@ export function AllFlightsSheet({ children, flightData = [], onFlightSelect }: A
   }, [flightData])
 
   const departureTimeSlots = [
-    { label: "Early Morning (00:00 - 06:00)", value: "early" },
-    { label: "Morning (06:00 - 12:00)", value: "morning" },
-    { label: "Afternoon (12:00 - 18:00)", value: "afternoon" },
-    { label: "Evening (18:00 - 24:00)", value: "evening" },
+    { label: "Early Morning (00:00 - 08:00)", value: "early" },
+    { label: "Morning (08:00 - 12:00)", value: "morning" },
+    { label: "Afternoon (12:00 - 16:00)", value: "afternoon" },
+    { label: "Evening (16:00 - 20:00)", value: "evening" },
+    { label: "Night (20:00 - 24:00)", value: "night" },
   ]
 
   const filteredFlights = allFlights.filter((flight) => {
@@ -253,28 +345,30 @@ export function AllFlightsSheet({ children, flightData = [], onFlightSelect }: A
       if (!priceInRange) return false
     }
 
-    // Airline filter
+    // User-interactive Airline filter
     const airlineMatch = selectedAirlines.length === 0 || selectedAirlines.includes(flight.airline)
     if (!airlineMatch) return false
 
-    // Stops filter - calculate from segments
+    // User-interactive Stops filter - calculate from segments
     const stopsMatch = flight.stops <= maxStops
     if (!stopsMatch) return false
 
-    // Departure time filter
+    // User-interactive Departure time filter
     let timeMatch = true
     if (selectedDepartureTime.length > 0) {
       const hour = parseInt(flight.departureTime.split(":")[0])
       timeMatch = selectedDepartureTime.some((slot) => {
         switch (slot) {
           case "early":
-            return hour >= 0 && hour < 6
+            return hour >= 0 && hour < 8
           case "morning":
-            return hour >= 6 && hour < 12
+            return hour >= 8 && hour < 12
           case "afternoon":
-            return hour >= 12 && hour < 18
+            return hour >= 12 && hour < 16
           case "evening":
-            return hour >= 18 && hour < 24
+            return hour >= 16 && hour < 20
+          case "night":
+            return hour >= 20 && hour < 24
           default:
             return true
         }
@@ -335,9 +429,16 @@ const sortedFlights = [...filteredFlights].sort((a, b) => {
   }
 
   const clearAllFilters = () => {
+    // Reset price range to full range
     setPriceRange([priceStats.min, priceStats.max])
+
+    // Clear all airline selections (both server-applied and user-applied)
     setSelectedAirlines([])
+
+    // Reset stops to maximum available (clear both server-applied and user-applied)
     setMaxStops(maxAvailableStops)
+
+    // Clear all departure time selections (both server-applied and user-applied)
     setSelectedDepartureTime([])
   }
 

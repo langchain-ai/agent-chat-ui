@@ -24,6 +24,7 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
   const frozenArgs = (liveArgs as any)?.submission;
   const effectiveArgs = args.readOnly && frozenArgs ? frozenArgs : liveArgs;
 
+  const flightSearchFilters = (effectiveArgs as any)?.flightFilters  ?? args.flightFilters ?? {};
   const allFlightOffers =
     (effectiveArgs as any)?.flightOffers ?? args.flightOffers ?? {};
 
@@ -260,7 +261,11 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
 
       {/* Show All Flights Button */}
       {flightOffers?.length > 0  && showAllFlights && <div className="flex justify-center">
-        <AllFlightsSheet flightData={allFlightOffers} onFlightSelect={handleSelectFlight}>
+        <AllFlightsSheet
+          flightData={allFlightOffers}
+          onFlightSelect={handleSelectFlight}
+          flightSearchFilters={flightSearchFilters}
+        >
           <Button variant="outline" className="w-full md:w-auto">
             Show all flights
           </Button>
