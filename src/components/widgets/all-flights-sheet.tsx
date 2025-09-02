@@ -328,11 +328,11 @@ export function AllFlightsSheet({ children, flightData = [], onFlightSelect, fli
   }, [flightData])
 
   const departureTimeSlots = [
-    { label: "Early Morning (00:00 - 08:00)", value: "early" },
+    { label: "Early Morning (midnight - 08:00)", value: "early" },
     { label: "Morning (08:00 - 12:00)", value: "morning" },
     { label: "Afternoon (12:00 - 16:00)", value: "afternoon" },
     { label: "Evening (16:00 - 20:00)", value: "evening" },
-    { label: "Night (20:00 - 24:00)", value: "night" },
+    { label: "Night (20:00 - m idnight)", value: "night" },
   ]
 
   const filteredFlights = allFlights.filter((flight) => {

@@ -199,7 +199,7 @@ export function FlightCard(props: FlightCardProps) {
         arrivalTime: formatTime(firstJourney.arrival.date),
         duration: formatDuration(firstJourney.duration),
         stops: firstJourney.segments.length - 1,
-        price: `${getCurrencySymbol(props.currency || '')} ${(props.totalAmount || 0).toLocaleString()}`,
+        price: `${getCurrencySymbol(props.currency || '')}${(props.totalAmount || 0).toLocaleString()}`,
         nextDay: false, // Calculate if needed
         layovers: firstJourney.segments.slice(0, -1).map(segment => ({
           city: segment.arrival.airportName,
@@ -391,7 +391,7 @@ export function FlightCard(props: FlightCardProps) {
             </div>
             <div className="text-center">
               <div className="font-semibold text-foreground text-sm">{flightData.duration}</div>
-              <div className="font-medium text-muted-foreground text-xs mt-1">{flightData.stops} stops</div>
+              <div className="font-medium text-muted-foreground text-xs mt-1">{flightData.stops === 0 ? "Non-stop" : `${flightData.stops} stop${flightData.stops > 1 ? "s" : ""}`}</div>
               <div className="mt-2">
                 <div className="text-muted-foreground text-[10px]">
                   {flightData.layovers.map((layover, index) => (
