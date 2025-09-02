@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VisuallyHidden } from "@/components/ui/visually-hidden";
-import { SquarePen, Grid3X3, X, MoreVertical, MessageCircle, Settings } from "lucide-react";
+import { SquarePen, Grid3X3, X, MoreVertical, MessageCircle, DollarSign } from "lucide-react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -153,23 +153,26 @@ function UserProfile() {
   };
 
   return (
-    <div className="px-3 py-2 space-y-2">
+    <div className="py-2 space-y-2">
       {/* WhatsApp Row */}
       <div
         className="flex items-center gap-3 px-2 py-1.5 hover:bg-gray-50 rounded-md cursor-pointer transition-colors"
         onClick={handleWhatsAppClick}
       >
-        <MessageCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
-        <span className="text-sm text-gray-700">Chat with founder</span>
+        <MessageCircle className="h-4 w-4 text-black flex-shrink-0" />
+        <span className="text-sm text-black">Chat with founder</span>
       </div>
 
-      {/* Settings Row - Fully Clickable */}
+      {/* Currency Row - Fully Clickable */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
         <DialogTrigger asChild>
           <div className="flex items-center gap-3 px-2 py-1.5 hover:bg-gray-50 rounded-md cursor-pointer transition-colors">
-            <Settings className="h-4 w-4 text-gray-600 flex-shrink-0" />
+            <DollarSign className="h-4 w-4 text-black flex-shrink-0" />
             <div className="flex items-center justify-between w-full">
-              <span className="text-sm text-gray-700">Settings</span>
+              <span className="text-sm text-black">Currency</span>
+              <span className="text-sm text-gray-500">
+              {selectedCurrency}
+              </span>
             </div>
           </div>
         </DialogTrigger>
