@@ -152,11 +152,11 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
           {flightOffers.length > 0 ? "Flight Options" : "No flights available"}
         </h2>
-        {flightOffers.length > 0 ? (
+        {/* {flightOffers.length > 0 ? (
           <p className="text-gray-600">{flightOffers[0]?.journey[0]?.departure?.airportName} ({flightOffers[0]?.journey[0]?.departure?.airportIata}) → {flightOffers[0]?.journey[0]?.arrival?.airportName} ({flightOffers[0]?.journey[0]?.arrival?.airportIata})</p>
         ) : (
           <p className="text-gray-600">No flights found for the selected criteria.</p>
-        )}
+        )} */}
       </div>
 
       {/* Desktop Layout - Show 2-3 cards based on available tag types */}
