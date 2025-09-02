@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { FlightCard } from "./flight-card"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
@@ -92,12 +92,48 @@ export function AllFlightsSheet({ children, flightData = [], onFlightSelect }: A
   const [open, setOpen] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [sortBy, setSortBy] = useState<"cheapest" | "fastest">("cheapest")
-  const [priceRange, setPriceRange] = useState([1800, 3300])
   const [selectedAirlines, setSelectedAirlines] = useState<string[]>([])
-  const [maxStops, setMaxStops] = useState(2)
   const [selectedDepartureTime, setSelectedDepartureTime] = useState<string[]>([])
   const [selectedFlight, setSelectedFlight] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+
+  // Calculate dynamic price range from flight data
+  const priceStats = useMemo(() => {
+    if (flightData.length === 0) return { min: 0, max: 100000, currency: 'USD' }
+
+    const amounts = flightData.map(flight => flight.totalAmount)
+    const min = Math.min(...amounts)
+    const max = Math.max(...amounts)
+    const currency = flightData[0]?.currency || 'USD'
+
+    return { min: Math.floor(min), max: Math.ceil(max), currency }
+  }, [flightData])
+
+  const [priceRange, setPriceRange] = useState([priceStats.min, priceStats.max])
+
+  // Update price range when flight data changes
+  useEffect(() => {
+    setPriceRange([priceStats.min, priceStats.max])
+  }, [priceStats.min, priceStats.max])
+
+  // Calculate maximum stops from actual flight data
+  const maxAvailableStops = useMemo(() => {
+    if (flightData.length === 0) return 2
+    const stopCounts = flightData.map(flight => {
+      if (flight.journey && flight.journey.length > 0) {
+        return flight.journey[0].segments.length - 1
+      }
+      return 0
+    })
+    return Math.max(...stopCounts, 0)
+  }, [flightData])
+
+  const [maxStops, setMaxStops] = useState(maxAvailableStops)
+
+  // Update maxStops when maxAvailableStops changes
+  useEffect(() => {
+    setMaxStops(maxAvailableStops)
+  }, [maxAvailableStops])
 
   // const handleSelectFlight = async (flightOfferId: string) => {
   //   setSelectedFlight(flightOfferId);
@@ -194,7 +230,20 @@ export function AllFlightsSheet({ children, flightData = [], onFlightSelect }: A
     ? flightData.map(transformFlightData).filter(Boolean)
     : []
 
-  const airlines = Array.from(new Set(allFlights.map((flight) => flight?.airline)))
+  // Extract unique airlines from actual flight data
+  const airlines = useMemo(() => {
+    const airlineSet = new Set<string>()
+    flightData.forEach(flight => {
+      if (flight.journey && flight.journey.length > 0) {
+        const firstSegment = flight.journey[0].segments[0]
+        if (firstSegment?.airlineName) {
+          airlineSet.add(firstSegment.airlineName)
+        }
+      }
+    })
+    return Array.from(airlineSet).sort()
+  }, [flightData])
+
   const departureTimeSlots = [
     { label: "Early Morning (00:00 - 06:00)", value: "early" },
     { label: "Morning (06:00 - 12:00)", value: "morning" },
@@ -203,50 +252,81 @@ export function AllFlightsSheet({ children, flightData = [], onFlightSelect }: A
   ]
 
   const filteredFlights = allFlights.filter((flight) => {
-    return true
-    // if(!flight) return false
-    // const price = Number.parseFloat(flight.price.replace("$", "").replace(",", ""))
-    // const priceInRange = price >= priceRange[0] && price <= priceRange[1]
+    if (!flight) return false
 
-    // const airlineMatch = selectedAirlines.length === 0 || selectedAirlines.includes(flight.airline)
-    // const stopsMatch = flight.stops <= maxStops
+    // Price filter - use totalAmount from original data
+    const originalFlight = flightData.find(f => f.flightOfferId === flight.flightOfferId)
+    if (originalFlight) {
+      const priceInRange = originalFlight.totalAmount >= priceRange[0] && originalFlight.totalAmount <= priceRange[1]
+      if (!priceInRange) return false
+    }
 
-    // let timeMatch = true
-    // if (selectedDepartureTime.length > 0) {
-    //   const hour = Number.parseInt(flight.departureTime.split(":")[0])
-    //   timeMatch = selectedDepartureTime.some((slot) => {
-    //     switch (slot) {
-    //       case "early":
-    //         return hour >= 0 && hour < 6
-    //       case "morning":
-    //         return hour >= 6 && hour < 12
-    //       case "afternoon":
-    //         return hour >= 12 && hour < 18
-    //       case "evening":
-    //         return hour >= 18 && hour < 24
-    //       default:
-    //         return true
-    //     }
-    //   })
-    // }
+    // Airline filter
+    const airlineMatch = selectedAirlines.length === 0 || selectedAirlines.includes(flight.airline)
+    if (!airlineMatch) return false
 
-    // return priceInRange && airlineMatch && stopsMatch && timeMatch
+    // Stops filter - calculate from segments
+    const stopsMatch = flight.stops <= maxStops
+    if (!stopsMatch) return false
+
+    // Departure time filter
+    let timeMatch = true
+    if (selectedDepartureTime.length > 0) {
+      const hour = parseInt(flight.departureTime.split(":")[0])
+      timeMatch = selectedDepartureTime.some((slot) => {
+        switch (slot) {
+          case "early":
+            return hour >= 0 && hour < 6
+          case "morning":
+            return hour >= 6 && hour < 12
+          case "afternoon":
+            return hour >= 12 && hour < 18
+          case "evening":
+            return hour >= 18 && hour < 24
+          default:
+            return true
+        }
+      })
+    }
+
+    return timeMatch
   })
 
- const sortedFlights = [...filteredFlights].sort((a, b) => {
+const sortedFlights = [...filteredFlights].sort((a, b) => {
   if (!a || !b) return 0; // if either is null, treat them as equal
 
   if (sortBy === "cheapest") {
-    const priceA = Number.parseFloat(a.price.replace("$", "").replace(",", ""));
-    const priceB = Number.parseFloat(b.price.replace("$", "").replace(",", ""));
+    // Use totalAmount from the original flight data for accurate sorting
+    const originalFlightA = flightData.find(f => f.flightOfferId === a.flightOfferId)
+    const originalFlightB = flightData.find(f => f.flightOfferId === b.flightOfferId)
+    const priceA = originalFlightA?.totalAmount || 0
+    const priceB = originalFlightB?.totalAmount || 0
     return priceA - priceB;
   } else {
-    const durationA =
-      Number.parseInt(a.duration.split("h")[0]) * 60 +
-      Number.parseInt(a.duration.split("h")[1].split("m")[0]);
-    const durationB =
-      Number.parseInt(b.duration.split("h")[0]) * 60 +
-      Number.parseInt(b.duration.split("h")[1].split("m")[0]);
+    // Parse ISO 8601 duration from original flight data for accurate sorting
+    const parseISO8601Duration = (duration: string) => {
+      // Parse PT2H30M format to total minutes
+      const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
+      if (match) {
+        const hours = parseInt(match[1]) || 0;
+        const minutes = parseInt(match[2]) || 0;
+        return hours * 60 + minutes;
+      }
+      return 0;
+    };
+
+    // Get original flight data to access ISO 8601 duration
+    const originalFlightA = flightData.find(f => f.flightOfferId === a.flightOfferId)
+    const originalFlightB = flightData.find(f => f.flightOfferId === b.flightOfferId)
+
+    // Use journey duration from original data
+    const durationA = originalFlightA?.journey?.[0]?.duration
+      ? parseISO8601Duration(originalFlightA.journey[0].duration)
+      : 0;
+    const durationB = originalFlightB?.journey?.[0]?.duration
+      ? parseISO8601Duration(originalFlightB.journey[0].duration)
+      : 0;
+
     return durationA - durationB;
   }
 });
@@ -263,17 +343,17 @@ export function AllFlightsSheet({ children, flightData = [], onFlightSelect }: A
   }
 
   const clearAllFilters = () => {
-    setPriceRange([1800, 3300])
+    setPriceRange([priceStats.min, priceStats.max])
     setSelectedAirlines([])
-    setMaxStops(2)
+    setMaxStops(maxAvailableStops)
     setSelectedDepartureTime([])
   }
 
   const activeFiltersCount =
     (selectedAirlines.length > 0 ? 1 : 0) +
-    (maxStops < 2 ? 1 : 0) +
+    (maxStops < maxAvailableStops ? 1 : 0) +
     (selectedDepartureTime.length > 0 ? 1 : 0) +
-    (priceRange[0] > 1800 || priceRange[1] < 3300 ? 1 : 0)
+    (priceRange[0] > priceStats.min || priceRange[1] < priceStats.max ? 1 : 0)
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -293,7 +373,7 @@ export function AllFlightsSheet({ children, flightData = [], onFlightSelect }: A
           <div className="mb-3 px-4">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                {/* <Button
+                <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setShowFilters(!showFilters)}
@@ -306,7 +386,7 @@ export function AllFlightsSheet({ children, flightData = [], onFlightSelect }: A
                       {activeFiltersCount}
                     </Badge>
                   )}
-                </Button> */}
+                </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
@@ -328,17 +408,17 @@ export function AllFlightsSheet({ children, flightData = [], onFlightSelect }: A
             </div>
 
             {showFilters && (
-              <div className="bg-muted/50 rounded-lg p-4 space-y-6">
+              <div className="bg-muted/50 rounded-lg p-4 space-y-6 max-h-[40vh] overflow-y-auto">
                 <div>
                   <Label className="text-sm font-medium mb-3 block">
-                    Price Range: ${priceRange[0]} - ${priceRange[1]}
+                    Price Range: {getCurrencySymbol(priceStats.currency)}{priceRange[0].toLocaleString()} - {getCurrencySymbol(priceStats.currency)}{priceRange[1].toLocaleString()}
                   </Label>
                   <Slider
                     value={priceRange}
                     onValueChange={setPriceRange}
-                    max={3300}
-                    min={1800}
-                    step={50}
+                    max={priceStats.max}
+                    min={priceStats.min}
+                    step={Math.max(1, Math.floor((priceStats.max - priceStats.min) / 100))}
                     className="w-full"
                   />
                 </div>
@@ -372,7 +452,7 @@ export function AllFlightsSheet({ children, flightData = [], onFlightSelect }: A
                   <Slider
                     value={[maxStops]}
                     onValueChange={(value) => setMaxStops(value[0])}
-                    max={2}
+                    max={maxAvailableStops}
                     min={0}
                     step={1}
                     className="w-full"
