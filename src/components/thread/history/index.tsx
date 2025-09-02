@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useThreads } from "@/providers/Thread";
 import { Thread } from "@langchain/langgraph-sdk";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { getContentString } from "../utils";
 import { parseAsBoolean, useQueryState } from "nuqs";
@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VisuallyHidden } from "@/components/ui/visually-hidden";
-import { SquarePen, Grid3X3, X, MoreVertical } from "lucide-react";
+import { SquarePen, Grid3X3, X, MoreVertical, MessageCircle, Settings } from "lucide-react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -26,6 +26,17 @@ import {
 import { FlyoLogoSVG } from "@/components/icons/langgraph";
 import { useStreamContext } from "@/providers/Stream";
 import LogoutButton from "@/components/auth/LogoutButton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
+import { getSelectedCurrency, setSelectedCurrency, currencies } from "@/utils/currency-storage";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 
 // Logo component
 function Logo() {
@@ -38,21 +49,155 @@ function Logo() {
   );
 }
 
+// Currency Search Select Component
+interface CurrencySearchSelectProps {
+  value: string;
+  onValueChange: (value: string) => void;
+}
+
+function CurrencySearchSelect({ value, onValueChange }: CurrencySearchSelectProps) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showAll, setShowAll] = useState(false);
+
+  const filteredCurrencies = currencies.filter(currency =>
+    currency.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    currency.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const displayedCurrencies = showAll ? filteredCurrencies : filteredCurrencies.slice(0, 8);
+
+  return (
+    <div className="space-y-4">
+      {/* Search Input */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Input
+          placeholder="Search currencies..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10"
+        />
+      </div>
+
+      {/* Currency List */}
+      <div className="space-y-1 max-h-64 overflow-y-auto">
+        {displayedCurrencies.map((currency) => (
+          <div
+            key={currency.code}
+            className={`flex items-center justify-between p-3 rounded-md cursor-pointer transition-colors hover:bg-gray-50 ${
+              value === currency.code ? 'bg-gray-100 border border-gray-300' : ''
+            }`}
+            onClick={() => onValueChange(currency.code)}
+          >
+            <div className="flex items-center gap-3">
+              <span className="font-medium text-sm">{currency.code}</span>
+              <span className="text-sm text-gray-600">{currency.name}</span>
+            </div>
+            {value === currency.code && (
+              <div className="w-2 h-2 bg-black rounded-full"></div>
+            )}
+          </div>
+        ))}
+
+        {/* Show More/Less Button */}
+        {filteredCurrencies.length > 8 && (
+          <button
+            onClick={() => setShowAll(!showAll)}
+            className="w-full p-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            {showAll ? 'Show Less' : `Show All Currencies`}
+          </button>
+        )}
+
+        {filteredCurrencies.length === 0 && (
+          <div className="p-4 text-center text-gray-500 text-sm">
+            No currencies found matching "{searchTerm}"
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // User Profile Component
 function UserProfile() {
   const userName = getUserFullName();
   const userInitial = userName.charAt(0).toUpperCase();
+  const [selectedCurrency, setSelectedCurrencyState] = useState(() => {
+    return getSelectedCurrency();
+  });
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  const handleWhatsAppClick = () => {
+    const phoneNumber = "+919760674679";
+    const message = encodeURIComponent("Chat with founder");
+    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
+
+    try {
+      window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      console.error('Failed to open WhatsApp:', error);
+      // Fallback: copy link to clipboard
+      navigator.clipboard?.writeText(whatsappUrl).then(() => {
+        alert('WhatsApp link copied to clipboard');
+      }).catch(() => {
+        alert('Please visit: ' + whatsappUrl);
+      });
+    }
+  };
+
+  const handleCurrencyChange = (currencyCode: string) => {
+    setSelectedCurrencyState(currencyCode);
+    setSelectedCurrency(currencyCode);
+    setIsSettingsOpen(false);
+  };
 
   return (
-    <div className="flex items-center gap-3 px-3 py-2">
-      <Avatar className="h-8 w-8">
-        <AvatarFallback className="bg-blue-500 text-sm font-medium text-white">
-          {userInitial}
-        </AvatarFallback>
-      </Avatar>
-      <div className="flex flex-col">
-        <span className="text-sm font-medium text-gray-900">{userName}</span>
-        <LogoutButton className="text-xs text-gray-500 no-underline hover:text-gray-900" />
+    <div className="px-3 py-2 space-y-2">
+      {/* WhatsApp Row */}
+      <div
+        className="flex items-center gap-3 px-2 py-1.5 hover:bg-gray-50 rounded-md cursor-pointer transition-colors"
+        onClick={handleWhatsAppClick}
+      >
+        <MessageCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+        <span className="text-sm text-gray-700">Chat with founder</span>
+      </div>
+
+      {/* Settings Row - Fully Clickable */}
+      <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+        <DialogTrigger asChild>
+          <div className="flex items-center gap-3 px-2 py-1.5 hover:bg-gray-50 rounded-md cursor-pointer transition-colors">
+            <Settings className="h-4 w-4 text-gray-600 flex-shrink-0" />
+            <div className="flex items-center justify-between w-full">
+              <span className="text-sm text-gray-700">Settings</span>
+            </div>
+          </div>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Select Currency</DialogTitle>
+          </DialogHeader>
+          <CurrencySearchSelect
+            value={selectedCurrency}
+            onValueChange={handleCurrencyChange}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Black Separator Line */}
+      <div className="border-t border-black mx-2"></div>
+
+      {/* User Profile Row */}
+      <div className="flex items-center gap-3 px-2 py-1.5">
+        <Avatar className="h-8 w-8 flex-shrink-0">
+          <AvatarFallback className="bg-blue-500 text-sm font-medium text-white">
+            {userInitial}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex flex-col flex-1 min-w-0">
+          <span className="text-sm font-medium text-gray-900 truncate">{userName}</span>
+          <LogoutButton className="text-xs text-gray-500 no-underline hover:text-gray-900 text-left" />
+        </div>
       </div>
     </div>
   );
