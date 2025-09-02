@@ -162,13 +162,23 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
     return date < tomorrow;
   };
 
+  // Helper to check if a Date is valid
+  const isValidDate = (date: Date) => {
+    return date instanceof Date && !isNaN(date.getTime());
+  };
+
   const [departureDate, setDepartureDate] = useState<Date | undefined>(() => {
-    if (flightSearchCriteria.departureDate) {
-      const serverDate = new Date(flightSearchCriteria.departureDate);
-      // If server date is not allowed (past or today), use tomorrow's date instead
-      return isDateNotAllowed(serverDate) ? getTomorrowDate() : serverDate;
+    const rawDeparture = flightSearchCriteria.departureDate;
+    if (rawDeparture) {
+      const serverDate = new Date(rawDeparture);
+      // If server date is invalid, or not allowed (past or today), use tomorrow's date instead
+      if (!isValidDate(serverDate) || isDateNotAllowed(serverDate)) {
+        return getTomorrowDate();
+      }
+      return serverDate;
     }
-    return undefined;
+    // If no departure date provided, default to tomorrow
+    return getTomorrowDate();
   });
 
   const [returnDate, setReturnDate] = useState<Date | undefined>(() => {
@@ -374,7 +384,10 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                   handleFromAirportChange(value);
                   // Clear validation error when user starts typing
                   if (value && value.trim().length > 0) {
-                    setValidationErrors(prev => ({ ...prev, fromAirport: false }));
+                    setValidationErrors((prev) => ({
+                      ...prev,
+                      fromAirport: false,
+                    }));
                   }
                 }}
                 placeholder="From - City or Airport"
@@ -383,7 +396,9 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                 className={validationErrors.fromAirport ? "border-red-500" : ""}
               />
               {validationErrors.fromAirport && (
-                <p className="mt-1 text-xs text-red-500">From airport is required</p>
+                <p className="mt-1 text-xs text-red-500">
+                  From airport is required
+                </p>
               )}
             </div>
 
@@ -394,7 +409,10 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                   handleToAirportChange(value);
                   // Clear validation error when user starts typing
                   if (value && value.trim().length > 0) {
-                    setValidationErrors(prev => ({ ...prev, toAirport: false }));
+                    setValidationErrors((prev) => ({
+                      ...prev,
+                      toAirport: false,
+                    }));
                   }
                 }}
                 placeholder="To - City or Airport"
@@ -403,7 +421,9 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                 className={validationErrors.toAirport ? "border-red-500" : ""}
               />
               {validationErrors.toAirport && (
-                <p className="mt-1 text-xs text-red-500">To airport is required</p>
+                <p className="mt-1 text-xs text-red-500">
+                  To airport is required
+                </p>
               )}
             </div>
           </div>
@@ -423,15 +443,22 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                     handleDepartureDateChange(date);
                     // Clear validation error when user selects a date
                     if (date) {
-                      setValidationErrors(prev => ({ ...prev, departureDate: false }));
+                      setValidationErrors((prev) => ({
+                        ...prev,
+                        departureDate: false,
+                      }));
                     }
                   }}
                   placeholder="Select departure date"
-                  className={validationErrors.departureDate ? "border-red-500" : ""}
+                  className={
+                    validationErrors.departureDate ? "border-red-500" : ""
+                  }
                 />
               </div>
               {validationErrors.departureDate && (
-                <p className="mt-1 text-xs text-red-500">Departure date is required</p>
+                <p className="mt-1 text-xs text-red-500">
+                  Departure date is required
+                </p>
               )}
             </div>
 
