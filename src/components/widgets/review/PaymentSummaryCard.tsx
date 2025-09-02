@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { getCurrencySymbol } from "@/utils/currency-storage";
 import type { PaymentSummary } from "./types";
 
 interface PaymentSummaryCardProps {
@@ -40,7 +41,7 @@ export const PaymentSummaryCard: React.FC<PaymentSummaryCardProps> = ({
             {!isExpanded && (
               <div className="mt-1 text-sm text-gray-600">
                 Total:{" "}
-                {paymentSummary.currency === "INR" ? "₹" : "$"}
+                {getCurrencySymbol(paymentSummary.currency)}
                 {calculateTotal().toFixed(2)}{" "}
                 {paymentSummary.currency}
                 {isRefundable !== null && (
@@ -70,7 +71,7 @@ export const PaymentSummaryCard: React.FC<PaymentSummaryCardProps> = ({
           <div className="flex justify-between">
             <span className="text-xs text-gray-600">Base fare</span>
             <span className="text-xs font-medium">
-              {paymentSummary.currency === "INR" ? "₹" : "$"}
+              {getCurrencySymbol(paymentSummary.currency)}
               {paymentSummary.baseFare.toFixed(2)}
             </span>
           </div>
@@ -81,7 +82,7 @@ export const PaymentSummaryCard: React.FC<PaymentSummaryCardProps> = ({
               Taxes & fees
             </span>
             <span className="text-xs font-medium">
-              {paymentSummary.currency === "INR" ? "₹" : "$"}
+              {getCurrencySymbol(paymentSummary.currency)}
               {paymentSummary.taxes.toFixed(2)}
             </span>
           </div>
@@ -93,7 +94,7 @@ export const PaymentSummaryCard: React.FC<PaymentSummaryCardProps> = ({
                 Service fees
               </span>
               <span className="text-xs font-medium">
-                {paymentSummary.currency === "INR" ? "₹" : "$"}
+                {getCurrencySymbol(paymentSummary.currency)}
                 {paymentSummary.fees.toFixed(2)}
               </span>
             </div>
@@ -106,7 +107,7 @@ export const PaymentSummaryCard: React.FC<PaymentSummaryCardProps> = ({
                 Discount
               </span>
               <span className="text-xs font-medium text-green-600">
-                -{paymentSummary.currency === "INR" ? "₹" : "$"}
+                -{getCurrencySymbol(paymentSummary.currency)}
                 {paymentSummary.discount.toFixed(2)}
               </span>
             </div>
@@ -117,9 +118,8 @@ export const PaymentSummaryCard: React.FC<PaymentSummaryCardProps> = ({
             <div className="flex justify-between">
               <span className="text-sm font-semibold">Total</span>
               <span className="text-sm font-bold">
-                {paymentSummary.currency === "INR" ? "₹" : "$"}
+                {getCurrencySymbol(paymentSummary.currency)}
                 {calculateTotal().toFixed(2)}{" "}
-                {paymentSummary.currency}
               </span>
             </div>
           </div>

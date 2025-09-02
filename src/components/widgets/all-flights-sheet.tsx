@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Filter, ArrowUpDown } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { getCurrencySymbol } from "@/utils/currency-storage";
 
 interface FlightData {
   flightOfferId: string
@@ -100,12 +101,12 @@ export function AllFlightsSheet({ children, flightData = [], onFlightSelect }: A
 
   // Calculate dynamic price range from flight data
   const priceStats = useMemo(() => {
-    if (flightData.length === 0) return { min: 0, max: 100000, currency: 'USD' }
+    if (flightData.length === 0) return { min: 0, max: 100000, currency: '' }
 
     const amounts = flightData.map(flight => flight.totalAmount)
     const min = Math.min(...amounts)
     const max = Math.max(...amounts)
-    const currency = flightData[0]?.currency || 'USD'
+    const currency= flightData[0]?.currency || ''
 
     return { min: Math.floor(min), max: Math.ceil(max), currency }
   }, [flightData])
@@ -176,16 +177,6 @@ export function AllFlightsSheet({ children, flightData = [], onFlightSelect }: A
     return duration;
   };
 
-  const getCurrencySymbol = (currency: string) => {
-    const symbols: { [key: string]: string } = {
-      'USD': '$',
-      'INR': '₹',
-      'EUR': '€',
-      'GBP': '£'
-    };
-    return symbols[currency] || currency;
-  };
-
   const transformFlightData = (flight: FlightData) => {
     if (!flight.journey || flight.journey.length === 0) return null;
 
@@ -208,7 +199,7 @@ export function AllFlightsSheet({ children, flightData = [], onFlightSelect }: A
     return {
       flightOfferId: flight.flightOfferId,
       type,
-      price: `${getCurrencySymbol(flight.currency)}${flight.totalAmount.toLocaleString()}`,
+      price: `${getCurrencySymbol(flight.currency)} ${flight.totalAmount.toLocaleString()}`,
       duration: formatDuration(firstJourney.duration),
       stops,
       airline: firstSegment.airlineName,
@@ -464,7 +455,7 @@ const sortedFlights = [...filteredFlights].sort((a, b) => {
             {/* Price Range Filter */}
             <div>
               <Label className="text-sm font-medium mb-3 block">
-                Price Range: {getCurrencySymbol(priceStats.currency)}{priceRange[0].toLocaleString()} - {getCurrencySymbol(priceStats.currency)}{priceRange[1].toLocaleString()}
+                Price Range: {getCurrencySymbol(priceStats.currency)} {priceRange[0].toLocaleString()} - {getCurrencySymbol(priceStats.currency)} {priceRange[1].toLocaleString()}
               </Label>
               <Slider
                 value={priceRange}

@@ -42,6 +42,7 @@ import {
   GetUserId,
   getUserFirstName,
 } from "@/services/authService";
+import { getSelectedCurrency } from "@/utils/currency-storage";
 import { InterruptManager } from "./messages/interrupt-manager";
 import { GenericInterruptView } from "./messages/generic-interrupt";
 import { NonAgentFlowReopenButton } from "./NonAgentFlowReopenButton";
@@ -283,6 +284,12 @@ export function Thread() {
       };
     }
 
+    // Get user currency preference
+    const userCurrency = getSelectedCurrency();
+    if (userCurrency) {
+      submissionData.userCurrency = userCurrency;
+    }
+
     const submitOptions: any = {
       streamMode: ["updates"],
       streamSubgraphs: true,
@@ -381,6 +388,12 @@ export function Thread() {
         accuracy: locationData.accuracy,
         timestamp: locationData.timestamp,
       };
+    }
+
+    // Get user currency preference
+    const userCurrency = getSelectedCurrency();
+    if (userCurrency) {
+      submissionData.userCurrency = userCurrency;
     }
 
     const submitOptions: any = {

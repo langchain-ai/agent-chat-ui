@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Info } from "lucide-react"
 import { FlightDetailsPopup } from "./flight-details-popup"
 import Image from "next/image"
+import { getCurrencySymbol } from "@/utils/currency-storage";
 
 interface FlightCardProps {
   // New data structure props (optional for backward compatibility)
@@ -191,16 +192,6 @@ export function FlightCard(props: FlightCardProps) {
         return duration;
       };
 
-      const getCurrencySymbol = (currency: string) => {
-        const symbols: { [key: string]: string } = {
-          'USD': '$',
-          'INR': '₹',
-          'EUR': '€',
-          'GBP': '£'
-        };
-        return symbols[currency] || currency;
-      };
-
       return {
         airline: firstSegment.airlineName,
         airlineCode: firstSegment.airlineIata,
@@ -208,7 +199,7 @@ export function FlightCard(props: FlightCardProps) {
         arrivalTime: formatTime(firstJourney.arrival.date),
         duration: formatDuration(firstJourney.duration),
         stops: firstJourney.segments.length - 1,
-        price: `${getCurrencySymbol(props.currency || 'USD')}${(props.totalAmount || 0).toLocaleString()}`,
+        price: `${getCurrencySymbol(props.currency || '')} ${(props.totalAmount || 0).toLocaleString()}`,
         nextDay: false, // Calculate if needed
         layovers: firstJourney.segments.slice(0, -1).map(segment => ({
           city: segment.arrival.airportName,
