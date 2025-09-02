@@ -96,6 +96,7 @@ export function AllFlightsSheet({ children, flightData = [], onFlightSelect }: A
   const [selectedDepartureTime, setSelectedDepartureTime] = useState<string[]>([])
   const [selectedFlight, setSelectedFlight] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [showExpandedAirlines, setShowExpandedAirlines] = useState(false)
 
   // Calculate dynamic price range from flight data
   const priceStats = useMemo(() => {
@@ -356,15 +357,16 @@ const sortedFlights = [...filteredFlights].sort((a, b) => {
     (priceRange[0] > priceStats.min || priceRange[1] < priceStats.max ? 1 : 0)
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>{children}</SheetTrigger>
-      <SheetContent
-        side="bottom"
-        className="h-[80vh] flex flex-col"
-        style={{
-          fontFamily: "Uber Move, Arial, Helvetica, sans-serif",
-        }}
-      >
+    <>
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger asChild>{children}</SheetTrigger>
+        <SheetContent
+          side="bottom"
+          className="h-[80vh] flex flex-col"
+          style={{
+            fontFamily: "Uber Move, Arial, Helvetica, sans-serif",
+          }}
+        >
         <div className="flex-shrink-0 border-b bg-background">
           <SheetHeader className="mb-2">
             <SheetTitle>{allFlights.length > 0 ? "Flights" : "No flights available"}</SheetTitle>
@@ -376,7 +378,7 @@ const sortedFlights = [...filteredFlights].sort((a, b) => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setShowFilters(!showFilters)}
+                  onClick={() => setShowFilters(true)}
                   className="flex items-center gap-2"
                 >
                   <Filter className="w-4 h-4" />
@@ -407,79 +409,7 @@ const sortedFlights = [...filteredFlights].sort((a, b) => {
               )}
             </div>
 
-            {showFilters && (
-              <div className="bg-muted/50 rounded-lg p-4 space-y-6 max-h-[40vh] overflow-y-auto">
-                <div>
-                  <Label className="text-sm font-medium mb-3 block">
-                    Price Range: {getCurrencySymbol(priceStats.currency)}{priceRange[0].toLocaleString()} - {getCurrencySymbol(priceStats.currency)}{priceRange[1].toLocaleString()}
-                  </Label>
-                  <Slider
-                    value={priceRange}
-                    onValueChange={setPriceRange}
-                    max={priceStats.max}
-                    min={priceStats.min}
-                    step={Math.max(1, Math.floor((priceStats.max - priceStats.min) / 100))}
-                    className="w-full"
-                  />
-                </div>
 
-                <Separator />
-
-                <div>
-                  <Label className="text-sm font-medium mb-3 block">Airlines</Label>
-                  <div className="space-y-2">
-                    {airlines.map((airline) => (
-                      <div key={airline} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={airline}
-                          checked={selectedAirlines.includes(airline as string)}
-                          onCheckedChange={() => toggleAirline(airline as string)}
-                        />
-                        <Label htmlFor={airline} className="text-sm">
-                          {airline}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <Label className="text-sm font-medium mb-3 block">
-                    Max Stops: {maxStops === 0 ? "Non-stop" : `${maxStops} stop${maxStops > 1 ? "s" : ""}`}
-                  </Label>
-                  <Slider
-                    value={[maxStops]}
-                    onValueChange={(value) => setMaxStops(value[0])}
-                    max={maxAvailableStops}
-                    min={0}
-                    step={1}
-                    className="w-full"
-                  />
-                </div>
-
-                <Separator />
-
-                <div>
-                  <Label className="text-sm font-medium mb-3 block">Departure Time</Label>
-                  <div className="space-y-2">
-                    {departureTimeSlots.map((slot) => (
-                      <div key={slot.value} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={slot.value}
-                          checked={selectedDepartureTime.includes(slot.value)}
-                          onCheckedChange={() => toggleDepartureTime(slot.value)}
-                        />
-                        <Label htmlFor={slot.value} className="text-sm">
-                          {slot.label}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
@@ -512,5 +442,135 @@ const sortedFlights = [...filteredFlights].sort((a, b) => {
         </div>
       </SheetContent>
     </Sheet>
+
+    {/* Filter Bottom Sheet Modal */}
+    <Sheet open={showFilters} onOpenChange={setShowFilters}>
+      <SheetContent
+        side="bottom"
+        className="flex h-[85vh] flex-col overflow-hidden"
+        style={{
+          fontFamily: "Uber Move, Arial, Helvetica, sans-serif",
+        }}
+      >
+        <SheetHeader className="flex-shrink-0 border-b border-gray-200 pb-3">
+          <SheetTitle className="text-lg font-semibold">
+            Filter Flights
+          </SheetTitle>
+        </SheetHeader>
+
+        {/* Filter Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto px-4 py-4">
+          <div className="space-y-6">
+            {/* Price Range Filter */}
+            <div>
+              <Label className="text-sm font-medium mb-3 block">
+                Price Range: {getCurrencySymbol(priceStats.currency)}{priceRange[0].toLocaleString()} - {getCurrencySymbol(priceStats.currency)}{priceRange[1].toLocaleString()}
+              </Label>
+              <Slider
+                value={priceRange}
+                onValueChange={setPriceRange}
+                max={priceStats.max}
+                min={priceStats.min}
+                step={Math.max(1, Math.floor((priceStats.max - priceStats.min) / 100))}
+                className="w-full"
+              />
+            </div>
+
+            <Separator />
+
+            {/* Airlines Filter */}
+            <div>
+              <Label className="text-sm font-medium mb-3 block">Airlines</Label>
+              <div className="space-y-2">
+                {airlines.slice(0, showExpandedAirlines ? airlines.length : 2).map((airline) => (
+                  <div key={airline} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={airline}
+                      checked={selectedAirlines.includes(airline as string)}
+                      onCheckedChange={() => toggleAirline(airline as string)}
+                    />
+                    <Label htmlFor={airline} className="text-sm">
+                      {airline}
+                    </Label>
+                  </div>
+                ))}
+                {airlines.length > 2 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowExpandedAirlines(!showExpandedAirlines)}
+                    className="text-sm text-gray-600 hover:text-gray-800 p-0 h-auto"
+                  >
+                    {showExpandedAirlines ? 'Show less airlines' : `Show all airlines (${airlines.length - 2} more)`}
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Max Stops Filter */}
+            <div>
+              <Label className="text-sm font-medium mb-3 block">
+                Max Stops: {maxStops === 0 ? "Non-stop" : `${maxStops} stop${maxStops > 1 ? "s" : ""}`}
+              </Label>
+              <Slider
+                value={[maxStops]}
+                onValueChange={(value) => setMaxStops(value[0])}
+                max={maxAvailableStops}
+                min={0}
+                step={1}
+                className="w-full"
+              />
+            </div>
+
+            <Separator />
+
+            {/* Departure Time Filter */}
+            <div>
+              <Label className="text-sm font-medium mb-3 block">Departure Time</Label>
+              <div className="space-y-2">
+                {departureTimeSlots.map((slot) => (
+                  <div key={slot.value} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={slot.value}
+                      checked={selectedDepartureTime.includes(slot.value)}
+                      onCheckedChange={() => toggleDepartureTime(slot.value)}
+                    />
+                    <Label htmlFor={slot.value} className="text-sm">
+                      {slot.label}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Filter Actions - Fixed at bottom */}
+        <div className="flex-shrink-0 border-t border-gray-200 bg-white p-4">
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={clearAllFilters}
+              disabled={activeFiltersCount === 0}
+              className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              Clear all
+              {activeFiltersCount > 0 && (
+                <span className="ml-1">({activeFiltersCount})</span>
+              )}
+            </Button>
+            <Button
+              onClick={() => setShowFilters(false)}
+              className="flex-1 bg-black text-white hover:bg-gray-800"
+            >
+              Apply Filters
+            </Button>
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
+    </>
   )
 }
