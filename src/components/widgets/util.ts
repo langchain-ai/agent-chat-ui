@@ -2,6 +2,7 @@
 
 import { toast } from "sonner";
 import { getCachedLocation } from "@/lib/location-cache";
+import { getSelectedCurrency } from "@/utils/currency-storage";
 
 // Mock auth functions for development - replace with actual imports when authService is available
 const getJwtToken = (): string | null => {
@@ -37,7 +38,10 @@ export async function submitInterruptResponse(
     // Get location data from cache
     const locationData = await getCachedLocation();
 
-    // Build submission data with userId and location
+    // Get user currency preference
+    const userCurrency = getSelectedCurrency();
+
+    // Build submission data with userId, location, and currency
     const submissionData: any = {};
     if (userId) {
       submissionData.userId = userId;
@@ -49,6 +53,9 @@ export async function submitInterruptResponse(
         accuracy: locationData.accuracy,
         timestamp: locationData.timestamp,
       };
+    }
+    if (userCurrency) {
+      submissionData.userCurrency = userCurrency;
     }
 
     await thread.submit(submissionData, {
