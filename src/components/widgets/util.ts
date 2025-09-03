@@ -3,6 +3,7 @@
 import { toast } from "sonner";
 import { getCachedLocation } from "@/lib/location-cache";
 import { getJwtToken, GetUserId } from "@/services/authService";
+import { getSelectedCurrency } from "@/utils/currency-storage";
 
 export async function submitInterruptResponse(
   thread: any, // Replace with proper type from your stream context
@@ -18,7 +19,10 @@ export async function submitInterruptResponse(
     // Get location data from cache
     const locationData = await getCachedLocation();
 
-    // Build submission data with userId and location
+    // Get user currency preference
+    const userCurrency = getSelectedCurrency();
+
+    // Build submission data with userId, location, and currency
     const submissionData: any = {};
     if (userId) {
       submissionData.userId = userId;
@@ -30,6 +34,9 @@ export async function submitInterruptResponse(
         accuracy: locationData.accuracy,
         timestamp: locationData.timestamp,
       };
+    }
+    if (userCurrency) {
+      submissionData.userCurrency = userCurrency;
     }
 
     await thread.submit(submissionData, {

@@ -9,6 +9,7 @@ import { MultimodalPreview } from "@/components/thread/MultimodalPreview";
 import { isBase64ContentBlock } from "@/lib/multimodal-utils";
 import { getJwtToken, GetUserId } from "@/services/authService";
 import { getCachedLocation } from "@/lib/location-cache";
+import { getSelectedCurrency } from "@/utils/currency-storage";
 import { v4 as uuidv4 } from "uuid";
 
 function EditableContent({
@@ -79,7 +80,7 @@ export function HumanMessage({
       content: [{ type: "text", text: value }] as Message["content"],
     };
 
-    // Include userId and location in the submission
+    // Include userId, location, and currency in the submission
     const submissionData: any = { messages: [newMessage] };
     if (userId) {
       submissionData.userId = userId;
@@ -91,6 +92,12 @@ export function HumanMessage({
         accuracy: locationData.accuracy,
         timestamp: locationData.timestamp,
       };
+    }
+
+    // Get user currency preference
+    const userCurrency = getSelectedCurrency();
+    if (userCurrency) {
+      submissionData.userCurrency = userCurrency;
     }
 
     thread.submit(submissionData, {

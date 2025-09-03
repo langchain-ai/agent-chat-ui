@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { Info } from "lucide-react";
-import { FlightDetailsPopup } from "./flight-details-popup";
-import Image from "next/image";
+import { useState } from "react"
+import { Info } from "lucide-react"
+import { FlightDetailsPopup } from "./flight-details-popup"
+import Image from "next/image"
+import { getCurrencySymbol } from "@/utils/currency-storage";
 
 interface FlightCardProps {
   // New data structure props (optional for backward compatibility)
@@ -195,16 +196,6 @@ export function FlightCard(props: FlightCardProps) {
         return duration;
       };
 
-      const getCurrencySymbol = (currency: string) => {
-        const symbols: { [key: string]: string } = {
-          USD: "$",
-          INR: "₹",
-          EUR: "€",
-          GBP: "£",
-        };
-        return symbols[currency] || currency;
-      };
-
       return {
         airline: firstSegment.airlineName,
         airlineCode: firstSegment.airlineIata,
@@ -212,7 +203,7 @@ export function FlightCard(props: FlightCardProps) {
         arrivalTime: formatTime(firstJourney.arrival.date),
         duration: formatDuration(firstJourney.duration),
         stops: firstJourney.segments.length - 1,
-        price: `${getCurrencySymbol(props.currency || "USD")}${(props.totalAmount || 0).toLocaleString()}`,
+        price: `${getCurrencySymbol(props.currency || '')}${(props.totalAmount || 0).toLocaleString()}`,
         nextDay: false, // Calculate if needed
         layovers: firstJourney.segments.slice(0, -1).map((segment) => ({
           city: segment.arrival.airportName,
@@ -243,11 +234,10 @@ export function FlightCard(props: FlightCardProps) {
   };
 
   const flightData = getFlightData();
-  const airlineIata = getAirlineIata(
-    flightData.airline,
-    flightData.airlineCode,
-  );
-  const badgeConfigs = getBadgeConfigs([flightData.type]);
+  const airlineIata = getAirlineIata(flightData.airline, flightData.airlineCode);
+  // Use actual tags from props instead of derived type to show all badges
+  // Hide badges in read-only mode
+  const badgeConfigs = props.readOnly ? [] : getBadgeConfigs(props.tags || []);
 
   const handlePriceButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -425,14 +415,8 @@ export function FlightCard(props: FlightCardProps) {
               </div>
             </div>
             <div className="text-center">
-              <div className="text-foreground text-sm font-semibold">
-                {flightData.duration}
-              </div>
-              <div className="text-muted-foreground mt-1 text-xs font-medium">
-                {flightData.stops == 0
-                  ? "Non-stop"
-                  : `${flightData.stops} stop${flightData.stops > 1 ? "s" : ""}`}
-              </div>
+              <div className="font-semibold text-foreground text-sm">{flightData.duration}</div>
+              <div className="font-medium text-muted-foreground text-xs mt-1">{flightData.stops === 0 ? "Non-stop" : `${flightData.stops} stop${flightData.stops > 1 ? "s" : ""}`}</div>
               <div className="mt-2">
                 <div className="text-muted-foreground text-[10px]">
                   {flightData.layovers.map((layover, index) => (

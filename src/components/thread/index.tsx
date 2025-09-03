@@ -39,6 +39,7 @@ import {
 } from "./artifact";
 import { getJwtToken, GetUserId } from "@/services/authService";
 import { updateThreadWithMessage } from "@/utils/thread-storage";
+import { getSelectedCurrency } from "@/utils/currency-storage";
 import { InterruptManager } from "./messages/interrupt-manager";
 import { GenericInterruptView } from "./messages/generic-interrupt";
 import { NonAgentFlowReopenButton } from "./NonAgentFlowReopenButton";
@@ -246,6 +247,12 @@ export function Thread() {
         accuracy: locationData.accuracy,
         timestamp: locationData.timestamp,
       };
+    }
+
+    // Get user currency preference
+    const userCurrency = getSelectedCurrency();
+    if (userCurrency) {
+      submissionData.userCurrency = userCurrency;
     }
 
     // Add metadata to ensure thread is properly saved and searchable
