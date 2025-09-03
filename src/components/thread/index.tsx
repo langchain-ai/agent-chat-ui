@@ -22,7 +22,6 @@ import {
   SquarePen,
   XIcon,
   Plus,
-
 } from "lucide-react";
 import { useQueryState, parseAsBoolean } from "nuqs";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
@@ -132,7 +131,7 @@ export function Thread() {
     handleFileUpload,
     dropRef,
     removeBlock,
-    resetBlocks,
+    resetBlocks: _,
     dragOver,
     handlePaste,
   } = useFileUpload();
