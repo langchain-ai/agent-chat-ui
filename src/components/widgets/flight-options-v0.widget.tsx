@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useStreamContext } from "@/providers/Stream";
 import { submitInterruptResponse } from "./util";
 import { useEffect } from "react";
+import { FlightFilterProvider, useFlightFilter } from "./flight-filter-context";
 
 
 
@@ -17,18 +18,18 @@ interface FlightOptionsProps extends Record<string, any> {
   interruptId?: string;
 }
 
-export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
+// Internal component that uses the filter context
+function FlightOptionsContent(args: FlightOptionsProps) {
   const thread = useStreamContext();
+  const { filteredFlights } = useFlightFilter();
 
   const liveArgs = args.apiData?.value?.widget?.args ?? {};
   const frozenArgs = (liveArgs as any)?.submission;
   const effectiveArgs = args.readOnly && frozenArgs ? frozenArgs : liveArgs;
 
   const flightSearchFilters = (effectiveArgs as any)?.flightFilters  ?? args.flightFilters ?? {};
-  const allFlightOffers =
-    (effectiveArgs as any)?.flightOffers ?? args.flightOffers ?? {};
 
-  // Filter to show only 3 cards maximum with priority tags
+  // Filter to show only 3 cards maximum with priority tags from filtered flights with custom tags
   const getFilteredFlightOffers = (offers: any[]) => {
     if (!Array.isArray(offers)) return [];
 
@@ -53,12 +54,13 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
     return filteredOffers;
   };
 
-  const flightOffers = getFilteredFlightOffers(allFlightOffers);
+  // Use filtered flights with custom tags for display
+  const flightOffers = getFilteredFlightOffers(filteredFlights);
 
-  // Get flights by tag type for mobile tabs
+  // Get flights by tag type for mobile tabs from filtered flights with custom tags
   const getFlightByTag = (tag: string) => {
-    if (!Array.isArray(allFlightOffers)) return null;
-    return allFlightOffers.find((offer: any) =>
+    if (!Array.isArray(filteredFlights)) return null;
+    return filteredFlights.find((offer: any) =>
       offer.type === tag || (offer.tags && offer.tags.includes(tag))
     );
   };
@@ -161,13 +163,13 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
 
       {/* Desktop Layout - Show 2-3 cards based on available tag types */}
       <div className="hidden md:block">
-        {flightOffers.length > 0 ? (
+        {filteredFlights.length > 0 ? (
           <div className={`grid gap-4 mb-6 ${
             flightOffers.length === 3 ? 'grid-cols-3' :
             flightOffers.length === 2 ? 'grid-cols-2' :
             'grid-cols-1'
           }`}>
-            {flightOffers.map((flight: any, index: number) => (
+            {filteredFlights.map((flight: any, index: number) => (
               <div key={index} className="bg-white rounded-lg border shadow-sm">
                 <FlightCard
                   {...flight}
@@ -260,9 +262,9 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
       </div>
 
       {/* Show All Flights Button */}
-      {flightOffers?.length > 0  && showAllFlights && <div className="flex justify-center">
+      { showAllFlights && <div className="flex justify-center">
         <AllFlightsSheet
-          flightData={allFlightOffers}
+          flightData={filteredFlights}
           onFlightSelect={handleSelectFlight}
           flightSearchFilters={flightSearchFilters}
         >
@@ -272,5 +274,20 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
         </AllFlightsSheet>
       </div>}
     </div>
+  )
+}
+
+// Main wrapper component that provides filter context
+export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
+  const liveArgs = args.apiData?.value?.widget?.args ?? {};
+  const frozenArgs = (liveArgs as any)?.submission;
+  const effectiveArgs = args.readOnly && frozenArgs ? frozenArgs : liveArgs;
+
+  const allFlightOffers = (effectiveArgs as any)?.flightOffers ?? args.flightOffers ?? [];
+
+  return (
+    <FlightFilterProvider flightData={allFlightOffers}>
+      <FlightOptionsContent {...args} />
+    </FlightFilterProvider>
   )
 }
