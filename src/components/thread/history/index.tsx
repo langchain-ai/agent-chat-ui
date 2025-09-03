@@ -129,7 +129,7 @@ function UserProfile() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const handleWhatsAppClick = () => {
-    const phoneNumber = "+919760674679";
+    const phoneNumber = "+918448549215";
     const message = encodeURIComponent("Chat with founder");
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
 

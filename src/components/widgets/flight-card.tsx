@@ -64,6 +64,7 @@ interface FlightCardProps {
   onSelect?: (flightOfferId: string) => void
   isLoading?: boolean
   selectedFlightId?: string | null
+  readOnly?: boolean
 }
 
 // Helper function to get airline logo path
@@ -228,7 +229,9 @@ export function FlightCard(props: FlightCardProps) {
 
   const flightData = getFlightData();
   const airlineIata = getAirlineIata(flightData.airline, flightData.airlineCode);
-  const badgeConfigs = getBadgeConfigs([flightData.type]);
+  // Use actual tags from props instead of derived type to show all badges
+  // Hide badges in read-only mode
+  const badgeConfigs = props.readOnly ? [] : getBadgeConfigs(props.tags || []);
 
   const handlePriceButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation();
