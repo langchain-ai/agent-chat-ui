@@ -47,6 +47,13 @@ function FlightOptionsContent(args: FlightOptionsProps) {
     activeFiltersCount
   } = useFlightFilter();
 
+  // All hooks must be called before any conditional logic or early returns
+  const [selectedFlight, setSelectedFlight] = useState<string | null>(null);
+  const [showAllFlights, setShowAllFlights] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [showExpandedAirlines, setShowExpandedAirlines] = useState(false);
+
   const liveArgs = args.apiData?.value?.widget?.args ?? {};
   const frozenArgs = (liveArgs as any)?.submission;
   const readOnly = !!args.readOnly;
@@ -57,6 +64,15 @@ function FlightOptionsContent(args: FlightOptionsProps) {
   // // Check if there's no flight data available
   const allFlightOffers = args.allFlightOffers || [];
   const hasNoFlightData = !allFlightOffers || allFlightOffers.length === 0;
+
+  useEffect(() => {
+    if (!readOnly) {
+      setShowAllFlights(true);
+    }
+    if (readOnly) {
+      setShowAllFlights(false);
+    }
+  }, [readOnly]);
 
   // If no flight data available, show empty state
   if (hasNoFlightData) {
@@ -117,11 +133,6 @@ function FlightOptionsContent(args: FlightOptionsProps) {
     if (fastestFlight) return 'fastest';
     return 'best'; // fallback
   };
-  const [selectedFlight, setSelectedFlight] = useState<string | null>(null);
-  const [showAllFlights, setShowAllFlights] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
-  const [showExpandedAirlines, setShowExpandedAirlines] = useState(false);
 
   const handleSelectFlight = async (flightOfferId: string) => {
 // Prevent selection in read-only mode
@@ -161,16 +172,7 @@ function FlightOptionsContent(args: FlightOptionsProps) {
     } finally {
       setIsLoading(false);
     }
-  }; 
-
-  useEffect(() => {
-    if (!readOnly) {
-      setShowAllFlights(true);
-    }
-    if (readOnly) {
-      setShowAllFlights(false);
-    }
-  }, [readOnly]);
+  };
 
   return (
     <div
