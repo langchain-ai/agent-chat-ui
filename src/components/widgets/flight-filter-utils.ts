@@ -461,13 +461,6 @@ export function generateCustomTags(
     }
   }
 
-  console.log(
-    "generateCustomTags - best/cheapest/fastest:",
-    bestFlight?.flightOfferId,
-    cheapestFlight?.flightOfferId,
-    fastestFlight?.flightOfferId,
-  );
-
   // Apply tags to flights - each tag is assigned to exactly one flight
   return flights.map((flight) => {
     // Skip null/undefined flights
@@ -477,7 +470,6 @@ export function generateCustomTags(
 
     // Add "best" tag to the single flight with highest ranking score
     if (bestFlight && flight.flightOfferId === bestFlight.flightOfferId) {
-      console.log("Adding best tag to", flight.flightOfferId);
       if (!tags.includes("best")) {
         tags.push("best");
       }
@@ -488,7 +480,6 @@ export function generateCustomTags(
       cheapestFlight &&
       flight.flightOfferId === cheapestFlight.flightOfferId
     ) {
-      console.log("Adding cheapest tag to", flight.flightOfferId);
       if (!tags.includes("cheapest")) {
         tags.push("cheapest");
       }
@@ -496,7 +487,6 @@ export function generateCustomTags(
 
     // Add "fastest" tag to the selected fastest flight
     if (fastestFlight && flight.flightOfferId === fastestFlight.flightOfferId) {
-      console.log("Adding fastest tag to", flight.flightOfferId);
       if (!tags.includes("fastest")) {
         tags.push("fastest");
       }

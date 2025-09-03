@@ -123,17 +123,6 @@ function FlightOptionsContent(args: FlightOptionsProps) {
   const [showFilters, setShowFilters] = useState(false);
   const [showExpandedAirlines, setShowExpandedAirlines] = useState(false);
 
-  // const handleSelectFlight = async (flightOfferId: string) => {
-  //   setSelectedFlight(flightOfferId);
-  //   setIsLoading(true);
-
-  //   // Simulate API call
-  //   setTimeout(() => {
-  //     setIsLoading(false);
-  //     console.log("Selected flight:", flightOfferId);
-  //   }, 1000);
-  // };
-
   const handleSelectFlight = async (flightOfferId: string) => {
 // Prevent selection in read-only mode
     if (readOnly) return;
@@ -147,11 +136,9 @@ function FlightOptionsContent(args: FlightOptionsProps) {
 
 
    try {
-    console.log('selectedFlightOfferId', flightOfferId);
       const selectedFlightOffer = args.allFlightOffers?.find(
         (offer: any) => offer.flightOfferId === flightOfferId,
       );
-      console.log('selectedFlightOffer', selectedFlightOffer);
       const frozen = {
         widget: {
           type: "FlightOptionsWidget",
@@ -204,23 +191,25 @@ function FlightOptionsContent(args: FlightOptionsProps) {
         )} */}
       </div>
 
-      {/* Filter Button */}
-      <div className="mb-6">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowFilters(true)}
-          className="mb-2"
-        >
-          <Filter className="w-4 h-4" />
-          Filters
-          {activeFiltersCount > 0 && (
-            <Badge variant="secondary" className="ml-1 px-1.5 py-0.5 text-xs">
-              {activeFiltersCount}
-            </Badge>
-          )}
-        </Button>
-      </div>
+      {/* Filter Button - Hidden in read-only mode */}
+      {!readOnly && (
+        <div className="mb-6">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowFilters(true)}
+            className="mb-2"
+          >
+            <Filter className="w-4 h-4" />
+            Filters
+            {activeFiltersCount > 0 && (
+              <Badge variant="secondary" className="ml-1 px-1.5 py-0.5 text-xs">
+                {activeFiltersCount}
+              </Badge>
+            )}
+          </Button>
+        </div>
+      )}
 
       {/* Desktop Layout - Show 2-3 cards based on available tag types */}
       <div className="hidden md:block">
@@ -237,6 +226,7 @@ function FlightOptionsContent(args: FlightOptionsProps) {
                   onSelect={handleSelectFlight}
                   isLoading={isLoading}
                   selectedFlightId={selectedFlight}
+                  readOnly={readOnly}
                 />
               </div>
             ))}
@@ -282,6 +272,7 @@ function FlightOptionsContent(args: FlightOptionsProps) {
                   onSelect={handleSelectFlight}
                   isLoading={isLoading}
                   selectedFlightId={selectedFlight}
+                  readOnly={readOnly}
                 />
               </div>
             </TabsContent>
@@ -295,6 +286,7 @@ function FlightOptionsContent(args: FlightOptionsProps) {
                   onSelect={handleSelectFlight}
                   isLoading={isLoading}
                   selectedFlightId={selectedFlight}
+                  readOnly={readOnly}
                 />
               </div>
             </TabsContent>
@@ -308,6 +300,7 @@ function FlightOptionsContent(args: FlightOptionsProps) {
                   onSelect={handleSelectFlight}
                   isLoading={isLoading}
                   selectedFlightId={selectedFlight}
+                  readOnly={readOnly}
                 />
               </div>
             </TabsContent>
@@ -480,7 +473,6 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
   const effectiveArgs = args.readOnly && frozenArgs ? frozenArgs : liveArgs;
 
   const allFlightOffers = (effectiveArgs as any)?.flightOffers ?? args.flightOffers ?? [];
-  console.log('allFlightOffers', JSON.stringify(allFlightOffers, null, 2),'readonly', args.readOnly);
 
   return (
     <FlightFilterProvider flightData={allFlightOffers}>
