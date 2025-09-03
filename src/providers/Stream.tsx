@@ -9,6 +9,8 @@ import { useStream } from "@langchain/langgraph-sdk/react";
 import { type Message } from "@langchain/langgraph-sdk";
 import {
   uiMessageReducer,
+  isUIMessage,
+  isRemoveUIMessage,
   type UIMessage,
   type RemoveUIMessage,
 } from "@langchain/langgraph-sdk/react-ui";
@@ -83,10 +85,12 @@ const StreamSession = ({
     assistantId,
     threadId: threadId ?? null,
     onCustomEvent: (event, options) => {
-      options.mutate((prev) => {
-        const ui = uiMessageReducer(prev.ui ?? [], event);
-        return { ...prev, ui };
-      });
+      if (isUIMessage(event) || isRemoveUIMessage(event)) {
+        options.mutate((prev) => {
+          const ui = uiMessageReducer(prev.ui ?? [], event);
+          return { ...prev, ui };
+        });
+      }
     },
     onThreadId: (id) => {
       setThreadId(id);
