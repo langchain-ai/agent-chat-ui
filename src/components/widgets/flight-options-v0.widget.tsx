@@ -16,6 +16,7 @@ interface FlightOptionsProps extends Record<string, any> {
   apiData?: any;
   readOnly?: boolean;
   interruptId?: string;
+  allFlightOffers?: any[];
 }
 
 // Internal component that uses the filter context
@@ -28,6 +29,8 @@ function FlightOptionsContent(args: FlightOptionsProps) {
   const effectiveArgs = args.readOnly && frozenArgs ? frozenArgs : liveArgs;
 
   const flightSearchFilters = (effectiveArgs as any)?.flightFilters  ?? args.flightFilters ?? {};
+
+  console.log('effective args:', effectiveArgs, 'readOnly:', args.readOnly);
 
   // Filter to show only 3 cards maximum with priority tags from filtered flights with custom tags
   const getFilteredFlightOffers = (offers: any[]) => {
@@ -106,9 +109,11 @@ function FlightOptionsContent(args: FlightOptionsProps) {
 
 
    try {
-      const selectedFlightOffer = flightOffers.find(
+    console.log('selectedFlightOfferId', flightOfferId);
+      const selectedFlightOffer = args.allFlightOffers?.find(
         (offer: any) => offer.flightOfferId === flightOfferId,
       );
+      console.log('selectedFlightOffer', selectedFlightOffer);
       const frozen = {
         widget: {
           type: "FlightOptionsWidget",
@@ -163,13 +168,13 @@ function FlightOptionsContent(args: FlightOptionsProps) {
 
       {/* Desktop Layout - Show 2-3 cards based on available tag types */}
       <div className="hidden md:block">
-        {filteredFlights.length > 0 ? (
+        {flightOffers.length > 0 ? (
           <div className={`grid gap-4 mb-6 ${
             flightOffers.length === 3 ? 'grid-cols-3' :
             flightOffers.length === 2 ? 'grid-cols-2' :
             'grid-cols-1'
           }`}>
-            {filteredFlights.map((flight: any, index: number) => (
+            {flightOffers.map((flight: any, index: number) => (
               <div key={index} className="bg-white rounded-lg border shadow-sm">
                 <FlightCard
                   {...flight}
@@ -284,10 +289,11 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
   const effectiveArgs = args.readOnly && frozenArgs ? frozenArgs : liveArgs;
 
   const allFlightOffers = (effectiveArgs as any)?.flightOffers ?? args.flightOffers ?? [];
+  console.log('allFlightOffers', JSON.stringify(allFlightOffers, null, 2),'readonly', args.readOnly);
 
   return (
     <FlightFilterProvider flightData={allFlightOffers}>
-      <FlightOptionsContent {...args} />
+      <FlightOptionsContent {...args} allFlightOffers={allFlightOffers} />
     </FlightFilterProvider>
   )
 }

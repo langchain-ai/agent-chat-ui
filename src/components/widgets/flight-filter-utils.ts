@@ -370,12 +370,53 @@ export function generateCustomTags(
 
   if (validFlights.length === 0) return flights;
 
-  // Find cheapest price
+  // Find the flight with the highest ranking score for "best" tag
+  const flightsWithRankingScore = validFlights.filter(
+    (flight) => typeof flight.rankingScore === "number",
+  );
+
+  let bestFlight: TransformedFlightData | null = null;
+  if (flightsWithRankingScore.length > 0) {
+    const highestRankingScore = Math.max(
+      ...flightsWithRankingScore.map((flight) => flight.rankingScore!),
+    );
+    bestFlight =
+      flightsWithRankingScore.find(
+        (flight) => flight.rankingScore === highestRankingScore,
+      ) || null;
+  }
+
+  // Find cheapest flights and select one using ranking score as tie-breaker
   const cheapestPrice = Math.min(
     ...validFlights.map((flight) => flight.totalAmount),
   );
+  const cheapestFlights = validFlights.filter(
+    (flight) => flight.totalAmount === cheapestPrice,
+  );
 
-  // Find fastest duration (shortest total minutes)
+  let cheapestFlight: TransformedFlightData | null = null;
+  if (cheapestFlights.length === 1) {
+    cheapestFlight = cheapestFlights[0];
+  } else if (cheapestFlights.length > 1) {
+    // Use ranking score as tie-breaker
+    const cheapestWithRankingScore = cheapestFlights.filter(
+      (flight) => typeof flight.rankingScore === "number",
+    );
+    if (cheapestWithRankingScore.length > 0) {
+      const highestRankingScore = Math.max(
+        ...cheapestWithRankingScore.map((flight) => flight.rankingScore!),
+      );
+      cheapestFlight =
+        cheapestWithRankingScore.find(
+          (flight) => flight.rankingScore === highestRankingScore,
+        ) || cheapestFlights[0];
+    } else {
+      // If no ranking scores available, pick the first one
+      cheapestFlight = cheapestFlights[0];
+    }
+  }
+
+  // Find fastest flights and select one using ranking score as tie-breaker
   const durations = validFlights.map((flight) => {
     // Try to get duration from the first journey segment
     if (
@@ -393,38 +434,73 @@ export function generateCustomTags(
   });
 
   const fastestDuration = Math.min(...durations.filter((d) => d !== Infinity));
+  const fastestFlights = validFlights.filter((_, index) => {
+    const flightDuration = durations[index];
+    return flightDuration !== Infinity && flightDuration === fastestDuration;
+  });
 
-  // Apply tags to flights
+  let fastestFlight: TransformedFlightData | null = null;
+  if (fastestFlights.length === 1) {
+    fastestFlight = fastestFlights[0];
+  } else if (fastestFlights.length > 1) {
+    // Use ranking score as tie-breaker
+    const fastestWithRankingScore = fastestFlights.filter(
+      (flight) => typeof flight.rankingScore === "number",
+    );
+    if (fastestWithRankingScore.length > 0) {
+      const highestRankingScore = Math.max(
+        ...fastestWithRankingScore.map((flight) => flight.rankingScore!),
+      );
+      fastestFlight =
+        fastestWithRankingScore.find(
+          (flight) => flight.rankingScore === highestRankingScore,
+        ) || fastestFlights[0];
+    } else {
+      // If no ranking scores available, pick the first one
+      fastestFlight = fastestFlights[0];
+    }
+  }
+
+  console.log(
+    "generateCustomTags - best/cheapest/fastest:",
+    bestFlight?.flightOfferId,
+    cheapestFlight?.flightOfferId,
+    fastestFlight?.flightOfferId,
+  );
+
+  // Apply tags to flights - each tag is assigned to exactly one flight
   return flights.map((flight) => {
     // Skip null/undefined flights
     if (!flight) return flight;
 
     const tags: string[] = [...(flight.tags || [])]; // Preserve existing tags
 
-    // Add cheapest tag to all flights with the lowest price
-    if (flight.totalAmount === cheapestPrice) {
+    // Add "best" tag to the single flight with highest ranking score
+    if (bestFlight && flight.flightOfferId === bestFlight.flightOfferId) {
+      console.log("Adding best tag to", flight.flightOfferId);
+      if (!tags.includes("best")) {
+        tags.push("best");
+      }
+    }
+
+    // Add "cheapest" tag to the selected cheapest flight
+    if (
+      cheapestFlight &&
+      flight.flightOfferId === cheapestFlight.flightOfferId
+    ) {
+      console.log("Adding cheapest tag to", flight.flightOfferId);
       if (!tags.includes("cheapest")) {
         tags.push("cheapest");
       }
     }
 
-    // Add fastest tag to all flights with the shortest duration
-    // Find this flight's duration in the validFlights array
-    const validFlightIndex = validFlights.findIndex(
-      (vf) => vf.flightOfferId === flight.flightOfferId,
-    );
-    if (validFlightIndex !== -1) {
-      const flightDuration = durations[validFlightIndex];
-      if (flightDuration !== Infinity && flightDuration === fastestDuration) {
-        if (!tags.includes("fastest")) {
-          tags.push("fastest");
-        }
+    // Add "fastest" tag to the selected fastest flight
+    if (fastestFlight && flight.flightOfferId === fastestFlight.flightOfferId) {
+      console.log("Adding fastest tag to", flight.flightOfferId);
+      if (!tags.includes("fastest")) {
+        tags.push("fastest");
       }
     }
-
-    // TODO: Add "best" tag logic here - will be implemented later
-    // This could be based on a combination of factors like price, duration,
-    // number of stops, airline rating, etc.
 
     return {
       ...flight,
