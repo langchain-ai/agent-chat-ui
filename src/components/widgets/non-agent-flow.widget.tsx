@@ -9,6 +9,7 @@ import {
 import { useNonAgentFlow } from "@/providers/NonAgentFlowContext";
 import { useStreamContext } from "@/providers/Stream";
 import { useTabContext } from "@/providers/TabContext";
+import { Button } from "@/components/ui/button";
 
 // Utility function to switch to chat tab with a small delay
 const switchToChatWithDelay = (
@@ -267,6 +268,30 @@ const NonAgentFlowWidgetContent: React.FC<
   const [hasUserClicked, setHasUserClicked] = useState<boolean>(false);
   const [hasSwitchedToChat, setHasSwitchedToChat] = useState(false);
   const [isSubmittingInterrupt, setIsSubmittingInterrupt] = useState(false);
+  const [hasAttempted, setHasAttempted] = useState<boolean>(false);
+  const [retryCount, setRetryCount] = useState<number>(0);
+
+  // Derive attempt flag from existing payment_state_<tripId>
+  useEffect(() => {
+    try {
+      const key = `payment_state_${tripId}`;
+      const existing = localStorage.getItem(key);
+      if (existing) {
+        const obj = JSON.parse(existing);
+        const attempted =
+          !!obj?.preventAutoTrigger || (obj?.status && obj.status !== "idle");
+        setHasAttempted(!!attempted);
+        setRetryCount(Number(obj?.retryCount) || 0);
+      } else {
+        setHasAttempted(false);
+        setRetryCount(0);
+      }
+    } catch {
+      // If parsing fails, default to not attempted
+      setHasAttempted(false);
+      setRetryCount(0);
+    }
+  }, [tripId, paymentState.status]);
 
   // Function to save payment state to localStorage
   const savePaymentState = useCallback(
@@ -346,6 +371,9 @@ const NonAgentFlowWidgetContent: React.FC<
     }
 
     setHasUserClicked(true);
+    // Immediately reflect attempt + loading to show loader promptly
+    setHasAttempted(true);
+    setPaymentState((prev) => ({ ...prev, status: "loading" }));
     // Mark in existing payment_state that auto-trigger should not re-run
     try {
       const key = `payment_state_${tripId}`;
@@ -362,10 +390,9 @@ const NonAgentFlowWidgetContent: React.FC<
     } catch {}
     setIsCountdownActive(false);
     setHasSwitchedToChat(false); // Reset the flag when starting new payment
-    clearPaymentState(); // Clear any existing localStorage state when starting new payment
+    // Do not clear localStorage payment_state here; we need retryCount & flags preserved
     // We'll call initiatePayment directly here to avoid dependency issues
-    console.log("💳 Setting payment state to loading");
-    setPaymentState({ status: "loading" });
+    console.log("💳 Ensured payment state is loading");
 
     // Trigger payment initiation
     (async () => {
@@ -377,37 +404,47 @@ const NonAgentFlowWidgetContent: React.FC<
           throw new Error("Trip ID is required but not provided");
         }
 
-        // Step 1: Execute prepayment API
-        console.log("Initiating prepayment for tripId:", tripId);
-        const prepaymentResponse = await executePrepayment(tripId);
-        console.log(
-          "Prepayment response:",
-          JSON.stringify(prepaymentResponse, null, 2),
-        );
+        // Step 1: Use existing prepayment if available; otherwise execute prepayment once
+        let currentPrepaymentData = paymentState.prepaymentData;
+        if (!currentPrepaymentData) {
+          console.log("Initiating prepayment for tripId:", tripId);
+          const prepaymentResponse = await executePrepayment(tripId);
+          console.log(
+            "Prepayment response:",
+            JSON.stringify(prepaymentResponse, null, 2),
+          );
 
-        if (!prepaymentResponse.success) {
-          throw new Error(prepaymentResponse.message || "Prepayment failed");
+          if (!prepaymentResponse.success) {
+            throw new Error(prepaymentResponse.message || "Prepayment failed");
+          }
+
+          currentPrepaymentData = prepaymentResponse.data;
+          console.log(
+            "💳 Setting payment state to processing with fresh prepayment",
+          );
+          setPaymentState((prev) => ({
+            ...prev,
+            status: "processing",
+            prepaymentData: currentPrepaymentData,
+          }));
+        } else {
+          console.log("Using cached prepayment data; skipping prepayment call");
+          setPaymentState((prev) => ({ ...prev, status: "processing" }));
         }
-
-        console.log("💳 Setting payment state to processing");
-        setPaymentState({
-          status: "processing",
-          prepaymentData: prepaymentResponse.data,
-        });
 
         // Step 2: Initialize Razorpay payment
         const options = {
-          key: prepaymentResponse.data.transaction.key,
-          amount: prepaymentResponse.data.transaction.amount,
-          currency: prepaymentResponse.data.transaction.currency || "INR",
-          name: prepaymentResponse.data.transaction.name,
-          description: prepaymentResponse.data.transaction.description,
-          order_id: prepaymentResponse.data.transaction.razorpay_order_id,
+          key: currentPrepaymentData.transaction.key,
+          amount: currentPrepaymentData.transaction.amount,
+          currency: currentPrepaymentData.transaction.currency || "INR",
+          name: currentPrepaymentData.transaction.name,
+          description: currentPrepaymentData.transaction.description,
+          order_id: currentPrepaymentData.transaction.razorpay_order_id,
           handler: async function (response: any) {
             try {
               console.log("Razorpay payment successful:", response);
               const transaction_id =
-                prepaymentResponse.data.transaction.transaction_id;
+                currentPrepaymentData.transaction.transaction_id;
               console.log("Transaction ID:", transaction_id);
               console.log("tripId:", tripId);
 
@@ -415,7 +452,7 @@ const NonAgentFlowWidgetContent: React.FC<
               const verificationResponse = await verifyTransaction({
                 tripId,
                 transaction_id:
-                  prepaymentResponse.data.transaction.transaction_id,
+                  currentPrepaymentData.transaction.transaction_id,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
                 razorpay_order_id: response.razorpay_order_id,
@@ -455,7 +492,7 @@ const NonAgentFlowWidgetContent: React.FC<
 
               updatePaymentState({
                 status: "success",
-                prepaymentData: prepaymentResponse.data,
+                prepaymentData: currentPrepaymentData,
                 verificationResponse,
               });
 
@@ -511,11 +548,12 @@ const NonAgentFlowWidgetContent: React.FC<
               const errorMessage =
                 error instanceof Error ? error.message : "Verification failed";
 
-              setPaymentState({
+              setPaymentState((prev) => ({
+                ...prev,
                 status: "failed",
-                prepaymentData: prepaymentResponse.data,
+                prepaymentData: prev.prepaymentData || currentPrepaymentData,
                 error: errorMessage,
-              });
+              }));
 
               // Persist flag to prevent auto re-trigger after failure
               try {
@@ -531,26 +569,6 @@ const NonAgentFlowWidgetContent: React.FC<
                   }),
                 );
               } catch {}
-
-              // Submit compact failure response
-              try {
-                await submitVerificationResult({
-                  paymentStatus: "FAILED",
-                  bookingStatus: "FAILED",
-                });
-
-                // Switch to chat tab after error interrupt resolution
-                console.log(
-                  "Switching to chat tab after payment verification error",
-                );
-                switchToChatWithDelay(
-                  switchToChat,
-                  hasSwitchedToChat,
-                  setHasSwitchedToChat,
-                );
-              } catch (interruptError) {
-                console.error("Error solving interrupt:", interruptError);
-              }
 
               onPaymentFailure?.(errorMessage);
               toast.error("Payment verification failed");
@@ -577,10 +595,11 @@ const NonAgentFlowWidgetContent: React.FC<
             ondismiss: function () {
               const errorMessage = "Payment cancelled by user";
 
-              setPaymentState({
+              setPaymentState((prev) => ({
+                ...prev,
                 status: "failed",
                 error: errorMessage,
-              });
+              }));
 
               // Persist flag to prevent auto re-trigger after cancellation
               try {
@@ -597,27 +616,13 @@ const NonAgentFlowWidgetContent: React.FC<
                 );
               } catch {}
 
-              // Submit compact cancellation response
-              (async () => {
-                try {
-                  await submitVerificationResult({
-                    paymentStatus: "FAILED",
-                    bookingStatus: "FAILED",
-                  });
-
-                  // Switch to chat tab after cancellation interrupt resolution
-                  console.log(
-                    "Switching to chat tab after payment cancellation",
-                  );
-                  switchToChatWithDelay(
-                    switchToChat,
-                    hasSwitchedToChat,
-                    setHasSwitchedToChat,
-                  );
-                } catch (interruptError) {
-                  console.error("Error solving interrupt:", interruptError);
-                }
-              })();
+              // Switch to chat tab after cancellation
+              console.log("Switching to chat tab after payment cancellation");
+              switchToChatWithDelay(
+                switchToChat,
+                hasSwitchedToChat,
+                setHasSwitchedToChat,
+              );
 
               onPaymentFailure?.(errorMessage);
             },
@@ -653,23 +658,13 @@ const NonAgentFlowWidgetContent: React.FC<
           error: errorMessage,
         });
 
-        // Submit compact failure response for initiation error
-        try {
-          await submitVerificationResult({
-            paymentStatus: "FAILED",
-            bookingStatus: "FAILED",
-          });
-
-          // Switch to chat tab after payment initiation error interrupt resolution
-          console.log("Switching to chat tab after payment initiation error");
-          switchToChatWithDelay(
-            switchToChat,
-            hasSwitchedToChat,
-            setHasSwitchedToChat,
-          );
-        } catch (interruptError) {
-          console.error("Error solving interrupt:", interruptError);
-        }
+        // Switch to chat tab after payment initiation error
+        console.log("Switching to chat tab after payment initiation error");
+        switchToChatWithDelay(
+          switchToChat,
+          hasSwitchedToChat,
+          setHasSwitchedToChat,
+        );
 
         onPaymentFailure?.(errorMessage);
         toast.error("Failed to initiate payment");
@@ -684,10 +679,32 @@ const NonAgentFlowWidgetContent: React.FC<
     isInterruptWidget,
     switchToChat,
     thread,
-    clearPaymentState,
     paymentState.status,
     updatePaymentState,
   ]);
+
+  // Manual retry click increments retryCount and persists it, then triggers payment
+  const handleRetryClick = useCallback(() => {
+    setRetryCount((prev) => {
+      const next = prev + 1;
+      try {
+        const key = `payment_state_${tripId}`;
+        const existing = localStorage.getItem(key);
+        const obj = existing ? JSON.parse(existing) : {};
+        localStorage.setItem(
+          key,
+          JSON.stringify({
+            ...obj,
+            retryCount: next,
+            preventAutoTrigger: true,
+            status: obj.status || "attempted",
+          }),
+        );
+      } catch {}
+      return next;
+    });
+    handlePaymentClick();
+  }, [handlePaymentClick, tripId]);
 
   // Auto-trigger payment effect - only when payment state is idle
   useEffect(() => {
@@ -1000,13 +1017,27 @@ const NonAgentFlowWidgetContent: React.FC<
 
   // Minimal UI: show only a small loader during payment initiation/processing
   const showLoader =
-    paymentState.status === "loading" || paymentState.status === "processing";
+    hasAttempted &&
+    (paymentState.status === "loading" || paymentState.status === "processing");
   return (
     <>
       {showLoader && (
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-800" />
           Processing payment...
+        </div>
+      )}
+      {!showLoader && hasAttempted && paymentState.status !== "success" && (
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-700">Payment not completed.</span>
+          {retryCount < 2 && (
+            <Button
+              onClick={handleRetryClick}
+              className="bg-black text-white hover:bg-gray-800"
+            >
+              Retry payment
+            </Button>
+          )}
         </div>
       )}
     </>
