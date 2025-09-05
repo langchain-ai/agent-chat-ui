@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect, ChangeEvent } from "react";
 import { toast } from "sonner";
-import type { Base64ContentBlock } from "@langchain/core/messages";
-import { fileToContentBlock } from "@/lib/multimodal-utils";
+import {
+  fileToContentBlock,
+  ExtendedImageContentBlock,
+} from "@/lib/multimodal-utils";
 
 export const SUPPORTED_FILE_TYPES = [
   "image/jpeg",
@@ -12,33 +14,40 @@ export const SUPPORTED_FILE_TYPES = [
 ];
 
 interface UseFileUploadOptions {
-  initialBlocks?: Base64ContentBlock[];
+  initialBlocks?: ExtendedImageContentBlock[];
 }
 
 export function useFileUpload({
   initialBlocks = [],
 }: UseFileUploadOptions = {}) {
   const [contentBlocks, setContentBlocks] =
-    useState<Base64ContentBlock[]>(initialBlocks);
+    useState<ExtendedImageContentBlock[]>(initialBlocks);
   const dropRef = useRef<HTMLDivElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const dragCounter = useRef(0);
 
-  const isDuplicate = (file: File, blocks: Base64ContentBlock[]) => {
+  const isDuplicate = (file: File, blocks: ExtendedImageContentBlock[]) => {
     if (file.type === "application/pdf") {
       return blocks.some(
         (b) =>
           b.type === "file" &&
+          "mime_type" in b &&
           b.mime_type === "application/pdf" &&
+          "metadata" in b &&
           b.metadata?.filename === file.name,
       );
     }
     if (SUPPORTED_FILE_TYPES.includes(file.type)) {
       return blocks.some(
         (b) =>
-          b.type === "image" &&
-          b.metadata?.name === file.name &&
-          b.mime_type === file.type,
+          (b.type === "image" || b.type === "image_url") &&
+          (("metadata" in b &&
+            "mime_type" in b &&
+            b.metadata?.name === file.name &&
+            b.mime_type === file.type) ||
+            (b.type === "image_url" &&
+              "image_url" in b &&
+              b.image_url?.url?.includes(file.name))),
       );
     }
     return false;
@@ -108,9 +117,7 @@ export function useFileUpload({
       if (!e.dataTransfer) return;
 
       const files = Array.from(e.dataTransfer.files);
-      const validFiles = files.filter((file) =>
-        SUPPORTED_FILE_TYPES.includes(file.type),
-      );
+      const validFiles = files.filter((file) => file.type);
       const invalidFiles = files.filter(
         (file) => !SUPPORTED_FILE_TYPES.includes(file.type),
       );
@@ -137,7 +144,7 @@ export function useFileUpload({
         : [];
       setContentBlocks((prev) => [...prev, ...newBlocks]);
     };
-    const handleWindowDragEnd = (e: DragEvent) => {
+    const handleWindowDragEnd = () => {
       dragCounter.current = 0;
       setDragOver(false);
     };
@@ -225,16 +232,23 @@ export function useFileUpload({
         return contentBlocks.some(
           (b) =>
             b.type === "file" &&
+            "mime_type" in b &&
             b.mime_type === "application/pdf" &&
+            "metadata" in b &&
             b.metadata?.filename === file.name,
         );
       }
       if (SUPPORTED_FILE_TYPES.includes(file.type)) {
         return contentBlocks.some(
           (b) =>
-            b.type === "image" &&
-            b.metadata?.name === file.name &&
-            b.mime_type === file.type,
+            (b.type === "image" || b.type === "image_url") &&
+            (("metadata" in b &&
+              "mime_type" in b &&
+              b.metadata?.name === file.name &&
+              b.mime_type === file.type) ||
+              (b.type === "image_url" &&
+                "image_url" in b &&
+                b.image_url?.url?.includes(file.name))),
         );
       }
       return false;
