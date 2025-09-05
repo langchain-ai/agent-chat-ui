@@ -270,6 +270,8 @@ const NonAgentFlowWidgetContent: React.FC<
   const [isSubmittingInterrupt, setIsSubmittingInterrupt] = useState(false);
   const [hasAttempted, setHasAttempted] = useState<boolean>(false);
   const [retryCount, setRetryCount] = useState<number>(0);
+  const [hasSubmittedOnExhaust, setHasSubmittedOnExhaust] =
+    useState<boolean>(false);
 
   // Derive attempt flag from existing payment_state_<tripId>
   useEffect(() => {
@@ -292,6 +294,21 @@ const NonAgentFlowWidgetContent: React.FC<
       setRetryCount(0);
     }
   }, [tripId, paymentState.status]);
+
+  // Helper to fetch the most up-to-date retry count (avoid stale state in async handlers)
+  const getCurrentRetryCount = useCallback((): number => {
+    try {
+      const key = `payment_state_${tripId}`;
+      const existing = localStorage.getItem(key);
+      if (existing) {
+        const obj = JSON.parse(existing);
+        return Number(obj?.retryCount) || 0;
+      }
+    } catch {}
+    return retryCount;
+  }, [tripId, retryCount]);
+
+  // Removed premature submission effect; we'll submit only after the last attempt completes
 
   // Function to save payment state to localStorage
   const savePaymentState = useCallback(
@@ -498,42 +515,64 @@ const NonAgentFlowWidgetContent: React.FC<
 
               onPaymentSuccess?.(verificationResponse);
 
+              // If retries were exhausted, also submit interrupt on success
+              if (getCurrentRetryCount() >= 2 && !hasSubmittedOnExhaust) {
+                try {
+                  setIsSubmittingInterrupt(true);
+                  await submitVerificationResult({
+                    paymentStatus: verificationResponse.data.paymentStatus,
+                    bookingStatus: verificationResponse.data.bookingStatus,
+                  });
+                } catch (err) {
+                  console.error(
+                    "Error submitting interrupt on success after retries:",
+                    err,
+                  );
+                } finally {
+                  setIsSubmittingInterrupt(false);
+                  setHasSubmittedOnExhaust(true);
+                }
+              }
+
               // Show success message
               if (isPaymentAndBookingSuccessful(verificationResponse)) {
                 toast.success("Payment and booking completed successfully!");
-                // Submit compact success response
-                try {
+                // Only submit here if we haven't already submitted due to retry exhaustion
+                if (!hasSubmittedOnExhaust) {
                   try {
-                    setIsSubmittingInterrupt(true);
-                    const paymentMethod =
-                      verificationResponse.data?.paymentData?.method || "";
+                    try {
+                      setIsSubmittingInterrupt(true);
+                      const paymentMethod =
+                        verificationResponse.data?.paymentData?.method || "";
 
-                    const interruptPromise = submitVerificationResult({
-                      paymentStatus: verificationResponse.data.paymentStatus,
-                      bookingStatus: verificationResponse.data.bookingStatus,
-                      pnr,
-                      transactionId: transaction_id,
-                      paymentMethod,
-                    });
+                      const interruptPromise = submitVerificationResult({
+                        paymentStatus: verificationResponse.data.paymentStatus,
+                        bookingStatus: verificationResponse.data.bookingStatus,
+                        pnr,
+                        transactionId: transaction_id,
+                        paymentMethod,
+                      });
 
-                    const timeoutPromise = new Promise((_, reject) => {
-                      setTimeout(
-                        () => reject(new Error("Interrupt submission timeout")),
-                        5000,
+                      const timeoutPromise = new Promise((_, reject) => {
+                        setTimeout(
+                          () =>
+                            reject(new Error("Interrupt submission timeout")),
+                          5000,
+                        );
+                      });
+
+                      await Promise.race([interruptPromise, timeoutPromise]);
+                    } catch (interruptError) {
+                      console.error(
+                        "Failed to submit interrupt response:",
+                        interruptError,
                       );
-                    });
-
-                    await Promise.race([interruptPromise, timeoutPromise]);
-                  } catch (interruptError) {
-                    console.error(
-                      "Failed to submit interrupt response:",
-                      interruptError,
-                    );
-                  } finally {
-                    setIsSubmittingInterrupt(false);
+                    } finally {
+                      setIsSubmittingInterrupt(false);
+                    }
+                  } catch (error) {
+                    console.error("Error solving interrupt:", error);
                   }
-                } catch (error) {
-                  console.error("Error solving interrupt:", error);
                 }
 
                 // Don't show reopen button on successful payment
@@ -572,6 +611,25 @@ const NonAgentFlowWidgetContent: React.FC<
 
               onPaymentFailure?.(errorMessage);
               toast.error("Payment verification failed");
+
+              // If this was the last allowed attempt, submit failure now
+              if (getCurrentRetryCount() >= 2 && !hasSubmittedOnExhaust) {
+                try {
+                  setIsSubmittingInterrupt(true);
+                  await submitVerificationResult({
+                    paymentStatus: "FAILED",
+                    bookingStatus: "FAILED",
+                  });
+                } catch (err) {
+                  console.error(
+                    "Error submitting interrupt on final verification failure:",
+                    err,
+                  );
+                } finally {
+                  setIsSubmittingInterrupt(false);
+                  setHasSubmittedOnExhaust(true);
+                }
+              }
             } finally {
               setIsCountdownActive(false);
               switchToChatWithDelay(
@@ -625,6 +683,27 @@ const NonAgentFlowWidgetContent: React.FC<
               );
 
               onPaymentFailure?.(errorMessage);
+
+              // If this was the last allowed attempt, submit failure now
+              if (getCurrentRetryCount() >= 2 && !hasSubmittedOnExhaust) {
+                (async () => {
+                  try {
+                    setIsSubmittingInterrupt(true);
+                    await submitVerificationResult({
+                      paymentStatus: "FAILED",
+                      bookingStatus: "FAILED",
+                    });
+                  } catch (err) {
+                    console.error(
+                      "Error submitting interrupt on final cancellation:",
+                      err,
+                    );
+                  } finally {
+                    setIsSubmittingInterrupt(false);
+                    setHasSubmittedOnExhaust(true);
+                  }
+                })();
+              }
             },
           },
         };
@@ -668,6 +747,25 @@ const NonAgentFlowWidgetContent: React.FC<
 
         onPaymentFailure?.(errorMessage);
         toast.error("Failed to initiate payment");
+
+        // If this was the last allowed attempt, submit failure now
+        if (getCurrentRetryCount() >= 2 && !hasSubmittedOnExhaust) {
+          try {
+            setIsSubmittingInterrupt(true);
+            await submitVerificationResult({
+              paymentStatus: "FAILED",
+              bookingStatus: "FAILED",
+            });
+          } catch (err) {
+            console.error(
+              "Error submitting interrupt on final initiation failure:",
+              err,
+            );
+          } finally {
+            setIsSubmittingInterrupt(false);
+            setHasSubmittedOnExhaust(true);
+          }
+        }
       }
     })();
   }, [
