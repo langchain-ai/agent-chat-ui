@@ -147,40 +147,43 @@ export function HumanMessage({
                 )}
               </div>
             )}
-            {/* Render text if present, otherwise fallback to file/image name */}
-            <p className="bg-muted ml-auto w-full max-w-[80vw] rounded-3xl px-4 py-2 text-right break-words whitespace-pre-wrap">
-              {contentString}
-            </p>
+            {/* Render text and show actions inline on the same row (actions on the left) */}
+            <div className="ml-auto flex w-full max-w-[80vw] items-start gap-2">
+              <div
+                className={cn(
+                  "flex shrink-0 items-center gap-2 transition-opacity",
+                  "opacity-0 group-focus-within:opacity-100 group-hover:opacity-100",
+                  isEditing && "opacity-100",
+                )}
+              >
+                <BranchSwitcher
+                  branch={meta?.branch}
+                  branchOptions={meta?.branchOptions}
+                  onSelect={(branch) => thread.setBranch(branch)}
+                  isLoading={isLoading}
+                />
+                <CommandBar
+                  isLoading={isLoading}
+                  content={contentString}
+                  isEditing={isEditing}
+                  setIsEditing={(c) => {
+                    if (c) {
+                      setValue(contentString);
+                    }
+                    setIsEditing(c);
+                  }}
+                  handleSubmitEdit={handleSubmitEdit}
+                  isHumanMessage={true}
+                />
+              </div>
+              <p className="bg-muted flex-1 rounded-3xl px-4 py-2 text-right break-words whitespace-pre-wrap">
+                {contentString}
+              </p>
+            </div>
           </div>
         )}
 
-        <div
-          className={cn(
-            "ml-auto flex items-center gap-2 transition-opacity",
-            "opacity-0 group-focus-within:opacity-100 group-hover:opacity-100",
-            isEditing && "opacity-100",
-          )}
-        >
-          <BranchSwitcher
-            branch={meta?.branch}
-            branchOptions={meta?.branchOptions}
-            onSelect={(branch) => thread.setBranch(branch)}
-            isLoading={isLoading}
-          />
-          <CommandBar
-            isLoading={isLoading}
-            content={contentString}
-            isEditing={isEditing}
-            setIsEditing={(c) => {
-              if (c) {
-                setValue(contentString);
-              }
-              setIsEditing(c);
-            }}
-            handleSubmitEdit={handleSubmitEdit}
-            isHumanMessage={true}
-          />
-        </div>
+        {/* Actions already rendered inline with the message; bottom row removed to avoid duplicates */}
       </div>
     </div>
   );

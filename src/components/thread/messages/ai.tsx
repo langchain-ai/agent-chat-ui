@@ -165,8 +165,29 @@ export function AssistantMessage({
         ) : (
           <>
             {contentString.length > 0 && (
-              <div className="py-1">
-                <MarkdownText>{contentString}</MarkdownText>
+              <div className="flex items-start gap-2">
+                <div className="py-1">
+                  <MarkdownText>{contentString}</MarkdownText>
+                </div>
+                <div
+                  className={cn(
+                    "mr-auto flex items-center gap-2 transition-opacity",
+                    "opacity-0 group-focus-within:opacity-100 group-hover:opacity-100",
+                  )}
+                >
+                  <BranchSwitcher
+                    branch={meta?.branch}
+                    branchOptions={meta?.branchOptions}
+                    onSelect={(branch) => thread.setBranch(branch)}
+                    isLoading={isLoading}
+                  />
+                  <CommandBar
+                    content={contentString}
+                    isLoading={isLoading}
+                    isAiMessage={true}
+                    handleRegenerate={() => handleRegenerate(parentCheckpoint)}
+                  />
+                </div>
               </div>
             )}
 
@@ -190,25 +211,27 @@ export function AssistantMessage({
                 thread={thread}
               />
             )}
-            <div
-              className={cn(
-                "mr-auto flex items-center gap-2 transition-opacity",
-                "opacity-0 group-focus-within:opacity-100 group-hover:opacity-100",
-              )}
-            >
-              <BranchSwitcher
-                branch={meta?.branch}
-                branchOptions={meta?.branchOptions}
-                onSelect={(branch) => thread.setBranch(branch)}
-                isLoading={isLoading}
-              />
-              <CommandBar
-                content={contentString}
-                isLoading={isLoading}
-                isAiMessage={true}
-                handleRegenerate={() => handleRegenerate(parentCheckpoint)}
-              />
-            </div>
+            {contentString.length === 0 && (
+              <div
+                className={cn(
+                  "mr-auto flex items-center gap-2 transition-opacity",
+                  "opacity-0 group-focus-within:opacity-100 group-hover:opacity-100",
+                )}
+              >
+                <BranchSwitcher
+                  branch={meta?.branch}
+                  branchOptions={meta?.branchOptions}
+                  onSelect={(branch) => thread.setBranch(branch)}
+                  isLoading={isLoading}
+                />
+                <CommandBar
+                  content={contentString}
+                  isLoading={isLoading}
+                  isAiMessage={true}
+                  handleRegenerate={() => handleRegenerate(parentCheckpoint)}
+                />
+              </div>
+            )}
           </>
         )}
       </div>

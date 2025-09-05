@@ -538,10 +538,10 @@ export function Thread() {
                               }
                             }}
                             placeholder="Type your message..."
-                            className="field-sizing-content sm:field-sizing-content resize-none border-none bg-transparent p-2 pb-0 pr-16 sm:pr-2 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none min-h-[2.5rem] max-h-[2.5rem] sm:h-auto sm:max-h-none leading-tight w-full"
+                            className="field-sizing-content max-h-[2.5rem] min-h-[2.5rem] w-full resize-none border-none bg-transparent p-2 pr-16 pb-0 leading-tight shadow-none ring-0 outline-none focus:ring-0 focus:outline-none sm:field-sizing-content sm:h-auto sm:max-h-none sm:pr-2"
                           />
                           {/* Mobile: Button inside input area */}
-                          <div className="absolute right-2 top-1/2 -translate-y-1/2 sm:hidden">
+                          <div className="absolute top-1/2 right-2 -translate-y-1/2 sm:hidden">
                             {stream.isLoading ? (
                               <Button
                                 key="stop"
@@ -568,7 +568,7 @@ export function Thread() {
                         </div>
 
                         {/* Desktop: Button below input */}
-                        <div className="hidden sm:flex items-center gap-6 p-2 pt-2">
+                        <div className="hidden items-center gap-6 p-2 pt-2 sm:flex">
                           <input
                             id="file-input"
                             type="file"
@@ -658,7 +658,7 @@ export function Thread() {
                     }
                     footer={
                       <div className="sticky bottom-0 flex flex-col items-center gap-3 bg-gradient-to-t from-white/80 via-white/40 to-transparent pt-3 pb-[env(safe-area-inset-bottom)] sm:gap-8 sm:pt-8">
-                        <ScrollToBottom className="animate-in fade-in-0 zoom-in-95 absolute bottom-full right-4 mb-2 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:mb-4 rounded-full sm:rounded-md" />
+                        <ScrollToBottom className="animate-in fade-in-0 zoom-in-95 absolute right-4 bottom-full mb-2 rounded-full sm:right-auto sm:left-1/2 sm:mb-4 sm:-translate-x-1/2 sm:rounded-md" />
 
                         <div
                           ref={dropRef}
@@ -698,10 +698,10 @@ export function Thread() {
                                   }
                                 }}
                                 placeholder="Type your message...."
-                                className="field-sizing-content sm:field-sizing-content resize-none border-none bg-transparent p-3.5 pb-0 pr-20 sm:pr-3.5 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none min-h-[3.5rem] max-h-[3.5rem] sm:h-auto sm:max-h-none leading-tight w-full"
+                                className="field-sizing-content max-h-[3.5rem] min-h-[3.5rem] w-full resize-none border-none bg-transparent p-3.5 pr-20 pb-0 leading-tight shadow-none ring-0 outline-none focus:ring-0 focus:outline-none sm:field-sizing-content sm:h-auto sm:max-h-none sm:pr-3.5"
                               />
                               {/* Mobile: Button inside input area */}
-                              <div className="absolute right-3 top-1/2 -translate-y-1/2 sm:hidden">
+                              <div className="absolute top-1/2 right-3 -translate-y-1/2 sm:hidden">
                                 {stream.isLoading ? (
                                   <Button
                                     key="stop"
@@ -729,7 +729,7 @@ export function Thread() {
                             </div>
 
                             {/* Desktop: Button below input */}
-                            <div className="hidden sm:flex items-center gap-6 p-2 pt-4">
+                            <div className="hidden items-center gap-6 p-2 pt-4 sm:flex">
                               {stream.isLoading ? (
                                 <Button
                                   key="stop"
