@@ -1,17 +1,22 @@
 "use client";
 
-import React, { useState } from "react"
-import { FlightCard } from "./flight-card"
-import { AllFlightsSheet } from "./all-flights-sheet"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { Slider } from "@/components/ui/slider"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
-import { Filter } from "lucide-react"
+import React, { useState } from "react";
+import { FlightCard } from "./flight-card";
+import { AllFlightsSheet } from "./all-flights-sheet";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Slider } from "@/components/ui/slider";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Filter } from "lucide-react";
 import { useStreamContext } from "@/providers/Stream";
 import { submitInterruptResponse } from "./util";
 import { useEffect } from "react";
@@ -42,7 +47,7 @@ function FlightOptionsContent(args: FlightOptionsProps) {
     clearAllFilters,
     toggleAirline,
     toggleDepartureTime,
-    activeFiltersCount
+    activeFiltersCount,
   } = useFlightFilter();
 
   // All hooks must be called before any conditional logic or early returns
@@ -57,7 +62,8 @@ function FlightOptionsContent(args: FlightOptionsProps) {
   const readOnly = !!args.readOnly;
   const effectiveArgs = args.readOnly && frozenArgs ? frozenArgs : liveArgs;
 
-  const flightSearchFilters = (effectiveArgs as any)?.flightFilters  ?? args.flightFilters ?? {};
+  const flightSearchFilters =
+    (effectiveArgs as any)?.flightFilters ?? args.flightFilters ?? {};
 
   // // Check if there's no flight data available
   const allFlightOffers = args.allFlightOffers || [];
@@ -76,9 +82,11 @@ function FlightOptionsContent(args: FlightOptionsProps) {
   if (hasNoFlightData) {
     return (
       <div className="space-y-6">
-        <div className="text-center py-12">
-          <div className="text-gray-500 text-lg mb-2">No flights available</div>
-          <div className="text-gray-400 text-sm">Please try adjusting your search criteria</div>
+        <div className="py-12 text-center">
+          <div className="mb-2 text-lg text-gray-500">No flights available</div>
+          <div className="text-sm text-gray-400">
+            Please try adjusting your search criteria
+          </div>
         </div>
       </div>
     );
@@ -122,8 +130,9 @@ function FlightOptionsContent(args: FlightOptionsProps) {
   // Get flights by tag type for mobile tabs from filtered flights with custom tags
   const getFlightByTag = (tag: string) => {
     if (!Array.isArray(filteredFlights)) return null;
-    return filteredFlights.find((offer: any) =>
-      offer.type === tag || (offer.tags && offer.tags.includes(tag))
+    return filteredFlights.find(
+      (offer: any) =>
+        offer.type === tag || (offer.tags && offer.tags.includes(tag)),
     );
   };
 
@@ -139,6 +148,40 @@ function FlightOptionsContent(args: FlightOptionsProps) {
     return "best"; // fallback
   };
 
+  // Helper function to extract and format departure date from flight data
+  const getDepartureDate = (flights: any[]): string | null => {
+    if (!flights || flights.length === 0) return null;
+
+    const firstFlight = flights[0];
+    let departureDate: string | null = null;
+
+    // Try to get departure date from journey structure first
+    if (firstFlight.journey && firstFlight.journey.length > 0) {
+      departureDate = firstFlight.journey[0].departure?.date;
+    }
+    // Fallback to legacy structure
+    else if (firstFlight.departure?.date) {
+      departureDate = firstFlight.departure.date;
+    }
+
+    if (!departureDate) return null;
+
+    try {
+      const date = new Date(departureDate);
+      if (isNaN(date.getTime())) return null;
+
+      return date.toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    } catch (error) {
+      console.error("Error formatting departure date:", error);
+      return null;
+    }
+  };
+
   const handleSelectFlight = async (flightOfferId: string) => {
     // Prevent selection in read-only mode
     if (readOnly) return;
@@ -150,8 +193,7 @@ function FlightOptionsContent(args: FlightOptionsProps) {
       selectedFlightId: flightOfferId,
     };
 
-
-   try {
+    try {
       const selectedFlightOffer = args.allFlightOffers?.find(
         (offer: any) => offer.flightOfferId === flightOfferId,
       );
@@ -188,9 +230,18 @@ function FlightOptionsContent(args: FlightOptionsProps) {
     >
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+        <h2 className="mb-2 text-2xl font-bold text-gray-900">
           {flightOffers.length > 0 ? "Flight Options" : "No flights available"}
         </h2>
+        {/* Departure Date Display */}
+        {allFlightOffers.length > 0 && (
+          <div className="mb-2">
+            <p className="text-sm font-medium text-gray-700">
+              Departure:{" "}
+              {getDepartureDate(allFlightOffers) || "Date not available"}
+            </p>
+          </div>
+        )}
         {/* {flightOffers.length > 0 ? (
           <p className="text-gray-600">{flightOffers[0]?.journey[0]?.departure?.airportName} ({flightOffers[0]?.journey[0]?.departure?.airportIata}) → {flightOffers[0]?.journey[0]?.arrival?.airportName} ({flightOffers[0]?.journey[0]?.arrival?.airportIata})</p>
         ) : (
@@ -207,10 +258,13 @@ function FlightOptionsContent(args: FlightOptionsProps) {
             onClick={() => setShowFilters(true)}
             className="mb-2"
           >
-            <Filter className="w-4 h-4" />
+            <Filter className="h-4 w-4" />
             Filters
             {activeFiltersCount > 0 && (
-              <Badge variant="secondary" className="ml-1 px-1.5 py-0.5 text-xs">
+              <Badge
+                variant="secondary"
+                className="ml-1 px-1.5 py-0.5 text-xs"
+              >
                 {activeFiltersCount}
               </Badge>
             )}
@@ -221,13 +275,20 @@ function FlightOptionsContent(args: FlightOptionsProps) {
       {/* Desktop Layout - Show 2-3 cards based on available tag types */}
       <div className="hidden md:block">
         {flightOffers.length > 0 ? (
-          <div className={`grid gap-4 mb-6 ${
-            flightOffers.length === 3 ? 'grid-cols-3' :
-            flightOffers.length === 2 ? 'grid-cols-2' :
-            'grid-cols-1'
-          }`}>
+          <div
+            className={`mb-6 grid gap-4 ${
+              flightOffers.length === 3
+                ? "grid-cols-3"
+                : flightOffers.length === 2
+                  ? "grid-cols-2"
+                  : "grid-cols-1"
+            }`}
+          >
             {flightOffers.map((flight: any, index: number) => (
-              <div key={index} className="bg-white rounded-lg border shadow-sm">
+              <div
+                key={index}
+                className="rounded-lg border bg-white shadow-sm"
+              >
                 <FlightCard
                   {...flight}
                   onSelect={handleSelectFlight}
@@ -240,7 +301,10 @@ function FlightOptionsContent(args: FlightOptionsProps) {
           </div>
         ) : (
           <div className="mt-4 p-8 text-center text-gray-500">
-            <p>No flights match your current filters. Try adjusting your search criteria.</p>
+            <p>
+              No flights match your current filters. Try adjusting your search
+              criteria.
+            </p>
           </div>
         )}
       </div>
@@ -289,47 +353,56 @@ function FlightOptionsContent(args: FlightOptionsProps) {
               )}
             </TabsList>
 
-          {bestFlight && (
-            <TabsContent value="best" className="mt-4">
-              <div className="bg-white rounded-lg border shadow-sm">
-                <FlightCard
-                  {...bestFlight}
-                  onSelect={handleSelectFlight}
-                  isLoading={isLoading}
-                  selectedFlightId={selectedFlight}
-                  readOnly={readOnly}
-                />
-              </div>
-            </TabsContent>
-          )}
+            {bestFlight && (
+              <TabsContent
+                value="best"
+                className="mt-4"
+              >
+                <div className="rounded-lg border bg-white shadow-sm">
+                  <FlightCard
+                    {...bestFlight}
+                    onSelect={handleSelectFlight}
+                    isLoading={isLoading}
+                    selectedFlightId={selectedFlight}
+                    readOnly={readOnly}
+                  />
+                </div>
+              </TabsContent>
+            )}
 
-          {cheapestFlight && (
-            <TabsContent value="cheapest" className="mt-4">
-              <div className="bg-white rounded-lg border shadow-sm">
-                <FlightCard
-                  {...cheapestFlight}
-                  onSelect={handleSelectFlight}
-                  isLoading={isLoading}
-                  selectedFlightId={selectedFlight}
-                  readOnly={readOnly}
-                />
-              </div>
-            </TabsContent>
-          )}
+            {cheapestFlight && (
+              <TabsContent
+                value="cheapest"
+                className="mt-4"
+              >
+                <div className="rounded-lg border bg-white shadow-sm">
+                  <FlightCard
+                    {...cheapestFlight}
+                    onSelect={handleSelectFlight}
+                    isLoading={isLoading}
+                    selectedFlightId={selectedFlight}
+                    readOnly={readOnly}
+                  />
+                </div>
+              </TabsContent>
+            )}
 
-          {fastestFlight && (
-            <TabsContent value="fastest" className="mt-4">
-              <div className="bg-white rounded-lg border shadow-sm">
-                <FlightCard
-                  {...fastestFlight}
-                  onSelect={handleSelectFlight}
-                  isLoading={isLoading}
-                  selectedFlightId={selectedFlight}
-                  readOnly={readOnly}
-                />
-              </div>
-            </TabsContent>
-          )}
+            {fastestFlight && (
+              <TabsContent
+                value="fastest"
+                className="mt-4"
+              >
+                <div className="rounded-lg border bg-white shadow-sm">
+                  <FlightCard
+                    {...fastestFlight}
+                    onSelect={handleSelectFlight}
+                    isLoading={isLoading}
+                    selectedFlightId={selectedFlight}
+                    readOnly={readOnly}
+                  />
+                </div>
+              </TabsContent>
+            )}
 
             {fastestFlight && (
               <TabsContent
@@ -351,26 +424,37 @@ function FlightOptionsContent(args: FlightOptionsProps) {
         ) : (
           /* Empty state if no filtered flights available */
           <div className="mt-4 p-8 text-center text-gray-500">
-            <p>No flights match your current filters. Try adjusting your search criteria.</p>
+            <p>
+              No flights match your current filters. Try adjusting your search
+              criteria.
+            </p>
           </div>
         )}
       </div>
 
       {/* Show All Flights Button */}
-      { showAllFlights && <div className="flex justify-center">
-        <AllFlightsSheet
-          flightData={filteredFlights}
-          onFlightSelect={handleSelectFlight}
-          flightSearchFilters={flightSearchFilters}
-        >
-          <Button variant="outline" className="w-full md:w-auto">
-            Show all flights
-          </Button>
-        </AllFlightsSheet>
-      </div>}
+      {showAllFlights && (
+        <div className="flex justify-center">
+          <AllFlightsSheet
+            flightData={filteredFlights}
+            onFlightSelect={handleSelectFlight}
+            flightSearchFilters={flightSearchFilters}
+          >
+            <Button
+              variant="outline"
+              className="w-full md:w-auto"
+            >
+              Show all flights
+            </Button>
+          </AllFlightsSheet>
+        </div>
+      )}
 
       {/* Filter Bottom Sheet Modal */}
-      <Sheet open={showFilters} onOpenChange={setShowFilters}>
+      <Sheet
+        open={showFilters}
+        onOpenChange={setShowFilters}
+      >
         <SheetContent
           side="bottom"
           className="flex h-[85vh] flex-col overflow-hidden"
@@ -389,15 +473,21 @@ function FlightOptionsContent(args: FlightOptionsProps) {
             <div className="space-y-6">
               {/* Price Range Filter */}
               <div>
-                <Label className="text-sm font-medium mb-3 block">
-                  Price Range: {getCurrencySymbol(priceStats.currency)} {filterState.priceRange[0].toLocaleString()} - {getCurrencySymbol(priceStats.currency)} {filterState.priceRange[1].toLocaleString()}
+                <Label className="mb-3 block text-sm font-medium">
+                  Price Range: {getCurrencySymbol(priceStats.currency)}{" "}
+                  {filterState.priceRange[0].toLocaleString()} -{" "}
+                  {getCurrencySymbol(priceStats.currency)}{" "}
+                  {filterState.priceRange[1].toLocaleString()}
                 </Label>
                 <Slider
                   value={filterState.priceRange}
                   onValueChange={setPriceRange}
                   max={priceStats.max}
                   min={priceStats.min}
-                  step={Math.max(1, Math.floor((priceStats.max - priceStats.min) / 100))}
+                  step={Math.max(
+                    1,
+                    Math.floor((priceStats.max - priceStats.min) / 100),
+                  )}
                   className="w-full"
                 />
               </div>
@@ -406,28 +496,49 @@ function FlightOptionsContent(args: FlightOptionsProps) {
 
               {/* Airlines Filter */}
               <div>
-                <Label className="text-sm font-medium mb-3 block">Airlines</Label>
+                <Label className="mb-3 block text-sm font-medium">
+                  Airlines
+                </Label>
                 <div className="space-y-2">
-                  {availableAirlines.slice(0, showExpandedAirlines ? availableAirlines.length : 2).map((airline) => (
-                    <div key={airline} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={airline}
-                        checked={filterState.selectedAirlines.includes(airline as string)}
-                        onCheckedChange={() => toggleAirline(airline as string)}
-                      />
-                      <Label htmlFor={airline} className="text-sm">
-                        {airline}
-                      </Label>
-                    </div>
-                  ))}
+                  {availableAirlines
+                    .slice(
+                      0,
+                      showExpandedAirlines ? availableAirlines.length : 2,
+                    )
+                    .map((airline) => (
+                      <div
+                        key={airline}
+                        className="flex items-center space-x-2"
+                      >
+                        <Checkbox
+                          id={airline}
+                          checked={filterState.selectedAirlines.includes(
+                            airline as string,
+                          )}
+                          onCheckedChange={() =>
+                            toggleAirline(airline as string)
+                          }
+                        />
+                        <Label
+                          htmlFor={airline}
+                          className="text-sm"
+                        >
+                          {airline}
+                        </Label>
+                      </div>
+                    ))}
                   {availableAirlines.length > 2 && (
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setShowExpandedAirlines(!showExpandedAirlines)}
-                      className="text-sm text-gray-600 hover:text-gray-800 p-0 h-auto"
+                      onClick={() =>
+                        setShowExpandedAirlines(!showExpandedAirlines)
+                      }
+                      className="h-auto p-0 text-sm text-gray-600 hover:text-gray-800"
                     >
-                      {showExpandedAirlines ? 'Show less airlines' : `Show all airlines (${availableAirlines.length - 2} more)`}
+                      {showExpandedAirlines
+                        ? "Show less airlines"
+                        : `Show all airlines (${availableAirlines.length - 2} more)`}
                     </Button>
                   )}
                 </div>
@@ -437,8 +548,11 @@ function FlightOptionsContent(args: FlightOptionsProps) {
 
               {/* Max Stops Filter */}
               <div>
-                <Label className="text-sm font-medium mb-3 block">
-                  Max Stops: {filterState.maxStops === 0 ? "Non-stop" : `${filterState.maxStops} stop${filterState.maxStops > 1 ? "s" : ""}`}
+                <Label className="mb-3 block text-sm font-medium">
+                  Max Stops:{" "}
+                  {filterState.maxStops === 0
+                    ? "Non-stop"
+                    : `${filterState.maxStops} stop${filterState.maxStops > 1 ? "s" : ""}`}
                 </Label>
                 <Slider
                   value={[filterState.maxStops]}
@@ -454,22 +568,35 @@ function FlightOptionsContent(args: FlightOptionsProps) {
 
               {/* Departure Time Filter */}
               <div>
-                <Label className="text-sm font-medium mb-3 block">Departure Time</Label>
+                <Label className="mb-3 block text-sm font-medium">
+                  Departure Time
+                </Label>
                 <div className="space-y-2">
                   {[
-                    { label: "Early Morning (midnight - 08:00)", value: "early" },
+                    {
+                      label: "Early Morning (midnight - 08:00)",
+                      value: "early",
+                    },
                     { label: "Morning (08:00 - 12:00)", value: "morning" },
                     { label: "Afternoon (12:00 - 16:00)", value: "afternoon" },
                     { label: "Evening (16:00 - 20:00)", value: "evening" },
                     { label: "Night (20:00 - midnight)", value: "night" },
                   ].map((slot) => (
-                    <div key={slot.value} className="flex items-center space-x-2">
+                    <div
+                      key={slot.value}
+                      className="flex items-center space-x-2"
+                    >
                       <Checkbox
                         id={slot.value}
-                        checked={filterState.selectedDepartureTime.includes(slot.value)}
+                        checked={filterState.selectedDepartureTime.includes(
+                          slot.value,
+                        )}
                         onCheckedChange={() => toggleDepartureTime(slot.value)}
                       />
-                      <Label htmlFor={slot.value} className="text-sm">
+                      <Label
+                        htmlFor={slot.value}
+                        className="text-sm"
+                      >
                         {slot.label}
                       </Label>
                     </div>
@@ -513,11 +640,15 @@ export default function FlightOptionsV0Widget(args: FlightOptionsProps) {
   const frozenArgs = (liveArgs as any)?.submission;
   const effectiveArgs = args.readOnly && frozenArgs ? frozenArgs : liveArgs;
 
-  const allFlightOffers = (effectiveArgs as any)?.flightOffers ?? args.flightOffers ?? [];
+  const allFlightOffers =
+    (effectiveArgs as any)?.flightOffers ?? args.flightOffers ?? [];
 
   return (
     <FlightFilterProvider flightData={allFlightOffers}>
-      <FlightOptionsContent {...args} allFlightOffers={allFlightOffers} />
+      <FlightOptionsContent
+        {...args}
+        allFlightOffers={allFlightOffers}
+      />
     </FlightFilterProvider>
-  )
+  );
 }

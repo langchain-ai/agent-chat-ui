@@ -912,9 +912,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
               >
                 {isSubmitting
                   ? "Processing..."
-                  : isBookingSubmitted
-                    ? "Booking Confirmed"
-                    : "Confirm Booking"}
+                  : "Confirm Booking"}
               </Button>
             </div>
           </div>
@@ -989,9 +987,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
             >
               {isSubmitting
                 ? "Processing..."
-                : isBookingSubmitted
-                  ? "Booking Confirmed"
-                  : "Confirm Booking"}
+                : "Confirm Booking"}
             </Button>
           </div>
         </div>
