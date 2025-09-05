@@ -38,6 +38,24 @@ pnpm dev
 
 The app will be available at `http://localhost:3000`.
 
+## Deploy
+
+First, clone the repository
+
+```bash
+git clone https://github.com/langchain-ai/agent-chat-ui.git
+
+cd agent-chat-ui/docker
+```
+
+Deploy using docker-compose
+
+```bash
+docker compose up -d
+```
+
+The app will be available at `http://localhost:3000`.
+
 ## Usage
 
 Once the app is running (or if using the deployed site), you'll be prompted to enter:
