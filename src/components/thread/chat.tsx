@@ -321,35 +321,20 @@ export function Thread() {
   const quickActions: Array<{ label: string; text: string; icon?: ReactNode }> =
     [
       {
-        label: "Book me a flight",
+        label: "Book me a\nflight",
         text: "Book me a flight",
-        icon: <Plane className="h-3.5 w-3.5" />,
-      },
-      // {
-      //   label: "Flexible dates",
-      //   text: "Show cheapest month from BLR to GOI",
-      //   icon: <CalendarDays className="h-3.5 w-3.5" />,
-      // },
-      // {
-      //   label: "Round trip",
-      //   text: "Round trip NYC to SFO for 2 adults in premium economy",
-      //   icon: <ArrowLeftRight className="h-3.5 w-3.5" />,
-      // },
-      {
-        label: "Show Past Flights",
-        text: "Show me my past flights",
-        icon: <Ticket className="h-3.5 w-3.5" />,
+        icon: <Plane className="h-4 w-4" />,
       },
       {
-        label: "Show Free Lounge Access",
-        text: "Show me free lounge access for Delhi airport Terminal 1",
-        icon: <Armchair className="h-3.5 w-3.5" />,
+        label: "Show me free\nlounge access",
+        text: "Show me free lounge access",
+        icon: <Armchair className="h-4 w-4" />,
       },
-      // {
-      //   label: "Flight status",
-      //   text: "What is the status of AI 102 tomorrow?",
-      //   icon: <Clock className="h-3.5 w-3.5" />,
-      // },
+      {
+        label: "Please do my\nwebcheckin",
+        text: "Please do my webcheckin",
+        icon: <Ticket className="h-4 w-4" />,
+      },
     ];
 
   const handleQuickActionClick = (text: string) => {
@@ -458,8 +443,10 @@ export function Thread() {
             <div className="flex h-full min-h-0 flex-col">
               <NetworkStatusBanner className="px-4" />
               {!chatStarted ? (
-                // New thread layout - centered content
-                <div className="flex flex-1 flex-col items-center justify-center px-4">
+                // New thread layout - centered content with mobile-optimized positioning
+                <div className="flex flex-1 flex-col items-center px-4 sm:justify-center">
+                  {/* Mobile: Content positioned higher, input lower */}
+                  <div className="flex flex-1 flex-col items-center justify-center sm:contents">
                   {/* Centered Logo */}
                   <div className="mb-5 flex items-center justify-center">
                     <FlyoLogoSVG
@@ -483,21 +470,23 @@ export function Thread() {
                       {", where are we flying today?"}
                     </div>
                   }
+                  </div>
 
-                  {/* Centered Chat Input */}
-                  <div className="w-full max-w-3xl py-8">
-                    <div className="mx-auto mb-3 w-full max-w-3xl overflow-x-auto px-1 text-center [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:h-0 [&::-webkit-scrollbar]:w-0">
-                      <div className="inline-flex items-center gap-2 whitespace-nowrap">
-                        {quickActions.map((qa) => (
+                  {/* Centered Chat Input - positioned lower on mobile for better thumb reach */}
+                  <div className="w-full max-w-3xl py-4 mt-auto mb-12 sm:mt-0 sm:mb-0 sm:py-8">
+                    <div className="mx-auto mb-4 w-full max-w-3xl overflow-x-auto px-1 text-center [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:h-0 [&::-webkit-scrollbar]:w-0">
+                      <div className="inline-flex items-start gap-3 whitespace-nowrap sm:gap-4">
+                        {quickActions.slice(0, 3).map((qa) => (
                           <button
                             key={qa.label}
                             type="button"
                             onClick={() => handleQuickActionClick(qa.text)}
-                            className="group hover:text-primary inline-flex shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-white/80 px-3 py-1 text-xs font-medium text-gray-700 shadow-sm backdrop-blur hover:bg-white focus-visible:ring-2 focus-visible:ring-blue-600/30 focus-visible:outline-none"
+                            className="group hover:text-primary inline-flex shrink-0 items-center justify-start rounded-2xl border border-gray-200 bg-white/80 shadow-sm backdrop-blur hover:bg-white hover:shadow-md focus-visible:ring-2 focus-visible:ring-blue-600/30 focus-visible:outline-none transition-all duration-200 px-4 py-3 min-h-[3rem] w-auto"
                             aria-label={qa.label}
                           >
-                            {qa.icon}
-                            <span>{qa.label}</span>
+                            <span className="text-sm font-medium text-gray-700 leading-tight text-left whitespace-pre-line">
+                              {qa.label}
+                            </span>
                           </button>
                         ))}
                       </div>
@@ -538,10 +527,10 @@ export function Thread() {
                               }
                             }}
                             placeholder="Type your message..."
-                            className="field-sizing-content max-h-[2.5rem] min-h-[2.5rem] w-full resize-none border-none bg-transparent p-2 pr-16 pb-0 leading-tight shadow-none ring-0 outline-none focus:ring-0 focus:outline-none sm:field-sizing-content sm:h-auto sm:max-h-none sm:pr-2"
+                            className="field-sizing-content min-h-[3.5rem] max-h-[8rem] w-full resize-none border-none bg-transparent p-3 pr-16 pb-0 leading-relaxed shadow-none ring-0 outline-none focus:ring-0 focus:outline-none sm:field-sizing-content sm:max-h-[10rem] sm:pr-2 sm:p-2 sm:leading-tight"
                           />
                           {/* Mobile: Button inside input area */}
-                          <div className="absolute top-1/2 right-2 -translate-y-1/2 sm:hidden">
+                          <div className="absolute top-1/2 right-3 -translate-y-1/2 sm:hidden">
                             {stream.isLoading ? (
                               <Button
                                 key="stop"
@@ -698,7 +687,7 @@ export function Thread() {
                                   }
                                 }}
                                 placeholder="Type your message...."
-                                className="field-sizing-content max-h-[3.5rem] min-h-[3.5rem] w-full resize-none border-none bg-transparent p-3.5 pr-20 pb-0 leading-tight shadow-none ring-0 outline-none focus:ring-0 focus:outline-none sm:field-sizing-content sm:h-auto sm:max-h-none sm:pr-3.5"
+                                className="field-sizing-content min-h-[3.5rem] max-h-[8rem] w-full resize-none border-none bg-transparent p-3 pr-16 pb-0 leading-relaxed shadow-none ring-0 outline-none focus:ring-0 focus:outline-none sm:field-sizing-content sm:max-h-[10rem] sm:pr-3 sm:p-3.5 sm:leading-tight"
                               />
                               {/* Mobile: Button inside input area */}
                               <div className="absolute top-1/2 right-3 -translate-y-1/2 sm:hidden">
