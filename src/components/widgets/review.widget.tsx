@@ -5,6 +5,7 @@ import { Button } from "@/components/common/ui/button";
 import { cn } from "@/lib/utils";
 import { submitInterruptResponse } from "./util";
 import { useStreamContext } from "@/providers/Stream";
+import { useTranslations } from "@/hooks/useTranslations";
 
 // Import modular components
 import { FlightDetailsCard } from "./review/FlightDetailsCard";
@@ -40,6 +41,9 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
   console.log("---> Complete Args", JSON.stringify(args));
   // Get thread context for interrupt responses
   const thread = useStreamContext();
+
+  // Initialize translations
+  const { t } = useTranslations('reviewWidget');
 
   const liveArgs =
     args.apiData?.__block?.value?.[0]?.value?.value?.widget?.args || {};
@@ -366,15 +370,15 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
 
     if (passengerIndex < adults) {
       // Adult passengers: "Adult 1", "Adult 2", etc.
-      return `Adult ${passengerIndex + 1}`;
+      return `${t('labels.adult')} ${passengerIndex + 1}`;
     } else if (passengerIndex < adults + children) {
       // Children passengers: "Children 1", "Children 2", etc.
       const childIndex = passengerIndex - adults + 1;
-      return `Children ${childIndex}`;
+      return `${t('labels.children')} ${childIndex}`;
     } else {
       // Infant passengers: "Infants 1", "Infants 2", etc.
       const infantIndex = passengerIndex - adults - children + 1;
-      return `Infants ${infantIndex}`;
+      return `${t('labels.infants')} ${infantIndex}`;
     }
   };
 
@@ -667,11 +671,11 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
 
     // If there are validation errors, don't submit - just show visual feedback
     if (Object.values(errors).some(Boolean)) {
-      console.log("Validation errors found, not submitting:", errors);
+      console.log(t('messages.validationErrors'), errors);
       return;
     }
 
-    console.log("All validation passed, proceeding with submission");
+    console.log(t('messages.allValidationPassed'));
 
     setIsSubmitting(true);
 
@@ -874,7 +878,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
                   showTravelDocuments={passengerDocumentRequired || passengerDateOfBirthRequired}
                   isDesktop={isDesktop}
                   passengerIndex={index}
-                  passengerTitle={totalPassengers === 1 ? "Passenger Details" : getPassengerLabel(index)}
+                  passengerTitle={totalPassengers === 1 ? t('title.passengerDetails') : getPassengerLabel(index)}
                   passengerType={passengerType}
                   onPassengerChange={(field: string, value: string) => handlePassengerChange(index, field, value)}
                   onDocumentChange={(field: string, value: string) => handleDocumentChange(index, field, value)}
@@ -911,10 +915,10 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
                 className="w-full bg-black text-white hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
                 {isSubmitting
-                  ? "Processing..."
+                  ? t('buttons.processing')
                   : isBookingSubmitted
-                    ? "Booking Confirmed"
-                    : "Confirm Booking"}
+                    ? t('buttons.bookingConfirmed')
+                    : t('buttons.confirmBooking')}
               </Button>
             </div>
           </div>
@@ -959,7 +963,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
                 showTravelDocuments={passengerDocumentRequired || passengerDateOfBirthRequired}
                 isDesktop={isDesktop}
                 passengerIndex={index}
-                passengerTitle={totalPassengers === 1 ? "Passenger Details" : getPassengerLabel(index)}
+                passengerTitle={totalPassengers === 1 ? t('title.passengerDetails') : getPassengerLabel(index)}
                 passengerType={passengerType}
                 onPassengerChange={(field: string, value: string) => handlePassengerChange(index, field, value)}
                 onDocumentChange={(field: string, value: string) => handleDocumentChange(index, field, value)}
@@ -988,10 +992,10 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
               className="w-full bg-black text-white hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {isSubmitting
-                ? "Processing..."
+                ? t('buttons.processing')
                 : isBookingSubmitted
-                  ? "Booking Confirmed"
-                  : "Confirm Booking"}
+                  ? t('buttons.bookingConfirmed')
+                  : t('buttons.confirmBooking')}
             </Button>
           </div>
         </div>

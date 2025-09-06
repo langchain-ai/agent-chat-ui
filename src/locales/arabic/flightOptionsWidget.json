@@ -1,0 +1,66 @@
+{
+  "title": {
+    "flightOptions": "خيارات الرحلات",
+    "filterFlights": "تصفية الرحلات",
+    "flights": "الرحلات"
+  },
+  "tabs": {
+    "best": "الأفضل",
+    "cheapest": "الأرخص",
+    "fastest": "الأسرع"
+  },
+  "buttons": {
+    "filters": "الفلاتر",
+    "showAllFlights": "عرض جميع الرحلات",
+    "clearAll": "مسح الكل",
+    "applyFilters": "تطبيق الفلاتر",
+    "showLessAirlines": "عرض شركات طيران أقل",
+    "showAllAirlines": "عرض جميع شركات الطيران",
+    "details": "التفاصيل",
+    "flightInfo": "معلومات الرحلة",
+    "sort": "ترتيب",
+    "cheapestFirst": "الأرخص أولاً",
+    "fastestFirst": "الأسرع أولاً"
+  },
+  "filters": {
+    "priceRange": "نطاق السعر",
+    "airlines": "شركات الطيران",
+    "maxStops": "أقصى عدد توقفات",
+    "departureTime": "وقت المغادرة",
+    "nonStop": "بدون توقف",
+    "stop": "توقف",
+    "stops": "توقفات"
+  },
+  "departureTimeSlots": {
+    "early": "الفجر (منتصف الليل - 08:00)",
+    "morning": "الصباح (08:00 - 12:00)",
+    "afternoon": "بعد الظهر (12:00 - 16:00)",
+    "evening": "المساء (16:00 - 20:00)",
+    "night": "الليل (20:00 - منتصف الليل)"
+  },
+  "messages": {
+    "noFlightsAvailable": "لا توجد رحلات متاحة",
+    "adjustSearchCriteria": "يرجى محاولة تعديل معايير البحث",
+    "noMatchingFlights": "لا توجد رحلات مطابقة لمرشحاتك الحالية. حاول تعديل معايير البحث.",
+    "moreAirlines": "المزيد"
+  },
+  "flightTags": {
+    "best": "الأفضل",
+    "cheapest": "الأرخص",
+    "fastest": "الأسرع"
+  },
+  "loading": {
+    "selectingFlight": "جارٍ اختيار الرحلة...",
+    "loadingFlights": "جارٍ تحميل الرحلات..."
+  },
+  "flightInfo": {
+    "departure": "المغادرة",
+    "arrival": "الوصول",
+    "duration": "المدة",
+    "stops": "توقفات",
+    "stop": "توقف",
+    "nonStop": "بدون توقف",
+    "refundable": "قابل للاسترجاع",
+    "nextDay": "+1 يوم"
+  }
+}

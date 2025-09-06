@@ -1,0 +1,66 @@
+{
+  "title": {
+    "flightOptions": "Options de Vol",
+    "filterFlights": "Filtrer les Vols",
+    "flights": "Vols"
+  },
+  "tabs": {
+    "best": "Meilleur",
+    "cheapest": "Moins Cher",
+    "fastest": "Plus Rapide"
+  },
+  "buttons": {
+    "filters": "Filtres",
+    "showAllFlights": "Afficher tous les vols",
+    "clearAll": "Tout effacer",
+    "applyFilters": "Appliquer les Filtres",
+    "showLessAirlines": "Afficher moins de compagnies",
+    "showAllAirlines": "Afficher toutes les compagnies",
+    "details": "Détails",
+    "flightInfo": "Info Vol",
+    "sort": "Trier",
+    "cheapestFirst": "Moins cher d'abord",
+    "fastestFirst": "Plus rapide d'abord"
+  },
+  "filters": {
+    "priceRange": "Gamme de Prix",
+    "airlines": "Compagnies Aériennes",
+    "maxStops": "Escales Maximum",
+    "departureTime": "Heure de Départ",
+    "nonStop": "Sans escale",
+    "stop": "escale",
+    "stops": "escales"
+  },
+  "departureTimeSlots": {
+    "early": "Tôt le Matin (minuit - 08h00)",
+    "morning": "Matin (08h00 - 12h00)",
+    "afternoon": "Après-midi (12h00 - 16h00)",
+    "evening": "Soir (16h00 - 20h00)",
+    "night": "Nuit (20h00 - minuit)"
+  },
+  "messages": {
+    "noFlightsAvailable": "Aucun vol disponible",
+    "adjustSearchCriteria": "Veuillez essayer d'ajuster vos critères de recherche",
+    "noMatchingFlights": "Aucun vol ne correspond à vos filtres actuels. Essayez d'ajuster vos critères de recherche.",
+    "moreAirlines": "de plus"
+  },
+  "flightTags": {
+    "best": "Meilleur",
+    "cheapest": "Moins Cher",
+    "fastest": "Plus Rapide"
+  },
+  "loading": {
+    "selectingFlight": "Sélection du vol...",
+    "loadingFlights": "Chargement des vols..."
+  },
+  "flightInfo": {
+    "departure": "Départ",
+    "arrival": "Arrivée",
+    "duration": "Durée",
+    "stops": "escales",
+    "stop": "escale",
+    "nonStop": "Sans escale",
+    "refundable": "Remboursable",
+    "nextDay": "+1 jour"
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "title": {
+    "flightOptions": "Flight Options",
+    "filterFlights": "Filter Flights",
+    "flights": "Flights"
+  },
+  "tabs": {
+    "best": "Best",
+    "cheapest": "Cheapest",
+    "fastest": "Fastest"
+  },
+  "buttons": {
+    "filters": "Filters",
+    "showAllFlights": "Show all flights",
+    "clearAll": "Clear all",
+    "applyFilters": "Apply Filters",
+    "showLessAirlines": "Show less airlines",
+    "showAllAirlines": "Show all airlines",
+    "details": "Details",
+    "flightInfo": "Flight Info",
+    "sort": "Sort",
+    "cheapestFirst": "Cheapest First",
+    "fastestFirst": "Fastest First"
+  },
+  "filters": {
+    "priceRange": "Price Range",
+    "airlines": "Airlines",
+    "maxStops": "Max Stops",
+    "departureTime": "Departure Time",
+    "nonStop": "Non-stop",
+    "stop": "stop",
+    "stops": "stops"
+  },
+  "departureTimeSlots": {
+    "early": "Early Morning (midnight - 08:00)",
+    "morning": "Morning (08:00 - 12:00)",
+    "afternoon": "Afternoon (12:00 - 16:00)",
+    "evening": "Evening (16:00 - 20:00)",
+    "night": "Night (20:00 - midnight)"
+  },
+  "messages": {
+    "noFlightsAvailable": "No flights available",
+    "adjustSearchCriteria": "Please try adjusting your search criteria",
+    "noMatchingFlights": "No flights match your current filters. Try adjusting your search criteria.",
+    "moreAirlines": "more"
+  },
+  "flightTags": {
+    "best": "Best",
+    "cheapest": "Cheapest",
+    "fastest": "Fastest"
+  },
+  "loading": {
+    "selectingFlight": "Selecting flight...",
+    "loadingFlights": "Loading flights..."
+  },
+  "flightInfo": {
+    "departure": "Departure",
+    "arrival": "Arrival",
+    "duration": "Duration",
+    "stops": "stops",
+    "stop": "stop",
+    "nonStop": "Non-stop",
+    "refundable": "Refundable",
+    "nextDay": "+1 day"
+  }
+}

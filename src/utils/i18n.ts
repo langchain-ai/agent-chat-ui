@@ -1,0 +1,119 @@
+export type SupportedLanguage = "en" | "fr" | "hi" | "es" | "ar";
+
+export const DEFAULT_LANGUAGE: SupportedLanguage = "en";
+
+export const LANGUAGE_CONFIG = {
+  // Languages with complete translations
+  COMPLETE_LANGUAGES: ["en", "fr", "hi", "es", "ar"] as SupportedLanguage[],
+
+  // Widgets that have been internationalized
+  SUPPORTED_WIDGETS: [
+    "searchCriteriaWidget",
+    "reviewWidget",
+    "flightOptionsWidget",
+  ],
+
+  // Directory mapping for locale files
+  LOCALE_DIRECTORIES: {
+    en: "english",
+    fr: "french",
+    hi: "hindi",
+    es: "spanish",
+    ar: "arabic",
+  } as Record<SupportedLanguage, string>,
+};
+
+export function getCurrentLanguage(): SupportedLanguage {
+  if (typeof window === "undefined") {
+    return DEFAULT_LANGUAGE;
+  }
+
+  const pathname = window.location.pathname;
+
+  // Handle exact matches for language routes
+  if (pathname === "/fr") return "fr";
+  if (pathname === "/hi") return "hi";
+  if (pathname === "/en") return "en";
+  if (pathname === "/es") return "es";
+  if (pathname === "/ar") return "ar";
+
+  // Handle paths that start with language prefix
+  if (pathname.startsWith("/fr/")) return "fr";
+  if (pathname.startsWith("/hi/")) return "hi";
+  if (pathname.startsWith("/en/")) return "en";
+  if (pathname.startsWith("/es/")) return "es";
+  if (pathname.startsWith("/ar/")) return "ar";
+
+  // Default to English for root path or any other path
+  return DEFAULT_LANGUAGE;
+}
+
+export function isWidgetSupported(widgetName: string): boolean {
+  return LANGUAGE_CONFIG.SUPPORTED_WIDGETS.includes(widgetName);
+}
+
+export function getLanguageDirectory(language: SupportedLanguage): string {
+  return (
+    LANGUAGE_CONFIG.LOCALE_DIRECTORIES[language] ||
+    LANGUAGE_CONFIG.LOCALE_DIRECTORIES[DEFAULT_LANGUAGE]
+  );
+}
+
+export async function loadLocale(
+  widgetName: string,
+  language: SupportedLanguage = DEFAULT_LANGUAGE,
+): Promise<Record<string, any>> {
+  // Check if the widget is supported
+  if (!isWidgetSupported(widgetName)) {
+    console.warn(
+      `Widget ${widgetName} is not internationalized. Available widgets:`,
+      LANGUAGE_CONFIG.SUPPORTED_WIDGETS,
+    );
+    return {};
+  }
+
+  // Use the configured directory for the language
+  const languageDir = getLanguageDirectory(language);
+
+  try {
+    // Dynamically import the locale file using the correct directory structure
+    const locale = await import(`@/locales/${languageDir}/${widgetName}.json`);
+    const translations = locale.default || locale;
+
+    console.log(
+      `Successfully loaded ${languageDir}/${widgetName}.json:`,
+      translations,
+    );
+    return translations;
+  } catch (error) {
+    console.warn(
+      `Failed to load locale ${languageDir}/${widgetName}.json, falling back to English:`,
+      error,
+    );
+
+    // Fallback to English if the requested locale fails
+    if (language !== DEFAULT_LANGUAGE) {
+      try {
+        const fallbackDir = getLanguageDirectory(DEFAULT_LANGUAGE);
+        const fallbackLocale = await import(
+          `@/locales/${fallbackDir}/${widgetName}.json`
+        );
+        const fallbackTranslations = fallbackLocale.default || fallbackLocale;
+
+        console.log(
+          `Loaded fallback translations from ${fallbackDir}/${widgetName}.json:`,
+          fallbackTranslations,
+        );
+        return fallbackTranslations;
+      } catch (fallbackError) {
+        console.error(
+          `Failed to load fallback locale ${getLanguageDirectory(DEFAULT_LANGUAGE)}/${widgetName}.json:`,
+          fallbackError,
+        );
+        return {};
+      }
+    }
+
+    return {};
+  }
+}

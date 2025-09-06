@@ -13,6 +13,7 @@ import {
   PopoverTrigger,
 } from "@/components/common/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { useTranslations } from "@/hooks/useTranslations";
 
 // DateInput component using shadcn Calendar
 interface DateInputProps {
@@ -29,9 +30,10 @@ const DateInput = ({
   className,
 }: DateInputProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const { t } = useTranslations('searchCriteriaWidget');
 
   const formatDateDisplay = (date: Date | undefined) => {
-    if (!date) return placeholder || "Select date";
+    if (!date) return placeholder || t('placeholders.selectDate', 'Select date');
     const options: Intl.DateTimeFormatOptions = {
       weekday: "short",
       day: "numeric",
@@ -93,6 +95,9 @@ interface SearchCriteriaProps extends Record<string, any> {
 
 const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
   const thread = useStreamContext();
+
+  // Initialize translations
+  const { t } = useTranslations('searchCriteriaWidget');
 
   // Hydrate from apiData per interrupt authoring guide
   const liveArgs = args.apiData?.value?.widget?.args ?? {};
@@ -291,14 +296,14 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
   const formatTravellerText = () => {
     const total = getTotalTravellers();
     if (total === 1 && adults === 1) {
-      return `1 Adult, ${flightClass}`;
+      return `1 ${t('passengerType.adults')}, ${flightClass}`;
     }
 
     const parts = [];
-    if (adults > 0) parts.push(`${adults} Adult${adults > 1 ? "s" : ""}`);
+    if (adults > 0) parts.push(`${adults} ${t('passengerType.adults')}${adults > 1 ? "s" : ""}`);
     if (children > 0)
-      parts.push(`${children} Child${children > 1 ? "ren" : ""}`);
-    if (infants > 0) parts.push(`${infants} Infant${infants > 1 ? "s" : ""}`);
+      parts.push(`${children} ${t('passengerType.children')}${children > 1 ? "" : ""}`);
+    if (infants > 0) parts.push(`${infants} ${t('passengerType.infants')}${infants > 1 ? "s" : ""}`);
 
     return `${parts.join(", ")}, ${flightClass}`;
   };
@@ -327,7 +332,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                   : "border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:text-gray-900",
               )}
             >
-              One way
+              {t('button.oneWay')}
             </button>
             {/* <button
               type="button"
@@ -355,13 +360,13 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                     setValidationErrors(prev => ({ ...prev, fromAirport: false }));
                   }
                 }}
-                placeholder="From - City or Airport"
+                placeholder={t('placeholders.fromAirport', 'From - City or Airport')}
                 excludeAirport={toAirport}
                 disabled={readOnly}
                 className={validationErrors.fromAirport ? "border-red-500" : ""}
               />
               {validationErrors.fromAirport && (
-                <p className="mt-1 text-xs text-red-500">From airport is required</p>
+                <p className="mt-1 text-xs text-red-500">{t('validation.fromAirportRequired', 'From airport is required')}</p>
               )}
             </div>
 
@@ -375,13 +380,13 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                     setValidationErrors(prev => ({ ...prev, toAirport: false }));
                   }
                 }}
-                placeholder="To - City or Airport"
+                placeholder={t('placeholders.toAirport', 'To - City or Airport')}
                 excludeAirport={fromAirport}
                 disabled={readOnly}
                 className={validationErrors.toAirport ? "border-red-500" : ""}
               />
               {validationErrors.toAirport && (
-                <p className="mt-1 text-xs text-red-500">To airport is required</p>
+                <p className="mt-1 text-xs text-red-500">{t('validation.toAirportRequired', 'To airport is required')}</p>
               )}
             </div>
           </div>
@@ -404,12 +409,12 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                       setValidationErrors(prev => ({ ...prev, departureDate: false }));
                     }
                   }}
-                  placeholder="Select departure date"
+                  placeholder={t('placeholders.selectDepartureDate', 'Select departure date')}
                   className={validationErrors.departureDate ? "border-red-500" : ""}
                 />
               </div>
               {validationErrors.departureDate && (
-                <p className="mt-1 text-xs text-red-500">Departure date is required</p>
+                <p className="mt-1 text-xs text-red-500">{t('validation.departureDateRequired', 'Departure date is required')}</p>
               )}
             </div>
 
@@ -424,7 +429,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                   <DateInput
                     date={returnDate}
                     onDateChange={handleReturnDateChange}
-                    placeholder="Select return date"
+                    placeholder={t('placeholders.selectReturnDate', 'Select return date')}
                   />
                 </div>
               </div>
@@ -454,14 +459,14 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                   {/* Select travellers */}
                   <div>
                     <h3 className="mb-4 text-lg font-semibold">
-                      Select travellers
+                      {t('labels.selectTravellers', 'Select travellers')}
                     </h3>
 
                     {/* Adults */}
                     <div className="flex items-center justify-between py-3">
                       <div>
-                        <div className="font-medium">Adult</div>
-                        <div className="text-sm text-gray-500">12+ Years</div>
+                        <div className="font-medium">{t('passengerType.adults')}</div>
+                        <div className="text-sm text-gray-500">{t('labels.adultAge', '12+ Years')}</div>
                       </div>
                       <div className="flex items-center gap-3">
                         <Button
@@ -493,8 +498,8 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                     {/* Children */}
                     <div className="flex items-center justify-between py-3">
                       <div>
-                        <div className="font-medium">Children</div>
-                        <div className="text-sm text-gray-500">2 - 12 yrs</div>
+                        <div className="font-medium">{t('passengerType.children')}</div>
+                        <div className="text-sm text-gray-500">{t('labels.childrenAge', '2 - 12 yrs')}</div>
                       </div>
                       <div className="flex items-center gap-3">
                         <Button
@@ -526,8 +531,8 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                     {/* Infants */}
                     <div className="flex items-center justify-between py-3">
                       <div>
-                        <div className="font-medium">Infant</div>
-                        <div className="text-sm text-gray-500">Below 2 yrs</div>
+                        <div className="font-medium">{t('passengerType.infants')}</div>
+                        <div className="text-sm text-gray-500">{t('labels.infantAge', 'Below 2 yrs')}</div>
                       </div>
                       <div className="flex items-center gap-3">
                         <Button
@@ -559,7 +564,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
 
                   {/* Select class */}
                   <div>
-                    <h3 className="mb-4 text-lg font-semibold">Select class</h3>
+                    <h3 className="mb-4 text-lg font-semibold">{t('labels.selectClass', 'Select class')}</h3>
                     <div className="space-y-3">
                       {["Economy", "Business", "Premium Economy"].map(
                         (classOption) => (
@@ -576,7 +581,11 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                               className="h-4 w-4 border-gray-300 text-black focus:ring-black"
                               disabled={readOnly}
                             />
-                            <span className="font-medium">{classOption}</span>
+                            <span className="font-medium">
+                              {classOption === "Economy" ? t('flightClass.economy') :
+                               classOption === "Business" ? t('flightClass.business') :
+                               t('flightClass.premiumEconomy', 'Premium Economy')}
+                            </span>
                           </label>
                         ),
                       )}
@@ -594,7 +603,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
               disabled={isLoading || readOnly}
               className="w-full rounded-lg bg-black py-3 text-base font-semibold text-white hover:bg-gray-800"
             >
-              {isLoading ? "Searching..." : "Search flights"}
+              {isLoading ? t('button.searching', 'Searching...') : t('button.searchFlights')}
             </Button>
           </div>
         </form>

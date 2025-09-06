@@ -1,0 +1,54 @@
+{
+  "button": {
+    "oneWay": "ذهاب فقط",
+    "searchFlights": "ابحث عن رحلات",
+    "searching": "جاري البحث..."
+  },
+  "flightClass": {
+    "economy": "اقتصادي",
+    "business": "رجال الأعمال",
+    "first": "الأولى",
+    "premiumEconomy": "الاقتصادي المميز"
+  },
+  "passengerType": {
+    "adults": "بالغ",
+    "children": "أطفال",
+    "infants": "رضيع"
+  },
+  "labels": {
+    "selectTravellers": "اختر المسافرين",
+    "selectClass": "اختر الدرجة",
+    "adultAge": "12+ سنة",
+    "childrenAge": "2 - 12 سنة",
+    "infantAge": "أقل من سنتين"
+  },
+  "placeholders": {
+    "selectDate": "اختر التاريخ",
+    "fromAirport": "من - المدينة أو المطار",
+    "toAirport": "إلى - المدينة أو المطار",
+    "selectDepartureDate": "اختر تاريخ المغادرة",
+    "selectReturnDate": "اختر تاريخ العودة"
+  },
+  "validation": {
+    "fromAirportRequired": "حقل المطار المغادر مطلوب",
+    "toAirportRequired": "حقل المطار الوجهة مطلوب",
+    "departureDateRequired": "تاريخ المغادرة مطلوب",
+    "departureDate": "تاريخ مغادرة الرحلة، بصيغة YYYY-MM-DD",
+    "originAirport": "مطار الانطلاق للرحلة، بصيغة رمز IATA",
+    "destinationAirport": "مطار الوجهة للرحلة، بصيغة رمز IATA",
+    "adults": "عدد الركاب البالغين، أعمارهم أكبر من 18",
+    "children": "عدد الركاب الأطفال، أعمارهم أقل من 18 وأكبر من 2",
+    "infants": "عدد الرضع، أعمارهم أقل من سنتين",
+    "class": "درجة الرحلة",
+    "returnDate": "تاريخ العودة للرحلة، بصيغة YYYY-MM-DD",
+    "isRoundTrip": "ما إذا كان البحث عن الرحلة ذهاب وعودة",
+    "passengers": "الركاب الذين ذكرهم المستخدم",
+    "firstName": "الاسم الأول للراكب",
+    "lastName": "اسم العائلة للراكب",
+    "dateOfBirth": "تاريخ ميلاد الراكب، بصيغة YYYY-MM-DD",
+    "gender": "جنس الراكب",
+    "nationality": "جنسية الراكب",
+    "passportNumber": "رقم جواز السفر للراكب",
+    "passportExpiryDate": "تاريخ انتهاء صلاحية جواز السفر، بصيغة YYYY-MM-DD"
+  }
+}

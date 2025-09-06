@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { getCurrencySymbol } from "@/utils/currency-storage";
+import { useTranslations } from "@/hooks/useTranslations";
 import type { PaymentSummary } from "./types";
 
 interface PaymentSummaryCardProps {
@@ -18,12 +19,15 @@ export const PaymentSummaryCard: React.FC<PaymentSummaryCardProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(isDesktop);
 
+  // Initialize translations
+  const { t } = useTranslations('reviewWidget');
+
   if (!paymentSummary) {
     return (
       <div className="rounded-lg bg-white p-4 shadow">
-        <h2 className="text-lg font-semibold">Payment Summary</h2>
+        <h2 className="text-lg font-semibold">{t('payment.paymentSummary')}</h2>
         <div className="mt-1 text-sm text-gray-500">
-          No payment details available
+          {t('payment.noPaymentDetails')}
         </div>
       </div>
     );
@@ -37,10 +41,10 @@ export const PaymentSummaryCard: React.FC<PaymentSummaryCardProps> = ({
       >
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <h2 className="text-lg font-semibold">Payment Summary</h2>
+            <h2 className="text-lg font-semibold">{t('payment.paymentSummary')}</h2>
             {!isExpanded && (
               <div className="mt-1 text-sm text-gray-600">
-                Total:{" "}
+                {t('payment.total')}:{" "}
                 {getCurrencySymbol(paymentSummary.currency)}
                 {calculateTotal().toFixed(2)}{" "}
                 {paymentSummary.currency}
@@ -49,7 +53,7 @@ export const PaymentSummaryCard: React.FC<PaymentSummaryCardProps> = ({
                     className={`ml-2 ${isRefundable ? "text-green-600" : "text-red-600"}`}
                   >
                     •{" "}
-                    {isRefundable ? "Refundable" : "Non-refundable"}
+                    {isRefundable ? t('payment.refundable') : t('payment.nonRefundable')}
                   </span>
                 )}
               </div>
@@ -69,7 +73,7 @@ export const PaymentSummaryCard: React.FC<PaymentSummaryCardProps> = ({
         <div className="mt-4 space-y-2 border-t pt-4">
           {/* Base Fare */}
           <div className="flex justify-between">
-            <span className="text-xs text-gray-600">Base fare</span>
+            <span className="text-xs text-gray-600">{t('payment.baseFareLabel')}</span>
             <span className="text-xs font-medium">
               {getCurrencySymbol(paymentSummary.currency)}
               {paymentSummary.baseFare.toFixed(2)}
@@ -79,7 +83,7 @@ export const PaymentSummaryCard: React.FC<PaymentSummaryCardProps> = ({
           {/* Taxes */}
           <div className="flex justify-between">
             <span className="text-xs text-gray-600">
-              Taxes & fees
+              {t('payment.taxesAndFees')}
             </span>
             <span className="text-xs font-medium">
               {getCurrencySymbol(paymentSummary.currency)}
@@ -91,7 +95,7 @@ export const PaymentSummaryCard: React.FC<PaymentSummaryCardProps> = ({
           {paymentSummary.fees > 0 && (
             <div className="flex justify-between">
               <span className="text-xs text-gray-600">
-                Service fees
+                {t('payment.serviceFees')}
               </span>
               <span className="text-xs font-medium">
                 {getCurrencySymbol(paymentSummary.currency)}
@@ -104,7 +108,7 @@ export const PaymentSummaryCard: React.FC<PaymentSummaryCardProps> = ({
           {paymentSummary.discount > 0 && (
             <div className="flex justify-between">
               <span className="text-xs text-gray-600">
-                Discount
+                {t('payment.discount')}
               </span>
               <span className="text-xs font-medium text-green-600">
                 -{getCurrencySymbol(paymentSummary.currency)}
@@ -116,7 +120,7 @@ export const PaymentSummaryCard: React.FC<PaymentSummaryCardProps> = ({
           {/* Total */}
           <div className="mt-2 border-t pt-2">
             <div className="flex justify-between">
-              <span className="text-sm font-semibold">Total</span>
+              <span className="text-sm font-semibold">{t('payment.total')}</span>
               <span className="text-sm font-bold">
                 {getCurrencySymbol(paymentSummary.currency)}
                 {calculateTotal().toFixed(2)}{" "}

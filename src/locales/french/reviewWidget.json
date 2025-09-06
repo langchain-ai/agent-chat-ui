@@ -1,0 +1,109 @@
+{
+  "title": {
+    "passengerDetails": "Détails du Passager",
+    "contactInformation": "Informations de Contact",
+    "flightDetails": "Détails du Vol",
+    "paymentSummary": "Résumé du Paiement"
+  },
+  "labels": {
+    "adult": "Adulte",
+    "children": "Enfants",
+    "infants": "Bébés",
+    "firstName": "Prénom",
+    "lastName": "Nom de Famille",
+    "title": "Titre",
+    "gender": "Sexe",
+    "dateOfBirth": "Date de Naissance",
+    "email": "Email",
+    "phone": "Téléphone",
+    "documentType": "Type de Document",
+    "documentNumber": "Numéro de Document",
+    "nationality": "Nationalité",
+    "issuingCountry": "Pays Émetteur",
+    "expiryDate": "Date d'Expiration",
+    "issuanceDate": "Date d'Émission"
+  },
+  "placeholders": {
+    "firstName": "Entrez le prénom",
+    "lastName": "Entrez le nom de famille",
+    "email": "Entrez l'adresse email",
+    "phone": "Entrez le numéro de téléphone",
+    "documentNumber": "Entrez le numéro de document",
+    "selectTitle": "Sélectionnez le titre",
+    "selectGender": "Sélectionnez le sexe",
+    "selectDocumentType": "Sélectionnez le type de document",
+    "selectCountry": "Sélectionnez le pays"
+  },
+  "options": {
+    "titles": {
+      "mr": "M.",
+      "mrs": "Mme",
+      "miss": "Mlle",
+      "master": "Maître"
+    },
+    "genders": {
+      "male": "Masculin",
+      "female": "Féminin"
+    },
+    "documentTypes": {
+      "passport": "Passeport",
+      "nationalId": "Carte d'Identité Nationale",
+      "driversLicense": "Permis de Conduire"
+    }
+  },
+  "buttons": {
+    "selectPassenger": "Sélectionner le Passager",
+    "showSavedPassengers": "Afficher les Passagers Sauvegardés",
+    "hideSavedPassengers": "Masquer les Passagers Sauvegardés",
+    "confirmBooking": "Confirmer la Réservation",
+    "processing": "Traitement en cours...",
+    "bookingConfirmed": "Réservation Confirmée"
+  },
+  "sections": {
+    "savedPassengers": "Passagers Sauvegardés",
+    "travelDocuments": "Documents de Voyage",
+    "basicInformation": "Informations de Base"
+  },
+  "validation": {
+    "required": "Ce champ est obligatoire",
+    "invalidEmail": "Veuillez entrer une adresse email valide",
+    "invalidPhone": "Veuillez entrer un numéro de téléphone valide",
+    "invalidDate": "Veuillez entrer une date valide"
+  },
+  "flightInfo": {
+    "departure": "Départ",
+    "arrival": "Arrivée",
+    "duration": "Durée",
+    "stops": "Escales",
+    "nonStop": "Sans escale",
+    "terminal": "Terminal",
+    "gate": "Porte",
+    "airline": "Compagnie Aérienne",
+    "flightNumber": "Numéro de Vol"
+  },
+
+  "messages": {
+    "noFlightsAvailable": "Aucun vol disponible",
+    "adjustSearchCriteria": "Veuillez essayer d'ajuster vos critères de recherche",
+    "validationErrors": "Veuillez corriger les erreurs de validation avant de continuer",
+    "allValidationPassed": "Toute la validation est passée, procédure de soumission",
+    "bookingConfirmationMessage": "Nous utiliserons ces informations pour vous envoyer des confirmations de réservation et des mises à jour.",
+    "selectSavedPassenger": "Sélectionner un passager enregistré :",
+    "ensureDetailsMatch": "Veuillez vous assurer que tous les détails correspondent exactement à vos documents de voyage."
+  },
+  "payment": {
+    "baseFare": "Tarif de Base",
+    "taxes": "Taxes",
+    "fees": "Frais",
+    "seatFare": "Tarif Siège",
+    "discount": "Remise",
+    "total": "Total",
+    "refundable": "Remboursable",
+    "nonRefundable": "Non-remboursable",
+    "paymentSummary": "Résumé du Paiement",
+    "noPaymentDetails": "Aucun détail de paiement disponible",
+    "baseFareLabel": "Tarif de base",
+    "taxesAndFees": "Taxes et frais",
+    "serviceFees": "Frais de service"
+  }
+}

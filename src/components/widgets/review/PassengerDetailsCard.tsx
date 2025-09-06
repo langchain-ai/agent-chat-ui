@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { ValidationWarningIcon } from "./ValidationWarningIcon";
 import { DateInput } from "./DateInput";
 import { CountryCombobox } from "./CountryCombobox";
+import { useTranslations } from "@/hooks/useTranslations";
 import type { PassengerDetails, SavedPassenger, TravelDocument, ValidationErrors } from "./types";
 
 // Helper function to format date without timezone conversion
@@ -64,6 +65,9 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
 }) => {
   const [isSavedPassengersExpanded, setIsSavedPassengersExpanded] = useState(false);
 
+  // Initialize translations
+  const { t } = useTranslations('reviewWidget');
+
   // Check if any section has validation errors
   const hasPassengerErrors = (): boolean => {
     const errors = [
@@ -105,7 +109,7 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
             htmlFor="title"
             className="mb-0.5 text-xs font-medium text-gray-700"
           >
-            Title *
+            {t('labels.title')} *
           </Label>
           <div className="flex gap-2">
             {/* Title options based on passenger type */}
@@ -128,7 +132,7 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
                       : "",
                   )}
                 >
-                  Mr
+                  {t('options.titles.mr')}
                 </button>
                 <button
                   type="button"
@@ -147,7 +151,7 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
                       : "",
                   )}
                 >
-                  Miss
+                  {t('options.titles.miss')}
                 </button>
                 <button
                   type="button"
@@ -166,7 +170,7 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
                       : "",
                   )}
                 >
-                  Mrs
+                  {t('options.titles.mrs')}
                 </button>
               </>
             ) : (
@@ -189,7 +193,7 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
                       : "",
                   )}
                 >
-                  Master
+                  {t('options.titles.master')}
                 </button>
                 <button
                   type="button"
@@ -208,7 +212,7 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
                       : "",
                   )}
                 >
-                  Miss
+                  {t('options.titles.miss')}
                 </button>
               </>
             )}
@@ -217,7 +221,7 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
           <div className="mt-0.5 h-3">
             {validationErrors.gender && (
               <p className="text-xs text-red-500">
-                Title is required
+                {t('validation.required')}
               </p>
             )}
           </div>
@@ -234,7 +238,7 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
               htmlFor="firstName"
               className="text-xs font-medium text-gray-700"
             >
-              First Name *
+              {t('labels.firstName')} *
             </Label>
             <ValidationWarningIcon
               show={validationErrors.firstName}
@@ -255,13 +259,13 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
                 ? "border-red-500 focus:border-red-500 focus:ring-red-500"
                 : "",
             )}
-            placeholder="Enter first name"
+            placeholder={t('placeholders.firstName')}
           />
           {/* Reserve space for error message to maintain alignment */}
           <div className="mt-0.5 h-3">
             {validationErrors.firstName && (
               <p className="text-xs text-red-500">
-                First name is required
+                {t('validation.required')}
               </p>
             )}
           </div>
@@ -274,7 +278,7 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
               htmlFor="lastName"
               className="text-xs font-medium text-gray-700"
             >
-              Last Name *
+              {t('labels.lastName')} *
             </Label>
             <ValidationWarningIcon
               show={validationErrors.lastName}
@@ -295,13 +299,13 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
                 ? "border-red-500 focus:border-red-500 focus:ring-red-500"
                 : "",
             )}
-            placeholder="Enter last name"
+            placeholder={t('placeholders.lastName')}
           />
           {/* Reserve space for error message to maintain alignment */}
           <div className="mt-0.5 h-3">
             {validationErrors.lastName && (
               <p className="text-xs text-red-500">
-                Last name is required
+                {t('validation.required')}
               </p>
             )}
           </div>
@@ -331,7 +335,7 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
                   htmlFor="dateOfBirth"
                   className="mb-0.5 text-xs font-medium text-gray-700"
                 >
-                  Date of Birth *
+                  {t('labels.dateOfBirth')} *
                 </Label>
                 <DateInput
                   date={
@@ -566,7 +570,7 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
           }
           className="flex w-full items-center justify-between text-sm"
         >
-          <span>Saved Passengers</span>
+          <span>{t('sections.savedPassengers')}</span>
           {isSavedPassengersExpanded ? (
             <ChevronUp className="h-4 w-4" />
           ) : (
@@ -579,7 +583,7 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
           <div className="mt-3 rounded-lg border bg-gray-50">
             <div className="p-3">
               <div className="mb-2 text-xs font-medium text-gray-700">
-                Select a saved passenger:
+                {t('messages.selectSavedPassenger')}
               </div>
               <div className="space-y-2">
                 {savedPassengers.map((savedPassenger) => (

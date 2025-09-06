@@ -1,0 +1,108 @@
+{
+  "title": {
+    "passengerDetails": "تفاصيل الركاب",
+    "contactInformation": "معلومات الاتصال",
+    "flightDetails": "تفاصيل الرحلة",
+    "paymentSummary": "ملخص الدفع"
+  },
+  "labels": {
+    "adult": "بالغ",
+    "children": "أطفال",
+    "infants": "رضع",
+    "firstName": "الاسم الأول",
+    "lastName": "اسم العائلة",
+    "title": "اللقب",
+    "gender": "الجنس",
+    "dateOfBirth": "تاريخ الميلاد",
+    "email": "البريد الإلكتروني",
+    "phone": "رقم الهاتف",
+    "documentType": "نوع الوثيقة",
+    "documentNumber": "رقم الوثيقة",
+    "nationality": "الجنسية",
+    "issuingCountry": "بلد الإصدار",
+    "expiryDate": "تاريخ الانتهاء",
+    "issuanceDate": "تاريخ الإصدار"
+  },
+  "placeholders": {
+    "firstName": "أدخل الاسم الأول",
+    "lastName": "أدخل اسم العائلة",
+    "email": "أدخل البريد الإلكتروني",
+    "phone": "أدخل رقم الهاتف",
+    "documentNumber": "أدخل رقم الوثيقة",
+    "selectTitle": "اختر اللقب",
+    "selectGender": "اختر الجنس",
+    "selectDocumentType": "اختر نوع الوثيقة",
+    "selectCountry": "اختر الدولة"
+  },
+  "options": {
+    "titles": {
+      "mr": "السيد",
+      "mrs": "السيدة",
+      "miss": "الآنسة",
+      "master": "ماستر"
+    },
+    "genders": {
+      "male": "ذكر",
+      "female": "أنثى"
+    },
+    "documentTypes": {
+      "passport": "جواز سفر",
+      "nationalId": "الهوية الوطنية",
+      "driversLicense": "رخصة القيادة"
+    }
+  },
+  "buttons": {
+    "selectPassenger": "اختر راكب",
+    "showSavedPassengers": "عرض الركاب المحفوظين",
+    "hideSavedPassengers": "إخفاء الركاب المحفوظين",
+    "confirmBooking": "تأكيد الحجز",
+    "processing": "جاري المعالجة...",
+    "bookingConfirmed": "تم تأكيد الحجز"
+  },
+  "sections": {
+    "savedPassengers": "الركاب المحفوظون",
+    "travelDocuments": "وثائق السفر",
+    "basicInformation": "المعلومات الأساسية"
+  },
+  "validation": {
+    "required": "هذا الحقل مطلوب",
+    "invalidEmail": "الرجاء إدخال بريد إلكتروني صالح",
+    "invalidPhone": "الرجاء إدخال رقم هاتف صالح",
+    "invalidDate": "الرجاء إدخال تاريخ صالح"
+  },
+  "flightInfo": {
+    "departure": "المغادرة",
+    "arrival": "الوصول",
+    "duration": "المدة",
+    "stops": "توقفات",
+    "nonStop": "مباشر",
+    "terminal": "المبنى",
+    "gate": "البوابة",
+    "airline": "شركة الطيران",
+    "flightNumber": "رقم الرحلة"
+  },
+  "messages": {
+    "noFlightsAvailable": "لا توجد رحلات متاحة",
+    "adjustSearchCriteria": "يرجى محاولة تعديل معايير البحث",
+    "validationErrors": "يرجى تصحيح أخطاء التحقق قبل المتابعة",
+    "allValidationPassed": "تم التحقق من جميع البيانات، جاري الإرسال",
+    "bookingConfirmationMessage": "سنستخدم هذه المعلومات لإرسال تأكيدات الحجز والتحديثات.",
+    "selectSavedPassenger": "اختر راكب محفوظ:",
+    "ensureDetailsMatch": "يرجى التأكد من أن جميع التفاصيل مطابقة لوثائق السفر الخاصة بك تمامًا."
+  },
+  "payment": {
+    "baseFare": "الأجرة الأساسية",
+    "taxes": "الضرائب",
+    "fees": "الرسوم",
+    "seatFare": "أجرة المقعد",
+    "discount": "الخصم",
+    "total": "الإجمالي",
+    "refundable": "قابل للاسترداد",
+    "nonRefundable": "غير قابل للاسترداد",
+    "paymentSummary": "ملخص الدفع",
+    "noPaymentDetails": "لا توجد تفاصيل دفع متاحة",
+    "baseFareLabel": "الأجرة الأساسية",
+    "taxesAndFees": "الضرائب والرسوم",
+    "serviceFees": "رسوم الخدمة"
+  }
+}
