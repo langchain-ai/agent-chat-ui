@@ -32,7 +32,9 @@
     "selectTitle": "Sélectionnez le titre",
     "selectGender": "Sélectionnez le sexe",
     "selectDocumentType": "Sélectionnez le type de document",
-    "selectCountry": "Sélectionnez le pays"
+    "selectCountry": "Sélectionnez le pays",
+    "selectDate": "Sélectionnez la date",
+    "selectDateOfBirth": "Sélectionnez la date de naissance"
   },
   "options": {
     "titles": {
@@ -68,7 +70,11 @@
     "required": "Ce champ est obligatoire",
     "invalidEmail": "Veuillez entrer une adresse email valide",
     "invalidPhone": "Veuillez entrer un numéro de téléphone valide",
-    "invalidDate": "Veuillez entrer une date valide"
+    "invalidDate": "Veuillez entrer une date valide",
+    "dateOfBirthRequired": "La date de naissance est obligatoire",
+    "documentTypeRequired": "Le type de document est obligatoire",
+    "expiryDateRequired": "La date d'expiration est obligatoire",
+    "nationalityRequired": "La nationalité est obligatoire"
   },
   "flightInfo": {
     "departure": "Départ",
@@ -79,7 +85,11 @@
     "terminal": "Terminal",
     "gate": "Porte",
     "airline": "Compagnie Aérienne",
-    "flightNumber": "Numéro de Vol"
+    "flightNumber": "Numéro de Vol",
+    "aircraft": "Avion",
+    "flight": "Vol",
+    "notSpecified": "Non spécifié",
+    "noFlightDetailsAvailable": "Aucun détail de vol disponible"
   },
 
   "messages": {
@@ -89,7 +99,8 @@
     "allValidationPassed": "Toute la validation est passée, procédure de soumission",
     "bookingConfirmationMessage": "Nous utiliserons ces informations pour vous envoyer des confirmations de réservation et des mises à jour.",
     "selectSavedPassenger": "Sélectionner un passager enregistré :",
-    "ensureDetailsMatch": "Veuillez vous assurer que tous les détails correspondent exactement à vos documents de voyage."
+    "ensureDetailsMatch": "Veuillez vous assurer que tous les détails correspondent exactement à vos documents de voyage.",
+    "noDOB": "Pas de date de naissance"
   },
   "payment": {
     "baseFare": "Tarif de Base",

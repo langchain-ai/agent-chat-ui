@@ -32,7 +32,9 @@
     "selectTitle": "Select title",
     "selectGender": "Select gender",
     "selectDocumentType": "Select document type",
-    "selectCountry": "Select country"
+    "selectCountry": "Select country",
+    "selectDate": "Select date",
+    "selectDateOfBirth": "Select date of birth"
   },
   "options": {
     "titles": {
@@ -68,7 +70,11 @@
     "required": "This field is required",
     "invalidEmail": "Please enter a valid email address",
     "invalidPhone": "Please enter a valid phone number",
-    "invalidDate": "Please enter a valid date"
+    "invalidDate": "Please enter a valid date",
+    "dateOfBirthRequired": "Date of birth is required",
+    "documentTypeRequired": "Document type is required",
+    "expiryDateRequired": "Expiry date is required",
+    "nationalityRequired": "Nationality is required"
   },
   "flightInfo": {
     "departure": "Departure",
@@ -79,7 +85,11 @@
     "terminal": "Terminal",
     "gate": "Gate",
     "airline": "Airline",
-    "flightNumber": "Flight Number"
+    "flightNumber": "Flight Number",
+    "aircraft": "Aircraft",
+    "flight": "Flight",
+    "notSpecified": "Not specified",
+    "noFlightDetailsAvailable": "No flight details available"
   },
 
   "messages": {
@@ -89,7 +99,8 @@
     "allValidationPassed": "All validation passed, proceeding with submission",
     "bookingConfirmationMessage": "We'll use this information to send you booking confirmations and updates.",
     "selectSavedPassenger": "Select a saved passenger:",
-    "ensureDetailsMatch": "Please ensure all details match your travel documents exactly."
+    "ensureDetailsMatch": "Please ensure all details match your travel documents exactly.",
+    "noDOB": "No DOB"
   },
   "payment": {
     "baseFare": "Base Fare",

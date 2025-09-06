@@ -1,0 +1,73 @@
+{
+  "title": {
+    "flightOptions": "Opciones de Vuelo",
+    "filterFlights": "Filtrar Vuelos",
+    "flights": "Vuelos"
+  },
+  "tabs": {
+    "best": "Mejor",
+    "cheapest": "Más Barato",
+    "fastest": "Más Rápido"
+  },
+  "buttons": {
+    "filters": "Filtros",
+    "showAllFlights": "Mostrar todos los vuelos",
+    "clearAll": "Limpiar todo",
+    "applyFilters": "Aplicar Filtros",
+    "showLessAirlines": "Mostrar menos aerolíneas",
+    "showAllAirlines": "Mostrar todas las aerolíneas",
+    "details": "Detalles",
+    "flightInfo": "Información del Vuelo",
+    "sort": "Ordenar",
+    "cheapestFirst": "Más Barato Primero",
+    "fastestFirst": "Más Rápido Primero"
+  },
+  "filters": {
+    "priceRange": "Rango de Precio",
+    "airlines": "Aerolíneas",
+    "maxStops": "Máximo de Escalas",
+    "departureTime": "Hora de Salida",
+    "nonStop": "Sin escalas",
+    "stop": "escala",
+    "stops": "escalas"
+  },
+  "departureTimeSlots": {
+    "early": "Madrugada (medianoche - 08:00)",
+    "morning": "Mañana (08:00 - 12:00)",
+    "afternoon": "Tarde (12:00 - 16:00)",
+    "evening": "Noche (16:00 - 20:00)",
+    "night": "Noche (20:00 - medianoche)"
+  },
+  "messages": {
+    "noFlightsAvailable": "No hay vuelos disponibles",
+    "adjustSearchCriteria": "Por favor, intenta ajustar tus criterios de búsqueda",
+    "noMatchingFlights": "No hay vuelos que coincidan con tus filtros actuales. Intenta ajustar tus criterios de búsqueda.",
+    "moreAirlines": "más"
+  },
+  "flightTags": {
+    "best": "Mejor",
+    "cheapest": "Más Barato",
+    "fastest": "Más Rápido"
+  },
+  "loading": {
+    "selectingFlight": "Seleccionando vuelo...",
+    "loadingFlights": "Cargando vuelos..."
+  },
+  "flightInfo": {
+    "departure": "Salida",
+    "arrival": "Llegada",
+    "duration": "Duración",
+    "stops": "escalas",
+    "stop": "escala",
+    "nonStop": "Sin escalas",
+    "refundable": "Reembolsable",
+    "nextDay": "+1 día"
+  },
+  "flightDetails": {
+    "title": "Detalles del Vuelo",
+    "layoverIn": "Escala en",
+    "connection": "Conexión",
+    "today": "Hoy",
+    "tomorrow": "Mañana"
+  }
+}

@@ -27,7 +27,16 @@
         "fromAirport": "कहाँ से - शहर या हवाई अड्डा",
         "toAirport": "कहाँ जाना है - शहर या हवाई अड्डा",
         "selectDepartureDate": "प्रस्थान तारीख चुनें",
-        "selectReturnDate": "वापसी तारीख चुनें"
+        "selectReturnDate": "वापसी तारीख चुनें",
+        "selectAirport": "हवाई अड्डा चुनें...",
+        "searchAirports": "हवाई अड्डे खोजें..."
+    },
+    "airport": {
+        "popularAirports": "लोकप्रिय हवाई अड्डे",
+        "searchResults": "खोज परिणाम",
+        "searchingAirports": "हवाई अड्डे खोज रहे हैं...",
+        "noAirportsFound": "कोई हवाई अड्डा नहीं मिला।",
+        "airportFallback": "हवाई अड्डा"
     },
     "validation": {
         "fromAirportRequired": "प्रस्थान हवाई अड्डा आवश्यक है",

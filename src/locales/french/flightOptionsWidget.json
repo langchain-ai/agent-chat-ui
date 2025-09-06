@@ -62,5 +62,12 @@
     "nonStop": "Sans escale",
     "refundable": "Remboursable",
     "nextDay": "+1 jour"
+  },
+  "flightDetails": {
+    "title": "Détails du Vol",
+    "layoverIn": "Escale à",
+    "connection": "Correspondance",
+    "today": "Aujourd'hui",
+    "tomorrow": "Demain"
   }
 }

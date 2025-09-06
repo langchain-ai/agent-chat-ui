@@ -62,5 +62,12 @@
     "nonStop": "नॉन-स्टॉप",
     "refundable": "वापसी योग्य",
     "nextDay": "+1 दिन"
+  },
+  "flightDetails": {
+    "title": "फ्लाइट विवरण",
+    "layoverIn": "में रुकावट",
+    "connection": "कनेक्शन",
+    "today": "आज",
+    "tomorrow": "कल"
   }
 }

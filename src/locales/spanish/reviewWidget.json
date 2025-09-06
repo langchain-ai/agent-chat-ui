@@ -1,0 +1,120 @@
+{
+  "title": {
+    "passengerDetails": "Detalles del Pasajero",
+    "contactInformation": "Información de Contacto",
+    "flightDetails": "Detalles del Vuelo",
+    "paymentSummary": "Resumen de Pago"
+  },
+  "labels": {
+    "adult": "Adulto",
+    "children": "Niños",
+    "infants": "Bebés",
+    "firstName": "Nombre",
+    "lastName": "Apellido",
+    "title": "Título",
+    "gender": "Género",
+    "dateOfBirth": "Fecha de Nacimiento",
+    "email": "Correo Electrónico",
+    "phone": "Teléfono",
+    "documentType": "Tipo de Documento",
+    "documentNumber": "Número de Documento",
+    "nationality": "Nacionalidad",
+    "issuingCountry": "País Emisor",
+    "expiryDate": "Fecha de Vencimiento",
+    "issuanceDate": "Fecha de Emisión"
+  },
+  "placeholders": {
+    "firstName": "Ingrese el nombre",
+    "lastName": "Ingrese el apellido",
+    "email": "Ingrese el correo electrónico",
+    "phone": "Ingrese el número de teléfono",
+    "documentNumber": "Ingrese el número de documento",
+    "selectTitle": "Seleccionar título",
+    "selectGender": "Seleccionar género",
+    "selectDocumentType": "Seleccionar tipo de documento",
+    "selectCountry": "Seleccionar país",
+    "selectDate": "Seleccionar fecha",
+    "selectDateOfBirth": "Seleccionar fecha de nacimiento"
+  },
+  "options": {
+    "titles": {
+      "mr": "Sr",
+      "mrs": "Sra",
+      "miss": "Srta",
+      "master": "Joven"
+    },
+    "genders": {
+      "male": "Masculino",
+      "female": "Femenino"
+    },
+    "documentTypes": {
+      "passport": "Pasaporte",
+      "nationalId": "Cédula Nacional",
+      "driversLicense": "Licencia de Conducir"
+    }
+  },
+  "buttons": {
+    "selectPassenger": "Seleccionar Pasajero",
+    "showSavedPassengers": "Mostrar Pasajeros Guardados",
+    "hideSavedPassengers": "Ocultar Pasajeros Guardados",
+    "confirmBooking": "Confirmar Reserva",
+    "processing": "Procesando...",
+    "bookingConfirmed": "Reserva Confirmada"
+  },
+  "sections": {
+    "savedPassengers": "Pasajeros Guardados",
+    "travelDocuments": "Documentos de Viaje",
+    "basicInformation": "Información Básica"
+  },
+  "validation": {
+    "required": "Este campo es obligatorio",
+    "invalidEmail": "Por favor ingrese un correo electrónico válido",
+    "invalidPhone": "Por favor ingrese un número de teléfono válido",
+    "invalidDate": "Por favor ingrese una fecha válida",
+    "dateOfBirthRequired": "La fecha de nacimiento es obligatoria",
+    "documentTypeRequired": "El tipo de documento es obligatorio",
+    "expiryDateRequired": "La fecha de vencimiento es obligatoria",
+    "nationalityRequired": "La nacionalidad es obligatoria"
+  },
+  "flightInfo": {
+    "departure": "Salida",
+    "arrival": "Llegada",
+    "duration": "Duración",
+    "stops": "Escalas",
+    "nonStop": "Sin escalas",
+    "terminal": "Terminal",
+    "gate": "Puerta",
+    "airline": "Aerolínea",
+    "flightNumber": "Número de Vuelo",
+    "aircraft": "Aeronave",
+    "flight": "Vuelo",
+    "notSpecified": "No especificado",
+    "noFlightDetailsAvailable": "No hay detalles de vuelo disponibles"
+  },
+
+  "messages": {
+    "noFlightsAvailable": "No hay vuelos disponibles",
+    "adjustSearchCriteria": "Por favor intente ajustar sus criterios de búsqueda",
+    "validationErrors": "Por favor corrija los errores de validación antes de continuar",
+    "allValidationPassed": "Toda la validación pasó, procediendo con el envío",
+    "bookingConfirmationMessage": "Usaremos esta información para enviarle confirmaciones de reserva y actualizaciones.",
+    "selectSavedPassenger": "Seleccione un pasajero guardado:",
+    "ensureDetailsMatch": "Por favor asegúrese de que todos los detalles coincidan exactamente con sus documentos de viaje.",
+    "noDOB": "Sin fecha de nacimiento"
+  },
+  "payment": {
+    "baseFare": "Tarifa Base",
+    "taxes": "Impuestos",
+    "fees": "Tarifas",
+    "seatFare": "Tarifa de Asiento",
+    "discount": "Descuento",
+    "total": "Total",
+    "refundable": "Reembolsable",
+    "nonRefundable": "No reembolsable",
+    "paymentSummary": "Resumen de Pago",
+    "noPaymentDetails": "No hay detalles de pago disponibles",
+    "baseFareLabel": "Tarifa base",
+    "taxesAndFees": "Impuestos y tarifas",
+    "serviceFees": "Tarifas de servicio"
+  }
+}

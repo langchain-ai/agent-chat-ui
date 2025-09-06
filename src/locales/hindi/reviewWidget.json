@@ -32,7 +32,9 @@
     "selectTitle": "शीर्षक चुनें",
     "selectGender": "लिंग चुनें",
     "selectDocumentType": "दस्तावेज़ प्रकार चुनें",
-    "selectCountry": "देश चुनें"
+    "selectCountry": "देश चुनें",
+    "selectDate": "तिथि चुनें",
+    "selectDateOfBirth": "जन्म तिथि चुनें"
   },
   "options": {
     "titles": {
@@ -68,7 +70,11 @@
     "required": "यह फ़ील्ड आवश्यक है",
     "invalidEmail": "कृपया एक वैध ईमेल पता दर्ज करें",
     "invalidPhone": "कृपया एक वैध फोन नंबर दर्ज करें",
-    "invalidDate": "कृपया एक वैध तिथि दर्ज करें"
+    "invalidDate": "कृपया एक वैध तिथि दर्ज करें",
+    "dateOfBirthRequired": "जन्म तिथि आवश्यक है",
+    "documentTypeRequired": "दस्तावेज़ प्रकार आवश्यक है",
+    "expiryDateRequired": "समाप्ति तिथि आवश्यक है",
+    "nationalityRequired": "राष्ट्रीयता आवश्यक है"
   },
   "flightInfo": {
     "departure": "प्रस्थान",
@@ -79,7 +85,11 @@
     "terminal": "टर्मिनल",
     "gate": "गेट",
     "airline": "एयरलाइन",
-    "flightNumber": "फ्लाइट नंबर"
+    "flightNumber": "फ्लाइट नंबर",
+    "aircraft": "विमान",
+    "flight": "फ्लाइट",
+    "notSpecified": "निर्दिष्ट नहीं",
+    "noFlightDetailsAvailable": "कोई फ्लाइट विवरण उपलब्ध नहीं"
   },
 
   "messages": {
@@ -89,7 +99,8 @@
     "allValidationPassed": "सभी सत्यापन पास हो गया, सबमिशन के साथ आगे बढ़ रहे हैं",
     "bookingConfirmationMessage": "हम इस जानकारी का उपयोग आपको बुकिंग पुष्टि और अपडेट भेजने के लिए करेंगे।",
     "selectSavedPassenger": "एक सहेजे गए यात्री का चयन करें:",
-    "ensureDetailsMatch": "कृपया सुनिश्चित करें कि सभी विवरण आपके यात्रा दस्तावेजों से बिल्कुल मेल खाते हैं।"
+    "ensureDetailsMatch": "कृपया सुनिश्चित करें कि सभी विवरण आपके यात्रा दस्तावेजों से बिल्कुल मेल खाते हैं।",
+    "noDOB": "कोई जन्म तिथि नहीं"
   },
   "payment": {
     "baseFare": "आधार किराया",

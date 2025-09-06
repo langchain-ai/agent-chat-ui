@@ -62,5 +62,12 @@
     "nonStop": "بدون توقف",
     "refundable": "قابل للاسترجاع",
     "nextDay": "+1 يوم"
+  },
+  "flightDetails": {
+    "title": "تفاصيل الرحلة",
+    "layoverIn": "توقف في",
+    "connection": "اتصال",
+    "today": "اليوم",
+    "tomorrow": "غداً"
   }
 }

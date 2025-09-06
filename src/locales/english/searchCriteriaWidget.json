@@ -27,7 +27,16 @@
         "fromAirport": "From - City or Airport",
         "toAirport": "To - City or Airport",
         "selectDepartureDate": "Select departure date",
-        "selectReturnDate": "Select return date"
+        "selectReturnDate": "Select return date",
+        "selectAirport": "Select airport...",
+        "searchAirports": "Search airports..."
+    },
+    "airport": {
+        "popularAirports": "Popular Airports",
+        "searchResults": "Search Results",
+        "searchingAirports": "Searching airports...",
+        "noAirportsFound": "No airports found.",
+        "airportFallback": "Airport"
     },
     "validation": {
         "fromAirportRequired": "From airport is required",

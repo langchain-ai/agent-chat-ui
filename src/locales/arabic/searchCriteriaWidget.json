@@ -27,7 +27,16 @@
     "fromAirport": "من - المدينة أو المطار",
     "toAirport": "إلى - المدينة أو المطار",
     "selectDepartureDate": "اختر تاريخ المغادرة",
-    "selectReturnDate": "اختر تاريخ العودة"
+    "selectReturnDate": "اختر تاريخ العودة",
+    "selectAirport": "اختر المطار...",
+    "searchAirports": "البحث عن المطارات..."
+  },
+  "airport": {
+    "popularAirports": "المطارات الشائعة",
+    "searchResults": "نتائج البحث",
+    "searchingAirports": "البحث عن المطارات...",
+    "noAirportsFound": "لم يتم العثور على مطارات.",
+    "airportFallback": "مطار"
   },
   "validation": {
     "fromAirportRequired": "حقل المطار المغادر مطلوب",

@@ -62,5 +62,12 @@
     "nonStop": "Non-stop",
     "refundable": "Refundable",
     "nextDay": "+1 day"
+  },
+  "flightDetails": {
+    "title": "Flight Details",
+    "layoverIn": "Layover in",
+    "connection": "Connection",
+    "today": "Today",
+    "tomorrow": "Tomorrow"
   }
 }
