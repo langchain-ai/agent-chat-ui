@@ -2,6 +2,9 @@ export type SupportedLanguage = "en" | "fr" | "hi" | "es" | "ar";
 
 export const DEFAULT_LANGUAGE: SupportedLanguage = "en";
 
+// RTL languages configuration
+export const RTL_LANGUAGES: SupportedLanguage[] = ["ar"];
+
 export const LANGUAGE_CONFIG = {
   // Languages with complete translations
   COMPLETE_LANGUAGES: ["en", "fr", "hi", "es", "ar"] as SupportedLanguage[],
@@ -57,6 +60,34 @@ export function getLanguageDirectory(language: SupportedLanguage): string {
     LANGUAGE_CONFIG.LOCALE_DIRECTORIES[language] ||
     LANGUAGE_CONFIG.LOCALE_DIRECTORIES[DEFAULT_LANGUAGE]
   );
+}
+
+/**
+ * Check if a language is RTL (Right-to-Left)
+ */
+export function isRTLLanguage(language: SupportedLanguage): boolean {
+  return RTL_LANGUAGES.includes(language);
+}
+
+/**
+ * Get the text direction for a language
+ */
+export function getTextDirection(language: SupportedLanguage): "ltr" | "rtl" {
+  return isRTLLanguage(language) ? "rtl" : "ltr";
+}
+
+/**
+ * Check if the current language is RTL
+ */
+export function isCurrentLanguageRTL(): boolean {
+  return isRTLLanguage(getCurrentLanguage());
+}
+
+/**
+ * Get the current text direction
+ */
+export function getCurrentTextDirection(): "ltr" | "rtl" {
+  return getTextDirection(getCurrentLanguage());
 }
 
 export async function loadLocale(
