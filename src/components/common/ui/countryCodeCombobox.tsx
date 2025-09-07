@@ -65,7 +65,7 @@ const COUNTRY_DIAL: { [code: string]: string } = {
 };
 
 export function CountryCodeCombobox({
-  valueIsoCode = "IN",
+  valueIsoCode,
   onSelect,
   className,
   disabled = false,
@@ -74,6 +74,7 @@ export function CountryCodeCombobox({
   const [query, setQuery] = React.useState("");
   const [triggerWidth, setTriggerWidth] = React.useState<number>(0);
   const triggerRef = React.useRef<HTMLButtonElement>(null);
+  const [autoIso, setAutoIso] = React.useState<string>("IN");
 
   React.useEffect(() => {
     const updateWidth = () => {
@@ -83,6 +84,26 @@ export function CountryCodeCombobox({
     window.addEventListener("resize", updateWidth);
     return () => window.removeEventListener("resize", updateWidth);
   }, []);
+
+  // Auto-detect country from browser locale when no controlled value provided
+  React.useEffect(() => {
+    if (valueIsoCode) return; // respect controlled value
+    try {
+      const primary = navigator.languages?.[0] || navigator.language;
+      const match = primary?.match(/-([A-Z]{2})/i);
+      let iso = match ? match[1].toUpperCase() : "";
+      if (!iso) {
+        const loc = Intl.DateTimeFormat().resolvedOptions().locale;
+        const m2 = loc?.match(/-([A-Z]{2})/i);
+        iso = m2 ? m2[1].toUpperCase() : "";
+      }
+      if (iso && COUNTRY_DIAL[iso]) {
+        setAutoIso(iso);
+      }
+    } catch {
+      // ignore failures and keep default
+    }
+  }, [valueIsoCode]);
 
   const names = getNames();
   const codes = getCodes();
@@ -107,7 +128,8 @@ export function CountryCodeCombobox({
     );
   }, [countries, query]);
 
-  const selected = countries.find((c) => c.isoCode === valueIsoCode);
+  const effectiveIso = valueIsoCode ?? autoIso;
+  const selected = countries.find((c) => c.isoCode === effectiveIso);
 
   return (
     <Popover
@@ -171,7 +193,7 @@ export function CountryCodeCombobox({
                   <Check
                     className={cn(
                       "ml-auto h-4 w-4",
-                      valueIsoCode === c.isoCode ? "opacity-100" : "opacity-0",
+                      effectiveIso === c.isoCode ? "opacity-100" : "opacity-0",
                     )}
                   />
                 </CommandItem>

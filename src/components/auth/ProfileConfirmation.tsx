@@ -274,6 +274,11 @@ const ProfileConfirmation: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [countryCode, setCountryCode] = useState<string>("IN"); // Default to India
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [fieldErrors, setFieldErrors] = useState<{
+    firstName?: string;
+    lastName?: string;
+    mobileNumber?: string;
+  }>({});
   const [formData, setFormData] = useState<UpdateUserNameRequest>({
     firstName: "",
     lastName: "",
@@ -304,6 +309,25 @@ const ProfileConfirmation: React.FC = () => {
       country.code.toLowerCase().includes(query)
     );
   });
+
+  // Auto-detect country from locale (mobile and desktop)
+  useEffect(() => {
+    try {
+      const primary = navigator.languages?.[0] || navigator.language;
+      const match = primary?.match(/-([A-Z]{2})/i);
+      let iso = match ? match[1].toUpperCase() : "";
+      if (!iso) {
+        const loc = Intl.DateTimeFormat().resolvedOptions().locale;
+        const m2 = loc?.match(/-([A-Z]{2})/i);
+        iso = m2 ? m2[1].toUpperCase() : "";
+      }
+      if (iso && countryCallingCodes[iso]) {
+        setCountryCode(iso);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   // Check if user is authenticated
   useEffect(() => {
@@ -353,6 +377,22 @@ const ProfileConfirmation: React.FC = () => {
     if (error) {
       setError(null);
     }
+
+    // Inline field validation for mobile
+    setFieldErrors((prev) => {
+      const next = { ...prev } as typeof prev;
+      if (field === "firstName") {
+        next.firstName = value.trim() ? "" : "First name is required";
+      } else if (field === "lastName") {
+        next.lastName = value.trim() ? "" : "Last name is required";
+      } else if (field === "mobileNumber") {
+        const mobileRegex = /^[0-9]{10,15}$/;
+        next.mobileNumber = mobileRegex.test(value.replace(/\D/g, ""))
+          ? ""
+          : "Enter a valid number (10-15 digits)";
+      }
+      return next;
+    });
   };
 
   const validateForm = (): boolean => {
@@ -387,6 +427,11 @@ const ProfileConfirmation: React.FC = () => {
     e.preventDefault();
 
     if (!validateForm()) {
+      if (navigator.vibrate) {
+        try {
+          navigator.vibrate(30);
+        } catch {}
+      }
       return;
     }
 
@@ -419,41 +464,51 @@ const ProfileConfirmation: React.FC = () => {
           ? err.message
           : "Failed to update profile. Please try again.",
       );
+      if (navigator.vibrate) {
+        try {
+          navigator.vibrate([20, 40, 20]);
+        } catch {}
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-white px-4 py-12 sm:px-6 lg:px-8">
+    <div className="flex min-h-[100svh] items-center justify-center bg-white px-4 pt-6 pb-24 sm:px-6 sm:py-8 lg:px-8">
       <div className="w-full max-w-md">
         {/* Logo/Brand Section */}
-        <div className="mb-8 flex flex-col items-center justify-center text-center">
+        <div className="mb-6 flex flex-col items-center justify-center text-center sm:mb-8">
           <FlyoLogoSVG
             className="h-13"
             height={130}
             width={130}
           />
-          <p className="font-uber-move mt-2 text-gray-600">
+          <p className="font-uber-move mt-2 text-sm text-gray-600 sm:text-base">
             Please confirm your details to continue
           </p>
         </div>
 
         {/* Profile Confirmation Card */}
         <Card className="rounded-2xl border bg-white/20 shadow-xl backdrop-blur-lg">
-          <CardHeader className="space-y-1 pb-6">
-            <CardTitle className="font-uber-move text-center text-xl font-medium text-gray-900">
+          <CardHeader className="space-y-1 pb-4 sm:pb-6">
+            <CardTitle className="font-uber-move text-center text-lg font-medium text-gray-900 sm:text-xl">
               Profile Information
             </CardTitle>
           </CardHeader>
           <CardContent>
             <form
+              id="profileForm"
               onSubmit={handleSubmit}
-              className="space-y-6"
+              className="space-y-5 sm:space-y-6"
             >
               {/* Error Message */}
               {error && (
-                <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+                <div
+                  className="rounded-lg border border-red-200 bg-red-50 p-3 sm:p-4"
+                  role="alert"
+                  aria-live="polite"
+                >
                   <div className="flex">
                     <div className="flex-shrink-0">
                       <svg
@@ -469,7 +524,7 @@ const ProfileConfirmation: React.FC = () => {
                       </svg>
                     </div>
                     <div className="ml-3">
-                      <p className="font-uber-move text-sm text-red-800">
+                      <p className="font-uber-move text-xs text-red-800 sm:text-sm">
                         {error}
                       </p>
                     </div>
@@ -481,7 +536,7 @@ const ProfileConfirmation: React.FC = () => {
               <div className="space-y-2">
                 <Label
                   htmlFor="firstName"
-                  className="font-uber-move text-sm font-medium text-gray-700"
+                  className="font-uber-move text-xs font-medium text-gray-700 sm:text-sm"
                 >
                   First Name
                 </Label>
@@ -494,14 +549,24 @@ const ProfileConfirmation: React.FC = () => {
                   }
                   placeholder="Enter your first name"
                   disabled={isLoading}
+                  autoComplete="given-name"
+                  inputMode="text"
+                  autoCapitalize="words"
+                  autoCorrect="off"
+                  className="h-12 text-base"
                 />
+                {fieldErrors.firstName ? (
+                  <p className="mt-1 text-xs text-red-600 sm:hidden">
+                    {fieldErrors.firstName}
+                  </p>
+                ) : null}
               </div>
 
               {/* Last Name Field */}
               <div className="space-y-2">
                 <Label
                   htmlFor="lastName"
-                  className="font-uber-move text-sm font-medium text-gray-700"
+                  className="font-uber-move text-xs font-medium text-gray-700 sm:text-sm"
                 >
                   Last Name
                 </Label>
@@ -514,15 +579,25 @@ const ProfileConfirmation: React.FC = () => {
                   }
                   placeholder="Enter your last name"
                   disabled={isLoading}
+                  autoComplete="family-name"
+                  inputMode="text"
+                  autoCapitalize="words"
+                  autoCorrect="off"
+                  className="h-12 text-base"
                 />
+                {fieldErrors.lastName ? (
+                  <p className="mt-1 text-xs text-red-600 sm:hidden">
+                    {fieldErrors.lastName}
+                  </p>
+                ) : null}
               </div>
 
               {/* Country Code and Mobile Number Fields */}
               <div className="space-y-2">
-                <Label className="font-uber-move text-sm font-medium text-gray-700">
+                <Label className="font-uber-move text-xs font-medium text-gray-700 sm:text-sm">
                   Mobile Number
                 </Label>
-                <div className="flex flex-col gap-3 sm:flex-row">
+                <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
                   {/* Country Code Selector - reuse project combobox patterns */}
                   <div className="w-full sm:w-48">
                     <CountryCodeCombobox
@@ -531,6 +606,7 @@ const ProfileConfirmation: React.FC = () => {
                         setCountryCode(c.isoCode);
                         if (error) setError(null);
                       }}
+                      className="h-12 text-base"
                     />
                   </div>
 
@@ -545,7 +621,16 @@ const ProfileConfirmation: React.FC = () => {
                       }
                       placeholder="Enter mobile number"
                       disabled={isLoading}
+                      autoComplete="tel"
+                      inputMode="numeric"
+                      enterKeyHint="done"
+                      className="h-12 text-base"
                     />
+                    {fieldErrors.mobileNumber ? (
+                      <p className="mt-1 text-xs text-red-600 sm:hidden">
+                        {fieldErrors.mobileNumber}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -554,7 +639,7 @@ const ProfileConfirmation: React.FC = () => {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="font-uber-move w-full rounded-xl bg-blue-600 px-6 py-3 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                className="font-uber-move hidden w-full rounded-xl bg-blue-600 px-6 py-3 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 sm:inline-flex"
                 size="lg"
               >
                 {isLoading ? (
@@ -563,7 +648,7 @@ const ProfileConfirmation: React.FC = () => {
                     <span>Updating Profile...</span>
                   </div>
                 ) : (
-                  "Complete Profile"
+                  "Save Profile"
                 )}
               </Button>
             </form>
@@ -582,6 +667,25 @@ const ProfileConfirmation: React.FC = () => {
             </div> */}
           </CardContent>
         </Card>
+      </div>
+      {/* Sticky submit on mobile */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-white/95 p-4 sm:hidden">
+        <Button
+          form="profileForm"
+          type="submit"
+          disabled={isLoading}
+          className="w-full rounded-xl bg-blue-600 py-3 text-base font-medium text-white shadow-sm transition-all duration-200 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+          size="lg"
+        >
+          {isLoading ? (
+            <div className="flex items-center justify-center">
+              <div className="mr-3 h-5 w-5 animate-spin rounded-full border-b-2 border-white"></div>
+              <span>Updating Profile...</span>
+            </div>
+          ) : (
+            "Save Profile"
+          )}
+        </Button>
       </div>
     </div>
   );
