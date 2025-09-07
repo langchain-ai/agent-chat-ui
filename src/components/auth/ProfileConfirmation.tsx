@@ -13,7 +13,7 @@ import {
   type UpdateUserNameRequest,
 } from "@/services/authService";
 import { FlyoLogoSVG } from "../icons/langgraph";
-import { getNames, getCodes } from "country-list";
+import * as countryList from "country-list";
 import CountryCodeCombobox from "@/components/common/ui/countryCodeCombobox";
 
 // Country calling codes mapping
@@ -287,8 +287,8 @@ const ProfileConfirmation: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Get country data
-  const countryNames = getNames();
-  const countryCodes = getCodes();
+  const countryNames = countryList.getNames();
+  const countryCodes = countryList.getCodes();
   const allCountries = countryCodes
     .map((code: string, index: number) => ({
       code,

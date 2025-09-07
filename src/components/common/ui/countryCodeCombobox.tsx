@@ -17,7 +17,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { getCodes, getNames } from "country-list";
+import * as countryList from "country-list";
 
 type CountrySelection = {
   isoCode: string;
@@ -105,8 +105,8 @@ export function CountryCodeCombobox({
     }
   }, [valueIsoCode]);
 
-  const names = getNames();
-  const codes = getCodes();
+  const names = countryList.getNames();
+  const codes = countryList.getCodes();
   const countries = React.useMemo(() => {
     return codes.map((code, idx) => ({
       isoCode: code,

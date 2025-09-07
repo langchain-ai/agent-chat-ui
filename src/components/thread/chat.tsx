@@ -444,7 +444,7 @@ export function Thread() {
               <NetworkStatusBanner className="px-4" />
               {!chatStarted ? (
                 // New thread layout - centered content with mobile-optimized positioning
-                <div className="flex flex-1 flex-col items-center px-4 sm:justify-center">
+                <div className="flex flex-1 flex-col items-center px-6 sm:px-4 sm:justify-center">
                   {/* Mobile: Content positioned higher, input lower */}
                   <div className="flex flex-1 flex-col items-center justify-center sm:contents">
                   {/* Centered Logo */}
@@ -527,7 +527,7 @@ export function Thread() {
                               }
                             }}
                             placeholder="Type your message..."
-                            className="field-sizing-content min-h-[3.5rem] max-h-[12rem] w-full resize-none border-none bg-transparent p-3 pr-16 pb-0 leading-relaxed shadow-none ring-0 outline-none focus:ring-0 focus:outline-none sm:field-sizing-content sm:max-h-[15rem] sm:pr-2 sm:p-2 sm:leading-tight"
+                            className="field-sizing-content min-h-[3.5rem] max-h-[12rem] w-full resize-none border-none bg-transparent p-3 pr-14 pb-0 leading-relaxed shadow-none ring-0 outline-none focus:ring-0 focus:outline-none sm:field-sizing-content sm:max-h-[15rem] sm:pr-3 sm:p-3 sm:leading-tight"
                           />
                           {/* Mobile: Button inside input area */}
                           <div className="absolute top-3 right-3 sm:hidden">
@@ -597,7 +597,7 @@ export function Thread() {
                 <StickToBottom className="relative flex-1 overflow-hidden">
                   <StickyToBottomContent
                     className={cn(
-                      "absolute inset-0 overflow-y-scroll px-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent",
+                      "absolute inset-0 overflow-y-scroll px-6 sm:px-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent",
                       chatStarted && "grid grid-rows-[1fr_auto]",
                     )}
                     contentClassName="pt-4 pb-16 sm:pt-8 sm:pb-24 max-w-3xl mx-auto flex flex-col gap-4 w-full"
@@ -687,7 +687,7 @@ export function Thread() {
                                   }
                                 }}
                                 placeholder="Type your message...."
-                                className="field-sizing-content min-h-[3.5rem] max-h-[12rem] w-full resize-none border-none bg-transparent p-3 pr-16 pb-0 leading-relaxed shadow-none ring-0 outline-none focus:ring-0 focus:outline-none sm:field-sizing-content sm:max-h-[15rem] sm:pr-3 sm:p-3.5 sm:leading-tight"
+                                className="field-sizing-content min-h-[3.5rem] max-h-[12rem] w-full resize-none border-none bg-transparent p-3 pr-14 pb-0 leading-relaxed shadow-none ring-0 outline-none focus:ring-0 focus:outline-none sm:field-sizing-content sm:max-h-[15rem] sm:pr-3 sm:p-3 sm:leading-tight"
                               />
                               {/* Mobile: Button inside input area */}
                               <div className="absolute top-3 right-3 sm:hidden">
