@@ -182,9 +182,16 @@ const Login: React.FC = () => {
               console.error("Error requesting location after login:", error);
             }
 
-            // Redirect to main application
-            console.log("Redirecting to main app...");
-            window.location.href = "/";
+            // Redirect based on new user flag
+            if (loginResponse.isNewUser) {
+              console.log(
+                "New user detected. Redirecting to profile confirmation...",
+              );
+              window.location.href = "/profile-confirmation";
+            } else {
+              console.log("Existing user. Redirecting to home page...");
+              window.location.href = "/";
+            }
           } catch (validationError) {
             // Handle user type validation error
             throw validationError;

@@ -41,6 +41,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
+    "country-list": "^2.4.1",
     "date-fns": "^4.1.0",
     "esbuild": "^0.25.0",
     "esbuild-plugin-tailwindcss": "^2.0.1",
@@ -73,6 +74,7 @@
   "devDependencies": {
     "@eslint/js": "^9.19.0",
     "@tailwindcss/postcss": "^4.0.13",
+    "@types/country-list": "^2.1.4",
     "@types/lodash": "^4.17.16",
     "@types/node": "^22.13.5",
     "@types/react": "^19.0.8",

@@ -9,6 +9,39 @@ export interface LoginResponse {
   userType: string;
   first_name: string;
   last_name: string;
+  isNewUser?: boolean;
+}
+
+// Unified user profile persisted in localStorage
+export interface UserProfile {
+  firstName?: string;
+  lastName?: string;
+  mobileNumber?: string; // callingCode (no '+') + subscriber number
+  countryIso?: string; // e.g., 'IN'
+  callingCode?: string; // e.g., '+91'
+}
+
+const USER_PROFILE_KEY = "flyo:user:profile";
+
+function getUserProfile(): UserProfile | null {
+  try {
+    if (typeof window === "undefined") return null;
+    const raw = window.localStorage.getItem(USER_PROFILE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as UserProfile;
+  } catch {
+    return null;
+  }
+}
+
+function setUserProfile(profile: UserProfile): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(profile));
+}
+
+function upsertUserProfile(patch: Partial<UserProfile>): void {
+  const current = getUserProfile() || {};
+  setUserProfile({ ...current, ...patch });
 }
 
 /**
@@ -85,12 +118,9 @@ export const storeJwtTokenWithValidation = (
     window.localStorage.setItem("flyo:jwt:token", jwtToken);
     window.localStorage.setItem("flyo:user:type", userType);
 
-    // Store user name information if provided
-    if (firstName) {
-      window.localStorage.setItem("flyo:user:first_name", firstName);
-    }
-    if (lastName) {
-      window.localStorage.setItem("flyo:user:last_name", lastName);
+    // Upsert user profile names (single JSON object)
+    if (firstName || lastName) {
+      upsertUserProfile({ firstName, lastName });
     }
 
     console.log("JWT token stored successfully");
@@ -117,6 +147,9 @@ export const getJwtToken = (): string | null => {
  */
 export const getUserFirstName = (): string | null => {
   try {
+    const p = getUserProfile();
+    if (p?.firstName) return p.firstName;
+    // Legacy fallback
     if (typeof window === "undefined") return null;
     return window.localStorage.getItem("flyo:user:first_name");
   } catch {
@@ -129,6 +162,9 @@ export const getUserFirstName = (): string | null => {
  */
 export const getUserLastName = (): string | null => {
   try {
+    const p = getUserProfile();
+    if (p?.lastName) return p.lastName;
+    // Legacy fallback
     if (typeof window === "undefined") return null;
     return window.localStorage.getItem("flyo:user:last_name");
   } catch {
@@ -169,8 +205,13 @@ export const clearAuthData = (): void => {
     if (typeof window === "undefined") return;
     window.localStorage.removeItem("flyo:jwt:token");
     window.localStorage.removeItem("flyo:user:type");
+    // Remove unified profile + legacy keys for safety
+    window.localStorage.removeItem("flyo:user:profile");
     window.localStorage.removeItem("flyo:user:first_name");
     window.localStorage.removeItem("flyo:user:last_name");
+    window.localStorage.removeItem("flyo:user:mobile_number");
+    window.localStorage.removeItem("flyo:user:mobile_iso");
+    window.localStorage.removeItem("flyo:user:calling_code");
   } catch (error) {
     console.error("Error clearing auth data:", error);
   }
@@ -238,6 +279,96 @@ export const getUserEmail = (): string | null => {
     return decoded?.email || null;
   } catch (err) {
     console.error("Error getting user email from JWT:", err);
+    return null;
+  }
+};
+
+export interface UpdateUserNameRequest {
+  firstName: string;
+  lastName: string;
+  mobileNumber: string;
+  // Optional metadata for local caching/use in UI
+  countryIso?: string; // e.g., "IN"
+  callingCode?: string; // e.g., "+91"
+}
+
+/**
+ * Update user name and mobile number
+ */
+export const updateUserName = async (
+  data: UpdateUserNameRequest,
+): Promise<void> => {
+  try {
+    const token = getJwtToken();
+    if (!token) {
+      throw new Error("Authentication token not found. Please login again.");
+    }
+
+    console.log("Update user name request:", data);
+    console.log(
+      "Update user name URL:",
+      "https://prod-api.flyo.ai/core/v1/user/updateUserName",
+    );
+
+    const response = await fetch(
+      "https://prod-api.flyo.ai/core/v1/user/updateUserName",
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      },
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        `Failed to update profile: ${errorData.message || response.statusText}`,
+      );
+    }
+
+    console.log("Profile updated successfully");
+
+    // Persist unified profile so UI can immediately reflect changes
+    upsertUserProfile({
+      firstName: data.firstName,
+      lastName: data.lastName,
+      mobileNumber: data.mobileNumber,
+      countryIso: data.countryIso,
+      callingCode: data.callingCode,
+    });
+  } catch (error) {
+    console.error("Error in updateUserName:", error);
+    throw error;
+  }
+};
+
+// Convenience getters for updated phone metadata
+export const getUserMobileNumber = (): string | null => {
+  try {
+    const p = getUserProfile();
+    return p?.mobileNumber || null;
+  } catch {
+    return null;
+  }
+};
+
+export const getUserMobileIso = (): string | null => {
+  try {
+    const p = getUserProfile();
+    return p?.countryIso || null;
+  } catch {
+    return null;
+  }
+};
+
+export const getUserCallingCode = (): string | null => {
+  try {
+    const p = getUserProfile();
+    return p?.callingCode || null;
+  } catch {
     return null;
   }
 };
