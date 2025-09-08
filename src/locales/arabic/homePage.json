@@ -1,8 +1,8 @@
 {
     "quickActionTab":{
-        "bookMeAFlight": "احجز لي رحلة",
-        "showMePastFlights": "أظهر لي رحلاتي السابقة",
-        "showFreeLoungeAccess": "أظهر لي الوصول المجاني للصالة",
-        "doMyWebCheckin": "قم بإجراء تسجيل الوصول عبر الإنترنت"
+        "bookMeAFlight": "احجز لي\nرحلة",
+        "showMePastFlights": "أظهر لي رحلاتي\nالسابقة",
+        "showFreeLoungeAccess": "أظهر لي الوصول المجاني\nللصالة",
+        "doMyWebCheckin": "قم بإجراء تسجيل الوصول\nعبر الإنترنت"
     }
 }
