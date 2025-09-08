@@ -11,16 +11,20 @@ export interface Language {
   code: SupportedLanguage;
   name: string;
   nativeName: string;
-  flag: string;
 }
 
 // Available languages with their display information
 export const languages: Language[] = [
-  { code: "en", name: "English", nativeName: "English", flag: "🇺🇸" },
-  { code: "fr", name: "French", nativeName: "Français", flag: "🇫🇷" },
-  { code: "hi", name: "Hindi", nativeName: "हिंदी", flag: "🇮🇳" },
-  { code: "es", name: "Spanish", nativeName: "Español", flag: "🇪🇸" },
-  { code: "ar", name: "Arabic", nativeName: "العربية", flag: "🇸🇦" },
+  {
+    code: "en",
+    name: "English",
+    nativeName: "English"
+  },
+  {
+    code: "ar",
+    name: "Arabic",
+    nativeName: "العربية"
+  },
 ];
 
 /**
@@ -54,7 +58,9 @@ export function setSelectedLanguage(languageCode: SupportedLanguage): void {
 /**
  * Get language details by code
  */
-export function getLanguageDetails(code: SupportedLanguage): Language | undefined {
+export function getLanguageDetails(
+  code: SupportedLanguage,
+): Language | undefined {
   return languages.find((language) => language.code === code);
 }
 
@@ -71,17 +77,50 @@ export function isSupportedLanguage(code: string): code is SupportedLanguage {
  */
 export function getCurrentLanguageFromContext(): SupportedLanguage {
   if (typeof window === "undefined") return DEFAULT_LANGUAGE;
-  
+
   // Check URL first
   const pathname = window.location.pathname;
-  const urlLang = pathname.split('/')[1];
-  
+  const urlLang = pathname.split("/")[1];
+
   if (urlLang && isSupportedLanguage(urlLang)) {
     return urlLang;
   }
-  
+
   // Fall back to localStorage
   return getSelectedLanguage();
+}
+
+/**
+ * Check if emoji flags are supported by the browser/platform
+ */
+export function isEmojiFlagSupported(): boolean {
+  if (typeof window === "undefined") return false;
+
+  try {
+    // Create a test canvas to check if emoji flags render properly
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return false;
+
+    canvas.width = 20;
+    canvas.height = 20;
+    ctx.font = "16px Arial";
+    ctx.fillText("🇺🇸", 0, 16);
+
+    // Check if the emoji was rendered (not just empty boxes)
+    const imageData = ctx.getImageData(0, 0, 20, 20);
+    const data = imageData.data;
+
+    // If all pixels are transparent/empty, emoji flags are not supported
+    for (let i = 3; i < data.length; i += 4) {
+      if (data[i] > 0) return true; // Found non-transparent pixel
+    }
+
+    return false;
+  } catch (error) {
+    console.warn("Failed to detect emoji flag support:", error);
+    return false;
+  }
 }
 
 /**
@@ -89,29 +128,35 @@ export function getCurrentLanguageFromContext(): SupportedLanguage {
  */
 export function navigateToLanguage(languageCode: SupportedLanguage): void {
   if (typeof window === "undefined") return;
-  
+
   const currentPath = window.location.pathname;
-  const currentLang = currentPath.split('/')[1];
-  
+  const currentLang = currentPath.split("/")[1];
+
   let newPath: string;
-  
+
   if (currentLang && isSupportedLanguage(currentLang)) {
     // Replace existing language in URL
-    newPath = currentPath.replace(`/${currentLang}`, languageCode === DEFAULT_LANGUAGE ? '' : `/${languageCode}`);
+    newPath = currentPath.replace(
+      `/${currentLang}`,
+      languageCode === DEFAULT_LANGUAGE ? "" : `/${languageCode}`,
+    );
   } else {
     // Add language to URL
-    newPath = languageCode === DEFAULT_LANGUAGE ? currentPath : `/${languageCode}${currentPath}`;
+    newPath =
+      languageCode === DEFAULT_LANGUAGE
+        ? currentPath
+        : `/${languageCode}${currentPath}`;
   }
-  
+
   // Remove double slashes and ensure proper format
-  newPath = newPath.replace(/\/+/g, '/');
-  if (newPath !== '/' && newPath.endsWith('/')) {
+  newPath = newPath.replace(/\/+/g, "/");
+  if (newPath !== "/" && newPath.endsWith("/")) {
     newPath = newPath.slice(0, -1);
   }
-  if (newPath === '') {
-    newPath = '/';
+  if (newPath === "") {
+    newPath = "/";
   }
-  
+
   // Store preference and navigate
   setSelectedLanguage(languageCode);
   window.location.href = newPath;

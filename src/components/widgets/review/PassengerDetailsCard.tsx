@@ -15,6 +15,7 @@ import { ValidationWarningIcon } from "./ValidationWarningIcon";
 import { DateInput } from "./DateInput";
 import { CountryCombobox } from "./CountryCombobox";
 import { useTranslations } from "@/hooks/useTranslations";
+import { validateInput, filterEnglishName, filterEnglishOnly } from "@/utils/input-validation";
 import type { PassengerDetails, SavedPassenger, TravelDocument, ValidationErrors } from "./types";
 
 // Helper function to format date without timezone conversion
@@ -250,8 +251,21 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
             type="text"
             value={passenger.firstName}
             onChange={(e) => {
-              onPassengerChange("firstName", e.target.value);
-              onValidateField(e.target.value, "firstName");
+              // Filter and validate English-only input
+              const filteredValue = filterEnglishName(e.target.value);
+              const validation = validateInput(filteredValue, 'name', 'First name');
+
+              onPassengerChange("firstName", filteredValue);
+              onValidateField(filteredValue, "firstName");
+            }}
+            onKeyDown={(e) => {
+              // Prevent non-English characters from being typed
+              if (e.key.length === 1) {
+                const validation = validateInput(e.key, 'name');
+                if (!validation.isValid) {
+                  e.preventDefault();
+                }
+              }
             }}
             className={cn(
               "h-9 w-full rounded-md border px-2 py-1.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500",
@@ -265,7 +279,10 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
           <div className="mt-0.5 h-3">
             {validationErrors.firstName && (
               <p className="text-xs text-red-500">
-                {t('validation.required')}
+                {!validateInput(passenger.firstName, 'name').isValid
+                  ? "Only English letters allowed"
+                  : t('validation.required')
+                }
               </p>
             )}
           </div>
@@ -290,8 +307,20 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
             type="text"
             value={passenger.lastName}
             onChange={(e) => {
-              onPassengerChange("lastName", e.target.value);
-              onValidateField(e.target.value, "lastName");
+              // Filter and validate English-only input
+              const filteredValue = filterEnglishName(e.target.value);
+
+              onPassengerChange("lastName", filteredValue);
+              onValidateField(filteredValue, "lastName");
+            }}
+            onKeyDown={(e) => {
+              // Prevent non-English characters from being typed
+              if (e.key.length === 1) {
+                const validation = validateInput(e.key, 'name');
+                if (!validation.isValid) {
+                  e.preventDefault();
+                }
+              }
             }}
             className={cn(
               "h-9 w-full rounded-md border px-2 py-1.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500",
@@ -305,7 +334,10 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
           <div className="mt-0.5 h-3">
             {validationErrors.lastName && (
               <p className="text-xs text-red-500">
-                {t('validation.required')}
+                {!validateInput(passenger.lastName, 'name').isValid
+                  ? "Only English letters allowed"
+                  : t('validation.required')
+                }
               </p>
             )}
           </div>
@@ -348,7 +380,7 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
                     onPassengerChange("dateOfBirth", dateString);
                     onValidateField(dateString, "dateOfBirth");
                   }}
-                  placeholder="Select date of birth"
+                  placeholder={t('placeholders.selectDateOfBirth', 'Select date of birth')}
                   disableFuture={true}
                   className={cn(
                     validationErrors.dateOfBirth
@@ -360,7 +392,7 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
                 <div className="mt-0.5 h-3">
                   {validationErrors.dateOfBirth && (
                     <p className="text-xs text-red-500">
-                      Date of birth is required
+                      {t('validation.dateOfBirthRequired', 'Date of birth is required')}
                     </p>
                   )}
                 </div>
@@ -375,7 +407,7 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
                     htmlFor="documentType"
                     className="text-xs font-medium text-gray-700"
                   >
-                    Document Type *
+                    {t('labels.documentType', 'Document Type')} *
                   </Label>
                   <ValidationWarningIcon
                     show={validationErrors.documentType}
@@ -397,17 +429,17 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
                         : "",
                     )}
                   >
-                    <SelectValue placeholder="Select document type" />
+                    <SelectValue placeholder={t('placeholders.selectDocumentType', 'Select document type')} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Passport">
-                      Passport
+                      {t('options.documentTypes.passport', 'Passport')}
                     </SelectItem>
                     <SelectItem value="National ID">
-                      National ID
+                      {t('options.documentTypes.nationalId', 'National ID')}
                     </SelectItem>
                     <SelectItem value="Driver's License">
-                      Driver&apos;s License
+                      {t('options.documentTypes.driversLicense', "Driver's License")}
                     </SelectItem>
                   </SelectContent>
                 </Select>
@@ -415,7 +447,7 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
                 <div className="mt-0.5 h-3">
                   {validationErrors.documentType && (
                     <p className="text-xs text-red-500">
-                      Document type is required
+                      {t('validation.documentTypeRequired', 'Document type is required')}
                     </p>
                   )}
                 </div>
@@ -433,7 +465,7 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
                     htmlFor="documentNumber"
                     className="text-xs font-medium text-gray-700"
                   >
-                    {document?.type || "Document"} Number *
+                    {document?.type || t('labels.documentType', 'Document')} {t('labels.documentNumber', 'Number')} *
                   </Label>
                   <ValidationWarningIcon
                     show={validationErrors.documentNumber}
@@ -454,13 +486,13 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500"
                       : "",
                   )}
-                  placeholder="Enter document number"
+                  placeholder={t('placeholders.documentNumber', 'Enter document number')}
                 />
                 {/* Reserve space for error message to maintain alignment */}
                 <div className="mt-0.5 h-3">
                   {validationErrors.documentNumber && (
                     <p className="text-xs text-red-500">
-                      Document number is required
+                      {t('validation.required', 'This field is required')}
                     </p>
                   )}
                 </div>
@@ -473,7 +505,7 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
                     htmlFor="expiryDate"
                     className="text-xs font-medium text-gray-700"
                   >
-                    Expiry Date *
+                    {t('labels.expiryDate', 'Expiry Date')} *
                   </Label>
                   <ValidationWarningIcon
                     show={validationErrors.expiryDate}
@@ -491,7 +523,7 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
                     onDocumentChange("expiryDate", dateString);
                     onValidateField(dateString, "expiryDate");
                   }}
-                  placeholder="Select expiry date"
+                  placeholder={t('placeholders.selectDate', 'Select expiry date')}
                   disablePast={true}
                   className={cn(
                     validationErrors.expiryDate
@@ -503,7 +535,7 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
                 <div className="mt-0.5 h-3">
                   {validationErrors.expiryDate && (
                     <p className="text-xs text-red-500">
-                      Expiry date is required
+                      {t('validation.expiryDateRequired', 'Expiry date is required')}
                     </p>
                   )}
                 </div>
@@ -520,7 +552,7 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
                     htmlFor="nationality"
                     className="text-xs font-medium text-gray-700"
                   >
-                    Nationality *
+                    {t('labels.nationality', 'Nationality')} *
                   </Label>
                   <ValidationWarningIcon
                     show={validationErrors.nationality}
@@ -533,7 +565,7 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
                     onDocumentChange("nationality", value);
                     onValidateField(value, "nationality");
                   }}
-                  placeholder="Select nationality (e.g., India, United States)"
+                  placeholder={t('placeholders.selectCountry', 'Select nationality')}
                   className={cn(
                     validationErrors.nationality
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500"
@@ -544,7 +576,7 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
                 <div className="mt-0.5 h-3">
                   {validationErrors.nationality && (
                     <p className="text-xs text-red-500">
-                      Nationality is required
+                      {t('validation.nationalityRequired', 'Nationality is required')}
                     </p>
                   )}
                 </div>
@@ -604,8 +636,8 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
                         <div className="text-xs text-gray-600">
                           {savedPassenger.gender} •{" "}
                           {savedPassenger.dateOfBirth
-                            ? `Born ${savedPassenger.dateOfBirth}`
-                            : "No DOB"}
+                            ? `${t('labels.dateOfBirth', 'Born')} ${savedPassenger.dateOfBirth}`
+                            : t('messages.noDOB', 'No DOB')}
                         </div>
                       </div>
                       <ArrowRight className="h-4 w-4 text-gray-400" />

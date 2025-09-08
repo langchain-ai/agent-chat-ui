@@ -3,6 +3,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Plane, Clock } from "lucide-react"
+import { useTranslations } from "@/hooks/useTranslations"
 
 interface FlightDetailsPopupProps {
   open: boolean
@@ -43,8 +44,12 @@ interface FlightDetailsPopupProps {
 }
 
 export function FlightDetailsPopup({ open, onOpenChange, flightData }: FlightDetailsPopupProps) {
+  // Initialize translations
+  const { t } = useTranslations('flightOptionsWidget');
+
   const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString("en-US", {
+    // Use browser's locale for time formatting
+    return new Date(dateString).toLocaleTimeString(undefined, {
       hour: "2-digit",
       minute: "2-digit",
       hour12: false,
@@ -79,7 +84,7 @@ export function FlightDetailsPopup({ open, onOpenChange, flightData }: FlightDet
           arrival: formatTime(segment.arrival.date),
           flight: `${segment.airlineIata} ${segment.flightNumber}`,
           duration: formatDuration(segment.duration),
-          date: "Today", // You can calculate this based on dates
+          date: t('flightDetails.today', 'Today'), // You can calculate this based on dates
           airline: segment.airlineName,
         });
 
@@ -91,7 +96,7 @@ export function FlightDetailsPopup({ open, onOpenChange, flightData }: FlightDet
           segments.push({
             layover: segment.arrival.airportName.split(' ')[0], // Get city name
             duration: layoverDuration,
-            details: "Connection",
+            details: t('flightDetails.connection', 'Connection'),
           });
         }
       }
@@ -100,33 +105,7 @@ export function FlightDetailsPopup({ open, onOpenChange, flightData }: FlightDet
     }
 
     // Fallback to mock data
-    return [
-      {
-        from: "New Delhi (DEL)",
-        to: "Hong Kong (HKG)",
-        departure: "01:15",
-        arrival: "08:30",
-        flight: "CX 694",
-        duration: "5h 45m",
-        date: "Today",
-        airline: "Cathay Pacific",
-      },
-      {
-        layover: "Hong Kong",
-        duration: "1h 20m",
-        details: "Terminal change required",
-      },
-      {
-        from: "Hong Kong (HKG)",
-        to: "Tokyo (NRT)",
-        departure: "09:50",
-        arrival: "15:25",
-        flight: "CX 520",
-        duration: "3h 35m",
-        date: "Today",
-        airline: "Cathay Pacific",
-      },
-    ];
+    return []
   };
 
   const calculateLayoverDuration = (arrivalDate: string, departureDate: string) => {
@@ -146,7 +125,7 @@ export function FlightDetailsPopup({ open, onOpenChange, flightData }: FlightDet
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Plane className="w-4 h-4" />
-            Flight Details - Cathay Pacific
+            {t('flightDetails.title', 'Flight Details')} - {flightSegments[0]?.airline}
           </DialogTitle>
         </DialogHeader>
 
@@ -157,7 +136,7 @@ export function FlightDetailsPopup({ open, onOpenChange, flightData }: FlightDet
                 <div className="flex items-center gap-3 py-2 px-3 bg-muted/50 rounded-lg">
                   <Clock className="w-4 h-4 text-muted-foreground" />
                   <div>
-                    <div className="text-sm font-medium">Layover in {segment.layover}</div>
+                    <div className="text-sm font-medium">{t('flightDetails.layoverIn', 'Layover in')} {segment.layover}</div>
                     <div className="text-xs text-muted-foreground">
                       {segment.duration} • {segment.details}
                     </div>
@@ -179,9 +158,9 @@ export function FlightDetailsPopup({ open, onOpenChange, flightData }: FlightDet
                     <div className="text-right">
                       <div className="text-sm font-semibold">{segment.arrival}</div>
                       <div className="text-xs text-muted-foreground">{segment.to}</div>
-                      {segment.date === "Tomorrow" && (
+                      {segment.date === t('flightDetails.tomorrow', 'Tomorrow') && (
                         <span className="inline-block text-[10px] bg-red-50 text-red-600 border border-red-200 rounded px-1.5 py-0.5 mt-1">
-                          +1 day
+                          {t('flightInfo.nextDay', '+1 day')}
                         </span>
                       )}
                     </div>

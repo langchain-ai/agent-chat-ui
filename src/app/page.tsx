@@ -9,7 +9,6 @@ import { ItineraryWidgetProvider } from "@/providers/ItineraryWidgetContext";
 import { LocationProvider } from "@/providers/LocationContext";
 import { Toaster } from "@/components/ui/sonner";
 import { ProtectedRoute } from "@/components/auth";
-import { LanguagePreferenceHandler } from "@/components/common/LanguagePreferenceHandler";
 import React from "react";
 import { TabsLayout } from "@/components/thread/TabsLayout";
 import { Navbar } from "@/components/ui/Navbar";
@@ -17,7 +16,6 @@ import { Navbar } from "@/components/ui/Navbar";
 export default function DemoPage(): React.ReactNode {
   return (
     <React.Suspense fallback={<div>Loading (layout)...</div>}>
-      <LanguagePreferenceHandler />
       <Toaster />
       <ProtectedRoute>
         <LocationProvider>

@@ -11,6 +11,7 @@ import { getJwtToken, GetUserId } from "@/services/authService";
 import { getCachedLocation } from "@/lib/location-cache";
 import { getSelectedCurrency } from "@/utils/currency-storage";
 import { v4 as uuidv4 } from "uuid";
+import { getCurrentLanguage } from "@/utils/i18n";
 
 function EditableContent({
   value,
@@ -98,6 +99,11 @@ export function HumanMessage({
     const userCurrency = getSelectedCurrency();
     if (userCurrency) {
       submissionData.userCurrency = userCurrency;
+    }
+
+    const userLanguage = getCurrentLanguage();
+    if (userLanguage) {
+      submissionData.userLanguage = userLanguage;
     }
 
     thread.submit(submissionData, {

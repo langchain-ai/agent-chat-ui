@@ -8,6 +8,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getSelectedLanguage } from "@/utils/language-storage";
 
 interface DateInputProps {
   date?: Date;
@@ -28,6 +29,31 @@ export const DateInput = ({
 }: DateInputProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
+  // Get user's locale for date formatting
+  const getUserLocale = () => {
+    try {
+      const storedLanguage = getSelectedLanguage();
+      const localeMap: Record<string, string> = {
+        'en': 'en-US',
+        'es': 'es-ES',
+        'fr': 'fr-FR',
+        'de': 'de-DE',
+        'it': 'it-IT',
+        'pt': 'pt-PT',
+        'ru': 'ru-RU',
+        'ja': 'ja-JP',
+        'ko': 'ko-KR',
+        'zh': 'zh-CN',
+        'ar': 'ar-SA',
+        'hi': 'hi-IN'
+      };
+      return localeMap[storedLanguage] || 'en-US';
+    } catch (error) {
+      console.warn('Failed to get user locale for date formatting:', error);
+      return 'en-US';
+    }
+  };
+
   const formatDateDisplay = (date: Date | undefined) => {
     if (!date) return placeholder || "Select date";
     const options: Intl.DateTimeFormatOptions = {
@@ -36,7 +62,8 @@ export const DateInput = ({
       month: "short",
       year: "numeric",
     };
-    return date.toLocaleDateString("en-US", options);
+    // Use user's locale instead of hardcoded "en-US"
+    return date.toLocaleDateString(getUserLocale(), options);
   };
 
   const today = new Date();

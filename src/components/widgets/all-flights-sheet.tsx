@@ -20,6 +20,9 @@ import {
 } from "@/components/widgets/flight-filter-utils"
 import { useFlightFilter } from "./flight-filter-context"
 import { useTranslations } from "@/hooks/useTranslations"
+import { useFlightComponentRTL } from "@/hooks/useRTLMirror"
+import { cn } from "@/lib/utils"
+import "@/styles/rtl-mirror.css"
 
 interface AllFlightsSheetProps {
   children: React.ReactNode
@@ -35,8 +38,14 @@ export function AllFlightsSheet({ children, flightData = [], onFlightSelect, fli
   const [isLoading, setIsLoading] = useState(false)
   const [showExpandedAirlines, setShowExpandedAirlines] = useState(false)
 
-  // Initialize translations
+  // Initialize translations and RTL mirror detection
   const { t } = useTranslations('flightOptionsWidget');
+  const {
+    isRTLMirrorRequired,
+    isLoading: isRTLLoading,
+    mirrorClasses,
+    mirrorStyles
+  } = useFlightComponentRTL();
 
   // Use filter context for state management
   const {
@@ -276,14 +285,15 @@ const sortedFlights = [...filteredFlights].sort((a, b) => {
             fontFamily: "Uber Move, Arial, Helvetica, sans-serif",
           }}
         >
-        <div className="flex-shrink-0 border-b bg-background">
-          <SheetHeader className="mb-2">
-            <SheetTitle>{allFlights.length > 0 ? t('title.flights', 'Flights') : t('messages.noFlightsAvailable')}</SheetTitle>
-          </SheetHeader>
+          <div className="flex flex-col h-full">
+            <div className="flex-shrink-0 border-b bg-background">
+              <SheetHeader className="mb-2">
+                <SheetTitle>{allFlights.length > 0 ? t('title.flights', 'Flights') : t('messages.noFlightsAvailable')}</SheetTitle>
+              </SheetHeader>
 
-          <div className="mb-3 px-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
+              <div className="mb-3 px-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -349,11 +359,12 @@ const sortedFlights = [...filteredFlights].sort((a, b) => {
             )}
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+          </div>
+        </SheetContent>
+      </Sheet>
 
-    {/* Filter Bottom Sheet Modal */}
-    <Sheet open={showFilters} onOpenChange={setShowFilters}>
+      {/* Filter Bottom Sheet Modal */}
+      <Sheet open={showFilters} onOpenChange={setShowFilters}>
       <SheetContent
         side="bottom"
         className="flex h-[85vh] flex-col overflow-hidden"
@@ -478,8 +489,8 @@ const sortedFlights = [...filteredFlights].sort((a, b) => {
             </Button>
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+        </SheetContent>
+      </Sheet>
     </>
   )
 }

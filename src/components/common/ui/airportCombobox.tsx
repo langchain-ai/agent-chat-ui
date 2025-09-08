@@ -19,6 +19,7 @@ import {
   PopoverTrigger,
 } from "@/components/common/ui/popover";
 import { searchAirports } from "@/services/airportService";
+import { useTranslations } from "@/hooks/useTranslations";
 
 interface Airport {
   code: string;
@@ -143,6 +144,9 @@ export function AirportCombobox({
   className,
   disabled = false,
 }: AirportComboboxProps) {
+  // Initialize translations
+  const { t } = useTranslations('searchCriteriaWidget');
+
   const [open, setOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [apiResults, setApiResults] = React.useState<ApiAirport[]>([]);
@@ -374,7 +378,7 @@ export function AirportCombobox({
     // If we don't have info for this airport yet, set a fallback
     // BUT only if we don't already have valid info for this airport code
     if (!selectedAirportInfo || selectedAirportInfo.code !== value) {
-      const fallbackDisplay = `${value} - Airport`;
+      const fallbackDisplay = `${value} - ${t('airport.airportFallback', 'Airport')}`;
       console.log(
         "🔍 AirportCombobox Debug - Using fallback display:",
         fallbackDisplay,
@@ -432,7 +436,7 @@ export function AirportCombobox({
             className,
           )}
         >
-          <span className="truncate">{selectedAirport || placeholder}</span>
+          <span className="truncate">{selectedAirport || t('placeholders.selectAirport', placeholder)}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -442,7 +446,7 @@ export function AirportCombobox({
       >
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder="Search airports..."
+            placeholder={t('placeholders.searchAirports', 'Search airports...')}
             className="h-9"
             value={searchQuery}
             onValueChange={setSearchQuery}
@@ -450,10 +454,10 @@ export function AirportCombobox({
           />
           <CommandList>
             <CommandEmpty>
-              {isLoading ? "Searching airports..." : "No airports found."}
+              {isLoading ? t('airport.searchingAirports', 'Searching airports...') : t('airport.noAirportsFound', 'No airports found.')}
             </CommandEmpty>
             {!searchQuery && displayAirports.length > 0 && (
-              <CommandGroup heading="Popular Airports">
+              <CommandGroup heading={t('airport.popularAirports', 'Popular Airports')}>
                 {displayAirports.map((airport) => (
                   <CommandItem
                     key={airport.value}
@@ -498,7 +502,7 @@ export function AirportCombobox({
               </CommandGroup>
             )}
             {searchQuery && displayAirports.length > 0 && (
-              <CommandGroup heading="Search Results">
+              <CommandGroup heading={t('airport.searchResults', 'Search Results')}>
                 {displayAirports.map((airport) => (
                   <CommandItem
                     key={airport.value}

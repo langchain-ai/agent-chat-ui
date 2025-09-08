@@ -6,6 +6,9 @@ import { FlightDetailsPopup } from "./flight-details-popup"
 import Image from "next/image"
 import { getCurrencySymbol } from "@/utils/currency-storage";
 import { useTranslations } from "@/hooks/useTranslations";
+import { useFlightComponentRTL } from "@/hooks/useRTLMirror";
+import { cn } from "@/lib/utils";
+import "@/styles/rtl-mirror.css";
 
 interface FlightCardProps {
   // New data structure props (optional for backward compatibility)
@@ -167,6 +170,12 @@ const getBadgeConfigs = (tags: string[] = [], t: (key: string, fallback?: string
 export function FlightCard(props: FlightCardProps) {
   const [showDetails, setShowDetails] = useState(false)
   const { t } = useTranslations('flightOptionsWidget');
+  const {
+    isRTLMirrorRequired,
+    isLoading: isRTLLoading,
+    mirrorClasses,
+    mirrorStyles
+  } = useFlightComponentRTL();
 
   // Helper functions to extract data from new structure or use legacy props
   const getFlightData = () => {
@@ -245,13 +254,34 @@ export function FlightCard(props: FlightCardProps) {
   const isSelected = props.selectedFlightId === props.flightOfferId;
 
   if (props.compact) {
+    // Show loading state briefly to prevent FOUC
+    if (isRTLLoading) {
+      return (
+        <div className="px-3 py-2">
+          <div className="flex items-center justify-center py-4">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-black"></div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <>
         <div
-          className={`px-3 py-2 transition-colors duration-200 ${
-            isSelected ? 'bg-blue-50 border-blue-200' : ''
-          } ${props.isLoading ? 'opacity-50' : ''}`}
+          className={cn(
+            `px-3 py-2 transition-colors duration-200 ${
+              isSelected ? 'bg-blue-50 border-blue-200' : ''
+            } ${props.isLoading ? 'opacity-50' : ''}`,
+            // Container-level RTL transformation
+            mirrorClasses.container
+          )}
+          style={mirrorStyles.container}
         >
+          {/* Inner container to reverse the transform for text readability */}
+          <div
+            className={cn("w-full", mirrorClasses.content)}
+            style={mirrorStyles.content}
+          >
           {/* Main Flight Row */}
           <div className="flex min-h-[60px] items-center gap-3">
             {/* Left: Airline Info */}
@@ -344,6 +374,7 @@ export function FlightCard(props: FlightCardProps) {
               )}
             </div>
           </div>
+          </div>
         </div>
 
         <FlightDetailsPopup
@@ -358,10 +389,20 @@ export function FlightCard(props: FlightCardProps) {
   return (
     <>
       <div
-        className={`px-2 py-1 transition-all duration-200 rounded-lg ${
-          isSelected ? 'bg-blue-50 border border-blue-200' : ''
-        } ${props.isLoading ? 'opacity-50' : ''}`}
+        className={cn(
+          `px-2 py-1 transition-all duration-200 rounded-lg ${
+            isSelected ? 'bg-blue-50 border border-blue-200' : ''
+          } ${props.isLoading ? 'opacity-50' : ''}`,
+          // Container-level RTL transformation
+          mirrorClasses.container
+        )}
+        style={mirrorStyles.container}
       >
+        {/* Inner container to reverse the transform for text readability */}
+        <div
+          className={cn("w-full", mirrorClasses.content)}
+          style={mirrorStyles.content}
+        >
         <div className="flex items-center justify-between gap-0.5 mb-4 pt-3">
           <div className="flex items-center gap-2">
             <AirlineLogo
@@ -444,6 +485,7 @@ export function FlightCard(props: FlightCardProps) {
           >
             {flightData.price}
           </button>
+        </div>
         </div>
       </div>
 

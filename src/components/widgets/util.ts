@@ -3,6 +3,7 @@
 import { toast } from "sonner";
 import { getCachedLocation } from "@/lib/location-cache";
 import { getSelectedCurrency } from "@/utils/currency-storage";
+import { getCurrentLanguage } from "@/utils/i18n";
 
 // Mock auth functions for development - replace with actual imports when authService is available
 const getJwtToken = (): string | null => {
@@ -56,6 +57,11 @@ export async function submitInterruptResponse(
     }
     if (userCurrency) {
       submissionData.userCurrency = userCurrency;
+    }
+
+    const userLanguage = getCurrentLanguage();
+    if (userLanguage) {
+      submissionData.userLanguage = userLanguage;
     }
 
     await thread.submit(submissionData, {

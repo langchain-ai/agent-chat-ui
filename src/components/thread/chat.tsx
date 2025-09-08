@@ -47,6 +47,7 @@ import { InterruptManager } from "./messages/interrupt-manager";
 import { GenericInterruptView } from "./messages/generic-interrupt";
 import { NonAgentFlowReopenButton } from "./NonAgentFlowReopenButton";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
+import { getCurrentLanguage } from "@/utils/i18n";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -290,6 +291,11 @@ export function Thread() {
       submissionData.userCurrency = userCurrency;
     }
 
+    const userLanguage = getCurrentLanguage();
+    if (userLanguage) {
+      submissionData.userLanguage = userLanguage;
+    }
+
     const submitOptions: any = {
       streamMode: ["updates"],
       streamSubgraphs: true,
@@ -394,6 +400,11 @@ export function Thread() {
     const userCurrency = getSelectedCurrency();
     if (userCurrency) {
       submissionData.userCurrency = userCurrency;
+    }
+
+    const userLanguage = getCurrentLanguage();
+    if (userLanguage) {
+      submissionData.userLanguage = userLanguage;
     }
 
     const submitOptions: any = {

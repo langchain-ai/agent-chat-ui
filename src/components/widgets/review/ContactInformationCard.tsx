@@ -5,6 +5,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ValidationWarningIcon } from "./ValidationWarningIcon";
 import { useTranslations } from "@/hooks/useTranslations";
+import { validateInput, filterEnglishEmail, filterValidPhone } from "@/utils/input-validation";
 import type { ContactInformation, ValidationErrors } from "./types";
 
 interface ContactInformationCardProps {
@@ -84,8 +85,20 @@ export const ContactInformationCard: React.FC<ContactInformationCardProps> = ({
                 type="tel"
                 value={contact.phone}
                 onChange={(e) => {
-                  onContactChange("phone", e.target.value);
-                  onValidateField(e.target.value, "phone");
+                  // Filter and validate phone input
+                  const filteredValue = filterValidPhone(e.target.value);
+
+                  onContactChange("phone", filteredValue);
+                  onValidateField(filteredValue, "phone");
+                }}
+                onKeyDown={(e) => {
+                  // Prevent non-phone characters from being typed
+                  if (e.key.length === 1) {
+                    const validation = validateInput(e.key, 'phone');
+                    if (!validation.isValid) {
+                      e.preventDefault();
+                    }
+                  }
                 }}
                 className={cn(
                   "h-9 w-full rounded-md border px-2 py-1.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500",
@@ -99,7 +112,10 @@ export const ContactInformationCard: React.FC<ContactInformationCardProps> = ({
               <div className="mt-1 h-4">
                 {validationErrors.phone && (
                   <p className="text-xs text-red-500">
-                    {t('validation.invalidPhone')}
+                    {!validateInput(contact.phone, 'phone').isValid
+                      ? "Only numbers and phone symbols allowed"
+                      : t('validation.invalidPhone')
+                    }
                   </p>
                 )}
               </div>
@@ -124,8 +140,20 @@ export const ContactInformationCard: React.FC<ContactInformationCardProps> = ({
                 type="email"
                 value={contact.email}
                 onChange={(e) => {
-                  onContactChange("email", e.target.value);
-                  onValidateEmail(e.target.value);
+                  // Filter and validate email input
+                  const filteredValue = filterEnglishEmail(e.target.value);
+
+                  onContactChange("email", filteredValue);
+                  onValidateEmail(filteredValue);
+                }}
+                onKeyDown={(e) => {
+                  // Prevent non-English characters from being typed
+                  if (e.key.length === 1) {
+                    const validation = validateInput(e.key, 'email');
+                    if (!validation.isValid) {
+                      e.preventDefault();
+                    }
+                  }
                 }}
                 className={cn(
                   "h-9 w-full rounded-md border px-2 py-1.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500",
@@ -139,7 +167,10 @@ export const ContactInformationCard: React.FC<ContactInformationCardProps> = ({
               <div className="mt-1 h-4">
                 {validationErrors.email && (
                   <p className="text-xs text-red-500">
-                    {t('validation.invalidEmail')}
+                    {!validateInput(contact.email, 'email').isValid
+                      ? "Only English characters allowed"
+                      : t('validation.invalidEmail')
+                    }
                   </p>
                 )}
               </div>
