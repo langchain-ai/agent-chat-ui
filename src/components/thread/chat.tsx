@@ -331,8 +331,8 @@ export function Thread() {
         icon: <Armchair className="h-4 w-4" />,
       },
       {
-        label: "Please do my\nwebcheckin",
-        text: "Please do my webcheckin",
+        label: "Show me my\npast flights",
+        text: "Show me my past flights",
         icon: <Ticket className="h-4 w-4" />,
       },
     ];
