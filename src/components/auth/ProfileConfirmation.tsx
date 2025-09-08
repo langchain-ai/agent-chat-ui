@@ -3,8 +3,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/common/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   getUserFirstName,
   getUserLastName,
@@ -12,9 +10,10 @@ import {
   isAuthenticated,
   type UpdateUserNameRequest,
 } from "@/services/authService";
-import { FlyoLogoSVG } from "../icons/langgraph";
+import { CountryCombobox } from "@/components/widgets/review/CountryCombobox";
+import PhoneInput from 'react-phone-input-2';
+import 'react-phone-input-2/lib/style.css';
 import * as countryList from "country-list";
-import CountryCodeCombobox from "@/components/common/ui/countryCodeCombobox";
 
 // Country calling codes mapping
 const countryCallingCodes: { [key: string]: string } = {
@@ -272,62 +271,19 @@ const countryCallingCodes: { [key: string]: string } = {
 const ProfileConfirmation: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [countryCode, setCountryCode] = useState<string>("IN"); // Default to India
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const [fieldErrors, setFieldErrors] = useState<{
-    firstName?: string;
-    lastName?: string;
-    mobileNumber?: string;
-  }>({});
+  const [nationality, setNationality] = useState<string>("");
+  const [phoneNumber, setPhoneNumber] = useState<string>("");
   const [formData, setFormData] = useState<UpdateUserNameRequest>({
     firstName: "",
     lastName: "",
     mobileNumber: "",
   });
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Get country data
-  const countryNames = countryList.getNames();
-  const countryCodes = countryList.getCodes();
-  const allCountries = countryCodes
-    .map((code: string, index: number) => ({
-      code,
-      name: countryNames[index],
-      callingCode: countryCallingCodes[code] || "+1",
-    }))
-    .sort((a: { callingCode: string }, b: { callingCode: string }) =>
-      a.callingCode.localeCompare(b.callingCode),
-    );
 
-  // Filter countries based on search query
-  const filteredCountries = allCountries.filter((country) => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      country.name.toLowerCase().includes(query) ||
-      country.callingCode.includes(query) ||
-      country.code.toLowerCase().includes(query)
-    );
-  });
 
-  // Auto-detect country from locale (mobile and desktop)
-  useEffect(() => {
-    try {
-      const primary = navigator.languages?.[0] || navigator.language;
-      const match = primary?.match(/-([A-Z]{2})/i);
-      let iso = match ? match[1].toUpperCase() : "";
-      if (!iso) {
-        const loc = Intl.DateTimeFormat().resolvedOptions().locale;
-        const m2 = loc?.match(/-([A-Z]{2})/i);
-        iso = m2 ? m2[1].toUpperCase() : "";
-      }
-      if (iso && countryCallingCodes[iso]) {
-        setCountryCode(iso);
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
+
+
+
 
   // Check if user is authenticated
   useEffect(() => {
@@ -348,22 +304,7 @@ const ProfileConfirmation: React.FC = () => {
     });
   }, []);
 
-  // Handle click outside to close dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setSearchQuery("");
-      }
-    };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
 
   const handleInputChange = (
     field: keyof UpdateUserNameRequest,
@@ -377,22 +318,6 @@ const ProfileConfirmation: React.FC = () => {
     if (error) {
       setError(null);
     }
-
-    // Inline field validation for mobile
-    setFieldErrors((prev) => {
-      const next = { ...prev } as typeof prev;
-      if (field === "firstName") {
-        next.firstName = value.trim() ? "" : "First name is required";
-      } else if (field === "lastName") {
-        next.lastName = value.trim() ? "" : "Last name is required";
-      } else if (field === "mobileNumber") {
-        const mobileRegex = /^[0-9]{10,15}$/;
-        next.mobileNumber = mobileRegex.test(value.replace(/\D/g, ""))
-          ? ""
-          : "Enter a valid number (10-15 digits)";
-      }
-      return next;
-    });
   };
 
   const validateForm = (): boolean => {
@@ -439,24 +364,22 @@ const ProfileConfirmation: React.FC = () => {
       setIsLoading(true);
       setError(null);
 
-      // Clean mobile number (remove any non-digit characters)
-      const cleanMobileNumber = formData.mobileNumber.replace(/\D/g, "");
+      // Validate phone number
+      if (!phoneNumber || phoneNumber.length < 10) {
+        setError("Please enter a valid mobile number");
+        return;
+      }
 
-      // Combine country code with mobile number
-      const callingCode = countryCallingCodes[countryCode] || "+1";
-      // Backend expects callingCode concatenated directly with number (no '+')
-      const numericCallingCode = callingCode.replace("+", "");
-      const fullMobileNumber = `${numericCallingCode}${cleanMobileNumber}`;
+      // Phone number from react-phone-input-2 is already in the correct format
+      const fullMobileNumber = phoneNumber;
 
       await updateUserName({
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         mobileNumber: fullMobileNumber,
-        countryIso: countryCode,
-        callingCode,
       });
-      // Redirect to main app after successful update
-      window.location.href = "/";
+      // Redirect to personalize travel page after successful update
+      window.location.href = "/personalize-travel";
     } catch (err) {
       console.error("Error updating profile:", err);
       setError(
@@ -475,217 +398,151 @@ const ProfileConfirmation: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-[100svh] items-center justify-center bg-white px-4 pt-6 pb-24 sm:px-6 sm:py-8 lg:px-8">
-      <div className="w-full max-w-md">
-        {/* Logo/Brand Section */}
-        <div className="mb-6 flex flex-col items-center justify-center text-center sm:mb-8">
-          <FlyoLogoSVG
-            className="h-13"
-            height={130}
-            width={130}
-          />
-          <p className="font-uber-move mt-2 text-sm text-gray-600 sm:text-base">
-            Please confirm your details to continue
-          </p>
-        </div>
+    <div className="min-h-screen bg-white flex flex-col" style={{ fontFamily: 'var(--font-uber-move)' }}>
+      {/* Main Content - Scrollable */}
+      <div className="flex-1 px-6 py-6 sm:py-20 overflow-y-auto max-h-screen">
+        <div className="w-full max-w-md mx-auto sm:max-w-lg pb-32 sm:pb-24">
+          {/* Welcome Section */}
+          <div className="mb-6 sm:mb-8">
+            <h1 className="text-[26px] font-bold text-black mb-2 sm:text-4xl sm:mb-4" style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 700 }}>
+              Welcome to
+            </h1>
+            <h1 className="text-[26px] font-bold text-black mb-4 sm:text-4xl sm:mb-6" style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 700 }}>
+              flyo.ai
+            </h1>
+            <p className="text-[14px] text-gray-600 leading-relaxed sm:text-base" style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 400 }}>
+              Please confirm your name as used during flight bookings. This helps us match your tickets automatically.
+            </p>
+          </div>
 
-        {/* Profile Confirmation Card */}
-        <Card className="rounded-2xl border bg-white/20 shadow-xl backdrop-blur-lg">
-          <CardHeader className="space-y-1 pb-4 sm:pb-6">
-            <CardTitle className="font-uber-move text-center text-lg font-medium text-gray-900 sm:text-xl">
-              Profile Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form
-              id="profileForm"
-              onSubmit={handleSubmit}
-              className="space-y-5 sm:space-y-6"
-            >
-              {/* Error Message */}
-              {error && (
-                <div
-                  className="rounded-lg border border-red-200 bg-red-50 p-3 sm:p-4"
-                  role="alert"
-                  aria-live="polite"
-                >
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <svg
-                        className="h-5 w-5 text-red-400"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </div>
-                    <div className="ml-3">
-                      <p className="font-uber-move text-xs text-red-800 sm:text-sm">
-                        {error}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* First Name Field */}
-              <div className="space-y-2">
-                <Label
-                  htmlFor="firstName"
-                  className="font-uber-move text-xs font-medium text-gray-700 sm:text-sm"
-                >
-                  First Name
-                </Label>
-                <Input
-                  id="firstName"
-                  type="text"
-                  value={formData.firstName}
-                  onChange={(e) =>
-                    handleInputChange("firstName", e.target.value)
-                  }
-                  placeholder="Enter your first name"
-                  disabled={isLoading}
-                  autoComplete="given-name"
-                  inputMode="text"
-                  autoCapitalize="words"
-                  autoCorrect="off"
-                  className="h-12 text-base"
-                />
-                {fieldErrors.firstName ? (
-                  <p className="mt-1 text-xs text-red-600 sm:hidden">
-                    {fieldErrors.firstName}
-                  </p>
-                ) : null}
+          {/* Form */}
+          <form id="profileForm" className="space-y-4 sm:space-y-6 pb-24 sm:pb-8">
+            {/* Error Message */}
+            {error && (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+                <p className="text-sm text-red-800" style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 400 }}>{error}</p>
               </div>
+            )}
 
-              {/* Last Name Field */}
-              <div className="space-y-2">
-                <Label
-                  htmlFor="lastName"
-                  className="font-uber-move text-xs font-medium text-gray-700 sm:text-sm"
-                >
-                  Last Name
-                </Label>
-                <Input
-                  id="lastName"
-                  type="text"
-                  value={formData.lastName}
-                  onChange={(e) =>
-                    handleInputChange("lastName", e.target.value)
-                  }
-                  placeholder="Enter your last name"
-                  disabled={isLoading}
-                  autoComplete="family-name"
-                  inputMode="text"
-                  autoCapitalize="words"
-                  autoCorrect="off"
-                  className="h-12 text-base"
-                />
-                {fieldErrors.lastName ? (
-                  <p className="mt-1 text-xs text-red-600 sm:hidden">
-                    {fieldErrors.lastName}
-                  </p>
-                ) : null}
-              </div>
-
-              {/* Country Code and Mobile Number Fields */}
-              <div className="space-y-2">
-                <Label className="font-uber-move text-xs font-medium text-gray-700 sm:text-sm">
-                  Mobile Number
-                </Label>
-                <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
-                  {/* Country Code Selector - reuse project combobox patterns */}
-                  <div className="w-full sm:w-48">
-                    <CountryCodeCombobox
-                      valueIsoCode={countryCode}
-                      onSelect={(c) => {
-                        setCountryCode(c.isoCode);
-                        if (error) setError(null);
-                      }}
-                      className="h-12 text-base"
-                    />
-                  </div>
-
-                  {/* Mobile Number Input */}
-                  <div className="w-full sm:flex-1">
-                    <Input
-                      id="mobileNumber"
-                      type="tel"
-                      value={formData.mobileNumber}
-                      onChange={(e) =>
-                        handleInputChange("mobileNumber", e.target.value)
-                      }
-                      placeholder="Enter mobile number"
-                      disabled={isLoading}
-                      autoComplete="tel"
-                      inputMode="numeric"
-                      enterKeyHint="done"
-                      className="h-12 text-base"
-                    />
-                    {fieldErrors.mobileNumber ? (
-                      <p className="mt-1 text-xs text-red-600 sm:hidden">
-                        {fieldErrors.mobileNumber}
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="font-uber-move hidden w-full rounded-xl bg-blue-600 px-6 py-3 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 sm:inline-flex"
-                size="lg"
-              >
-                {isLoading ? (
-                  <div className="flex items-center">
-                    <div className="mr-3 h-5 w-5 animate-spin rounded-full border-b-2 border-white"></div>
-                    <span>Updating Profile...</span>
-                  </div>
-                ) : (
-                  "Save Profile"
-                )}
-              </Button>
-            </form>
-
-            {/* Skip Option */}
-            {/* <div className="mt-6 text-center">
-              <button
-                onClick={() => {
-                  window.location.href = "/";
+            {/* First Name Field */}
+            <div className="space-y-2">
+              <label htmlFor="firstName" className="block text-[16px] text-black" style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 500 }}>
+                First Name *
+              </label>
+              <input
+                id="firstName"
+                type="text"
+                value={formData.firstName}
+                onChange={(e) => {
+                  // Restrict to English characters only
+                  const englishOnly = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                  handleInputChange("firstName", englishOnly);
                 }}
-                className="font-uber-move text-sm font-medium text-gray-600 underline hover:text-gray-500"
+                placeholder="Vanni"
                 disabled={isLoading}
-              >
-                Skip for now
-              </button>
-            </div> */}
-          </CardContent>
-        </Card>
-      </div>
-      {/* Sticky submit on mobile */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-white/95 p-4 sm:hidden">
-        <Button
-          form="profileForm"
-          type="submit"
-          disabled={isLoading}
-          className="w-full rounded-xl bg-blue-600 py-3 text-base font-medium text-white shadow-sm transition-all duration-200 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-          size="lg"
-        >
-          {isLoading ? (
-            <div className="flex items-center justify-center">
-              <div className="mr-3 h-5 w-5 animate-spin rounded-full border-b-2 border-white"></div>
-              <span>Updating Profile...</span>
+                className="w-full px-4 py-4 bg-gray-200 rounded-xl border-0 text-[16px] placeholder-gray-500 focus:outline-none focus:ring-0"
+                style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 400 }}
+              />
             </div>
-          ) : (
-            "Save Profile"
-          )}
-        </Button>
+
+            {/* Last Name Field */}
+            <div className="space-y-2">
+              <label htmlFor="lastName" className="block text-[16px] text-black" style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 500 }}>
+                Last Name *
+              </label>
+              <input
+                id="lastName"
+                type="text"
+                value={formData.lastName}
+                onChange={(e) => {
+                  // Restrict to English characters only
+                  const englishOnly = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                  handleInputChange("lastName", englishOnly);
+                }}
+                placeholder="Makhija"
+                disabled={isLoading}
+                className="w-full px-4 py-4 bg-gray-200 rounded-xl border-0 text-[16px] placeholder-gray-500 focus:outline-none focus:ring-0"
+                style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 400 }}
+              />
+            </div>
+
+            {/* Mobile Number Field */}
+            <div className="space-y-2">
+              <label className="block text-[16px] text-black" style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 500 }}>
+                Mobile
+              </label>
+              <PhoneInput
+                country={'us'}
+                value={phoneNumber}
+                onChange={setPhoneNumber}
+                disabled={isLoading}
+                inputClass="phone-input-field"
+                buttonClass="phone-input-button"
+                dropdownClass="phone-input-dropdown"
+                containerClass="phone-input-container"
+                inputStyle={{
+                  fontFamily: 'var(--font-uber-move)',
+                  fontWeight: 400,
+                  fontSize: '16px',
+                  padding: '16px 16px 16px 60px',
+                  backgroundColor: '#e5e7eb',
+                  border: 'none',
+                  borderRadius: '12px',
+                  outline: 'none',
+                  width: '100%',
+                  height: '56px'
+                }}
+                buttonStyle={{
+                  backgroundColor: '#e5e7eb',
+                  border: 'none',
+                  borderRadius: '12px 0 0 12px',
+                  height: '56px',
+                  width: '60px'
+                }}
+                dropdownStyle={{
+                  fontFamily: 'var(--font-uber-move)',
+                  fontWeight: 400,
+                  fontSize: '14px'
+                }}
+              />
+              <p className="text-[14px] text-gray-600 mt-1" style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 400 }}>Whatsapp preferred</p>
+            </div>
+
+            {/* Nationality Field */}
+            <div className="space-y-2">
+              <label className="block text-[16px] text-black" style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 500 }}>
+                Nationality
+              </label>
+              <CountryCombobox
+                value={nationality}
+                onValueChange={setNationality}
+                placeholder="Select nationality"
+                className="w-full px-4 py-4 bg-gray-200 rounded-xl border-0 text-[16px] focus:outline-none focus:ring-0 h-[56px]"
+              />
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {/* Sticky Submit Button */}
+      <div className="sticky bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 sm:p-6 shadow-lg">
+        <div className="w-full max-w-md mx-auto sm:max-w-lg">
+          <button
+            type="submit"
+            form="profileForm"
+            disabled={isLoading}
+            className="w-full py-4 bg-black text-white rounded-xl text-[16px] hover:bg-gray-800 focus:outline-none focus:ring-0 disabled:opacity-50"
+            style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 500 }}
+            onClick={handleSubmit}
+          >
+            {isLoading ? "Updating..." : "Confirm"}
+          </button>
+
+          {/* Bottom indicator */}
+          <div className="flex justify-center mt-4">
+            <div className="w-32 h-1 bg-black rounded-full"></div>
+          </div>
+        </div>
       </div>
     </div>
   );
