@@ -5,6 +5,10 @@ import { Info } from "lucide-react"
 import { FlightDetailsPopup } from "./flight-details-popup"
 import Image from "next/image"
 import { getCurrencySymbol } from "@/utils/currency-storage";
+import { useTranslations } from "@/hooks/useTranslations";
+import { useFlightComponentRTL } from "@/hooks/useRTLMirror";
+import { cn } from "@/lib/utils";
+import "@/styles/rtl-mirror.css";
 
 interface FlightCardProps {
   // New data structure props (optional for backward compatibility)
@@ -137,28 +141,28 @@ const AirlineLogo = ({
 };
 
 // Badge configurations (matching flightOptions.widget.tsx)
-const getBadgeConfigs = (tags: string[] = []) => {
+const getBadgeConfigs = (tags: string[] = [], t: (key: string, fallback?: string) => string) => {
   const present = new Set(tags.map((t) => t.toLowerCase()));
   const badges: { emoji: string; text: string; color: string }[] = [];
 
   if (present.has("best") || present.has("shortest")) {
     badges.push({
       emoji: "⭐",
-      text: "Best",
+      text: t('flightTags.best', 'Best'),
       color: "bg-black text-white border-black",
     });
   }
   if (present.has("cheapest")) {
     badges.push({
       emoji: "💰",
-      text: "Cheapest",
+      text: t('flightTags.cheapest', 'Cheapest'),
       color: "bg-black text-white border-black",
     });
   }
   if (present.has("fastest")) {
     badges.push({
       emoji: "⚡",
-      text: "Fastest",
+      text: t('flightTags.fastest', 'Fastest'),
       color: "bg-black text-white border-black",
     });
   }
@@ -166,7 +170,14 @@ const getBadgeConfigs = (tags: string[] = []) => {
 };
 
 export function FlightCard(props: FlightCardProps) {
-  const [showDetails, setShowDetails] = useState(false);
+  const [showDetails, setShowDetails] = useState(false)
+  const { t } = useTranslations('flightOptionsWidget');
+  const {
+    isRTLMirrorRequired,
+    isLoading: isRTLLoading,
+    mirrorClasses,
+    mirrorStyles
+  } = useFlightComponentRTL();
 
   // Helper functions to extract data from new structure or use legacy props
   const getFlightData = () => {
@@ -237,7 +248,7 @@ export function FlightCard(props: FlightCardProps) {
   const airlineIata = getAirlineIata(flightData.airline, flightData.airlineCode);
   // Use actual tags from props instead of derived type to show all badges
   // Hide badges in read-only mode
-  const badgeConfigs = props.readOnly ? [] : getBadgeConfigs(props.tags || []);
+  const badgeConfigs = props.readOnly ? [] : getBadgeConfigs(props.tags || [], t);
 
   const handlePriceButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -254,13 +265,34 @@ export function FlightCard(props: FlightCardProps) {
   const isSelected = props.selectedFlightId === props.flightOfferId;
 
   if (props.compact) {
+    // Show loading state briefly to prevent FOUC
+    if (isRTLLoading) {
+      return (
+        <div className="px-3 py-2">
+          <div className="flex items-center justify-center py-4">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-black"></div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <>
         <div
-          className={`px-3 py-2 transition-colors duration-200 ${
-            isSelected ? "border-blue-200 bg-blue-50" : ""
-          } ${props.isLoading ? "opacity-50" : ""}`}
+          className={cn(
+            `px-3 py-2 transition-colors duration-200 ${
+              isSelected ? 'bg-blue-50 border-blue-200' : ''
+            } ${props.isLoading ? 'opacity-50' : ''}`,
+            // Container-level RTL transformation
+            mirrorClasses.container
+          )}
+          style={mirrorStyles.container}
         >
+          {/* Inner container to reverse the transform for text readability */}
+          <div
+            className={cn("w-full", mirrorClasses.content)}
+            style={mirrorStyles.content}
+          >
           {/* Main Flight Row */}
           <div className="flex min-h-[60px] items-center gap-3">
             {/* Left: Airline Info */}
@@ -292,8 +324,8 @@ export function FlightCard(props: FlightCardProps) {
                   className="mt-0.5 flex items-center gap-1 text-xs text-blue-500 hover:text-blue-600 hover:underline"
                   style={{ fontSize: "10px" }}
                 >
-                  <Info className="h-2.5 w-2.5" />
-                  Details
+                  <Info className="w-2.5 h-2.5" />
+                  {t('buttons.details', 'Details')}
                 </button>
               </div>
             </div>
@@ -325,9 +357,7 @@ export function FlightCard(props: FlightCardProps) {
                   className="text-xs whitespace-nowrap text-gray-500"
                   style={{ fontSize: "10px" }}
                 >
-                  {flightData.stops === 0
-                    ? "Non-stop"
-                    : `${flightData.stops} stop${flightData.stops > 1 ? "s" : ""}`}
+                  {flightData.stops === 0 ? t('flightInfo.nonStop', 'Non-stop') : `${flightData.stops} ${flightData.stops > 1 ? t('flightInfo.stops', 'stops') : t('flightInfo.stop', 'stop')}`}
                 </div>
               </div>
 
@@ -356,9 +386,10 @@ export function FlightCard(props: FlightCardProps) {
                 {flightData.price}
               </button>
               {props.offerRules?.isRefundable && (
-                <div className="mt-1 text-xs text-green-600">Refundable</div>
+                <div className="mt-1 text-xs text-green-600">{t('flightInfo.refundable', 'Refundable')}</div>
               )}
             </div>
+          </div>
           </div>
         </div>
 
@@ -374,11 +405,21 @@ export function FlightCard(props: FlightCardProps) {
   return (
     <>
       <div
-        className={`rounded-lg px-2 py-1 transition-all duration-200 ${
-          isSelected ? "border border-blue-200 bg-blue-50" : ""
-        } ${props.isLoading ? "opacity-50" : ""}`}
+        className={cn(
+          `px-2 py-1 transition-all duration-200 rounded-lg ${
+            isSelected ? 'bg-blue-50 border border-blue-200' : ''
+          } ${props.isLoading ? 'opacity-50' : ''}`,
+          // Container-level RTL transformation
+          mirrorClasses.container
+        )}
+        style={mirrorStyles.container}
       >
-        <div className="mb-4 flex items-center justify-between gap-0.5 pt-3">
+        {/* Inner container to reverse the transform for text readability */}
+        <div
+          className={cn("w-full", mirrorClasses.content)}
+          style={mirrorStyles.content}
+        >
+        <div className="flex items-center justify-between gap-0.5 mb-4 pt-3">
           <div className="flex items-center gap-2">
             <AirlineLogo
               airlineIata={airlineIata}
@@ -406,17 +447,15 @@ export function FlightCard(props: FlightCardProps) {
         <div className="mb-3">
           <div className="mb-2 grid grid-cols-3 items-start gap-4">
             <div className="text-left">
-              <div className="text-muted-foreground text-xs">Departure</div>
-              <div className="text-foreground text-sm font-semibold">
-                {flightData.departureTime}
-              </div>
+              <div className="text-muted-foreground text-xs">{t('flightInfo.departure', 'Departure')}</div>
+              <div className="font-semibold text-foreground text-sm">{flightData.departureTime}</div>
               <div className="text-muted-foreground text-xs">
                 {props.journey?.[0]?.departure?.airportIata || "DEL"}
               </div>
             </div>
             <div className="text-center">
               <div className="font-semibold text-foreground text-sm">{flightData.duration}</div>
-              <div className="font-medium text-muted-foreground text-xs mt-1">{flightData.stops === 0 ? "Non-stop" : `${flightData.stops} stop${flightData.stops > 1 ? "s" : ""}`}</div>
+              <div className="font-medium text-muted-foreground text-xs mt-1">{flightData.stops === 0 ? t('flightInfo.nonStop', 'Non-stop') : `${flightData.stops} ${flightData.stops > 1 ? t('flightInfo.stops', 'stops') : t('flightInfo.stop', 'stop')}`}</div>
               <div className="mt-2">
                 <div className="text-muted-foreground text-[10px]">
                   {flightData.layovers.map((layover, index) => (
@@ -429,17 +468,15 @@ export function FlightCard(props: FlightCardProps) {
               </div>
             </div>
             <div className="text-right">
-              <div className="text-muted-foreground text-xs">Arrival</div>
-              <div className="text-foreground text-sm font-semibold">
-                {flightData.arrivalTime}
-              </div>
+              <div className="text-muted-foreground text-xs">{t('flightInfo.arrival', 'Arrival')}</div>
+              <div className="font-semibold text-foreground text-sm">{flightData.arrivalTime}</div>
               <div className="text-muted-foreground text-xs">
                 {props.journey?.[0]?.arrival?.airportIata || "HNL"}
               </div>
               {flightData.nextDay && (
                 <div className="mt-1">
-                  <span className="rounded border border-red-200 bg-red-50 px-1.5 py-0.5 text-[10px] text-red-600">
-                    +1 day
+                  <span className="bg-red-50 text-red-600 px-1.5 py-0.5 rounded border border-red-200 text-[10px]">
+                    {t('flightInfo.nextDay', '+1 day')}
                   </span>
                 </div>
               )}
@@ -452,8 +489,8 @@ export function FlightCard(props: FlightCardProps) {
             onClick={() => setShowDetails(true)}
             className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-600 hover:underline"
           >
-            <Info className="h-3 w-3" />
-            Flight Info
+            <Info className="w-3 h-3" />
+            {t('buttons.flightInfo', 'Flight Info')}
           </button>
           <button
             onClick={handlePriceButtonClick}
@@ -466,6 +503,7 @@ export function FlightCard(props: FlightCardProps) {
           >
             {flightData.price}
           </button>
+        </div>
         </div>
       </div>
 

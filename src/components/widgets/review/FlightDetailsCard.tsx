@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
 import { AirlineLogo } from "./AirlineLogo";
+import { useTranslations } from "@/hooks/useTranslations";
 import type { FlightDetails } from "./types";
 
 interface FlightDetailsCardProps {
@@ -14,11 +15,14 @@ export const FlightDetailsCard: React.FC<FlightDetailsCardProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
+  // Initialize translations
+  const { t } = useTranslations('reviewWidget');
+
   if (!flightDetails) {
     return (
       <div className="rounded-lg bg-white p-4 shadow">
         <div className="text-sm text-gray-500">
-          No flight details available
+          {t('flightInfo.noFlightDetailsAvailable', 'No flight details available')}
         </div>
       </div>
     );
@@ -172,10 +176,10 @@ export const FlightDetailsCard: React.FC<FlightDetailsCardProps> = ({
           {/* Additional Flight Info */}
           <div className="mb-3">
             <div className="text-xs text-gray-600">
-              Aircraft: {flightDetails.airline.aircraftType || "Not specified"}
+              {t('flightInfo.aircraft', 'Aircraft')}: {flightDetails.airline.aircraftType || t('flightInfo.notSpecified', 'Not specified')}
             </div>
             <div className="text-xs text-gray-600">
-              Flight: {flightDetails.airline.flightNumber}
+              {t('flightInfo.flight', 'Flight')}: {flightDetails.airline.flightNumber}
             </div>
           </div>
 
@@ -183,7 +187,7 @@ export const FlightDetailsCard: React.FC<FlightDetailsCardProps> = ({
           <div className="grid grid-cols-3 items-center gap-3">
             {/* Departure */}
             <div className="text-left">
-              <div className="mb-1 text-xs text-gray-600">Departure</div>
+              <div className="mb-1 text-xs text-gray-600">{t('flightInfo.departure', 'Departure')}</div>
               <div className="text-sm font-bold">
                 {flightDetails.departure.time}
               </div>
@@ -211,7 +215,7 @@ export const FlightDetailsCard: React.FC<FlightDetailsCardProps> = ({
 
             {/* Arrival */}
             <div className="text-right">
-              <div className="mb-1 text-xs text-gray-600">Arrival</div>
+              <div className="mb-1 text-xs text-gray-600">{t('flightInfo.arrival', 'Arrival')}</div>
               <div className="text-sm font-bold">
                 {flightDetails.arrival.time}
               </div>

@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/dialog";
 
 import { getSelectedCurrency, setSelectedCurrency, currencies } from "@/utils/currency-storage";
+import { LanguageSelector } from "@/components/common/ui/LanguageSelector";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
@@ -162,6 +163,9 @@ function UserProfile() {
         <MessageCircle className="h-4 w-4 text-black flex-shrink-0" />
         <span className="text-sm text-black">Chat with founder</span>
       </div>
+
+      {/* Language Row */}
+      <LanguageSelector />
 
       {/* Currency Row - Fully Clickable */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>

@@ -19,6 +19,10 @@ import {
   TransformedFlightData
 } from "@/components/widgets/flight-filter-utils"
 import { useFlightFilter } from "./flight-filter-context"
+import { useTranslations } from "@/hooks/useTranslations"
+import { useFlightComponentRTL } from "@/hooks/useRTLMirror"
+import { cn } from "@/lib/utils"
+import "@/styles/rtl-mirror.css"
 
 interface AllFlightsSheetProps {
   children: React.ReactNode
@@ -33,6 +37,15 @@ export function AllFlightsSheet({ children, flightData = [], onFlightSelect, fli
   const [selectedFlight, setSelectedFlight] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [showExpandedAirlines, setShowExpandedAirlines] = useState(false)
+
+  // Initialize translations and RTL mirror detection
+  const { t } = useTranslations('flightOptionsWidget');
+  const {
+    isRTLMirrorRequired,
+    isLoading: isRTLLoading,
+    mirrorClasses,
+    mirrorStyles
+  } = useFlightComponentRTL();
 
   // Use filter context for state management
   const {
@@ -199,11 +212,11 @@ export function AllFlightsSheet({ children, flightData = [], onFlightSelect, fli
     : []
 
   const departureTimeSlots = [
-    { label: "Early Morning (midnight - 08:00)", value: "early" },
-    { label: "Morning (08:00 - 12:00)", value: "morning" },
-    { label: "Afternoon (12:00 - 16:00)", value: "afternoon" },
-    { label: "Evening (16:00 - 20:00)", value: "evening" },
-    { label: "Night (20:00 - midnight)", value: "night" },
+    { label: t('departureTimeSlots.early'), value: "early" },
+    { label: t('departureTimeSlots.morning'), value: "morning" },
+    { label: t('departureTimeSlots.afternoon'), value: "afternoon" },
+    { label: t('departureTimeSlots.evening'), value: "evening" },
+    { label: t('departureTimeSlots.night'), value: "night" },
   ]
 
   // Since data is already filtered by the context, we just need to apply additional UI-level filtering
@@ -272,14 +285,15 @@ const sortedFlights = [...filteredFlights].sort((a, b) => {
             fontFamily: "Uber Move, Arial, Helvetica, sans-serif",
           }}
         >
-        <div className="flex-shrink-0 border-b bg-background">
-          <SheetHeader className="mb-2">
-            <SheetTitle>{allFlights.length > 0 ? "Flights" : "No flights available"}</SheetTitle>
-          </SheetHeader>
+          <div className="flex flex-col h-full">
+            <div className="flex-shrink-0 border-b bg-background">
+              <SheetHeader className="mb-2">
+                <SheetTitle>{allFlights.length > 0 ? t('title.flights', 'Flights') : t('messages.noFlightsAvailable')}</SheetTitle>
+              </SheetHeader>
 
-          <div className="mb-3 px-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
+              <div className="mb-3 px-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -287,7 +301,7 @@ const sortedFlights = [...filteredFlights].sort((a, b) => {
                   className="flex items-center gap-2"
                 >
                   <Filter className="w-4 h-4" />
-                  Filters
+                  {t('buttons.filters')}
                   {activeFiltersCount > 0 && (
                     <Badge variant="secondary" className="ml-1 px-1.5 py-0.5 text-xs">
                       {activeFiltersCount}
@@ -298,18 +312,18 @@ const sortedFlights = [...filteredFlights].sort((a, b) => {
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
                       <ArrowUpDown className="w-4 h-4" />
-                      Sort: {filterState.sortBy === "cheapest" ? "Cheapest" : "Fastest"}
+                      {t('buttons.sort', 'Sort')}: {filterState.sortBy === "cheapest" ? t('tabs.cheapest') : t('tabs.fastest')}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start">
-                    <DropdownMenuItem onClick={() => setSortBy("cheapest")}>Cheapest First</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setSortBy("fastest")}>Fastest First</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setSortBy("cheapest")}>{t('buttons.cheapestFirst', 'Cheapest First')}</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setSortBy("fastest")}>{t('buttons.fastestFirst', 'Fastest First')}</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
               {activeFiltersCount > 0 && (
                 <Button variant="ghost" size="sm" onClick={clearAllFilters}>
-                  Clear all
+                  {t('buttons.clearAll')}
                 </Button>
               )}
             </div>
@@ -322,11 +336,11 @@ const sortedFlights = [...filteredFlights].sort((a, b) => {
           <div className="space-y-2 pb-4">
             {allFlights.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                No flights available for the selected criteria.
+                {t('messages.noFlightsAvailable')}
               </div>
             ) : sortedFlights.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                No flights match your current filters. Try adjusting your criteria.
+                {t('messages.noMatchingFlights')}
               </div>
             ) : (
               sortedFlights.map((flight, index) => (
@@ -345,11 +359,12 @@ const sortedFlights = [...filteredFlights].sort((a, b) => {
             )}
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+          </div>
+        </SheetContent>
+      </Sheet>
 
-    {/* Filter Bottom Sheet Modal */}
-    <Sheet open={showFilters} onOpenChange={setShowFilters}>
+      {/* Filter Bottom Sheet Modal */}
+      <Sheet open={showFilters} onOpenChange={setShowFilters}>
       <SheetContent
         side="bottom"
         className="flex h-[85vh] flex-col overflow-hidden"
@@ -359,7 +374,7 @@ const sortedFlights = [...filteredFlights].sort((a, b) => {
       >
         <SheetHeader className="flex-shrink-0 border-b border-gray-200 pb-3">
           <SheetTitle className="text-lg font-semibold">
-            Filter Flights
+            {t('title.filterFlights')}
           </SheetTitle>
         </SheetHeader>
 
@@ -369,7 +384,7 @@ const sortedFlights = [...filteredFlights].sort((a, b) => {
             {/* Price Range Filter */}
             <div>
               <Label className="text-sm font-medium mb-3 block">
-                Price Range: {getCurrencySymbol(priceStats.currency)} {filterState.priceRange[0].toLocaleString()} - {getCurrencySymbol(priceStats.currency)} {filterState.priceRange[1].toLocaleString()}
+                {t('filters.priceRange')}: {getCurrencySymbol(priceStats.currency)} {filterState.priceRange[0].toLocaleString()} - {getCurrencySymbol(priceStats.currency)} {filterState.priceRange[1].toLocaleString()}
               </Label>
               <Slider
                 value={filterState.priceRange}
@@ -385,7 +400,7 @@ const sortedFlights = [...filteredFlights].sort((a, b) => {
 
             {/* Airlines Filter */}
             <div>
-              <Label className="text-sm font-medium mb-3 block">Airlines</Label>
+              <Label className="text-sm font-medium mb-3 block">{t('filters.airlines')}</Label>
               <div className="space-y-2">
                 {availableAirlines.slice(0, showExpandedAirlines ? availableAirlines.length : 2).map((airline) => (
                   <div key={airline} className="flex items-center space-x-2">
@@ -406,7 +421,7 @@ const sortedFlights = [...filteredFlights].sort((a, b) => {
                     onClick={() => setShowExpandedAirlines(!showExpandedAirlines)}
                     className="text-sm text-gray-600 hover:text-gray-800 p-0 h-auto"
                   >
-                    {showExpandedAirlines ? 'Show less airlines' : `Show all airlines (${availableAirlines.length - 2} more)`}
+                    {showExpandedAirlines ? t('buttons.showLessAirlines') : `${t('buttons.showAllAirlines')} (${availableAirlines.length - 2} ${t('messages.moreAirlines')})`}
                   </Button>
                 )}
               </div>
@@ -417,7 +432,7 @@ const sortedFlights = [...filteredFlights].sort((a, b) => {
             {/* Max Stops Filter */}
             <div>
               <Label className="text-sm font-medium mb-3 block">
-                Max Stops: {filterState.maxStops === 0 ? "Non-stop" : `${filterState.maxStops} stop${filterState.maxStops > 1 ? "s" : ""}`}
+                {t('filters.maxStops')}: {filterState.maxStops === 0 ? t('filters.nonStop') : `${filterState.maxStops} ${filterState.maxStops > 1 ? t('filters.stops') : t('filters.stop')}`}
               </Label>
               <Slider
                 value={[filterState.maxStops]}
@@ -433,7 +448,7 @@ const sortedFlights = [...filteredFlights].sort((a, b) => {
 
             {/* Departure Time Filter */}
             <div>
-              <Label className="text-sm font-medium mb-3 block">Departure Time</Label>
+              <Label className="text-sm font-medium mb-3 block">{t('filters.departureTime')}</Label>
               <div className="space-y-2">
                 {departureTimeSlots.map((slot) => (
                   <div key={slot.value} className="flex items-center space-x-2">
@@ -461,7 +476,7 @@ const sortedFlights = [...filteredFlights].sort((a, b) => {
               disabled={activeFiltersCount === 0}
               className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
             >
-              Clear all
+              {t('buttons.clearAll')}
               {activeFiltersCount > 0 && (
                 <span className="ml-1">({activeFiltersCount})</span>
               )}
@@ -470,12 +485,12 @@ const sortedFlights = [...filteredFlights].sort((a, b) => {
               onClick={() => setShowFilters(false)}
               className="flex-1 bg-black text-white hover:bg-gray-800"
             >
-              Apply Filters
+              {t('buttons.applyFilters')}
             </Button>
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+        </SheetContent>
+      </Sheet>
     </>
   )
 }

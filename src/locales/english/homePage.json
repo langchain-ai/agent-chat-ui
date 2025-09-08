@@ -1,0 +1,8 @@
+{
+    "quickActionTab":{
+        "bookMeAFlight": "Book me a flight",
+        "showMePastFlights": "Show me my past flights",
+        "showFreeLoungeAccess": "Show me free lounge access",
+        "doMyWebCheckin" :"Please do my webCheckin"
+    }
+}

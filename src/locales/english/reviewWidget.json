@@ -1,0 +1,120 @@
+{
+  "title": {
+    "passengerDetails": "Passenger Details",
+    "contactInformation": "Contact Information",
+    "flightDetails": "Flight Details",
+    "paymentSummary": "Payment Summary"
+  },
+  "labels": {
+    "adult": "Adult",
+    "children": "Children",
+    "infants": "Infants",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "title": "Title",
+    "gender": "Gender",
+    "dateOfBirth": "Date of Birth",
+    "email": "Email",
+    "phone": "Phone",
+    "documentType": "Document Type",
+    "documentNumber": "Document Number",
+    "nationality": "Nationality",
+    "issuingCountry": "Issuing Country",
+    "expiryDate": "Expiry Date",
+    "issuanceDate": "Issuance Date"
+  },
+  "placeholders": {
+    "firstName": "Enter first name",
+    "lastName": "Enter last name",
+    "email": "Enter email address",
+    "phone": "Enter phone number",
+    "documentNumber": "Enter document number",
+    "selectTitle": "Select title",
+    "selectGender": "Select gender",
+    "selectDocumentType": "Select document type",
+    "selectCountry": "Select country",
+    "selectDate": "Select date",
+    "selectDateOfBirth": "Select date of birth"
+  },
+  "options": {
+    "titles": {
+      "mr": "Mr",
+      "mrs": "Mrs",
+      "miss": "Miss",
+      "master": "Master"
+    },
+    "genders": {
+      "male": "Male",
+      "female": "Female"
+    },
+    "documentTypes": {
+      "passport": "Passport",
+      "nationalId": "National ID",
+      "driversLicense": "Driver's License"
+    }
+  },
+  "buttons": {
+    "selectPassenger": "Select Passenger",
+    "showSavedPassengers": "Show Saved Passengers",
+    "hideSavedPassengers": "Hide Saved Passengers",
+    "confirmBooking": "Confirm Booking",
+    "processing": "Processing...",
+    "bookingConfirmed": "Booking Confirmed"
+  },
+  "sections": {
+    "savedPassengers": "Saved Passengers",
+    "travelDocuments": "Travel Documents",
+    "basicInformation": "Basic Information"
+  },
+  "validation": {
+    "required": "This field is required",
+    "invalidEmail": "Please enter a valid email address",
+    "invalidPhone": "Please enter a valid phone number",
+    "invalidDate": "Please enter a valid date",
+    "dateOfBirthRequired": "Date of birth is required",
+    "documentTypeRequired": "Document type is required",
+    "expiryDateRequired": "Expiry date is required",
+    "nationalityRequired": "Nationality is required"
+  },
+  "flightInfo": {
+    "departure": "Departure",
+    "arrival": "Arrival",
+    "duration": "Duration",
+    "stops": "Stops",
+    "nonStop": "Non-stop",
+    "terminal": "Terminal",
+    "gate": "Gate",
+    "airline": "Airline",
+    "flightNumber": "Flight Number",
+    "aircraft": "Aircraft",
+    "flight": "Flight",
+    "notSpecified": "Not specified",
+    "noFlightDetailsAvailable": "No flight details available"
+  },
+
+  "messages": {
+    "noFlightsAvailable": "No flights available",
+    "adjustSearchCriteria": "Please try adjusting your search criteria",
+    "validationErrors": "Please fix the validation errors before proceeding",
+    "allValidationPassed": "All validation passed, proceeding with submission",
+    "bookingConfirmationMessage": "We'll use this information to send you booking confirmations and updates.",
+    "selectSavedPassenger": "Select a saved passenger:",
+    "ensureDetailsMatch": "Please ensure all details match your travel documents exactly.",
+    "noDOB": "No DOB"
+  },
+  "payment": {
+    "baseFare": "Base Fare",
+    "taxes": "Taxes",
+    "fees": "Fees",
+    "seatFare": "Seat Fare",
+    "discount": "Discount",
+    "total": "Total",
+    "refundable": "Refundable",
+    "nonRefundable": "Non-refundable",
+    "paymentSummary": "Payment Summary",
+    "noPaymentDetails": "No payment details available",
+    "baseFareLabel": "Base fare",
+    "taxesAndFees": "Taxes & fees",
+    "serviceFees": "Service fees"
+  }
+}

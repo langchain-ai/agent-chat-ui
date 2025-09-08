@@ -1,0 +1,97 @@
+/* RTL Mirror Transformation Styles */
+
+/* Container-level RTL mirroring for RTL languages */
+.rtl-mirror {
+  /* Apply immediate transformation without transition to prevent FOUC */
+  /* transition: transform 0.3s ease-in-out; - Removed to prevent flash */
+}
+
+.rtl-content {
+  /* Apply immediate transformation without transition to prevent FOUC */
+  /* transition: transform 0.3s ease-in-out; - Removed to prevent flash */
+}
+
+/* Loading state for RTL detection */
+.rtl-loading {
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+/* Additional styles to ensure proper RTL behavior */
+.rtl-mirror input[type="text"],
+.rtl-mirror input[type="email"],
+.rtl-mirror input[type="tel"],
+.rtl-mirror textarea,
+.rtl-mirror select {
+  /* Ensure input text direction is correct */
+  direction: rtl;
+  text-align: right;
+}
+
+.rtl-mirror .rtl-content input[type="text"],
+.rtl-mirror .rtl-content input[type="email"],
+.rtl-mirror .rtl-content input[type="tel"],
+.rtl-mirror .rtl-content textarea,
+.rtl-mirror .rtl-content select {
+  /* Reverse the text direction for the inner content */
+  direction: ltr;
+  text-align: left;
+}
+
+/* Ensure buttons and interactive elements work correctly */
+.rtl-mirror button,
+.rtl-mirror .rtl-content button {
+  /* Maintain proper cursor and interaction */
+  cursor: pointer;
+}
+
+/* Ensure dropdowns and popovers align correctly */
+.rtl-mirror [data-radix-popper-content-wrapper] {
+  /* Adjust popover positioning for RTL */
+  transform: scaleX(-1);
+}
+
+.rtl-mirror .rtl-content [data-radix-popper-content-wrapper] {
+  /* Reverse the popover transform for content readability */
+  transform: scaleX(-1);
+}
+
+/* Ensure calendar component works correctly in RTL */
+.rtl-mirror .rdp,
+.rtl-mirror .rtl-content .rdp {
+  /* Calendar should maintain proper layout */
+  direction: ltr;
+}
+
+/* Ensure icons and symbols are properly oriented */
+.rtl-mirror .rtl-content svg {
+  /* Icons should maintain their original orientation */
+  transform: scaleX(-1);
+}
+
+/* Ensure form validation messages are properly positioned */
+.rtl-mirror .rtl-content .text-red-500 {
+  /* Error messages should align correctly */
+  text-align: right;
+}
+
+/* Responsive adjustments for RTL mirroring */
+@media (max-width: 640px) {
+  .rtl-mirror {
+    /* Ensure mobile layout works correctly */
+    transform-origin: center center;
+  }
+}
+
+/* Accessibility improvements for RTL */
+.rtl-mirror:focus-within {
+  /* Maintain focus indicators */
+  outline-offset: 2px;
+}
+
+/* Ensure animations work smoothly with RTL transform */
+.rtl-mirror * {
+  /* Prevent layout shifts during transformation */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}

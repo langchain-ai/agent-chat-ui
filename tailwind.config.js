@@ -6,6 +6,10 @@ module.exports = {
     "./src/**/*.{ts,tsx,js,jsx}",
     "./agent/**/*.{ts,tsx,js,jsx}",
   ],
+  // Enable RTL support
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
   theme: {
     extend: {
       fontFamily: {
