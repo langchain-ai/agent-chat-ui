@@ -508,7 +508,7 @@ export function Thread() {
                           blocks={contentBlocks}
                           onRemove={removeBlock}
                         />
-                        <div className="relative">
+                        <div className="relative overflow-hidden">
                           <textarea
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
@@ -527,10 +527,11 @@ export function Thread() {
                               }
                             }}
                             placeholder="Type your message..."
-                            className="field-sizing-content min-h-[3.5rem] max-h-[12rem] w-full resize-none border-none bg-transparent p-3 pr-14 pb-0 leading-relaxed shadow-none ring-0 outline-none focus:ring-0 focus:outline-none sm:field-sizing-content sm:max-h-[15rem] sm:pr-3 sm:p-3 sm:leading-tight"
+                            className="field-sizing-content min-h-[3.5rem] max-h-[12rem] w-full resize-none border-none bg-transparent p-3 pr-20 pb-0 leading-relaxed shadow-none ring-0 outline-none focus:ring-0 focus:outline-none sm:field-sizing-content sm:max-h-[15rem] sm:pr-3 sm:p-3 sm:leading-tight"
+                            style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
                           />
                           {/* Mobile: Button inside input area */}
-                          <div className="absolute top-3 right-3 sm:hidden">
+                          <div className="absolute top-3 right-3 z-10 sm:hidden">
                             {stream.isLoading ? (
                               <Button
                                 key="stop"
@@ -666,7 +667,7 @@ export function Thread() {
                               blocks={contentBlocks}
                               onRemove={removeBlock}
                             />
-                            <div className="relative">
+                            <div className="relative overflow-hidden">
                               <textarea
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
@@ -687,10 +688,11 @@ export function Thread() {
                                   }
                                 }}
                                 placeholder="Type your message...."
-                                className="field-sizing-content min-h-[3.5rem] max-h-[12rem] w-full resize-none border-none bg-transparent p-3 pr-14 pb-0 leading-relaxed shadow-none ring-0 outline-none focus:ring-0 focus:outline-none sm:field-sizing-content sm:max-h-[15rem] sm:pr-3 sm:p-3 sm:leading-tight"
+                                className="field-sizing-content min-h-[3.5rem] max-h-[12rem] w-full resize-none border-none bg-transparent p-3 pr-20 pb-0 leading-relaxed shadow-none ring-0 outline-none focus:ring-0 focus:outline-none sm:field-sizing-content sm:max-h-[15rem] sm:pr-3 sm:p-3 sm:leading-tight"
+                                style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
                               />
                               {/* Mobile: Button inside input area */}
-                              <div className="absolute top-3 right-3 sm:hidden">
+                              <div className="absolute top-3 right-3 z-10 sm:hidden">
                                 {stream.isLoading ? (
                                   <Button
                                     key="stop"
