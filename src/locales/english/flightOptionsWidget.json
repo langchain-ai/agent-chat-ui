@@ -2,7 +2,8 @@
   "title": {
     "flightOptions": "Flight Options",
     "filterFlights": "Filter Flights",
-    "flights": "Flights"
+    "flights": "Flights",
+    "departure": "Departure:"
   },
   "tabs": {
     "best": "Best",

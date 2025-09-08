@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { 
-  getCurrentLanguage, 
-  isRTLLanguage, 
+import {
+  getCurrentLanguage,
+  isRTLLanguage,
   getTextDirection,
-  SupportedLanguage 
+  SupportedLanguage,
 } from "@/utils/i18n";
 
 /**
@@ -31,25 +31,41 @@ export function useRTL() {
     direction,
     language,
     // Helper functions
-    getDirectionClass: (ltrClass: string, rtlClass: string) => 
+    getDirectionClass: (ltrClass: string, rtlClass: string) =>
       isRTL ? rtlClass : ltrClass,
-    getMarginClass: (side: "left" | "right", size: string) => 
-      side === "left" 
-        ? (isRTL ? `mr-${size}` : `ml-${size}`)
-        : (isRTL ? `ml-${size}` : `mr-${size}`),
-    getPaddingClass: (side: "left" | "right", size: string) => 
-      side === "left" 
-        ? (isRTL ? `pr-${size}` : `pl-${size}`)
-        : (isRTL ? `pl-${size}` : `pr-${size}`),
+    getMarginClass: (side: "left" | "right", size: string) =>
+      side === "left"
+        ? isRTL
+          ? `mr-${size}`
+          : `ml-${size}`
+        : isRTL
+          ? `ml-${size}`
+          : `mr-${size}`,
+    getPaddingClass: (side: "left" | "right", size: string) =>
+      side === "left"
+        ? isRTL
+          ? `pr-${size}`
+          : `pl-${size}`
+        : isRTL
+          ? `pl-${size}`
+          : `pr-${size}`,
     getTextAlignClass: (align: "left" | "right") =>
       align === "left"
-        ? (isRTL ? "text-right" : "text-left")
-        : (isRTL ? "text-left" : "text-right"),
-    getFlexDirectionClass: () => isRTL ? "flex-row-reverse" : "flex-row",
+        ? isRTL
+          ? "text-right"
+          : "text-left"
+        : isRTL
+          ? "text-left"
+          : "text-right",
+    getFlexDirectionClass: () => (isRTL ? "flex-row-reverse" : "flex-row"),
     getJustifyClass: (justify: "start" | "end") =>
       justify === "start"
-        ? (isRTL ? "justify-end" : "justify-start")
-        : (isRTL ? "justify-start" : "justify-end"),
+        ? isRTL
+          ? "justify-end"
+          : "justify-start"
+        : isRTL
+          ? "justify-start"
+          : "justify-end",
   };
 }
 
@@ -63,12 +79,12 @@ export function useFormRTL() {
     isRTL,
     direction,
     // Form-specific utilities
-    getLabelPosition: () => isRTL ? "right" : "left",
+    getLabelPosition: () => (isRTL ? "right" : "left"),
     getInputDirection: () => direction,
-    getFormRowClass: () => isRTL ? "flex-row-reverse" : "flex-row",
-    getFieldIconClass: () => isRTL ? "order-2" : "order-1",
-    getFieldInputClass: () => isRTL ? "order-1" : "order-2",
-    getValidationIconClass: () => isRTL ? "left-2" : "right-2",
+    getFormRowClass: () => (isRTL ? "flex-row-reverse" : "flex-row"),
+    getFieldIconClass: () => (isRTL ? "order-2" : "order-1"),
+    getFieldInputClass: () => (isRTL ? "order-1" : "order-2"),
+    getValidationIconClass: () => (isRTL ? "left-2" : "right-2"),
   };
 }
 
@@ -87,6 +103,6 @@ export function useButtonRTL() {
         return isRTL ? "order-1 mr-2" : "order-2 ml-2";
       }
     },
-    getButtonContentClass: () => isRTL ? "flex-row-reverse" : "flex-row",
+    getButtonContentClass: () => (isRTL ? "flex-row-reverse" : "flex-row"),
   };
 }

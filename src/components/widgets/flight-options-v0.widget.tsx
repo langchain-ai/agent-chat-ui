@@ -280,7 +280,7 @@ function FlightOptionsContent(args: FlightOptionsProps) {
         {allFlightOffers.length > 0 && (
           <div className="mb-2">
             <p className="text-sm font-medium text-gray-700">
-              Departure:{" "}
+              {t('title.departure', 'Departure:')}{" "}
               {getDepartureDate(allFlightOffers) || "Date not available"}
             </p>
           </div>

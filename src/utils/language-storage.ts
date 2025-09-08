@@ -18,12 +18,12 @@ export const languages: Language[] = [
   {
     code: "en",
     name: "English",
-    nativeName: "English"
+    nativeName: "English",
   },
   {
     code: "ar",
     name: "Arabic",
-    nativeName: "العربية"
+    nativeName: "العربية",
   },
 ];
 

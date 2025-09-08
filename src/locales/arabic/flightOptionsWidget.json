@@ -2,7 +2,8 @@
   "title": {
     "flightOptions": "خيارات الرحلات",
     "filterFlights": "تصفية الرحلات",
-    "flights": "الرحلات"
+    "flights": "الرحلات",
+    "departure": "تاريخ المغادرة:"
   },
   "tabs": {
     "best": "الأفضل",
