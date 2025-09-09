@@ -296,7 +296,8 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = () => {
                     }}
                   >
                     Airlines and hotels require this information for bookings.
-                    We'll keep it secure and use it to auto-fill forms for you.
+                    We&apos;ll keep it secure and use it to auto-fill forms for
+                    you.
                   </p>
                 </div>
 
@@ -338,7 +339,7 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = () => {
                     }}
                   >
                     Knowing this allows us to show you exciting international
-                    travel options. If not, we'll focus on amazing domestic
+                    travel options. If not, we&apos;ll focus on amazing domestic
                     trips.
                   </p>
                 </div>
@@ -474,9 +475,9 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = () => {
                       fontWeight: 400,
                     }}
                   >
-                    We'll customize recommendations based on your needs, whether
-                    it's a hotel with a business center or a relaxing beach
-                    resort.
+                    We&apos;ll customize recommendations based on your needs,
+                    whether it&apos;s a hotel with a business center or a
+                    relaxing beach resort.
                   </p>
                 </div>
 
@@ -777,8 +778,8 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = () => {
                       fontWeight: 400,
                     }}
                   >
-                    We'll display prices in your preferred currency for easier
-                    comparison.
+                    We&apos;ll display prices in your preferred currency for
+                    easier comparison.
                   </p>
                 </div>
 
@@ -888,7 +889,7 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = () => {
                       fontWeight: 400,
                     }}
                   >
-                    We'll communicate with you in your preferred language.
+                    We&apos;ll communicate with you in your preferred language.
                   </p>
                 </div>
               </>
