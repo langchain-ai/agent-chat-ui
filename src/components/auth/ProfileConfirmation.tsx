@@ -11,9 +11,8 @@ import {
   type UpdateUserNameRequest,
 } from "@/services/authService";
 import { CountryCombobox } from "@/components/widgets/review/CountryCombobox";
-import PhoneInput from 'react-phone-input-2';
-import 'react-phone-input-2/lib/style.css';
-import * as countryList from "country-list";
+import PhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css";
 
 // Country calling codes mapping
 const countryCallingCodes: { [key: string]: string } = {
@@ -279,12 +278,6 @@ const ProfileConfirmation: React.FC = () => {
     mobileNumber: "",
   });
 
-
-
-
-
-
-
   // Check if user is authenticated
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -303,8 +296,6 @@ const ProfileConfirmation: React.FC = () => {
       mobileNumber: "",
     });
   }, []);
-
-
 
   const handleInputChange = (
     field: keyof UpdateUserNameRequest,
@@ -331,10 +322,6 @@ const ProfileConfirmation: React.FC = () => {
     }
     if (!formData.mobileNumber.trim()) {
       setError("Mobile number is required");
-      return false;
-    }
-    if (!countryCode) {
-      setError("Please select a country");
       return false;
     }
 
@@ -398,35 +385,63 @@ const ProfileConfirmation: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col" style={{ fontFamily: 'var(--font-uber-move)' }}>
+    <div
+      className="flex min-h-screen flex-col bg-white"
+      style={{ fontFamily: "var(--font-uber-move)" }}
+    >
       {/* Main Content - Scrollable */}
-      <div className="flex-1 px-6 py-6 sm:py-20 overflow-y-auto max-h-screen">
-        <div className="w-full max-w-md mx-auto sm:max-w-lg pb-32 sm:pb-24">
+      <div className="max-h-screen flex-1 overflow-y-auto px-6 py-6 sm:py-20">
+        <div className="mx-auto w-full max-w-md pb-32 sm:max-w-lg sm:pb-24">
           {/* Welcome Section */}
           <div className="mb-6 sm:mb-8">
-            <h1 className="text-[26px] font-bold text-black mb-2 sm:text-4xl sm:mb-4" style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 700 }}>
+            <h1
+              className="mb-2 text-[26px] font-bold text-black sm:mb-4 sm:text-4xl"
+              style={{ fontFamily: "var(--font-uber-move)", fontWeight: 700 }}
+            >
               Welcome to
             </h1>
-            <h1 className="text-[26px] font-bold text-black mb-4 sm:text-4xl sm:mb-6" style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 700 }}>
+            <h1
+              className="mb-4 text-[26px] font-bold text-black sm:mb-6 sm:text-4xl"
+              style={{ fontFamily: "var(--font-uber-move)", fontWeight: 700 }}
+            >
               flyo.ai
             </h1>
-            <p className="text-[14px] text-gray-600 leading-relaxed sm:text-base" style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 400 }}>
-              Please confirm your name as used during flight bookings. This helps us match your tickets automatically.
+            <p
+              className="text-[14px] leading-relaxed text-gray-600 sm:text-base"
+              style={{ fontFamily: "var(--font-uber-move)", fontWeight: 400 }}
+            >
+              Please confirm your name as used during flight bookings. This
+              helps us match your tickets automatically.
             </p>
           </div>
 
           {/* Form */}
-          <form id="profileForm" className="space-y-4 sm:space-y-6 pb-24 sm:pb-8">
+          <form
+            id="profileForm"
+            className="space-y-4 pb-24 sm:space-y-6 sm:pb-8"
+          >
             {/* Error Message */}
             {error && (
               <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-                <p className="text-sm text-red-800" style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 400 }}>{error}</p>
+                <p
+                  className="text-sm text-red-800"
+                  style={{
+                    fontFamily: "var(--font-uber-move)",
+                    fontWeight: 400,
+                  }}
+                >
+                  {error}
+                </p>
               </div>
             )}
 
             {/* First Name Field */}
             <div className="space-y-2">
-              <label htmlFor="firstName" className="block text-[16px] text-black" style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 500 }}>
+              <label
+                htmlFor="firstName"
+                className="block text-[16px] text-black"
+                style={{ fontFamily: "var(--font-uber-move)", fontWeight: 500 }}
+              >
                 First Name *
               </label>
               <input
@@ -435,19 +450,26 @@ const ProfileConfirmation: React.FC = () => {
                 value={formData.firstName}
                 onChange={(e) => {
                   // Restrict to English characters only
-                  const englishOnly = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                  const englishOnly = e.target.value.replace(
+                    /[^a-zA-Z\s]/g,
+                    "",
+                  );
                   handleInputChange("firstName", englishOnly);
                 }}
                 placeholder="Vanni"
                 disabled={isLoading}
-                className="w-full px-4 py-4 bg-gray-200 rounded-xl border-0 text-[16px] placeholder-gray-500 focus:outline-none focus:ring-0"
-                style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 400 }}
+                className="w-full rounded-xl border-0 bg-gray-200 px-4 py-4 text-[16px] placeholder-gray-500 focus:ring-0 focus:outline-none"
+                style={{ fontFamily: "var(--font-uber-move)", fontWeight: 400 }}
               />
             </div>
 
             {/* Last Name Field */}
             <div className="space-y-2">
-              <label htmlFor="lastName" className="block text-[16px] text-black" style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 500 }}>
+              <label
+                htmlFor="lastName"
+                className="block text-[16px] text-black"
+                style={{ fontFamily: "var(--font-uber-move)", fontWeight: 500 }}
+              >
                 Last Name *
               </label>
               <input
@@ -456,68 +478,96 @@ const ProfileConfirmation: React.FC = () => {
                 value={formData.lastName}
                 onChange={(e) => {
                   // Restrict to English characters only
-                  const englishOnly = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                  const englishOnly = e.target.value.replace(
+                    /[^a-zA-Z\s]/g,
+                    "",
+                  );
                   handleInputChange("lastName", englishOnly);
                 }}
                 placeholder="Makhija"
                 disabled={isLoading}
-                className="w-full px-4 py-4 bg-gray-200 rounded-xl border-0 text-[16px] placeholder-gray-500 focus:outline-none focus:ring-0"
-                style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 400 }}
+                className="w-full rounded-xl border-0 bg-gray-200 px-4 py-4 text-[16px] placeholder-gray-500 focus:ring-0 focus:outline-none"
+                style={{ fontFamily: "var(--font-uber-move)", fontWeight: 400 }}
               />
             </div>
 
             {/* Mobile Number Field */}
             <div className="space-y-2">
-              <label className="block text-[16px] text-black" style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 500 }}>
+              <label
+                className="block text-[16px] text-black"
+                style={{ fontFamily: "var(--font-uber-move)", fontWeight: 500 }}
+              >
                 Mobile
               </label>
               <PhoneInput
-                country={'us'}
+                country={"us"}
                 value={phoneNumber}
-                onChange={setPhoneNumber}
+                onChange={(value: string, data: any) => {
+                  setPhoneNumber(value);
+                  // Keep formData in sync for validation and submission
+                  setFormData((prev) => ({
+                    ...prev,
+                    mobileNumber: value,
+                    // Optional metadata for downstream use
+                    countryIso:
+                      (data?.countryCode || "")?.toUpperCase?.() || undefined,
+                    callingCode: data?.dialCode
+                      ? `+${data.dialCode}`
+                      : undefined,
+                  }));
+                  if (error) setError(null);
+                }}
                 disabled={isLoading}
                 inputClass="phone-input-field"
                 buttonClass="phone-input-button"
                 dropdownClass="phone-input-dropdown"
                 containerClass="phone-input-container"
                 inputStyle={{
-                  fontFamily: 'var(--font-uber-move)',
+                  fontFamily: "var(--font-uber-move)",
                   fontWeight: 400,
-                  fontSize: '16px',
-                  padding: '16px 16px 16px 60px',
-                  backgroundColor: '#e5e7eb',
-                  border: 'none',
-                  borderRadius: '12px',
-                  outline: 'none',
-                  width: '100%',
-                  height: '56px'
+                  fontSize: "16px",
+                  padding: "16px 16px 16px 60px",
+                  backgroundColor: "#e5e7eb",
+                  border: "none",
+                  borderRadius: "12px",
+                  outline: "none",
+                  width: "100%",
+                  height: "56px",
                 }}
                 buttonStyle={{
-                  backgroundColor: '#e5e7eb',
-                  border: 'none',
-                  borderRadius: '12px 0 0 12px',
-                  height: '56px',
-                  width: '60px'
+                  backgroundColor: "#e5e7eb",
+                  border: "none",
+                  borderRadius: "12px 0 0 12px",
+                  height: "56px",
+                  width: "60px",
                 }}
                 dropdownStyle={{
-                  fontFamily: 'var(--font-uber-move)',
+                  fontFamily: "var(--font-uber-move)",
                   fontWeight: 400,
-                  fontSize: '14px'
+                  fontSize: "14px",
                 }}
               />
-              <p className="text-[14px] text-gray-600 mt-1" style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 400 }}>Whatsapp preferred</p>
+              <p
+                className="mt-1 text-[14px] text-gray-600"
+                style={{ fontFamily: "var(--font-uber-move)", fontWeight: 400 }}
+              >
+                Whatsapp preferred
+              </p>
             </div>
 
             {/* Nationality Field */}
             <div className="space-y-2">
-              <label className="block text-[16px] text-black" style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 500 }}>
+              <label
+                className="block text-[16px] text-black"
+                style={{ fontFamily: "var(--font-uber-move)", fontWeight: 500 }}
+              >
                 Nationality
               </label>
               <CountryCombobox
                 value={nationality}
                 onValueChange={setNationality}
                 placeholder="Select nationality"
-                className="w-full px-4 py-4 bg-gray-200 rounded-xl border-0 text-[16px] focus:outline-none focus:ring-0 h-[56px]"
+                className="h-[56px] w-full rounded-xl border-0 bg-gray-200 px-4 py-4 text-[16px] focus:ring-0 focus:outline-none"
               />
             </div>
           </form>
@@ -525,22 +575,22 @@ const ProfileConfirmation: React.FC = () => {
       </div>
 
       {/* Sticky Submit Button */}
-      <div className="sticky bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 sm:p-6 shadow-lg">
-        <div className="w-full max-w-md mx-auto sm:max-w-lg">
+      <div className="sticky right-0 bottom-0 left-0 border-t border-gray-200 bg-white p-4 shadow-lg sm:p-6">
+        <div className="mx-auto w-full max-w-md sm:max-w-lg">
           <button
             type="submit"
             form="profileForm"
             disabled={isLoading}
-            className="w-full py-4 bg-black text-white rounded-xl text-[16px] hover:bg-gray-800 focus:outline-none focus:ring-0 disabled:opacity-50"
-            style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 500 }}
+            className="w-full rounded-xl bg-black py-4 text-[16px] text-white hover:bg-gray-800 focus:ring-0 focus:outline-none disabled:opacity-50"
+            style={{ fontFamily: "var(--font-uber-move)", fontWeight: 500 }}
             onClick={handleSubmit}
           >
             {isLoading ? "Updating..." : "Confirm"}
           </button>
 
           {/* Bottom indicator */}
-          <div className="flex justify-center mt-4">
-            <div className="w-32 h-1 bg-black rounded-full"></div>
+          <div className="mt-4 flex justify-center">
+            <div className="h-1 w-32 rounded-full bg-black"></div>
           </div>
         </div>
       </div>
