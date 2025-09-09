@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/common/ui/button";
 import { cn } from "@/lib/utils";
 import { submitInterruptResponse } from "./util";
 import { useStreamContext } from "@/providers/Stream";
 import { useTranslations } from "@/hooks/useTranslations";
 import { useReviewWidgetRTL } from "@/hooks/useRTLMirror";
+import { trackFlightBookingAttempt, trackWidgetInteraction, trackReviewSubmit, type ReviewSubmitAnalytics } from "@/services/analyticsService";
 import "@/styles/rtl-mirror.css";
 
 // Import modular components
@@ -432,6 +433,24 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
   const isBookingSubmitted = !!readOnly;
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Track form completion time
+  const [formStartTime] = useState<number>(Date.now());
+
+  // Track review widget load
+  useEffect(() => {
+    try {
+      // Track widget interaction when review widget loads
+      trackWidgetInteraction('review', 'loaded', {
+        passenger_count: passengers.length,
+        has_flight_details: !!flightDetails,
+        has_payment_summary: !!paymentSummary,
+        is_read_only: readOnly,
+      });
+    } catch (error) {
+      console.error('Error tracking review widget load:', error);
+    }
+  }, []); // Only run once when component mounts
+
   // Event handlers for multiple passengers
   const handlePassengerChange = (passengerIndex: number, field: string, value: string) => {
     setPassengers((prev) =>
@@ -674,6 +693,37 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
 
   // Submit handler
   const handleSubmit = async () => {
+    // Track review submit event immediately when button is clicked
+    try {
+      const formCompletionTime = Math.round((Date.now() - formStartTime) / 1000); // in seconds
+      const validationErrors = validateAllFields();
+      const validationErrorsCount = Object.values(validationErrors).filter(Boolean).length;
+
+      // Determine trip type from flight details
+      const tripType: 'one_way' | 'round_trip' = flightDetails?.return ? 'round_trip' : 'one_way';
+
+      const reviewSubmitData: ReviewSubmitAnalytics = {
+        passenger_count: passengers.length,
+        total_amount: paymentSummary?.totalAmount || 0,
+        currency: paymentSummary?.currency || 'INR',
+        flight_id: flightDetails?.flightNumber || selectedFlightOffers?.[0]?.flightOfferId || 'unknown',
+        airline: flightDetails?.airline || 'unknown',
+        route: flightDetails ? `${flightDetails.departure?.airport}-${flightDetails.arrival?.airport}` : 'unknown',
+        departure_date: flightDetails?.departure?.date,
+        return_date: flightDetails?.return?.date,
+        trip_type: tripType,
+        has_documents: documents.some(doc => doc !== null),
+        has_contact_info: !!(contact.email && contact.phone),
+        validation_errors_count: validationErrorsCount,
+        form_completion_time: formCompletionTime,
+      };
+
+      trackReviewSubmit(reviewSubmitData);
+    } catch (analyticsError) {
+      console.error('Error tracking review submit analytics:', analyticsError);
+      // Don't block the submission if analytics fails
+    }
+
     // Validate all required fields and show visual feedback
     const errors = validateAllFields();
     setValidationErrors(errors);
@@ -689,6 +739,22 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
     setIsSubmitting(true);
 
     try {
+      // Track booking attempt analytics
+      try {
+        const flightData = {
+          flightId: flightDetails?.flightNumber || selectedFlightOffers?.[0]?.flightOfferId || 'unknown',
+          airline: flightDetails?.airline || 'unknown',
+          price: paymentSummary?.totalAmount || 0,
+          currency: paymentSummary?.currency || 'INR',
+          route: flightDetails ? `${flightDetails.departure?.airport}-${flightDetails.arrival?.airport}` : 'unknown',
+          passengerCount: passengers.length,
+        };
+
+        trackFlightBookingAttempt(flightData);
+      } catch (analyticsError) {
+        console.error('Error tracking booking attempt analytics:', analyticsError);
+        // Don't block the booking if analytics fails
+      }
       // Parse phone number to extract country code and number
       const phoneMatch = contact.phone.match(/^\+?(\d{1,4})\s*(.+)$/);
       const countryCode = phoneMatch ? phoneMatch[1] : "91";
@@ -838,6 +904,18 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
             frozenValue: frozen,
           }
         );
+
+        // Track successful booking submission
+        try {
+          trackWidgetInteraction('review', 'booking_submitted', {
+            passenger_count: passengers.length,
+            total_amount: paymentSummary?.totalAmount || 0,
+            currency: paymentSummary?.currency || 'INR',
+            has_documents: documents.some(doc => doc !== null),
+          });
+        } catch (analyticsError) {
+          console.error('Error tracking booking submission analytics:', analyticsError);
+        }
       }
     } catch (error) {
       console.error("Error submitting review:", error);

@@ -1,0 +1,187 @@
+{
+  "application": {
+    "name": "Flyo",
+    "fullName": "Flyo - Your personal travel assistant",
+    "description": "Flyo is your personal travel assistant powered by AI that revolutionizes flight booking through conversational interfaces. Users can chat naturally with their personal assistant to search, compare, and book flights while receiving personalized recommendations.",
+    "version": "1.0.0",
+    "type": "Web Application",
+    "category": "Travel & Transportation",
+    "url": "https://flyo.ai",
+    "developer": "HavaHavai",
+    "launched": "2024"
+  },
+  "core_features": [
+    {
+      "name": "Personal Travel Assistant",
+      "description": "Your dedicated AI-powered personal assistant for all travel needs"
+    },
+    {
+      "name": "Conversational Flight Booking",
+      "description": "Chat naturally with your personal assistant to search and book flights without complex forms"
+    },
+    {
+      "name": "Intelligent Flight Search",
+      "description": "AI-powered search that understands context and personal preferences"
+    },
+    {
+      "name": "Personalized Recommendations",
+      "description": "Tailored flight suggestions based on your preferences and travel history"
+    },
+    {
+      "name": "Multi-language Support",
+      "description": "Available in English and Arabic - serving users in their preferred language"
+    },
+    {
+      "name": "Real-time Flight Information",
+      "description": "Live flight status, pricing, and availability updates"
+    },
+    {
+      "name": "Smart Travel Planning",
+      "description": "Comprehensive trip planning with personal itinerary management"
+    }
+  ],
+  "pages": [
+    {
+      "path": "/",
+      "name": "Home",
+      "description": "Main chat interface for interacting with your personal travel assistant",
+      "purpose": "Primary user interaction point for flight booking and personal travel planning",
+      "features": ["Chat interface", "Flight search", "Booking management", "Travel recommendations"]
+    },
+    {
+      "path": "/en",
+      "name": "English Version",
+      "description": "English localized version of the main application",
+      "purpose": "Serve English-speaking users with optimized content and interface"
+    },
+    {
+      "path": "/ar",
+      "name": "Arabic Version", 
+      "description": "Arabic localized version with RTL support",
+      "purpose": "Serve Arabic-speaking users with culturally appropriate interface"
+    },
+    {
+      "path": "/login",
+      "name": "Authentication",
+      "description": "Google OAuth-based login system",
+      "purpose": "Secure user authentication and account access"
+    },
+    {
+      "path": "/profile-confirmation",
+      "name": "Profile Setup",
+      "description": "User profile confirmation and setup process",
+      "purpose": "Complete user onboarding and profile verification"
+    },
+    {
+      "path": "/onboarding-quiz",
+      "name": "Travel Preferences Quiz",
+      "description": "Interactive quiz to understand user travel preferences",
+      "purpose": "Personalize your personal travel assistant recommendations based on your preferences"
+    },
+    {
+      "path": "/personalize-travel",
+      "name": "Travel Personalization",
+      "description": "Advanced personalization settings for your personal travel assistant",
+      "purpose": "Fine-tune your personal assistant's behavior and recommendations"
+    }
+  ],
+  "technology_stack": {
+    "frontend": "Next.js 15.2.3 with React 19",
+    "styling": "Tailwind CSS 4.0",
+    "language": "TypeScript",
+    "ai_integration": "LangGraph with custom AI agents",
+    "authentication": "Google OAuth 2.0",
+    "analytics": "Google Analytics 4",
+    "deployment": "Vercel",
+    "architecture": "Server-side rendering with client-side interactivity"
+  },
+  "user_journey": [
+    {
+      "step": 1,
+      "action": "User visits Flyo",
+      "description": "Landing on the main chat interface"
+    },
+    {
+      "step": 2,
+      "action": "Authentication",
+      "description": "Sign in with Google for personalized experience"
+    },
+    {
+      "step": 3,
+      "action": "Onboarding",
+      "description": "Complete travel preferences quiz and personalization"
+    },
+    {
+      "step": 4,
+      "action": "Flight Search",
+      "description": "Chat with AI to express travel needs and search flights"
+    },
+    {
+      "step": 5,
+      "action": "Flight Selection",
+      "description": "Review AI recommendations and select preferred flights"
+    },
+    {
+      "step": 6,
+      "action": "Booking Process",
+      "description": "Complete passenger details and payment"
+    },
+    {
+      "step": 7,
+      "action": "Trip Management",
+      "description": "Manage bookings and receive travel updates"
+    }
+  ],
+  "ai_capabilities": [
+    "Natural language understanding for travel queries",
+    "Context-aware flight search and filtering",
+    "Personalized recommendation engine",
+    "Multi-turn conversation handling",
+    "Travel preference learning and adaptation",
+    "Real-time data integration",
+    "Multi-language processing"
+  ],
+  "target_audience": [
+    "Frequent business travelers",
+    "Leisure travelers seeking convenience",
+    "Tech-savvy users who prefer conversational interfaces",
+    "International travelers needing multi-language support",
+    "Users who value personalized travel recommendations"
+  ],
+  "competitive_advantages": [
+    "Conversational AI interface eliminates complex booking forms",
+    "Personalized recommendations improve over time",
+    "Multi-language support for global accessibility",
+    "Real-time integration with flight data",
+    "Seamless mobile and desktop experience"
+  ],
+  "seo_keywords": [
+    "personal travel assistant",
+    "AI travel assistant",
+    "conversational flight booking",
+    "intelligent travel planning",
+    "AI flight search",
+    "personalized travel recommendations",
+    "chat-based booking",
+    "smart travel assistant",
+    "AI-powered travel app",
+    "personal travel planner"
+  ],
+  "contact": {
+    "website": "https://flyo.ai",
+    "support": "https://flyo.ai/support",
+    "company": "HavaHavai"
+  },
+  "last_updated": "2024-12-09",
+  "ai_agent_instructions": {
+    "purpose": "This file provides comprehensive information about Flyo for AI agents and LLMs to understand the application's functionality, features, and user experience.",
+    "usage": "AI agents can reference this information to provide accurate responses about Flyo's capabilities, help users understand the platform, and assist with travel-related queries.",
+    "key_points": [
+      "Flyo is your personal travel assistant powered by conversational AI",
+      "The main interaction is through chat with your personal assistant, not traditional forms",
+      "Personalization is a core feature that improves with usage",
+      "Multi-language support (English & Arabic) makes it accessible to primary user base",
+      "The platform focuses on providing a personal, simplified flight booking experience"
+    ]
+  }
+}
