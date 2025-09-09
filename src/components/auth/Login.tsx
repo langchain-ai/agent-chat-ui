@@ -20,10 +20,9 @@ const Login: React.FC = () => {
   const CLIENT_SECRET = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET;
   const REDIRECT_URI = process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI;
 
-  // Define the scopes
+  // Define the scopes for INITIAL login (no Gmail access here)
   const scopes = [
     "https://www.googleapis.com/auth/userinfo.email",
-    "https://www.googleapis.com/auth/gmail.readonly",
     "https://www.googleapis.com/auth/userinfo.profile",
     "openid",
   ];
