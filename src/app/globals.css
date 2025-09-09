@@ -236,12 +236,31 @@
 }
 
 @layer utilities {
+  /* RTL Support Utilities */
+  .rtl {
+    direction: rtl;
+  }
+
+  .ltr {
+    direction: ltr;
+  }
+
+  /* RTL-aware shadows */
   .shadow-inner-right {
     box-shadow: inset -9px 0 6px -1px rgb(0 0 0 / 0.02);
   }
 
   .shadow-inner-left {
     box-shadow: inset 9px 0 6px -1px rgb(0 0 0 / 0.02);
+  }
+
+  /* RTL-aware shadow utilities */
+  .rtl .shadow-inner-right {
+    box-shadow: inset 9px 0 6px -1px rgb(0 0 0 / 0.02);
+  }
+
+  .rtl .shadow-inner-left {
+    box-shadow: inset -9px 0 6px -1px rgb(0 0 0 / 0.02);
   }
 
   .scrollbar-hide {
@@ -251,6 +270,75 @@
 
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  /* RTL-aware positioning utilities */
+  .rtl-flip-x {
+    transform: scaleX(-1);
+  }
+
+  .rtl .rtl-flip-x {
+    transform: scaleX(-1);
+  }
+
+  /* RTL-aware icon rotation */
+  .rtl-rotate-180 {
+    transform: rotate(0deg);
+  }
+
+  .rtl .rtl-rotate-180 {
+    transform: rotate(180deg);
+  }
+
+  /* RTL-aware text alignment */
+  .rtl-text-left {
+    text-align: left;
+  }
+
+  .rtl .rtl-text-left {
+    text-align: right;
+  }
+
+  .rtl-text-right {
+    text-align: right;
+  }
+
+  .rtl .rtl-text-right {
+    text-align: left;
+  }
+
+  /* RTL-aware flex utilities */
+  .rtl-flex-row {
+    flex-direction: row;
+  }
+
+  .rtl .rtl-flex-row {
+    flex-direction: row-reverse;
+  }
+
+  .rtl-flex-row-reverse {
+    flex-direction: row-reverse;
+  }
+
+  .rtl .rtl-flex-row-reverse {
+    flex-direction: row;
+  }
+
+  /* RTL-aware justify utilities */
+  .rtl-justify-start {
+    justify-content: flex-start;
+  }
+
+  .rtl .rtl-justify-start {
+    justify-content: flex-end;
+  }
+
+  .rtl-justify-end {
+    justify-content: flex-end;
+  }
+
+  .rtl .rtl-justify-end {
+    justify-content: flex-start;
   }
 
   /* Ensure no horizontal overflow on all screen sizes */

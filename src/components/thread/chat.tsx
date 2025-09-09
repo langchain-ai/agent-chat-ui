@@ -48,6 +48,10 @@ import { GenericInterruptView } from "./messages/generic-interrupt";
 import { NonAgentFlowReopenButton } from "./NonAgentFlowReopenButton";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 import { NetworkStatusBanner } from "@/components/common/ui/NetworkStatusBanner";
+import { useTranslations } from "@/hooks/useTranslations";
+import { useRTLMirror } from "@/hooks/useRTLMirror";
+import "@/styles/rtl-mirror.css";
+import { getCurrentLanguage } from "@/utils/i18n";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -115,6 +119,17 @@ export function Thread() {
   const [artifactContext, setArtifactContext] = useArtifactContext();
   const [artifactOpen, closeArtifact] = useArtifactOpen();
   const { locationData } = useLocationContext();
+
+  // Initialize translations for homePage
+  const { t } = useTranslations('homePage');
+
+  // Initialize RTL mirroring for homePage
+  const {
+    isRTLMirrorRequired,
+    isLoading: isRTLLoading,
+    mirrorClasses,
+    mirrorStyles,
+  } = useRTLMirror('homePage');
 
   const [threadId, _setThreadId] = useQueryState("threadId");
   const [assistantId] = useQueryState("assistantId");
@@ -292,6 +307,11 @@ export function Thread() {
       submissionData.userCurrency = userCurrency;
     }
 
+    const userLanguage = getCurrentLanguage();
+    if (userLanguage) {
+      submissionData.userLanguage = userLanguage;
+    }
+
     const submitOptions: any = {
       streamMode: ["updates"],
       streamSubgraphs: true,
@@ -321,18 +341,18 @@ export function Thread() {
   const quickActions: Array<{ label: string; text: string; icon?: ReactNode }> =
     [
       {
-        label: "Book me a\nflight",
-        text: "Book me a flight",
+        label: t('quickActionTab.bookMeAFlight', 'Book me a\nflight'),
+        text: t('quickActionTab.bookMeAFlight', 'Book me a flight'),
         icon: <Plane className="h-4 w-4" />,
       },
       {
-        label: "Show me free\nlounge access",
-        text: "Show me free lounge access",
+        label: t('quickActionTab.showFreeLoungeAccess', 'Show me free\nlounge access'),
+        text: t('quickActionTab.showFreeLoungeAccess', 'Show me free lounge access'),
         icon: <Armchair className="h-4 w-4" />,
       },
       {
-        label: "Show me my\npast flights",
-        text: "Show me my past flights",
+        label: t('quickActionTab.showMePastFlights', 'Show me my\npast flights'),
+        text: t('quickActionTab.showMePastFlights', 'Show me my past flights'),
         icon: <Ticket className="h-4 w-4" />,
       },
     ];
@@ -381,6 +401,11 @@ export function Thread() {
     const userCurrency = getSelectedCurrency();
     if (userCurrency) {
       submissionData.userCurrency = userCurrency;
+    }
+
+    const userLanguage = getCurrentLanguage();
+    if (userLanguage) {
+      submissionData.userLanguage = userLanguage;
     }
 
     const submitOptions: any = {
@@ -474,8 +499,14 @@ export function Thread() {
 
                   {/* Centered Chat Input - positioned lower on mobile for better thumb reach */}
                   <div className="w-full max-w-3xl py-4 mt-auto mb-12 sm:mt-0 sm:mb-0 sm:py-8">
-                    <div className="mx-auto mb-4 w-full max-w-3xl overflow-x-auto px-1 text-center [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:h-0 [&::-webkit-scrollbar]:w-0">
-                      <div className="inline-flex items-start gap-3 whitespace-nowrap sm:gap-4">
+                    <div className={cn(
+                      "mx-auto mb-4 w-full max-w-3xl overflow-x-auto px-1 text-center [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:h-0 [&::-webkit-scrollbar]:w-0",
+                      mirrorClasses.container
+                    )} style={mirrorStyles.container}>
+                      <div className={cn(
+                        "inline-flex items-start gap-3 whitespace-nowrap sm:gap-4",
+                        mirrorClasses.content
+                      )} style={mirrorStyles.content}>
                         {quickActions.slice(0, 3).map((qa) => (
                           <button
                             key={qa.label}

@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { getCachedLocation } from "@/lib/location-cache";
 import { getJwtToken, GetUserId } from "@/services/authService";
 import { getSelectedCurrency } from "@/utils/currency-storage";
+import { getCurrentLanguage } from "@/utils/i18n";
 
 export async function submitInterruptResponse(
   thread: any, // Replace with proper type from your stream context
@@ -37,6 +38,11 @@ export async function submitInterruptResponse(
     }
     if (userCurrency) {
       submissionData.userCurrency = userCurrency;
+    }
+
+    const userLanguage = getCurrentLanguage();
+    if (userLanguage) {
+      submissionData.userLanguage = userLanguage;
     }
 
     await thread.submit(submissionData, {

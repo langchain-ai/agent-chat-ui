@@ -8,6 +8,34 @@ import { DayButton, DayPicker, getDefaultClassNames } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { getSelectedLanguage } from "@/utils/language-storage"
+
+// Hook to get user's language preference and convert to locale format
+function useUserLanguage() {
+  const [localeString, setLocaleString] = React.useState<string>('en-US')
+
+  React.useEffect(() => {
+    // Check if we're in a browser environment
+    if (typeof window !== 'undefined') {
+      try {
+        const storedLanguage = getSelectedLanguage()
+        if (storedLanguage && typeof storedLanguage === 'string' && storedLanguage.trim()) {
+          // Convert language code to locale format
+          const localeMap: Record<string, string> = {
+            'en': 'en-US',
+            'ar': 'ar-SA'
+          }
+          setLocaleString(localeMap[storedLanguage] || 'en-US')
+        }
+      } catch (error) {
+        console.warn('Failed to read language preference from localStorage:', error)
+        setLocaleString('en-US')
+      }
+    }
+  }, [])
+
+  return localeString
+}
 
 function Calendar({
   className,
@@ -22,6 +50,18 @@ function Calendar({
   buttonVariant?: React.ComponentProps<typeof Button>["variant"]
 }) {
   const defaultClassNames = getDefaultClassNames()
+  const userLocale = useUserLanguage()
+
+  // Create formatters that respect the user's locale
+  const localizedFormatters = React.useMemo(() => ({
+    formatMonthDropdown: (date: Date) =>
+      date.toLocaleString(userLocale, { month: "short" }),
+    formatWeekdayName: (date: Date) =>
+      date.toLocaleDateString(userLocale, { weekday: "short" }),
+    formatCaption: (date: Date) =>
+      date.toLocaleDateString(userLocale, { month: "long", year: "numeric" }),
+    ...formatters,
+  }), [userLocale, formatters])
 
   return (
     <DayPicker
@@ -33,11 +73,7 @@ function Calendar({
         className
       )}
       captionLayout={captionLayout}
-      formatters={{
-        formatMonthDropdown: (date) =>
-          date.toLocaleString("default", { month: "short" }),
-        ...formatters,
-      }}
+      formatters={localizedFormatters}
       classNames={{
         root: cn("w-fit", defaultClassNames.root),
         months: cn(
@@ -177,6 +213,7 @@ function CalendarDayButton({
   ...props
 }: React.ComponentProps<typeof DayButton>) {
   const defaultClassNames = getDefaultClassNames()
+  const userLocale = useUserLanguage()
 
   const ref = React.useRef<HTMLButtonElement>(null)
   React.useEffect(() => {
@@ -188,7 +225,7 @@ function CalendarDayButton({
       ref={ref}
       variant="ghost"
       size="icon"
-      data-day={day.date.toLocaleDateString()}
+      data-day={day.date.toLocaleDateString(userLocale)}
       data-selected-single={
         modifiers.selected &&
         !modifiers.range_start &&
@@ -206,6 +243,10 @@ function CalendarDayButton({
       {...props}
     />
   )
+}
+
+export type CalendarProps = React.ComponentProps<typeof DayPicker> & {
+  buttonVariant?: React.ComponentProps<typeof Button>["variant"]
 }
 
 export { Calendar, CalendarDayButton }
