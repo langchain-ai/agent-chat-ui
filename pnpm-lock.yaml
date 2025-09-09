@@ -128,6 +128,9 @@ importers:
       react-markdown:
         specifier: ^10.0.1
         version: 10.1.0(@types/react@19.1.4)(react@19.1.0)
+      react-phone-input-2:
+        specifier: ^2.15.1
+        version: 2.15.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       react-syntax-highlighter:
         specifier: ^15.5.0
         version: 15.6.1(react@19.1.0)
@@ -1918,6 +1921,9 @@ packages:
   class-variance-authority@0.7.1:
     resolution: {integrity: sha512-Ka+9Trutv7G8M6WT6SeiRWz792K5qEqIGEGzXKhAE6xOWAY6pPH8U+9IY3oCMv6kqTmLsv7Xh/2w2RigkePMsg==}
 
+  classnames@2.5.1:
+    resolution: {integrity: sha512-saHYOzhIQs6wy2sVxTM6bUDsQO4F50V9RQ22qBpEdCW+I+/Wmke2HOl6lS6dTpdxVhb88/I6+Hs+438c3lfUow==}
+
   client-only@0.0.1:
     resolution: {integrity: sha512-IV3Ou0jSMzZrd3pZ48nLkT9DA7Ag1pnPzaiQhpW7c3RbcqqzvzzVu+L8gfqMp/8IM2MQtSiqaCxrrcfu8I8rMA==}
 
@@ -2930,8 +2936,20 @@ packages:
   lodash.camelcase@4.3.0:
     resolution: {integrity: sha512-TwuEnCnxbc3rAvhf/LbG7tJUDzhqXyFnv3dtzLOPgCG/hODL7WFnsbwktkD7yUV0RrreP/l1PALq/YSg6VvjlA==}
 
+  lodash.debounce@4.0.8:
+    resolution: {integrity: sha512-FT1yDzDYEoYWhnSGnpE/4Kj1fLZkDFyqRb7fNt6FdYOSxlUWAtp42Eh6Wb0rGIv/m9Bgo7x4GhQbm5Ys4SG5ow==}
+
+  lodash.memoize@4.1.2:
+    resolution: {integrity: sha512-t7j+NzmgnQzTAYXcsHYLgimltOV1MXHtlOWf6GjL9Kj8GK5FInw5JotxvbOs+IvV1/Dzo04/fCGfLVs7aXb4Ag==}
+
   lodash.merge@4.6.2:
     resolution: {integrity: sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==}
+
+  lodash.reduce@4.6.0:
+    resolution: {integrity: sha512-6raRe2vxCYBhpBu+B+TtNGUzah+hQjVdu3E17wfusjyrXBka2nBS8OH/gjVZ5PvHOhWmIZTYri09Z6n/QfnNMw==}
+
+  lodash.startswith@4.2.1:
+    resolution: {integrity: sha512-XClYR1h4/fJ7H+mmCKppbiBmljN/nGs73iq2SjCT9SF4CBPoUHzLvWmH1GtZMhMBZSiRkHXfeA2RY1eIlJ75ww==}
 
   lodash@4.17.21:
     resolution: {integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==}
@@ -3551,6 +3569,12 @@ packages:
     peerDependencies:
       '@types/react': '>=18'
       react: '>=18'
+
+  react-phone-input-2@2.15.1:
+    resolution: {integrity: sha512-W03abwhXcwUoq+vUFvC6ch2+LJYMN8qSOiO889UH6S7SyMCQvox/LF3QWt+cZagZrRdi5z2ON3omnjoCUmlaYw==}
+    peerDependencies:
+      react: ^16.12.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^20.0.0 || ^21.0.0
+      react-dom: ^16.12.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^20.0.0 || ^21.0.0
 
   react-remove-scroll-bar@2.3.8:
     resolution: {integrity: sha512-9r+yi9+mgU33AKcj6IbT9oRCO78WriSj6t/cF8DWBZJ9aOGPOTEDvdUDz1FwKim7QXWwmHqtdHnRJfhAxEG46Q==}
@@ -5679,6 +5703,8 @@ snapshots:
     dependencies:
       clsx: 2.1.1
 
+  classnames@2.5.1: {}
+
   client-only@0.0.1: {}
 
   clsx@2.1.1: {}
@@ -6857,7 +6883,15 @@ snapshots:
 
   lodash.camelcase@4.3.0: {}
 
+  lodash.debounce@4.0.8: {}
+
+  lodash.memoize@4.1.2: {}
+
   lodash.merge@4.6.2: {}
+
+  lodash.reduce@4.6.0: {}
+
+  lodash.startswith@4.2.1: {}
 
   lodash@4.17.21: {}
 
@@ -7692,6 +7726,17 @@ snapshots:
       vfile: 6.0.3
     transitivePeerDependencies:
       - supports-color
+
+  react-phone-input-2@2.15.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
+    dependencies:
+      classnames: 2.5.1
+      lodash.debounce: 4.0.8
+      lodash.memoize: 4.1.2
+      lodash.reduce: 4.6.0
+      lodash.startswith: 4.2.1
+      prop-types: 15.8.1
+      react: 19.1.0
+      react-dom: 19.1.0(react@19.1.0)
 
   react-remove-scroll-bar@2.3.8(@types/react@19.1.4)(react@19.1.0):
     dependencies:
