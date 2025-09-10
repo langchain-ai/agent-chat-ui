@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import React from "react";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import Script from "next/script";
+import { StructuredData, organizationStructuredData, websiteStructuredData, webApplicationStructuredData } from "@/components/seo/StructuredData";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -12,12 +13,74 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Flyo Chat",
-  description: "Flyo Chat by HavaHavai",
+  title: {
+    default: "Flyo - Your personal travel assistant",
+    template: "%s | Flyo - Your personal travel assistant"
+  },
+  description: "Flyo is your personal travel assistant powered by AI. Book flights, get travel recommendations, and plan your perfect trip with our conversational AI interface. Fast, smart, and personalized travel booking.",
+  keywords: [
+    "personal travel assistant",
+    "AI travel assistant",
+    "flight booking",
+    "travel AI",
+    "book flights online",
+    "travel chatbot",
+    "intelligent travel planning",
+    "AI flight search",
+    "travel recommendations",
+    "flight deals",
+    "travel booking platform",
+    "personal travel planner"
+  ],
+  authors: [{ name: "HavaHavai" }],
+  creator: "HavaHavai",
+  publisher: "HavaHavai",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://flyo.ai',
+    siteName: 'Flyo - Your personal travel assistant',
+    title: 'Flyo - Your personal travel assistant',
+    description: 'Flyo is your personal travel assistant powered by AI. Book flights, get travel recommendations, and plan your perfect trip with our conversational AI interface.',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Flyo - Your personal travel assistant',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Flyo - Your personal travel assistant',
+    description: 'Your personal travel assistant powered by AI. Book flights and plan travel with smart, personalized recommendations.',
+    images: ['/twitter-image.png'],
+    creator: '@havahavai',
+  },
   icons: {
     icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
     shortcut: ["/favicon.svg"],
     apple: ["/favicon.svg"],
+  },
+  manifest: '/manifest.json',
+  alternates: {
+    canonical: 'https://flyo.ai',
+    languages: {
+      'en-US': 'https://flyo.ai/en',
+      'ar-SA': 'https://flyo.ai/ar',
+    },
   },
 };
 
@@ -61,6 +124,12 @@ export default function RootLayout({
             });
           `}
         </Script>
+
+        {/* Structured Data */}
+        <StructuredData data={organizationStructuredData} />
+        <StructuredData data={websiteStructuredData} />
+        <StructuredData data={webApplicationStructuredData} />
+
         <NuqsAdapter>{children}</NuqsAdapter>
         <script
           dangerouslySetInnerHTML={{

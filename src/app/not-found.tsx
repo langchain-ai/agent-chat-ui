@@ -1,4 +1,14 @@
 import Link from 'next/link'
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: 'Page Not Found - Flyo, Your personal travel assistant',
+  description: 'The page you are looking for could not be found. Return to Flyo to continue booking flights with your personal travel assistant.',
+  robots: {
+    index: false,
+    follow: true,
+  },
+};
 
 export default function NotFound() {
   return (

@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Copy, ArrowRight, ChevronDown, ChevronUp, Check, X, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatAmount } from '@/services/paymentService';
+import { trackBookingConfirmation, type BookingConfirmationAnalytics } from '@/services/analyticsService';
 
 // Types for the booking confirmation data
 interface FlightDetails {
@@ -254,6 +255,30 @@ const BookingStatusWidget: React.FC<BookingStatusWidgetProps> = ({ data }) => {
 
   // Use mock data if no data provided
   const finalData = data || mockBookingData;
+
+  // Track booking confirmation widget load
+  useEffect(() => {
+    try {
+      const confirmationData: BookingConfirmationAnalytics = {
+        booking_status: finalData.bookingStatus,
+        payment_status: finalData.paymentStatus,
+        pnr: finalData.pnr,
+        booking_id: finalData.bookingId,
+        total_amount: finalData.paymentSummary.totalAmount,
+        currency: finalData.paymentSummary.currency,
+        flight_id: finalData.flightDetails.flightNumber || 'unknown',
+        airline: finalData.flightDetails.airline || 'unknown',
+        route: `${finalData.flightDetails.departure.code}-${finalData.flightDetails.arrival.code}`,
+        passenger_count: 1, // Default to 1 if not available in data structure
+        payment_method: finalData.paymentSummary.paymentMethod,
+        transaction_id: finalData.paymentSummary.transactionId,
+      };
+
+      trackBookingConfirmation(confirmationData);
+    } catch (error) {
+      console.error('Error tracking booking confirmation analytics:', error);
+    }
+  }, [finalData]); // Track when data changes
 
   // Get helper text based on status
   const getHelperText = () => {

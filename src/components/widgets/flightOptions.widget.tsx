@@ -2075,7 +2075,7 @@ const FlightOptionsWidget = (args: FlightOptionsProps) => {
 
   // Track flight results when component loads with flight data
   useEffect(() => {
-    if (allFlightTuples.length > 0 && !readOnly) {
+    if (allFlightTuples.length > 0) {
       try {
         // Helper function to get airline name from flight
         const getAirlineName = (flight: any): string => {
@@ -2174,7 +2174,7 @@ const FlightOptionsWidget = (args: FlightOptionsProps) => {
         // Don't block the component if analytics fails
       }
     }
-  }, [allFlightTuples.length, readOnly]); // Trigger when flight data loads
+  }, [allFlightTuples.length]); // Trigger when flight data loads
 
   // Note: Removed journey type detection to match widgets page design
 

@@ -42,7 +42,14 @@ export interface UserAnalytics {
  * Check if Google Analytics is available
  */
 export const isGtagAvailable = (): boolean => {
-  return typeof window !== 'undefined' && typeof window.gtag === 'function';
+  const available = typeof window !== 'undefined' && typeof window.gtag === 'function';
+  if (!available) {
+    console.warn('Google Analytics gtag not available:', {
+      windowExists: typeof window !== 'undefined',
+      gtagExists: typeof window !== 'undefined' ? typeof window.gtag === 'function' : false,
+    });
+  }
+  return available;
 };
 
 /**
@@ -381,6 +388,159 @@ export const trackFlightSelected = (selectionData: FlightSelectedAnalytics): voi
     });
   } catch (error) {
     console.error('Error tracking flight selection event:', error);
+  }
+};
+
+/**
+ * Review submit interface for analytics
+ */
+export interface ReviewSubmitAnalytics {
+  passenger_count: number;
+  total_amount: number;
+  currency: string;
+  flight_id: string;
+  airline: string;
+  route: string;
+  departure_date?: string;
+  return_date?: string;
+  trip_type: 'one_way' | 'round_trip';
+  has_documents: boolean;
+  has_contact_info: boolean;
+  validation_errors_count: number;
+  form_completion_time?: number; // Time spent on form in seconds
+}
+
+/**
+ * Track review submit event (when submit button is clicked)
+ */
+export const trackReviewSubmit = (submitData: ReviewSubmitAnalytics): void => {
+  if (!isGtagAvailable()) {
+    console.warn('Google Analytics not available');
+    return;
+  }
+
+  try {
+    // Get user data
+    const userData = getUserAnalyticsData();
+
+    // Set user properties if available
+    if (userData) {
+      setUserProperties(userData);
+    }
+
+    // Track the review submit event
+    window.gtag('event', 'review_submit', {
+      event_category: 'conversion',
+      event_label: 'review_form_submit',
+
+      // Passenger and booking details
+      passenger_count: submitData.passenger_count,
+      total_amount: submitData.total_amount,
+      currency: submitData.currency,
+
+      // Flight details
+      flight_id: submitData.flight_id,
+      airline: submitData.airline,
+      route: submitData.route,
+      departure_date: submitData.departure_date || null,
+      return_date: submitData.return_date || null,
+      trip_type: submitData.trip_type,
+
+      // Form completion details
+      has_documents: submitData.has_documents,
+      has_contact_info: submitData.has_contact_info,
+      validation_errors_count: submitData.validation_errors_count,
+      form_completion_time: submitData.form_completion_time || null,
+
+      // Additional metadata
+      submit_timestamp: new Date().toISOString(),
+    });
+
+    console.log('✅ Review submit event tracked:', {
+      passenger_count: submitData.passenger_count,
+      total_amount: `${submitData.total_amount} ${submitData.currency}`,
+      flight_id: submitData.flight_id,
+      airline: submitData.airline,
+      route: submitData.route,
+      userData,
+    });
+  } catch (error) {
+    console.error('Error tracking review submit event:', error);
+  }
+};
+
+/**
+ * Booking confirmation interface for analytics
+ */
+export interface BookingConfirmationAnalytics {
+  booking_status: string;
+  payment_status: string;
+  pnr: string;
+  booking_id: string;
+  total_amount: number;
+  currency: string;
+  flight_id: string;
+  airline: string;
+  route: string;
+  passenger_count: number;
+  payment_method?: string;
+  transaction_id?: string;
+}
+
+/**
+ * Track booking confirmation widget load
+ */
+export const trackBookingConfirmation = (confirmationData: BookingConfirmationAnalytics): void => {
+  if (!isGtagAvailable()) {
+    console.warn('Google Analytics not available');
+    return;
+  }
+
+  try {
+    // Get user data
+    const userData = getUserAnalyticsData();
+
+    // Set user properties if available
+    if (userData) {
+      setUserProperties(userData);
+    }
+
+    // Track the booking confirmation event
+    window.gtag('event', 'booking_confirmation', {
+      event_category: 'conversion',
+      event_label: 'booking_confirmation_loaded',
+
+      // Booking status
+      booking_status: confirmationData.booking_status,
+      payment_status: confirmationData.payment_status,
+      pnr: confirmationData.pnr,
+      booking_id: confirmationData.booking_id,
+
+      // Financial details
+      total_amount: confirmationData.total_amount,
+      currency: confirmationData.currency,
+      payment_method: confirmationData.payment_method || null,
+      transaction_id: confirmationData.transaction_id || null,
+
+      // Flight details
+      flight_id: confirmationData.flight_id,
+      airline: confirmationData.airline,
+      route: confirmationData.route,
+      passenger_count: confirmationData.passenger_count,
+
+      // Additional metadata
+      confirmation_timestamp: new Date().toISOString(),
+    });
+
+    console.log('✅ Booking confirmation event tracked:', {
+      booking_status: confirmationData.booking_status,
+      payment_status: confirmationData.payment_status,
+      pnr: confirmationData.pnr,
+      total_amount: `${confirmationData.total_amount} ${confirmationData.currency}`,
+      userData,
+    });
+  } catch (error) {
+    console.error('Error tracking booking confirmation event:', error);
   }
 };
 
