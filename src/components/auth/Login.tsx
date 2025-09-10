@@ -207,98 +207,162 @@ const Login: React.FC = () => {
   }, [CLIENT_ID, CLIENT_SECRET, REDIRECT_URI]);
 
   return (
-    <div className="min-h-screen bg-white flex flex-col font-uber-move">
-
+    <div className="font-uber-move flex min-h-screen flex-col bg-white">
       {/* Scrollable Main Content */}
-      <div className="flex-1 overflow-y-auto pb-32 sm:pb-8">
-        <div className="px-6 py-16 sm:py-20">
-          <div className="w-full max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center min-h-[calc(100vh-12rem)]">
-
+      <div className="flex-1 overflow-y-auto pb-48 sm:pb-8">
+        <div className="px-4 py-12 sm:px-6 sm:py-20">
+          <div className="mx-auto w-full max-w-6xl">
+            <div className="grid min-h-[calc(100vh-12rem)] grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16">
               {/* Left Column - Logo and Features */}
-              <div className="w-full max-w-sm mx-auto lg:mx-0 lg:max-w-none">
-
-            {/* Logo Section */}
-            <div className="mb-8 sm:mb-12">
-              <div className="text-[36px] sm:text-[48px] leading-[1.1] font-normal mb-6 sm:mb-8">
-                <span
-                  className="text-black"
-                  style={{ fontFamily: 'Inter, system-ui, -apple-system, sans-serif', fontWeight: 400 }}
-                >
-                  flyo.
-                </span>
-                <span
-                  className="text-[#4285F4]"
-                  style={{ fontFamily: 'Inter, system-ui, -apple-system, sans-serif', fontWeight: 400 }}
-                >
-                  ai
-                </span>
-              </div>
-              <h1
-                className="text-[24px] sm:text-[32px] leading-[1.25] text-black font-normal mb-12 sm:mb-16"
-                style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 400 }}
-              >
-                Your personal travel assistant is here
-              </h1>
-            </div>
-
-            {/* Features Content */}
-            <div className="space-y-6 sm:space-y-8 mb-8 sm:mb-16 text-gray-700">
-              <div className="space-y-5 sm:space-y-6">
-                <div className="flex items-start space-x-4">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                    <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M10 2L3 7v11a1 1 0 001 1h3v-6h6v6h3a1 1 0 001-1V7l-7-5z"/>
-                    </svg>
+              <div className="mx-auto w-full max-w-sm lg:mx-0 lg:max-w-none">
+                {/* Logo Section */}
+                <div className="mb-6 sm:mb-12">
+                  <div className="mb-4 text-[32px] leading-[1.1] font-normal sm:mb-8 sm:text-[48px]">
+                    <span
+                      className="text-black"
+                      style={{
+                        fontFamily:
+                          "Inter, system-ui, -apple-system, sans-serif",
+                        fontWeight: 400,
+                      }}
+                    >
+                      flyo.
+                    </span>
+                    <span
+                      className="text-[#4285F4]"
+                      style={{
+                        fontFamily:
+                          "Inter, system-ui, -apple-system, sans-serif",
+                        fontWeight: 400,
+                      }}
+                    >
+                      ai
+                    </span>
                   </div>
-                  <div>
-                    <h3 className="text-[16px] sm:text-[18px] font-medium text-black mb-2" style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 500 }}>
-                      Smart Flight Booking
-                    </h3>
-                    <p className="text-[14px] sm:text-[16px] leading-relaxed" style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 400 }}>
-                      Find and book the perfect flights with AI-powered recommendations based on your preferences and travel history.
-                    </p>
-                  </div>
+                  <h1
+                    className="mb-8 text-[20px] leading-[1.25] font-normal text-black sm:mb-16 sm:text-[32px]"
+                    style={{
+                      fontFamily: "var(--font-uber-move)",
+                      fontWeight: 400,
+                    }}
+                  >
+                    Your personal travel assistant is here
+                  </h1>
                 </div>
 
-                <div className="flex items-start space-x-4">
-                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                    <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-[16px] sm:text-[18px] font-medium text-black mb-2" style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 500 }}>
-                      Seamless Web Check-in
-                    </h3>
-                    <p className="text-[14px] sm:text-[16px] leading-relaxed" style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 400 }}>
-                      Complete your check-in process effortlessly. Get boarding passes and seat selections handled automatically.
-                    </p>
-                  </div>
-                </div>
+                {/* Features Content */}
+                <div className="mb-6 space-y-4 sm:mb-16 sm:space-y-8">
+                  <div className="space-y-4 sm:space-y-6">
+                    <div className="flex items-start space-x-4">
+                      <div className="mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-100">
+                        <svg
+                          className="h-4 w-4 text-blue-600"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M10 2L3 7v11a1 1 0 001 1h3v-6h6v6h3a1 1 0 001-1V7l-7-5z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h3
+                          className="mb-1 text-[15px] font-medium text-black sm:mb-2 sm:text-[18px]"
+                          style={{
+                            fontFamily: "var(--font-uber-move)",
+                            fontWeight: 500,
+                          }}
+                        >
+                          Smart Flight Booking
+                        </h3>
+                        <p
+                          className="text-[13px] leading-relaxed text-gray-700 sm:text-[16px]"
+                          style={{
+                            fontFamily: "var(--font-uber-move)",
+                            fontWeight: 400,
+                          }}
+                        >
+                          Find and book the perfect flights with AI-powered
+                          recommendations based on your preferences and travel
+                          history.
+                        </p>
+                      </div>
+                    </div>
 
-                <div className="flex items-start space-x-4">
-                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                    <svg className="w-4 h-4 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-[16px] sm:text-[18px] font-medium text-black mb-2" style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 500 }}>
-                      Premium Lounge Access
-                    </h3>
-                    <p className="text-[14px] sm:text-[16px] leading-relaxed" style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 400 }}>
-                      Discover and book airport lounges worldwide. Enjoy comfort and amenities while you wait for your flight.
-                    </p>
+                    <div className="flex items-start space-x-4">
+                      <div className="mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-green-100">
+                        <svg
+                          className="h-4 w-4 text-green-600"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                      <div>
+                        <h3
+                          className="mb-1 text-[15px] font-medium text-black sm:mb-2 sm:text-[18px]"
+                          style={{
+                            fontFamily: "var(--font-uber-move)",
+                            fontWeight: 500,
+                          }}
+                        >
+                          Seamless Web Check-in
+                        </h3>
+                        <p
+                          className="text-[13px] leading-relaxed text-gray-700 sm:text-[16px]"
+                          style={{
+                            fontFamily: "var(--font-uber-move)",
+                            fontWeight: 400,
+                          }}
+                        >
+                          Complete your check-in process effortlessly. Get
+                          boarding passes and seat selections handled
+                          automatically.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start space-x-4">
+                      <div className="mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-purple-100">
+                        <svg
+                          className="h-4 w-4 text-purple-600"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h3
+                          className="mb-1 text-[15px] font-medium text-black sm:mb-2 sm:text-[18px]"
+                          style={{
+                            fontFamily: "var(--font-uber-move)",
+                            fontWeight: 500,
+                          }}
+                        >
+                          Premium Lounge Access
+                        </h3>
+                        <p
+                          className="text-[13px] leading-relaxed text-gray-700 sm:text-[16px]"
+                          style={{
+                            fontFamily: "var(--font-uber-move)",
+                            fontWeight: 400,
+                          }}
+                        >
+                          Discover and book airport lounges worldwide. Enjoy
+                          comfort and amenities while you wait for your flight.
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-              </div>
               </div>
 
               {/* Right Column - Login Section (Desktop) / Hidden on Mobile */}
-              <div className="hidden lg:flex lg:flex-col lg:justify-center w-full max-w-sm mx-auto">
-
+              <div className="mx-auto hidden w-full max-w-sm lg:flex lg:flex-col lg:justify-center">
                 {/* Error Message */}
                 {error && (
                   <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
@@ -327,7 +391,10 @@ const Login: React.FC = () => {
                 <div className="mb-6 text-center">
                   <p
                     className="text-[16px] text-gray-600"
-                    style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 400 }}
+                    style={{
+                      fontFamily: "var(--font-uber-move)",
+                      fontWeight: 400,
+                    }}
                   >
                     Select the email you use mostly for flight booking
                   </p>
@@ -337,8 +404,11 @@ const Login: React.FC = () => {
                 <Button
                   onClick={handleGoogleLogin}
                   disabled={isLoading}
-                  className="w-full bg-black text-white rounded-2xl py-5 px-6 text-[16px] font-medium hover:bg-gray-900 focus:outline-none focus:ring-0 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 mb-6"
-                  style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 500 }}
+                  className="mb-6 w-full rounded-2xl bg-black px-6 py-5 text-[16px] font-medium text-white transition-colors duration-200 hover:bg-gray-900 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                  style={{
+                    fontFamily: "var(--font-uber-move)",
+                    fontWeight: 500,
+                  }}
                 >
                   {isLoading ? (
                     <div className="flex items-center justify-center">
@@ -377,8 +447,11 @@ const Login: React.FC = () => {
                 <div className="text-center">
                   <a
                     href="https://www.flyo.ai/en/privacy"
-                    className="text-[16px] text-black underline hover:text-gray-700 transition-colors"
-                    style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 400 }}
+                    className="text-[16px] text-black underline transition-colors hover:text-gray-700"
+                    style={{
+                      fontFamily: "var(--font-uber-move)",
+                      fontWeight: 400,
+                    }}
                   >
                     Privacy Policy
                   </a>
@@ -386,14 +459,17 @@ const Login: React.FC = () => {
 
                 {/* Try Again Button */}
                 {error && (
-                  <div className="text-center mt-4">
+                  <div className="mt-4 text-center">
                     <button
                       onClick={() => {
                         setError(null);
                         setIsLoading(false);
                       }}
                       className="text-sm font-medium text-blue-600 underline hover:text-blue-500"
-                      style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 500 }}
+                      style={{
+                        fontFamily: "var(--font-uber-move)",
+                        fontWeight: 500,
+                      }}
                     >
                       Try Again
                     </button>
@@ -406,9 +482,8 @@ const Login: React.FC = () => {
       </div>
 
       {/* Sticky Bottom Section - Mobile Only */}
-      <div className="fixed lg:hidden bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-4 z-50">
-        <div className="w-full max-w-sm mx-auto">
-
+      <div className="fixed right-0 bottom-0 left-0 z-50 border-t border-gray-200 bg-white px-4 py-3 lg:hidden">
+        <div className="mx-auto w-full max-w-sm">
           {/* Error Message - Mobile */}
           {error && (
             <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4">
@@ -434,10 +509,10 @@ const Login: React.FC = () => {
           )}
 
           {/* Email Selection Text */}
-          <div className="mb-4 text-center">
+          <div className="mb-3 text-center">
             <p
-              className="text-[14px] text-gray-600"
-              style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 400 }}
+              className="text-[13px] text-gray-600"
+              style={{ fontFamily: "var(--font-uber-move)", fontWeight: 400 }}
             >
               Select the email you use mostly for flight booking
             </p>
@@ -447,8 +522,8 @@ const Login: React.FC = () => {
           <Button
             onClick={handleGoogleLogin}
             disabled={isLoading}
-            className="w-full bg-black text-white rounded-2xl py-4 px-6 text-[14px] font-medium hover:bg-gray-900 focus:outline-none focus:ring-0 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 mb-4"
-            style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 500 }}
+            className="mb-3 w-full rounded-2xl bg-black px-6 py-3 text-[13px] font-medium text-white transition-colors duration-200 hover:bg-gray-900 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+            style={{ fontFamily: "var(--font-uber-move)", fontWeight: 500 }}
           >
             {isLoading ? (
               <div className="flex items-center justify-center">
@@ -487,8 +562,8 @@ const Login: React.FC = () => {
           <div className="text-center">
             <a
               href="#"
-              className="text-[14px] text-black underline hover:text-gray-700 transition-colors"
-              style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 400 }}
+              className="text-[13px] text-black underline transition-colors hover:text-gray-700"
+              style={{ fontFamily: "var(--font-uber-move)", fontWeight: 400 }}
             >
               Privacy Policy
             </a>
@@ -496,14 +571,14 @@ const Login: React.FC = () => {
 
           {/* Try Again Button */}
           {error && (
-            <div className="text-center mt-4">
+            <div className="mt-4 text-center">
               <button
                 onClick={() => {
                   setError(null);
                   setIsLoading(false);
                 }}
                 className="text-sm font-medium text-blue-600 underline hover:text-blue-500"
-                style={{ fontFamily: 'var(--font-uber-move)', fontWeight: 500 }}
+                style={{ fontFamily: "var(--font-uber-move)", fontWeight: 500 }}
               >
                 Try Again
               </button>
