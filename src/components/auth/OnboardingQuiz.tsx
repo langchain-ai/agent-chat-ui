@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DateInput } from "@/components/widgets/review/DateInput";
 import {
@@ -51,6 +51,7 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = () => {
   const [isLoyaltyDropdownOpen, setIsLoyaltyDropdownOpen] = useState(false);
   const [isCurrencyDropdownOpen, setIsCurrencyDropdownOpen] = useState(false);
   const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
+  const loyaltyDropdownRef = useRef<HTMLDivElement | null>(null);
   const [quizData, setQuizData] = useState<QuizData>({
     gender: "",
     dateOfBirth: undefined,
@@ -64,6 +65,31 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = () => {
   });
 
   const totalSteps = 3;
+
+  // Close the loyalty dropdown when clicking outside or pressing Escape
+  useEffect(() => {
+    if (!isLoyaltyDropdownOpen) return;
+
+    const handleDocumentClick = (event: MouseEvent) => {
+      const container = loyaltyDropdownRef.current;
+      if (container && !container.contains(event.target as Node)) {
+        setIsLoyaltyDropdownOpen(false);
+      }
+    };
+
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsLoyaltyDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleDocumentClick);
+    document.addEventListener("keydown", handleEscapeKey);
+    return () => {
+      document.removeEventListener("mousedown", handleDocumentClick);
+      document.removeEventListener("keydown", handleEscapeKey);
+    };
+  }, [isLoyaltyDropdownOpen]);
 
   const handleInputChange = (
     field: keyof QuizData,
@@ -556,11 +582,16 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = () => {
                   >
                     Select your frequent flyer programs (optional)
                   </h2>
-                  <div className="relative">
+                  <div
+                    className="relative"
+                    ref={loyaltyDropdownRef}
+                  >
                     <button
-                      onClick={() =>
-                        setIsLoyaltyDropdownOpen(!isLoyaltyDropdownOpen)
-                      }
+                      onClick={() => {
+                        setIsLoyaltyDropdownOpen(!isLoyaltyDropdownOpen);
+                        setIsCurrencyDropdownOpen(false);
+                        setIsLanguageDropdownOpen(false);
+                      }}
                       className="flex w-full items-center justify-between rounded-xl border-2 border-gray-200 bg-gray-50 p-4 text-left text-gray-700 transition-all duration-200 hover:border-gray-300"
                       style={{
                         fontFamily: "var(--font-uber-move)",
@@ -659,7 +690,10 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = () => {
                   </h2>
                   <Popover
                     open={isCurrencyDropdownOpen}
-                    onOpenChange={setIsCurrencyDropdownOpen}
+                    onOpenChange={(open) => {
+                      setIsCurrencyDropdownOpen(open);
+                      if (open) setIsLoyaltyDropdownOpen(false);
+                    }}
                   >
                     <PopoverTrigger asChild>
                       <Button
@@ -796,7 +830,10 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = () => {
                   </h2>
                   <Popover
                     open={isLanguageDropdownOpen}
-                    onOpenChange={setIsLanguageDropdownOpen}
+                    onOpenChange={(open) => {
+                      setIsLanguageDropdownOpen(open);
+                      if (open) setIsLoyaltyDropdownOpen(false);
+                    }}
                   >
                     <PopoverTrigger asChild>
                       <Button
