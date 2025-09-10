@@ -14,6 +14,7 @@ import SeatCombinedWidget from "./seatCombined.widget";
 import AddBaggageWidget from "./addBaggage.widget";
 import WhosTravellingWidget from "./whosTravelling.widget";
 import BookingStatusWidget from "./bookingStatus";
+import CheckInOptInWidget from "./checkInOptIn.widget";
 
 export const componentMap = {
   SearchCriteriaWidget, // Add mapping for SearchCriteria type
@@ -32,6 +33,7 @@ export const componentMap = {
   AddBaggageWidget, /// Baggage selection widget with weight and price options
   WhosTravellingWidget, /// Passenger selection widget for booking
   BookingStatusWidget, /// Ticket confirmation widget with booking and payment status
+  CheckInOptInWidget, /// Web check-in form widget with PNR and document fields
 } as const;
 
 export type ComponentType = keyof typeof componentMap;
