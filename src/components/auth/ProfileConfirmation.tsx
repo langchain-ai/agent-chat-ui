@@ -390,7 +390,13 @@ const ProfileConfirmation: React.FC = () => {
       style={{ fontFamily: "var(--font-uber-move)" }}
     >
       {/* Main Content - Scrollable */}
-      <div className="max-h-screen flex-1 overflow-y-auto px-6 py-6 sm:py-20">
+      <div
+        className="max-h-screen flex-1 overflow-y-auto px-6 sm:py-20"
+        style={{
+          paddingTop: "calc(env(safe-area-inset-top) + 24px)",
+          paddingBottom: "24px",
+        }}
+      >
         <div className="mx-auto w-full max-w-md pb-32 sm:max-w-lg sm:pb-24">
           {/* Welcome Section */}
           <div className="mb-6 sm:mb-8">
