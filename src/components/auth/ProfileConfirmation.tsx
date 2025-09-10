@@ -502,6 +502,21 @@ const ProfileConfirmation: React.FC = () => {
               <PhoneInput
                 country={"us"}
                 value={phoneNumber}
+                enableSearch
+                searchPlaceholder="Search country"
+                disableSearchIcon
+                searchStyle={{
+                  fontFamily: "var(--font-uber-move)",
+                  fontWeight: 400,
+                  fontSize: "14px",
+                  padding: "10px 12px",
+                  backgroundColor: "#e5e7eb",
+                  border: "none",
+                  borderRadius: "12px",
+                  outline: "none",
+                  width: "100%",
+                  boxSizing: "border-box",
+                }}
                 onChange={(value: string, data: any) => {
                   setPhoneNumber(value);
                   // Keep formData in sync for validation and submission
