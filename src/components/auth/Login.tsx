@@ -9,7 +9,6 @@ import {
   type AuthTokens,
 } from "@/services/authService";
 import { getUserLocation } from "@/lib/utils";
-import { FlyoTextLogo } from "../icons/langgraph";
 
 const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
