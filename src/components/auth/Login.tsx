@@ -561,7 +561,7 @@ const Login: React.FC = () => {
           {/* Privacy Policy Link */}
           <div className="text-center">
             <a
-              href="#"
+              href="https://www.flyo.ai/en/privacy"
               className="text-[13px] text-black underline transition-colors hover:text-gray-700"
               style={{ fontFamily: "var(--font-uber-move)", fontWeight: 400 }}
             >
