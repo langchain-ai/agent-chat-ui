@@ -14,6 +14,22 @@ const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Reset loading state when returning to this page without an auth code
+  // Handles normal loads and BFCache (back/forward navigation) restores
+  useEffect(() => {
+    const resetIfNoAuthCode = () => {
+      const hasCode = new URLSearchParams(window.location.search).has("code");
+      if (!hasCode) {
+        setIsLoading(false);
+      }
+    };
+
+    window.addEventListener("pageshow", resetIfNoAuthCode);
+    // Also run once on mount
+    resetIfNoAuthCode();
+    return () => window.removeEventListener("pageshow", resetIfNoAuthCode);
+  }, []);
+
   // OAuth2 configuration from environment variables
   const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   const CLIENT_SECRET = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET;
