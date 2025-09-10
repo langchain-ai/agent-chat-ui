@@ -350,9 +350,14 @@ export function Thread() {
         text: t('quickActionTab.showFreeLoungeAccess', 'Show me free lounge access'),
         icon: <Armchair className="h-4 w-4" />,
       },
+      // {
+      //   label: t('quickActionTab.showMePastFlights', 'Show me my\npast flights'),
+      //   text: t('quickActionTab.showMePastFlights', 'Show me my past flights'),
+      //   icon: <Ticket className="h-4 w-4" />,
+      // },
       {
-        label: t('quickActionTab.showMePastFlights', 'Show me my\npast flights'),
-        text: t('quickActionTab.showMePastFlights', 'Show me my past flights'),
+        label: t('quickActionTab.doMyWebCheckin', 'Please do my\nwebcheckin'),
+        text: t('quickActionTab.doMyWebCheckin', 'Please do my webcheckin'),
         icon: <Ticket className="h-4 w-4" />,
       },
     ];
