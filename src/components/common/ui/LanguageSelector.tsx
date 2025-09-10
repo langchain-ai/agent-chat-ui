@@ -60,14 +60,15 @@ export function LanguageSelector({ value, onValueChange, className }: LanguageSe
         </DialogHeader>
         
         {/* Search Input */}
-        <div className="mb-4">
+        {/* Todo: @Shubham Add this search input only when we get more languages */}
+        {/* <div className="mb-4">
           <Input
             placeholder="Search languages..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full"
           />
-        </div>
+        </div> */}
 
         {/* Language List */}
         <div className="space-y-1 max-h-64 overflow-y-auto">

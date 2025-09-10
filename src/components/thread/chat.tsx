@@ -121,15 +121,10 @@ export function Thread() {
   const { locationData } = useLocationContext();
 
   // Initialize translations for homePage
-  const { t } = useTranslations('homePage');
+  const { t } = useTranslations("homePage");
 
   // Initialize RTL mirroring for homePage
-  const {
-    isRTLMirrorRequired,
-    isLoading: isRTLLoading,
-    mirrorClasses,
-    mirrorStyles,
-  } = useRTLMirror('homePage');
+  const { isRTLMirrorRequired } = useRTLMirror("homePage");
 
   const [threadId, _setThreadId] = useQueryState("threadId");
   const [assistantId] = useQueryState("assistantId");
@@ -341,13 +336,19 @@ export function Thread() {
   const quickActions: Array<{ label: string; text: string; icon?: ReactNode }> =
     [
       {
-        label: t('quickActionTab.bookMeAFlight', 'Book me a\nflight'),
-        text: t('quickActionTab.bookMeAFlight', 'Book me a flight'),
+        label: t("quickActionTab.bookMeAFlight", "Book me a\nflight"),
+        text: t("quickActionTab.bookMeAFlight", "Book me a flight"),
         icon: <Plane className="h-4 w-4" />,
       },
       {
-        label: t('quickActionTab.showFreeLoungeAccess', 'Show me free\nlounge access'),
-        text: t('quickActionTab.showFreeLoungeAccess', 'Show me free lounge access'),
+        label: t(
+          "quickActionTab.showFreeLoungeAccess",
+          "Show me free\nlounge access",
+        ),
+        text: t(
+          "quickActionTab.showFreeLoungeAccess",
+          "Show me free lounge access",
+        ),
         icon: <Armchair className="h-4 w-4" />,
       },
       // {
@@ -356,8 +357,8 @@ export function Thread() {
       //   icon: <Ticket className="h-4 w-4" />,
       // },
       {
-        label: t('quickActionTab.doMyWebCheckin', 'Please do my\nwebcheckin'),
-        text: t('quickActionTab.doMyWebCheckin', 'Please do my webcheckin'),
+        label: t("quickActionTab.doMyWebCheckin", "Please do my\nwebcheckin"),
+        text: t("quickActionTab.doMyWebCheckin", "Please do my webcheckin"),
         icon: <Ticket className="h-4 w-4" />,
       },
     ];
@@ -474,53 +475,56 @@ export function Thread() {
               <NetworkStatusBanner className="px-4" />
               {!chatStarted ? (
                 // New thread layout - centered content with mobile-optimized positioning
-                <div className="flex flex-1 flex-col items-center px-6 sm:px-4 sm:justify-center">
+                <div className="flex flex-1 flex-col items-center px-6 sm:justify-center sm:px-4">
                   {/* Mobile: Content positioned higher, input lower */}
                   <div className="flex flex-1 flex-col items-center justify-center sm:contents">
-                  {/* Centered Logo */}
-                  <div className="mb-5 flex items-center justify-center">
-                    <FlyoLogoSVG
-                      width={120}
-                      height={120}
-                      className="sm:h-[150px] sm:w-[150px]"
-                    />
-                  </div>
-
-                  {/* Welcome Text */}
-                  {
-                    <div className="mb-6 text-center text-xl font-medium tracking-tight text-neutral-800 sm:text-2xl">
-                      {"Hi "}
-                      {firstName ? (
-                        <span className="text-primary font-semibold">
-                          {firstName}
-                        </span>
-                      ) : (
-                        "Traveller"
-                      )}
-                      {", where are we flying today?"}
+                    {/* Centered Logo */}
+                    <div className="mb-5 flex items-center justify-center">
+                      <FlyoLogoSVG
+                        width={120}
+                        height={120}
+                        className="sm:h-[150px] sm:w-[150px]"
+                      />
                     </div>
-                  }
+
+                    {/* Welcome Text */}
+                    {
+                      <div className="mb-6 text-center text-xl font-medium tracking-tight text-neutral-800 sm:text-2xl">
+                        {"Hi "}
+                        {firstName ? (
+                          <span className="text-primary font-semibold">
+                            {firstName}
+                          </span>
+                        ) : (
+                          "Traveller"
+                        )}
+                        {", where are we flying today?"}
+                      </div>
+                    }
                   </div>
 
                   {/* Centered Chat Input - positioned lower on mobile for better thumb reach */}
-                  <div className="w-full max-w-3xl py-4 mt-auto mb-12 sm:mt-0 sm:mb-0 sm:py-8">
-                    <div className={cn(
-                      "mx-auto mb-4 w-full max-w-3xl overflow-x-auto px-1 text-center [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:h-0 [&::-webkit-scrollbar]:w-0",
-                      mirrorClasses.container
-                    )} style={mirrorStyles.container}>
-                      <div className={cn(
-                        "inline-flex items-start gap-3 whitespace-nowrap sm:gap-4",
-                        mirrorClasses.content
-                      )} style={mirrorStyles.content}>
+                  <div className="mt-auto mb-12 w-full max-w-3xl py-4 sm:mt-0 sm:mb-0 sm:py-8">
+                    <div
+                      className={cn(
+                        "mx-auto mb-4 w-full max-w-3xl overflow-x-auto px-1 text-center [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:h-0 [&::-webkit-scrollbar]:w-0",
+                      )}
+                      dir={isRTLMirrorRequired ? "rtl" : undefined}
+                    >
+                      <div
+                        className={cn(
+                          "inline-flex items-start gap-3 whitespace-nowrap sm:gap-4",
+                        )}
+                      >
                         {quickActions.slice(0, 3).map((qa) => (
                           <button
                             key={qa.label}
                             type="button"
                             onClick={() => handleQuickActionClick(qa.text)}
-                            className="group hover:text-primary inline-flex shrink-0 items-center justify-start rounded-2xl border border-gray-200 bg-white/80 shadow-sm backdrop-blur hover:bg-white hover:shadow-md focus-visible:ring-2 focus-visible:ring-blue-600/30 focus-visible:outline-none transition-all duration-200 px-4 py-3 min-h-[3rem] w-auto"
+                            className="group hover:text-primary inline-flex min-h-[3rem] w-auto shrink-0 items-center justify-start rounded-2xl border border-gray-200 bg-white/80 px-4 py-3 shadow-sm backdrop-blur transition-all duration-200 hover:bg-white hover:shadow-md focus-visible:ring-2 focus-visible:ring-blue-600/30 focus-visible:outline-none"
                             aria-label={qa.label}
                           >
-                            <span className="text-sm font-medium text-gray-700 leading-tight text-left whitespace-pre-line">
+                            <span className="text-left text-sm leading-tight font-medium whitespace-pre-line text-gray-700">
                               {qa.label}
                             </span>
                           </button>
@@ -563,8 +567,11 @@ export function Thread() {
                               }
                             }}
                             placeholder="Type your message..."
-                            className="field-sizing-content min-h-[3.5rem] max-h-[12rem] w-full resize-none border-none bg-transparent p-3 pr-20 pb-0 leading-relaxed shadow-none ring-0 outline-none focus:ring-0 focus:outline-none sm:field-sizing-content sm:max-h-[15rem] sm:pr-3 sm:p-3 sm:leading-tight"
-                            style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
+                            className="field-sizing-content max-h-[12rem] min-h-[3.5rem] w-full resize-none border-none bg-transparent p-3 pr-20 pb-0 leading-relaxed shadow-none ring-0 outline-none focus:ring-0 focus:outline-none sm:field-sizing-content sm:max-h-[15rem] sm:p-3 sm:pr-3 sm:leading-tight"
+                            style={{
+                              wordBreak: "break-word",
+                              overflowWrap: "anywhere",
+                            }}
                           />
                           {/* Mobile: Button inside input area */}
                           <div className="absolute top-3 right-3 z-10 sm:hidden">
@@ -724,8 +731,11 @@ export function Thread() {
                                   }
                                 }}
                                 placeholder="Type your message...."
-                                className="field-sizing-content min-h-[3.5rem] max-h-[12rem] w-full resize-none border-none bg-transparent p-3 pr-20 pb-0 leading-relaxed shadow-none ring-0 outline-none focus:ring-0 focus:outline-none sm:field-sizing-content sm:max-h-[15rem] sm:pr-3 sm:p-3 sm:leading-tight"
-                                style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
+                                className="field-sizing-content max-h-[12rem] min-h-[3.5rem] w-full resize-none border-none bg-transparent p-3 pr-20 pb-0 leading-relaxed shadow-none ring-0 outline-none focus:ring-0 focus:outline-none sm:field-sizing-content sm:max-h-[15rem] sm:p-3 sm:pr-3 sm:leading-tight"
+                                style={{
+                                  wordBreak: "break-word",
+                                  overflowWrap: "anywhere",
+                                }}
                               />
                               {/* Mobile: Button inside input area */}
                               <div className="absolute top-3 right-3 z-10 sm:hidden">
