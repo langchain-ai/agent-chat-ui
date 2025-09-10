@@ -266,8 +266,8 @@ const BookingStatusWidget: React.FC<BookingStatusWidgetProps> = ({ data }) => {
         booking_id: finalData.bookingId,
         total_amount: finalData.paymentSummary.totalAmount,
         currency: finalData.paymentSummary.currency,
-        flight_id: finalData.flightDetails.flightNumber || 'unknown',
-        airline: finalData.flightDetails.airline || 'unknown',
+        flight_id: finalData.flightDetails.airline.flightNumber || 'unknown',
+        airline: finalData.flightDetails.airline.name || 'unknown',
         route: `${finalData.flightDetails.departure.code}-${finalData.flightDetails.arrival.code}`,
         passenger_count: 1, // Default to 1 if not available in data structure
         payment_method: finalData.paymentSummary.paymentMethod,

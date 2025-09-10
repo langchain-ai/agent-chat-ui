@@ -700,17 +700,17 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
       const validationErrorsCount = Object.values(validationErrors).filter(Boolean).length;
 
       // Determine trip type from flight details
-      const tripType: 'one_way' | 'round_trip' = flightDetails?.return ? 'round_trip' : 'one_way';
+      const tripType: 'one_way' | 'round_trip' = 'one_way';
 
       const reviewSubmitData: ReviewSubmitAnalytics = {
         passenger_count: passengers.length,
-        total_amount: paymentSummary?.totalAmount || 0,
+        total_amount: paymentSummary?.total || -1,
         currency: paymentSummary?.currency || 'INR',
-        flight_id: flightDetails?.flightNumber || selectedFlightOffers?.[0]?.flightOfferId || 'unknown',
-        airline: flightDetails?.airline || 'unknown',
+        flight_id: flightDetails?.airline?.flightNumber || selectedFlightOffers?.[0]?.flightOfferId || 'unknown',
+        airline: flightDetails?.airline?.name || '',
         route: flightDetails ? `${flightDetails.departure?.airport}-${flightDetails.arrival?.airport}` : 'unknown',
         departure_date: flightDetails?.departure?.date,
-        return_date: flightDetails?.return?.date,
+        return_date: '',
         trip_type: tripType,
         has_documents: documents.some(doc => doc !== null),
         has_contact_info: !!(contact.email && contact.phone),
@@ -742,9 +742,9 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
       // Track booking attempt analytics
       try {
         const flightData = {
-          flightId: flightDetails?.flightNumber || selectedFlightOffers?.[0]?.flightOfferId || 'unknown',
-          airline: flightDetails?.airline || 'unknown',
-          price: paymentSummary?.totalAmount || 0,
+          flightId: flightDetails?.airline?.flightNumber || selectedFlightOffers?.[0]?.flightOfferId || 'unknown',
+          airline: flightDetails?.airline.name || 'unknown',
+          price: paymentSummary?.total || 0,
           currency: paymentSummary?.currency || 'INR',
           route: flightDetails ? `${flightDetails.departure?.airport}-${flightDetails.arrival?.airport}` : 'unknown',
           passengerCount: passengers.length,
@@ -909,7 +909,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
         try {
           trackWidgetInteraction('review', 'booking_submitted', {
             passenger_count: passengers.length,
-            total_amount: paymentSummary?.totalAmount || 0,
+            total_amount: paymentSummary?.total || 0,
             currency: paymentSummary?.currency || 'INR',
             has_documents: documents.some(doc => doc !== null),
           });

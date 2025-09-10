@@ -1,4 +1,4 @@
-"use client";
+
 
 import { ProfileConfirmation } from "@/components/auth";
 import { Toaster } from "@/components/ui/sonner";
