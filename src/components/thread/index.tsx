@@ -45,6 +45,10 @@ import {
   ArtifactTitle,
   useArtifactContext,
 } from "./artifact";
+import LocationButton from "../location-button";
+import LocationDisplay from "../location-display";
+import { useLocation } from "@/hooks/use-location";
+import { LocationData } from "@/types/location";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -137,6 +141,9 @@ export function Thread() {
   } = useFileUpload();
   const [firstTokenReceived, setFirstTokenReceived] = useState(false);
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
+  
+  // Location related state
+  const { location, setLocation, clearLocation } = useLocation();
 
   const stream = useStreamContext();
   const messages = stream.messages;
@@ -200,13 +207,24 @@ export function Thread() {
       return;
     setFirstTokenReceived(false);
 
+    // 构建消息内容，包含位置信息
+    const messageContent = [
+      ...(input.trim().length > 0 ? [{ type: "text", text: input }] : []),
+      ...contentBlocks,
+    ];
+
+    // Add location information to message if available
+    if (location) {
+      messageContent.push({
+        type: "text",
+        text: `\n\n📍 Current Location:\nLatitude: ${location.lat.toFixed(6)}\nLongitude: ${location.lng.toFixed(6)}\nAccuracy: ${Math.round(location.accuracy || 0)}m\nTime: ${new Date(location.timestamp).toLocaleString()}`,
+      });
+    }
+
     const newHumanMessage: Message = {
       id: uuidv4(),
       type: "human",
-      content: [
-        ...(input.trim().length > 0 ? [{ type: "text", text: input }] : []),
-        ...contentBlocks,
-      ] as Message["content"],
+      content: messageContent as Message["content"],
     };
 
     const toolMessages = ensureToolCallsHaveResponses(stream.messages);
@@ -234,6 +252,8 @@ export function Thread() {
 
     setInput("");
     setContentBlocks([]);
+    // Clear location after sending message
+    clearLocation();
   };
 
   const handleRegenerate = (
@@ -462,6 +482,15 @@ export function Thread() {
                         blocks={contentBlocks}
                         onRemove={removeBlock}
                       />
+                      {location && (
+                        <div className="mb-2">
+                          <LocationDisplay
+                            location={location}
+                            onClear={clearLocation}
+                            className="mx-auto"
+                          />
+                        </div>
+                      )}
                       <textarea
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
@@ -499,23 +528,29 @@ export function Thread() {
                             </Label>
                           </div>
                         </div>
-                        <Label
-                          htmlFor="file-input"
-                          className="flex cursor-pointer items-center gap-2"
-                        >
-                          <Plus className="size-5 text-gray-600" />
-                          <span className="text-sm text-gray-600">
-                            Upload PDF or Image
-                          </span>
-                        </Label>
-                        <input
-                          id="file-input"
-                          type="file"
-                          onChange={handleFileUpload}
-                          multiple
-                          accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
-                          className="hidden"
-                        />
+                        <div className="flex items-center gap-4">
+                          <Label
+                            htmlFor="file-input"
+                            className="flex cursor-pointer items-center gap-2"
+                          >
+                            <Plus className="size-5 text-gray-600" />
+                            <span className="text-sm text-gray-600">
+                              Upload PDF or Image
+                            </span>
+                          </Label>
+                          <input
+                            id="file-input"
+                            type="file"
+                            onChange={handleFileUpload}
+                            multiple
+                            accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
+                            className="hidden"
+                          />
+                          <LocationButton
+                            onLocation={(location: LocationData) => setLocation(location)}
+                            disabled={isLoading}
+                          />
+                        </div>
                         {stream.isLoading ? (
                           <Button
                             key="stop"
