@@ -9,6 +9,13 @@ import {
   type AuthTokens,
 } from "@/services/authService";
 import { getUserLocation } from "@/lib/utils";
+import {
+  trackLoginPageViewed,
+  trackGoogleLoginClicked,
+  trackLoginSuccess,
+  trackLoginError,
+  trackChatScreenReached,
+} from "@/services/analyticsService";
 
 const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -46,7 +53,11 @@ const Login: React.FC = () => {
   useEffect(() => {
     if (isAuthenticated()) {
       // User is already logged in, redirect to main app
+      trackChatScreenReached('existing_user');
       window.location.href = "/";
+    } else {
+      // Track login page view for new visitors
+      trackLoginPageViewed();
     }
   }, []);
 
@@ -54,6 +65,9 @@ const Login: React.FC = () => {
     try {
       setIsLoading(true);
       setError(null);
+
+      // Track Google login button click
+      trackGoogleLoginClicked();
 
       // Validate environment variables
       if (!CLIENT_ID || !CLIENT_SECRET || !REDIRECT_URI) {
@@ -80,9 +94,12 @@ const Login: React.FC = () => {
       window.location.href = authUrl;
     } catch (err) {
       console.error("Error during Google login:", err);
-      setError(
-        err instanceof Error ? err.message : "Failed to initiate Google login",
-      );
+      const errorMessage = err instanceof Error ? err.message : "Failed to initiate Google login";
+
+      // Track login error
+      trackLoginError(errorMessage);
+
+      setError(errorMessage);
       setIsLoading(false);
     }
   };
@@ -196,6 +213,9 @@ const Login: React.FC = () => {
               console.error("Error requesting location after login:", error);
             }
 
+            // Track login success
+            trackLoginSuccess(loginResponse.isNewUser);
+
             // Redirect based on new user flag
             if (loginResponse.isNewUser) {
               console.log(
@@ -204,6 +224,7 @@ const Login: React.FC = () => {
               window.location.href = "/profile-confirmation";
             } else {
               console.log("Existing user. Redirecting to home page...");
+              trackChatScreenReached('existing_user');
               window.location.href = "/";
             }
           } catch (validationError) {
@@ -212,7 +233,12 @@ const Login: React.FC = () => {
           }
         } catch (err) {
           console.error("Error during login process:", err);
-          setError(err instanceof Error ? err.message : "Login failed");
+          const errorMessage = err instanceof Error ? err.message : "Login failed";
+
+          // Track login error
+          trackLoginError(errorMessage);
+
+          setError(errorMessage);
         } finally {
           setIsLoading(false);
         }

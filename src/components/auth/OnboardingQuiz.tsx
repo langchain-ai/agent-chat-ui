@@ -26,6 +26,17 @@ import {
 } from "@/components/ui/command";
 import { ChevronsUpDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  trackQuizStarted,
+  trackQuizStepViewed,
+  trackQuizFieldChanged,
+  trackQuizStepCompleted,
+  trackQuizBackClicked,
+  trackQuizCompleted,
+  trackOnboardingCompleted,
+  trackChatScreenReached,
+  type OnboardingQuizData,
+} from "@/services/analyticsService";
 
 interface OnboardingQuizProps {}
 
@@ -66,6 +77,17 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = () => {
 
   const totalSteps = 3;
 
+  // Track quiz start on component mount
+  useEffect(() => {
+    trackQuizStarted();
+  }, []);
+
+  // Track step changes
+  useEffect(() => {
+    const stepNames = ['personal_details', 'travel_style', 'preferences_loyalty'];
+    trackQuizStepViewed(currentStep, stepNames[currentStep - 1]);
+  }, [currentStep]);
+
   // Close the loyalty dropdown when clicking outside or pressing Escape
   useEffect(() => {
     if (!isLoyaltyDropdownOpen) return;
@@ -99,22 +121,36 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = () => {
       ...prev,
       [field]: value,
     }));
+
+    // Track field changes
+    trackQuizFieldChanged(field, value, currentStep);
   };
 
   const handleMultiSelect = (
     field: "travelPurposes" | "travelCompanions" | "loyaltyPrograms",
     value: string,
   ) => {
+    const newValue = quizData[field].includes(value)
+      ? quizData[field].filter((item) => item !== value)
+      : [...quizData[field], value];
+
     setQuizData((prev) => ({
       ...prev,
-      [field]: prev[field].includes(value)
-        ? prev[field].filter((item) => item !== value)
-        : [...prev[field], value],
+      [field]: newValue,
     }));
+
+    // Track field changes
+    trackQuizFieldChanged(field, newValue, currentStep);
   };
 
   const handleNext = () => {
+    const stepNames = ['personal_details', 'travel_style', 'preferences_loyalty'];
+
     if (currentStep < totalSteps) {
+      // Track step completion
+      const stepData = getStepData(currentStep);
+      trackQuizStepCompleted(currentStep, stepNames[currentStep - 1], stepData);
+
       setCurrentStep(currentStep + 1);
     } else {
       // Complete quiz
@@ -122,14 +158,59 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = () => {
     }
   };
 
+  const getStepData = (step: number) => {
+    switch (step) {
+      case 1:
+        return {
+          gender: quizData.gender,
+          dateOfBirth: quizData.dateOfBirth,
+          hasPassport: quizData.hasPassport,
+        };
+      case 2:
+        return {
+          travelFrequency: quizData.travelFrequency,
+          travelPurposes: quizData.travelPurposes,
+          travelCompanions: quizData.travelCompanions,
+        };
+      case 3:
+        return {
+          loyaltyPrograms: quizData.loyaltyPrograms,
+          currency: quizData.currency,
+          language: quizData.language,
+        };
+      default:
+        return {};
+    }
+  };
+
   const handleBack = () => {
     if (currentStep > 1) {
+      const stepNames = ['personal_details', 'travel_style', 'preferences_loyalty'];
+
+      // Track back button click
+      trackQuizBackClicked(currentStep, stepNames[currentStep - 1]);
+
       setCurrentStep(currentStep - 1);
     }
   };
 
   const handleComplete = async () => {
     try {
+      // Track quiz completion
+      const quizAnalyticsData: OnboardingQuizData = {
+        gender: quizData.gender,
+        dateOfBirth: quizData.dateOfBirth,
+        hasPassport: quizData.hasPassport,
+        travelFrequency: quizData.travelFrequency,
+        travelPurposes: quizData.travelPurposes,
+        travelCompanions: quizData.travelCompanions,
+        loyaltyPrograms: quizData.loyaltyPrograms,
+        currency: quizData.currency,
+        language: quizData.language,
+      };
+
+      trackQuizCompleted(quizAnalyticsData);
+
       const payload = {
         userPreference: {
           ...quizData,
@@ -161,6 +242,16 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = () => {
     } catch (error) {
       console.error("Error submitting onboarding quiz:", error);
     } finally {
+      // Track onboarding completion
+      trackOnboardingCompleted({
+        totalSteps: 5, // login, profile, personalize, quiz, chat
+        completedSteps: ['login', 'profile_confirmation', 'personalize_travel', 'onboarding_quiz'],
+        skippedSteps: [],
+      });
+
+      // Track reaching chat screen
+      trackChatScreenReached('onboarding_complete');
+
       // Navigate to main app regardless of API outcome for now
       window.location.href = "/";
     }
