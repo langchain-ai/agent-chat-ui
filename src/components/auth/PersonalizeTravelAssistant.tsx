@@ -1,7 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  trackPersonalizeTravelViewed,
+  trackImportOptionSelected,
+  trackManualOptionSelected,
+  trackSkipPersonalizationClicked,
+  trackPersonalizeContinueClicked,
+  trackChatScreenReached,
+} from "@/services/analyticsService";
 
 interface PersonalizeTravelAssistantProps {}
 
@@ -10,16 +18,37 @@ const PersonalizeTravelAssistant: React.FC<
 > = () => {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
 
+  // Track page view on component mount
+  useEffect(() => {
+    trackPersonalizeTravelViewed();
+  }, []);
+
   const handleOptionSelect = (option: string) => {
     setSelectedOption(option);
+
+    // Track option selection
+    if (option === "import") {
+      trackImportOptionSelected();
+    } else if (option === "manual") {
+      trackManualOptionSelected();
+    }
   };
 
   const handleSkip = () => {
+    // Track skip personalization
+    trackSkipPersonalizationClicked();
+    trackChatScreenReached('skip_personalization');
+
     // Navigate to main app
     window.location.href = "/";
   };
 
   const handleContinue = () => {
+    if (!selectedOption) return;
+
+    // Track continue button click
+    trackPersonalizeContinueClicked(selectedOption);
+
     if (selectedOption === "import") {
       // Request incremental auth for Gmail readonly only now
       const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;

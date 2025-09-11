@@ -125,6 +125,23 @@ export default function RootLayout({
           `}
         </Script>
 
+        {/* Analytics Debugger for Development */}
+        {process.env.NODE_ENV === 'development' && (
+          <Script
+            id="analytics-debugger"
+            strategy="afterInteractive"
+          >
+            {`
+              // Import and initialize analytics debugger
+              import('/utils/analyticsDebugger.js').then(module => {
+                console.log('🔍 Analytics debugger loaded');
+              }).catch(err => {
+                console.warn('Analytics debugger failed to load:', err);
+              });
+            `}
+          </Script>
+        )}
+
         {/* Structured Data */}
         <StructuredData data={organizationStructuredData} />
         <StructuredData data={websiteStructuredData} />

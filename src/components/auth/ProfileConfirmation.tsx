@@ -13,6 +13,13 @@ import {
 import { CountryCombobox } from "@/components/widgets/review/CountryCombobox";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
+import {
+  trackProfileConfirmationViewed,
+  trackProfileFormFilled,
+  trackProfileConfirmationSuccess,
+  trackProfileConfirmationError,
+  type ProfileConfirmationData,
+} from "@/services/analyticsService";
 
 // Country calling codes mapping
 const countryCallingCodes: { [key: string]: string } = {
@@ -286,6 +293,9 @@ const ProfileConfirmation: React.FC = () => {
       return;
     }
 
+    // Track profile confirmation page view
+    trackProfileConfirmationViewed();
+
     // Pre-fill form with stored user data
     const storedFirstName = getUserFirstName();
     const storedLastName = getUserLastName();
@@ -305,6 +315,10 @@ const ProfileConfirmation: React.FC = () => {
       ...prev,
       [field]: value,
     }));
+
+    // Track form field changes
+    trackProfileFormFilled(field, !!value.trim());
+
     // Clear error when user starts typing
     if (error) {
       setError(null);
@@ -360,20 +374,34 @@ const ProfileConfirmation: React.FC = () => {
       // Phone number from react-phone-input-2 is already in the correct format
       const fullMobileNumber = phoneNumber;
 
-      await updateUserName({
+      const profileData: ProfileConfirmationData = {
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         mobileNumber: fullMobileNumber,
+        countryCode: fullMobileNumber.substring(0, fullMobileNumber.length - 10), // Extract country code
+      };
+
+      await updateUserName({
+        firstName: profileData.firstName,
+        lastName: profileData.lastName,
+        mobileNumber: profileData.mobileNumber,
       });
+
+      // Track profile confirmation success
+      trackProfileConfirmationSuccess(profileData);
+
       // Redirect to personalize travel page after successful update
       window.location.href = "/personalize-travel";
     } catch (err) {
       console.error("Error updating profile:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to update profile. Please try again.",
-      );
+      const errorMessage = err instanceof Error
+        ? err.message
+        : "Failed to update profile. Please try again.";
+
+      // Track profile confirmation error
+      trackProfileConfirmationError(errorMessage);
+
+      setError(errorMessage);
       if (navigator.vibrate) {
         try {
           navigator.vibrate([20, 40, 20]);

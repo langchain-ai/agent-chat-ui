@@ -47,9 +47,34 @@ export const isGtagAvailable = (): boolean => {
     console.warn('Google Analytics gtag not available:', {
       windowExists: typeof window !== 'undefined',
       gtagExists: typeof window !== 'undefined' ? typeof window.gtag === 'function' : false,
+      dataLayerExists: typeof window !== 'undefined' ? Array.isArray(window.dataLayer) : false,
     });
   }
   return available;
+};
+
+/**
+ * Wait for gtag to be available (with timeout)
+ */
+export const waitForGtag = (timeout: number = 5000): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if (isGtagAvailable()) {
+      resolve(true);
+      return;
+    }
+
+    const startTime = Date.now();
+    const checkInterval = setInterval(() => {
+      if (isGtagAvailable()) {
+        clearInterval(checkInterval);
+        resolve(true);
+      } else if (Date.now() - startTime > timeout) {
+        clearInterval(checkInterval);
+        console.warn('Timeout waiting for Google Analytics to load');
+        resolve(false);
+      }
+    }, 100);
+  });
 };
 
 /**
@@ -569,5 +594,667 @@ export const trackWidgetInteraction = (widgetType: string, action: string, data?
     console.log(`✅ Widget interaction tracked: ${widgetType} - ${action}`);
   } catch (error) {
     console.error('Error tracking widget interaction:', error);
+  }
+};
+
+// ============================================================================
+// ONBOARDING FLOW ANALYTICS EVENTS
+// ============================================================================
+
+/**
+ * Track event with retry mechanism
+ */
+const trackEventWithRetry = async (eventName: string, parameters: any, maxRetries: number = 3): Promise<void> => {
+  let retries = 0;
+
+  const attemptTrack = async (): Promise<void> => {
+    if (isGtagAvailable()) {
+      try {
+        window.gtag('event', eventName, parameters);
+        console.log(`✅ ${eventName} tracked successfully`);
+        return;
+      } catch (error) {
+        console.error(`Error tracking ${eventName}:`, error);
+        throw error;
+      }
+    }
+
+    if (retries < maxRetries) {
+      retries++;
+      console.log(`⏳ Waiting for gtag to load (attempt ${retries}/${maxRetries})...`);
+      const gtagAvailable = await waitForGtag(2000);
+      if (gtagAvailable) {
+        return attemptTrack();
+      }
+    }
+
+    console.warn(`⚠️ Failed to track ${eventName} after ${maxRetries} attempts`);
+  };
+
+  return attemptTrack();
+};
+
+/**
+ * Track login page view
+ */
+export const trackLoginPageViewed = (): void => {
+  trackEventWithRetry('login_page_viewed', {
+    event_category: 'onboarding',
+    event_label: 'login_page_view',
+    page_path: '/login',
+    step: 1,
+    step_name: 'login',
+  });
+};
+
+/**
+ * Track Google login button click
+ */
+export const trackGoogleLoginClicked = (): void => {
+  trackEventWithRetry('google_login_clicked', {
+    event_category: 'onboarding',
+    event_label: 'google_oauth_initiated',
+    login_method: 'google_oauth',
+    step: 1,
+    step_name: 'login',
+  });
+};
+
+/**
+ * Track login success
+ */
+export const trackLoginSuccess = (isNewUser: boolean): void => {
+  if (!isGtagAvailable()) return;
+
+  try {
+    const userData = getUserAnalyticsData();
+
+    // Set user properties if available
+    if (userData) {
+      setUserProperties(userData);
+    }
+
+    window.gtag('event', 'login_success', {
+      event_category: 'onboarding',
+      event_label: 'authentication_success',
+      login_method: 'google_oauth',
+      is_new_user: isNewUser,
+      step: 1,
+      step_name: 'login',
+      next_step: isNewUser ? 'profile_confirmation' : 'chat_screen',
+    });
+
+    console.log('✅ Login success tracked:', { isNewUser });
+  } catch (error) {
+    console.error('Error tracking login success:', error);
+  }
+};
+
+/**
+ * Track login error
+ */
+export const trackLoginError = (errorMessage: string): void => {
+  if (!isGtagAvailable()) return;
+
+  try {
+    window.gtag('event', 'login_error', {
+      event_category: 'onboarding',
+      event_label: 'authentication_failed',
+      login_method: 'google_oauth',
+      error_message: errorMessage,
+      step: 1,
+      step_name: 'login',
+    });
+
+    console.log('✅ Login error tracked:', errorMessage);
+  } catch (error) {
+    console.error('Error tracking login error:', error);
+  }
+};
+
+/**
+ * Profile confirmation form data interface
+ */
+export interface ProfileConfirmationData {
+  firstName: string;
+  lastName: string;
+  mobileNumber: string;
+  countryCode: string;
+}
+
+/**
+ * Track profile confirmation page view
+ */
+export const trackProfileConfirmationViewed = (): void => {
+  if (!isGtagAvailable()) return;
+
+  try {
+    const userData = getUserAnalyticsData();
+
+    // Set user properties if available
+    if (userData) {
+      setUserProperties(userData);
+    }
+
+    window.gtag('event', 'profile_confirmation_viewed', {
+      event_category: 'onboarding',
+      event_label: 'profile_confirmation_page_view',
+      page_path: '/profile-confirmation',
+      step: 2,
+      step_name: 'profile_confirmation',
+    });
+
+    console.log('✅ Profile confirmation page view tracked');
+  } catch (error) {
+    console.error('Error tracking profile confirmation page view:', error);
+  }
+};
+
+/**
+ * Track profile form field changes
+ */
+export const trackProfileFormFilled = (fieldName: string, hasValue: boolean): void => {
+  if (!isGtagAvailable()) return;
+
+  try {
+    const userData = getUserAnalyticsData();
+
+    // Set user properties if available
+    if (userData) {
+      setUserProperties(userData);
+    }
+
+    window.gtag('event', 'profile_form_filled', {
+      event_category: 'onboarding',
+      event_label: 'profile_form_interaction',
+      field_name: fieldName,
+      has_value: hasValue,
+      step: 2,
+      step_name: 'profile_confirmation',
+    });
+
+    console.log('✅ Profile form field tracked:', { fieldName, hasValue });
+  } catch (error) {
+    console.error('Error tracking profile form field:', error);
+  }
+};
+
+/**
+ * Track profile confirmation success
+ */
+export const trackProfileConfirmationSuccess = (profileData: ProfileConfirmationData): void => {
+  if (!isGtagAvailable()) return;
+
+  try {
+    const userData = getUserAnalyticsData();
+
+    // Set user properties if available
+    if (userData) {
+      setUserProperties(userData);
+    }
+
+    window.gtag('event', 'profile_confirmation_success', {
+      event_category: 'onboarding',
+      event_label: 'profile_update_success',
+      has_first_name: !!profileData.firstName,
+      has_last_name: !!profileData.lastName,
+      has_mobile_number: !!profileData.mobileNumber,
+      country_code: profileData.countryCode,
+      step: 2,
+      step_name: 'profile_confirmation',
+      next_step: 'personalize_travel',
+    });
+
+    console.log('✅ Profile confirmation success tracked');
+  } catch (error) {
+    console.error('Error tracking profile confirmation success:', error);
+  }
+};
+
+/**
+ * Track profile confirmation error
+ */
+export const trackProfileConfirmationError = (errorMessage: string): void => {
+  if (!isGtagAvailable()) return;
+
+  try {
+    const userData = getUserAnalyticsData();
+
+    // Set user properties if available
+    if (userData) {
+      setUserProperties(userData);
+    }
+
+    window.gtag('event', 'profile_confirmation_error', {
+      event_category: 'onboarding',
+      event_label: 'profile_update_failed',
+      error_message: errorMessage,
+      step: 2,
+      step_name: 'profile_confirmation',
+    });
+
+    console.log('✅ Profile confirmation error tracked:', errorMessage);
+  } catch (error) {
+    console.error('Error tracking profile confirmation error:', error);
+  }
+};
+
+/**
+ * Track personalize travel page view
+ */
+export const trackPersonalizeTravelViewed = (): void => {
+  if (!isGtagAvailable()) return;
+
+  try {
+    const userData = getUserAnalyticsData();
+
+    // Set user properties if available
+    if (userData) {
+      setUserProperties(userData);
+    }
+
+    window.gtag('event', 'personalize_page_viewed', {
+      event_category: 'onboarding',
+      event_label: 'personalize_travel_page_view',
+      page_path: '/personalize-travel',
+      step: 3,
+      step_name: 'personalize_travel',
+    });
+
+    console.log('✅ Personalize travel page view tracked');
+  } catch (error) {
+    console.error('Error tracking personalize travel page view:', error);
+  }
+};
+
+/**
+ * Track import option selection
+ */
+export const trackImportOptionSelected = (): void => {
+  if (!isGtagAvailable()) return;
+
+  try {
+    const userData = getUserAnalyticsData();
+
+    // Set user properties if available
+    if (userData) {
+      setUserProperties(userData);
+    }
+
+    window.gtag('event', 'import_option_selected', {
+      event_category: 'onboarding',
+      event_label: 'import_trips_loyalty_selected',
+      personalization_method: 'import',
+      step: 3,
+      step_name: 'personalize_travel',
+    });
+
+    console.log('✅ Import option selection tracked');
+  } catch (error) {
+    console.error('Error tracking import option selection:', error);
+  }
+};
+
+/**
+ * Track manual setup option selection
+ */
+export const trackManualOptionSelected = (): void => {
+  if (!isGtagAvailable()) return;
+
+  try {
+    const userData = getUserAnalyticsData();
+
+    // Set user properties if available
+    if (userData) {
+      setUserProperties(userData);
+    }
+
+    window.gtag('event', 'manual_option_selected', {
+      event_category: 'onboarding',
+      event_label: 'manual_setup_selected',
+      personalization_method: 'manual',
+      step: 3,
+      step_name: 'personalize_travel',
+    });
+
+    console.log('✅ Manual option selection tracked');
+  } catch (error) {
+    console.error('Error tracking manual option selection:', error);
+  }
+};
+
+/**
+ * Track skip personalization click
+ */
+export const trackSkipPersonalizationClicked = (): void => {
+  if (!isGtagAvailable()) return;
+
+  try {
+    const userData = getUserAnalyticsData();
+
+    // Set user properties if available
+    if (userData) {
+      setUserProperties(userData);
+    }
+
+    window.gtag('event', 'skip_personalization_clicked', {
+      event_category: 'onboarding',
+      event_label: 'personalization_skipped',
+      personalization_method: 'skipped',
+      step: 3,
+      step_name: 'personalize_travel',
+      next_step: 'chat_screen',
+    });
+
+    console.log('✅ Skip personalization tracked');
+  } catch (error) {
+    console.error('Error tracking skip personalization:', error);
+  }
+};
+
+/**
+ * Track continue button click from personalize travel
+ */
+export const trackPersonalizeContinueClicked = (selectedOption: string): void => {
+  if (!isGtagAvailable()) return;
+
+  try {
+    const userData = getUserAnalyticsData();
+
+    // Set user properties if available
+    if (userData) {
+      setUserProperties(userData);
+    }
+
+    window.gtag('event', 'personalize_continue_clicked', {
+      event_category: 'onboarding',
+      event_label: 'personalize_continue_button',
+      selected_option: selectedOption,
+      personalization_method: selectedOption,
+      step: 3,
+      step_name: 'personalize_travel',
+      next_step: selectedOption === 'manual' ? 'onboarding_quiz' : 'gmail_integration',
+    });
+
+    console.log('✅ Personalize continue clicked tracked:', selectedOption);
+  } catch (error) {
+    console.error('Error tracking personalize continue click:', error);
+  }
+};
+
+/**
+ * Onboarding quiz data interface for analytics
+ */
+export interface OnboardingQuizData {
+  gender: string;
+  dateOfBirth: Date | undefined;
+  hasPassport: string;
+  travelFrequency: string;
+  travelPurposes: string[];
+  travelCompanions: string[];
+  loyaltyPrograms: string[];
+  currency: string;
+  language: string;
+}
+
+/**
+ * Track onboarding quiz start
+ */
+export const trackQuizStarted = (): void => {
+  if (!isGtagAvailable()) return;
+
+  try {
+    const userData = getUserAnalyticsData();
+
+    // Set user properties if available
+    if (userData) {
+      setUserProperties(userData);
+    }
+
+    window.gtag('event', 'quiz_started', {
+      event_category: 'onboarding',
+      event_label: 'onboarding_quiz_started',
+      page_path: '/onboarding-quiz',
+      step: 4,
+      step_name: 'onboarding_quiz',
+      quiz_step: 1,
+      quiz_step_name: 'personal_details',
+    });
+
+    console.log('✅ Quiz started tracked');
+  } catch (error) {
+    console.error('Error tracking quiz start:', error);
+  }
+};
+
+/**
+ * Track quiz step view
+ */
+export const trackQuizStepViewed = (currentStep: number, stepName: string): void => {
+  if (!isGtagAvailable()) return;
+
+  try {
+    const userData = getUserAnalyticsData();
+
+    // Set user properties if available
+    if (userData) {
+      setUserProperties(userData);
+    }
+
+    window.gtag('event', 'quiz_step_viewed', {
+      event_category: 'onboarding',
+      event_label: 'quiz_step_navigation',
+      step: 4,
+      step_name: 'onboarding_quiz',
+      quiz_step: currentStep,
+      quiz_step_name: stepName,
+    });
+
+    console.log('✅ Quiz step viewed tracked:', { currentStep, stepName });
+  } catch (error) {
+    console.error('Error tracking quiz step view:', error);
+  }
+};
+
+/**
+ * Track quiz field change
+ */
+export const trackQuizFieldChanged = (fieldName: string, value: any, currentStep: number): void => {
+  if (!isGtagAvailable()) return;
+
+  try {
+    const userData = getUserAnalyticsData();
+
+    // Set user properties if available
+    if (userData) {
+      setUserProperties(userData);
+    }
+
+    window.gtag('event', 'quiz_field_changed', {
+      event_category: 'onboarding',
+      event_label: 'quiz_form_interaction',
+      field_name: fieldName,
+      field_value: Array.isArray(value) ? value.join(',') : value?.toString() || '',
+      has_value: !!value,
+      step: 4,
+      step_name: 'onboarding_quiz',
+      quiz_step: currentStep,
+    });
+
+    console.log('✅ Quiz field change tracked:', { fieldName, value, currentStep });
+  } catch (error) {
+    console.error('Error tracking quiz field change:', error);
+  }
+};
+
+/**
+ * Track quiz step completion (Next button click)
+ */
+export const trackQuizStepCompleted = (currentStep: number, stepName: string, stepData: any): void => {
+  if (!isGtagAvailable()) return;
+
+  try {
+    const userData = getUserAnalyticsData();
+
+    // Set user properties if available
+    if (userData) {
+      setUserProperties(userData);
+    }
+
+    window.gtag('event', 'quiz_step_completed', {
+      event_category: 'onboarding',
+      event_label: 'quiz_step_next_clicked',
+      step: 4,
+      step_name: 'onboarding_quiz',
+      quiz_step: currentStep,
+      quiz_step_name: stepName,
+      step_data: JSON.stringify(stepData),
+      next_quiz_step: currentStep + 1,
+    });
+
+    console.log('✅ Quiz step completed tracked:', { currentStep, stepName });
+  } catch (error) {
+    console.error('Error tracking quiz step completion:', error);
+  }
+};
+
+/**
+ * Track quiz back button click
+ */
+export const trackQuizBackClicked = (currentStep: number, stepName: string): void => {
+  if (!isGtagAvailable()) return;
+
+  try {
+    const userData = getUserAnalyticsData();
+
+    // Set user properties if available
+    if (userData) {
+      setUserProperties(userData);
+    }
+
+    window.gtag('event', 'quiz_back_clicked', {
+      event_category: 'onboarding',
+      event_label: 'quiz_step_back_clicked',
+      step: 4,
+      step_name: 'onboarding_quiz',
+      quiz_step: currentStep,
+      quiz_step_name: stepName,
+      previous_quiz_step: currentStep - 1,
+    });
+
+    console.log('✅ Quiz back clicked tracked:', { currentStep, stepName });
+  } catch (error) {
+    console.error('Error tracking quiz back click:', error);
+  }
+};
+
+/**
+ * Track quiz completion
+ */
+export const trackQuizCompleted = (quizData: OnboardingQuizData): void => {
+  if (!isGtagAvailable()) return;
+
+  try {
+    const userData = getUserAnalyticsData();
+
+    // Set user properties if available
+    if (userData) {
+      setUserProperties(userData);
+    }
+
+    window.gtag('event', 'quiz_completed', {
+      event_category: 'onboarding',
+      event_label: 'onboarding_quiz_completed',
+      step: 4,
+      step_name: 'onboarding_quiz',
+
+      // Personal details
+      gender: quizData.gender,
+      has_date_of_birth: !!quizData.dateOfBirth,
+      has_passport: quizData.hasPassport,
+
+      // Travel style
+      travel_frequency: quizData.travelFrequency,
+      travel_purposes: quizData.travelPurposes.join(','),
+      travel_companions: quizData.travelCompanions.join(','),
+      travel_purposes_count: quizData.travelPurposes.length,
+      travel_companions_count: quizData.travelCompanions.length,
+
+      // Preferences
+      loyalty_programs: quizData.loyaltyPrograms.join(','),
+      loyalty_programs_count: quizData.loyaltyPrograms.length,
+      currency: quizData.currency,
+      language: quizData.language,
+
+      next_step: 'chat_screen',
+    });
+
+    console.log('✅ Quiz completed tracked');
+  } catch (error) {
+    console.error('Error tracking quiz completion:', error);
+  }
+};
+
+/**
+ * Track onboarding completion (final step)
+ */
+export const trackOnboardingCompleted = (completionData: {
+  totalSteps: number;
+  completedSteps: string[];
+  skippedSteps: string[];
+  timeSpent?: number;
+}): void => {
+  if (!isGtagAvailable()) return;
+
+  try {
+    const userData = getUserAnalyticsData();
+
+    // Set user properties if available
+    if (userData) {
+      setUserProperties(userData);
+    }
+
+    window.gtag('event', 'onboarding_completed', {
+      event_category: 'onboarding',
+      event_label: 'onboarding_flow_completed',
+      total_steps: completionData.totalSteps,
+      completed_steps: completionData.completedSteps.join(','),
+      skipped_steps: completionData.skippedSteps.join(','),
+      completion_rate: (completionData.completedSteps.length / completionData.totalSteps) * 100,
+      time_spent: completionData.timeSpent || null,
+      final_step: 'chat_screen',
+    });
+
+    console.log('✅ Onboarding completed tracked');
+  } catch (error) {
+    console.error('Error tracking onboarding completion:', error);
+  }
+};
+
+/**
+ * Track chat screen reached (final destination)
+ */
+export const trackChatScreenReached = (source: string): void => {
+  if (!isGtagAvailable()) return;
+
+  try {
+    const userData = getUserAnalyticsData();
+
+    // Set user properties if available
+    if (userData) {
+      setUserProperties(userData);
+    }
+
+    window.gtag('event', 'chat_screen_reached', {
+      event_category: 'onboarding',
+      event_label: 'onboarding_success',
+      source: source, // 'onboarding_complete', 'existing_user', 'skip_personalization'
+      page_path: '/',
+      final_destination: true,
+    });
+
+    console.log('✅ Chat screen reached tracked:', source);
+  } catch (error) {
+    console.error('Error tracking chat screen reached:', error);
   }
 };
