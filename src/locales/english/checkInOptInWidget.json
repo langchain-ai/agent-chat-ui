@@ -1,0 +1,54 @@
+{
+  "title": {
+    "webCheckIn": "Web check-in process for flight from {{departureIata}} to {{arrivalIata}}",
+    "checkInDetails": "Check-in details submitted successfully"
+  },
+  "labels": {
+    "pnr": "PNR (Passenger Name Record)",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "documentType": "Document Type",
+    "documentNumber": "Document Number",
+    "dateOfBirth": "Date of Birth",
+    "nationality": "Nationality",
+    "issuingCountry": "Issuing Country",
+    "expiryDate": "Expiry Date",
+    "passengerInformation": "Passenger Information",
+    "documentInformation": "Document Information"
+  },
+  "placeholders": {
+    "pnr": "Enter your 6-12 character PNR",
+    "firstName": "Enter first name",
+    "lastName": "Enter last name",
+    "documentNumber": "Enter document number",
+    "selectDocumentType": "Select document type",
+    "selectDateOfBirth": "Select date of birth",
+    "selectNationality": "Select nationality",
+    "selectIssuingCountry": "Select issuing country",
+    "selectExpiryDate": "Select expiry date"
+  },
+  "options": {
+    "documentTypes": {
+      "passport": "Passport"
+    }
+  },
+  "buttons": {
+    "proceedWithCheckIn": "Proceed with Check-in",
+    "processing": "Processing..."
+  },
+  "messages": {
+    "checkInInstructions": "Please provide the required information to proceed with web check-in"
+  },
+  "validation": {
+    "pnrRequired": "PNR must be between 6 to 12 characters",
+    "firstNameRequired": "First name is required",
+    "lastNameRequired": "Last name is required",
+    "onlyEnglishLettersAllowed": "Only English letters allowed",
+    "documentTypeRequired": "Document type is required",
+    "documentNumberRequired": "Document number is required",
+    "dateOfBirthRequired": "Date of birth is required",
+    "nationalityRequired": "Nationality is required",
+    "issuingCountryRequired": "Issuing country is required",
+    "expiryDateRequired": "Expiry date is required"
+  }
+}

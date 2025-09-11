@@ -17,6 +17,9 @@ import { submitInterruptResponse } from "./util";
 import { DateInput } from "./review/DateInput";
 import { CountryCombobox } from "./review/CountryCombobox";
 import { validateInput, filterEnglishName, filterEnglishOnly } from "@/utils/input-validation";
+import { useTranslations } from "@/hooks/useTranslations";
+import { useCheckInOptInRTL } from "@/hooks/useRTLMirror";
+import "@/styles/rtl-mirror.css";
 
 interface CheckInOptInWidgetProps {
   apiData?: any;
@@ -52,6 +55,16 @@ const formatDateForSubmission = (date: Date | undefined): string => {
 
 const CheckInOptInWidget: React.FC<CheckInOptInWidgetProps> = (args) => {
   const thread = useStreamContext();
+
+  // Initialize translations and RTL mirror detection
+  const { t } = useTranslations('checkInOptInWidget');
+  const {
+    isRTLMirrorRequired,
+    isLoading: isRTLLoading,
+    mirrorClasses,
+    mirrorStyles,
+    isWidgetSupported
+  } = useCheckInOptInRTL();
 
   // Extract args from interrupt structure
   const liveArgs = args || {};
@@ -175,7 +188,8 @@ const CheckInOptInWidget: React.FC<CheckInOptInWidgetProps> = (args) => {
         if (!formData.documentNumber.trim()) errors.documentNumber = true;
         if (!formData.dateOfBirth) errors.dateOfBirth = true;
         if (!formData.nationality) errors.nationality = true;
-        if (!formData.issuingCountry) errors.issuingCountry = true;
+        // Issuing country validation commented out as field is removed
+        // if (!formData.issuingCountry) errors.issuingCountry = true;
         if (!formData.expiryDate) errors.expiryDate = true;
       }
     }
@@ -212,7 +226,8 @@ const CheckInOptInWidget: React.FC<CheckInOptInWidgetProps> = (args) => {
         submissionData.documentNumber = formData.documentNumber;
         submissionData.dateOfBirth = formData.dateOfBirth;
         submissionData.nationality = formData.nationality;
-        submissionData.issuingCountry = formData.issuingCountry;
+        // Issuing country removed from submission as field is commented out
+        // submissionData.issuingCountry = formData.issuingCountry;
         submissionData.expiryDate = formData.expiryDate;
       }
       
@@ -247,32 +262,64 @@ const CheckInOptInWidget: React.FC<CheckInOptInWidgetProps> = (args) => {
     }
   };
 
+  // Show loading state briefly to prevent FOUC
+  if (isRTLLoading) {
+    return (
+      <div className="mx-auto mt-2 w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-6 font-sans shadow-lg">
+        <div className="flex items-center justify-center py-8">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-black"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show warning if widget doesn't support RTL mirroring
+  if (!isWidgetSupported) {
+    console.warn('CheckInOptInWidget: RTL mirroring is not supported for this widget');
+  }
+
   // If in read-only mode, show submitted data
   if (readOnly) {
     return (
-      <div className="mx-auto mt-2 w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-6 font-sans shadow-lg">
-        <div className="mb-6">
+      <div
+        className={cn(
+          "mx-auto mt-2 w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-6 font-sans shadow-lg",
+          // Container-level RTL transformation
+          mirrorClasses.container
+        )}
+        style={mirrorStyles.container}
+      >
+        <div
+          className={cn(
+            "mb-6",
+            // Content-level RTL transformation
+            mirrorClasses.content
+          )}
+          style={mirrorStyles.content}
+        >
           <h2 className="mb-2 text-xl font-semibold text-gray-900">
-            Web check-in process for flight from {departureIata} to {arrivalIata}
+            {t('title.webCheckIn', 'Web check-in process for flight from {{departureIata}} to {{arrivalIata}}')
+              .replace('{{departureIata}}', departureIata)
+              .replace('{{arrivalIata}}', arrivalIata)}
           </h2>
-          <p className="text-sm text-gray-600">Check-in details submitted successfully</p>
+          <p className="text-sm text-gray-600">{t('title.checkInDetails', 'Check-in details submitted successfully')}</p>
         </div>
         
         <div className="space-y-4">
           <div>
-            <Label className="text-sm font-medium text-gray-700">PNR</Label>
+            <Label className="text-sm font-medium text-gray-700">{t('labels.pnr', 'PNR (Passenger Name Record)')}</Label>
             <div className="mt-1 text-sm text-gray-900">{formData.pnr}</div>
           </div>
-          
+
           {(!isPassengerDataAvailable) && (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-gray-700">First Name</Label>
+                  <Label className="text-sm font-medium text-gray-700">{t('labels.firstName', 'First Name')}</Label>
                   <div className="mt-1 text-sm text-gray-900">{formData.firstName}</div>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-700">Last Name</Label>
+                  <Label className="text-sm font-medium text-gray-700">{t('labels.lastName', 'Last Name')}</Label>
                   <div className="mt-1 text-sm text-gray-900">{formData.lastName}</div>
                 </div>
               </div>
@@ -282,30 +329,31 @@ const CheckInOptInWidget: React.FC<CheckInOptInWidgetProps> = (args) => {
           {isInternational && (
             <>
               <div className="border-t pt-4">
-                <h3 className="mb-3 text-sm font-medium text-gray-700">Document Information</h3>
+                <h3 className="mb-3 text-sm font-medium text-gray-700">{t('labels.documentInformation', 'Document Information')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">Document Type</Label>
+                    <Label className="text-sm font-medium text-gray-700">{t('labels.documentType', 'Document Type')}</Label>
                     <div className="mt-1 text-sm text-gray-900">{formData.documentType}</div>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">Document Number</Label>
+                    <Label className="text-sm font-medium text-gray-700">{t('labels.documentNumber', 'Document Number')}</Label>
                     <div className="mt-1 text-sm text-gray-900">{formData.documentNumber}</div>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">Date of Birth</Label>
+                    <Label className="text-sm font-medium text-gray-700">{t('labels.dateOfBirth', 'Date of Birth')}</Label>
                     <div className="mt-1 text-sm text-gray-900">{formData.dateOfBirth}</div>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">Nationality</Label>
+                    <Label className="text-sm font-medium text-gray-700">{t('labels.nationality', 'Nationality')}</Label>
                     <div className="mt-1 text-sm text-gray-900">{formData.nationality}</div>
                   </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">Issuing Country</Label>
+                  {/* Issuing Country field - Commented out as requested */}
+                  {/* <div>
+                    <Label className="text-sm font-medium text-gray-700">{t('labels.issuingCountry', 'Issuing Country')}</Label>
                     <div className="mt-1 text-sm text-gray-900">{formData.issuingCountry}</div>
-                  </div>
+                  </div> */}
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">Expiry Date</Label>
+                    <Label className="text-sm font-medium text-gray-700">{t('labels.expiryDate', 'Expiry Date')}</Label>
                     <div className="mt-1 text-sm text-gray-900">{formData.expiryDate}</div>
                   </div>
                 </div>
@@ -318,13 +366,29 @@ const CheckInOptInWidget: React.FC<CheckInOptInWidgetProps> = (args) => {
   }
 
   return (
-    <div className="mx-auto mt-2 w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-6 font-sans shadow-lg">
-      <div className="mb-6">
+    <div
+      className={cn(
+        "mx-auto mt-2 w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-6 font-sans shadow-lg",
+        // Container-level RTL transformation
+        mirrorClasses.container
+      )}
+      style={mirrorStyles.container}
+    >
+      <div
+        className={cn(
+          "mb-6",
+          // Content-level RTL transformation
+          mirrorClasses.content
+        )}
+        style={mirrorStyles.content}
+      >
         <h2 className="mb-2 text-xl font-semibold text-gray-900">
-          Web check-in process for flight from {departureIata} to {arrivalIata}
+          {t('title.webCheckIn', 'Web check-in process for flight from {{departureIata}} to {{arrivalIata}}')
+            .replace('{{departureIata}}', departureIata)
+            .replace('{{arrivalIata}}', arrivalIata)}
         </h2>
         <p className="text-gray-600">
-          Please provide the required information to proceed with web check-in
+          {t('messages.checkInInstructions', 'Please provide the required information to proceed with web check-in')}
         </p>
       </div>
 
@@ -332,7 +396,7 @@ const CheckInOptInWidget: React.FC<CheckInOptInWidgetProps> = (args) => {
         {/* PNR Field */}
         <div>
           <Label htmlFor="pnr" className="mb-2 block text-sm font-medium text-gray-700">
-            PNR (Passenger Name Record) *
+            {t('labels.pnr', 'PNR (Passenger Name Record)')} *
           </Label>
           <Input
             id="pnr"
@@ -356,12 +420,12 @@ const CheckInOptInWidget: React.FC<CheckInOptInWidgetProps> = (args) => {
                 ? "border-red-500 focus:border-red-500 focus:ring-red-500"
                 : "",
             )}
-            placeholder="Enter your 6-12 character PNR"
+            placeholder={t('placeholders.pnr', 'Enter your 6-12 character PNR')}
             maxLength={12}
           />
           {validationErrors.pnr && (
             <p className="mt-1 text-xs text-red-500">
-              PNR must be between 6 to 12 characters
+              {t('validation.pnrRequired', 'PNR must be between 6 to 12 characters')}
             </p>
           )}
         </div>
@@ -369,11 +433,11 @@ const CheckInOptInWidget: React.FC<CheckInOptInWidgetProps> = (args) => {
         {/* Passenger Name Fields - Only show if passenger data is not available */}
         {!isPassengerDataAvailable && (
           <div className="space-y-4">
-            <h3 className="text-sm font-medium text-gray-700">Passenger Information</h3>
+            <h3 className="text-sm font-medium text-gray-700">{t('labels.passengerInformation', 'Passenger Information')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="firstName" className="mb-2 block text-sm font-medium text-gray-700">
-                  First Name *
+                  {t('labels.firstName', 'First Name')} *
                 </Label>
                 <Input
                   id="firstName"
@@ -397,13 +461,13 @@ const CheckInOptInWidget: React.FC<CheckInOptInWidgetProps> = (args) => {
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500"
                       : "",
                   )}
-                  placeholder="Enter first name"
+                  placeholder={t('placeholders.firstName', 'Enter first name')}
                 />
                 {validationErrors.firstName && (
                   <p className="mt-1 text-xs text-red-500">
                     {!validateInput(formData.firstName, 'name').isValid
-                      ? "Only English letters allowed"
-                      : "First name is required"
+                      ? t('validation.onlyEnglishLettersAllowed', 'Only English letters allowed')
+                      : t('validation.firstNameRequired', 'First name is required')
                     }
                   </p>
                 )}
@@ -411,7 +475,7 @@ const CheckInOptInWidget: React.FC<CheckInOptInWidgetProps> = (args) => {
 
               <div>
                 <Label htmlFor="lastName" className="mb-2 block text-sm font-medium text-gray-700">
-                  Last Name *
+                  {t('labels.lastName', 'Last Name')} *
                 </Label>
                 <Input
                   id="lastName"
@@ -435,13 +499,13 @@ const CheckInOptInWidget: React.FC<CheckInOptInWidgetProps> = (args) => {
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500"
                       : "",
                   )}
-                  placeholder="Enter last name"
+                  placeholder={t('placeholders.lastName', 'Enter last name')}
                 />
                 {validationErrors.lastName && (
                   <p className="mt-1 text-xs text-red-500">
                     {!validateInput(formData.lastName, 'name').isValid
-                      ? "Only English letters allowed"
-                      : "Last name is required"
+                      ? t('validation.onlyEnglishLettersAllowed', 'Only English letters allowed')
+                      : t('validation.lastNameRequired', 'Last name is required')
                     }
                   </p>
                 )}
@@ -453,13 +517,13 @@ const CheckInOptInWidget: React.FC<CheckInOptInWidgetProps> = (args) => {
         {/* Document Fields - Only show for international flights */}
         {isInternational && (
           <div className="space-y-4 border-t pt-6">
-            <h3 className="text-sm font-medium text-gray-700">Document Information</h3>
+            <h3 className="text-sm font-medium text-gray-700">{t('labels.documentInformation', 'Document Information')}</h3>
 
             {/* Document Type and Date of Birth */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="documentType" className="mb-2 block text-sm font-medium text-gray-700">
-                  Document Type *
+                  {t('labels.documentType', 'Document Type')} *
                 </Label>
                 <Select
                   value={formData.documentType}
@@ -473,20 +537,20 @@ const CheckInOptInWidget: React.FC<CheckInOptInWidgetProps> = (args) => {
                         : "",
                     )}
                   >
-                    <SelectValue placeholder="Select document type" />
+                    <SelectValue placeholder={t('placeholders.selectDocumentType', 'Select document type')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Passport">Passport</SelectItem>
+                    <SelectItem value="Passport">{t('options.documentTypes.passport', 'Passport')}</SelectItem>
                   </SelectContent>
                 </Select>
                 {validationErrors.documentType && (
-                  <p className="mt-1 text-xs text-red-500">Document type is required</p>
+                  <p className="mt-1 text-xs text-red-500">{t('validation.documentTypeRequired', 'Document type is required')}</p>
                 )}
               </div>
 
               <div>
                 <Label htmlFor="dateOfBirth" className="mb-2 block text-sm font-medium text-gray-700">
-                  Date of Birth *
+                  {t('labels.dateOfBirth', 'Date of Birth')} *
                 </Label>
                 <DateInput
                   date={formData.dateOfBirth ? new Date(formData.dateOfBirth) : undefined}
@@ -494,7 +558,7 @@ const CheckInOptInWidget: React.FC<CheckInOptInWidgetProps> = (args) => {
                     const dateString = formatDateForSubmission(date);
                     handleFieldChange("dateOfBirth", dateString);
                   }}
-                  placeholder="Select date of birth"
+                  placeholder={t('placeholders.selectDateOfBirth', 'Select date of birth')}
                   disableFuture={true}
                   className={cn(
                     validationErrors.dateOfBirth
@@ -503,7 +567,7 @@ const CheckInOptInWidget: React.FC<CheckInOptInWidgetProps> = (args) => {
                   )}
                 />
                 {validationErrors.dateOfBirth && (
-                  <p className="mt-1 text-xs text-red-500">Date of birth is required</p>
+                  <p className="mt-1 text-xs text-red-500">{t('validation.dateOfBirthRequired', 'Date of birth is required')}</p>
                 )}
               </div>
             </div>
@@ -512,7 +576,7 @@ const CheckInOptInWidget: React.FC<CheckInOptInWidgetProps> = (args) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="documentNumber" className="mb-2 block text-sm font-medium text-gray-700">
-                  {formData.documentType || "Document"} Number *
+                  {formData.documentType || t('labels.documentType', 'Document')} {t('labels.documentNumber', 'Number')} *
                 </Label>
                 <Input
                   id="documentNumber"
@@ -525,21 +589,21 @@ const CheckInOptInWidget: React.FC<CheckInOptInWidgetProps> = (args) => {
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500"
                       : "",
                   )}
-                  placeholder="Enter document number"
+                  placeholder={t('placeholders.documentNumber', 'Enter document number')}
                 />
                 {validationErrors.documentNumber && (
-                  <p className="mt-1 text-xs text-red-500">Document number is required</p>
+                  <p className="mt-1 text-xs text-red-500">{t('validation.documentNumberRequired', 'Document number is required')}</p>
                 )}
               </div>
 
               <div>
                 <Label htmlFor="nationality" className="mb-2 block text-sm font-medium text-gray-700">
-                  Nationality *
+                  {t('labels.nationality', 'Nationality')} *
                 </Label>
                 <CountryCombobox
                   value={formData.nationality}
                   onValueChange={(value) => handleFieldChange("nationality", value)}
-                  placeholder="Select nationality"
+                  placeholder={t('placeholders.selectNationality', 'Select nationality')}
                   className={cn(
                     validationErrors.nationality
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500"
@@ -547,21 +611,22 @@ const CheckInOptInWidget: React.FC<CheckInOptInWidgetProps> = (args) => {
                   )}
                 />
                 {validationErrors.nationality && (
-                  <p className="mt-1 text-xs text-red-500">Nationality is required</p>
+                  <p className="mt-1 text-xs text-red-500">{t('validation.nationalityRequired', 'Nationality is required')}</p>
                 )}
               </div>
             </div>
 
             {/* Issuing Country and Expiry Date */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+              {/* Issuing Country field - Commented out as requested */}
+              {/* <div>
                 <Label htmlFor="issuingCountry" className="mb-2 block text-sm font-medium text-gray-700">
-                  Issuing Country *
+                  {t('labels.issuingCountry', 'Issuing Country')} *
                 </Label>
                 <CountryCombobox
                   value={formData.issuingCountry}
                   onValueChange={(value) => handleFieldChange("issuingCountry", value)}
-                  placeholder="Select issuing country"
+                  placeholder={t('placeholders.selectIssuingCountry', 'Select issuing country')}
                   className={cn(
                     validationErrors.issuingCountry
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500"
@@ -569,13 +634,13 @@ const CheckInOptInWidget: React.FC<CheckInOptInWidgetProps> = (args) => {
                   )}
                 />
                 {validationErrors.issuingCountry && (
-                  <p className="mt-1 text-xs text-red-500">Issuing country is required</p>
+                  <p className="mt-1 text-xs text-red-500">{t('validation.issuingCountryRequired', 'Issuing country is required')}</p>
                 )}
-              </div>
+              </div> */}
 
               <div>
                 <Label htmlFor="expiryDate" className="mb-2 block text-sm font-medium text-gray-700">
-                  Expiry Date *
+                  {t('labels.expiryDate', 'Expiry Date')} *
                 </Label>
                 <DateInput
                   date={formData.expiryDate ? new Date(formData.expiryDate) : undefined}
@@ -583,7 +648,7 @@ const CheckInOptInWidget: React.FC<CheckInOptInWidgetProps> = (args) => {
                     const dateString = formatDateForSubmission(date);
                     handleFieldChange("expiryDate", dateString);
                   }}
-                  placeholder="Select expiry date"
+                  placeholder={t('placeholders.selectExpiryDate', 'Select expiry date')}
                   disablePast={true}
                   className={cn(
                     validationErrors.expiryDate
@@ -592,7 +657,7 @@ const CheckInOptInWidget: React.FC<CheckInOptInWidgetProps> = (args) => {
                   )}
                 />
                 {validationErrors.expiryDate && (
-                  <p className="mt-1 text-xs text-red-500">Expiry date is required</p>
+                  <p className="mt-1 text-xs text-red-500">{t('validation.expiryDateRequired', 'Expiry date is required')}</p>
                 )}
               </div>
             </div>
@@ -606,7 +671,7 @@ const CheckInOptInWidget: React.FC<CheckInOptInWidgetProps> = (args) => {
             disabled={isLoading}
             className="w-full rounded-lg bg-black py-3 text-base font-semibold text-white hover:bg-gray-800 disabled:opacity-50"
           >
-            {isLoading ? "Processing..." : "Proceed with Check-in"}
+            {isLoading ? t('buttons.processing', 'Processing...') : t('buttons.proceedWithCheckIn', 'Proceed with Check-in')}
           </Button>
         </div>
       </form>
