@@ -386,15 +386,17 @@ const ProfileConfirmation: React.FC = () => {
 
   return (
     <div
-      className="flex min-h-screen flex-col bg-white"
+      className="flex min-h-0 min-h-screen flex-col bg-white"
       style={{ fontFamily: "var(--font-uber-move)" }}
     >
       {/* Main Content - Scrollable */}
       <div
-        className="max-h-screen flex-1 overflow-y-auto px-6 sm:py-20"
+        className="max-h-[100dvh] min-h-0 flex-1 overflow-y-auto px-6 sm:py-20"
         style={{
           paddingTop: "calc(env(safe-area-inset-top) + 24px)",
           paddingBottom: "24px",
+          WebkitOverflowScrolling: "touch",
+          overscrollBehavior: "contain",
         }}
       >
         <div className="mx-auto w-full max-w-md pb-32 sm:max-w-lg sm:pb-24">
@@ -595,8 +597,8 @@ const ProfileConfirmation: React.FC = () => {
         </div>
       </div>
 
-      {/* Sticky Submit Button */}
-      <div className="sticky right-0 bottom-0 left-0 border-t border-gray-200 bg-white p-4 shadow-lg sm:p-6">
+      {/* Fixed Submit Button */}
+      <div className="fixed right-0 bottom-0 left-0 border-t border-gray-200 bg-white p-4 shadow-lg sm:p-6">
         <div className="mx-auto w-full max-w-md sm:max-w-lg">
           <button
             type="submit"
