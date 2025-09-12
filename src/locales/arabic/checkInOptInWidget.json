@@ -1,0 +1,54 @@
+{
+  "title": {
+    "webCheckIn": "عملية تسجيل الوصول عبر الإنترنت للرحلة من {{departureIata}} إلى {{arrivalIata}}",
+    "checkInDetails": "تم إرسال تفاصيل تسجيل الوصول بنجاح"
+  },
+  "labels": {
+    "pnr": "رقم حجز الراكب (PNR)",
+    "firstName": "الاسم الأول",
+    "lastName": "اسم العائلة",
+    "documentType": "نوع الوثيقة",
+    "documentNumber": "رقم الوثيقة",
+    "dateOfBirth": "تاريخ الميلاد",
+    "nationality": "الجنسية",
+    "issuingCountry": "بلد الإصدار",
+    "expiryDate": "تاريخ الانتهاء",
+    "passengerInformation": "معلومات الراكب",
+    "documentInformation": "معلومات الوثيقة"
+  },
+  "placeholders": {
+    "pnr": "أدخل رقم PNR المكون من 6-12 حرف",
+    "firstName": "أدخل الاسم الأول",
+    "lastName": "أدخل اسم العائلة",
+    "documentNumber": "أدخل رقم الوثيقة",
+    "selectDocumentType": "اختر نوع الوثيقة",
+    "selectDateOfBirth": "اختر تاريخ الميلاد",
+    "selectNationality": "اختر الجنسية",
+    "selectIssuingCountry": "اختر بلد الإصدار",
+    "selectExpiryDate": "اختر تاريخ الانتهاء"
+  },
+  "options": {
+    "documentTypes": {
+      "passport": "جواز سفر"
+    }
+  },
+  "buttons": {
+    "proceedWithCheckIn": "المتابعة مع تسجيل الوصول",
+    "processing": "جاري المعالجة..."
+  },
+  "messages": {
+    "checkInInstructions": "يرجى تقديم المعلومات المطلوبة للمتابعة مع تسجيل الوصول عبر الإنترنت"
+  },
+  "validation": {
+    "pnrRequired": "يجب أن يكون رقم PNR بين 6 إلى 12 حرف",
+    "firstNameRequired": "الاسم الأول مطلوب",
+    "lastNameRequired": "اسم العائلة مطلوب",
+    "onlyEnglishLettersAllowed": "الأحرف الإنجليزية فقط مسموحة",
+    "documentTypeRequired": "نوع الوثيقة مطلوب",
+    "documentNumberRequired": "رقم الوثيقة مطلوب",
+    "dateOfBirthRequired": "تاريخ الميلاد مطلوب",
+    "nationalityRequired": "الجنسية مطلوبة",
+    "issuingCountryRequired": "بلد الإصدار مطلوب",
+    "expiryDateRequired": "تاريخ الانتهاء مطلوب"
+  }
+}
