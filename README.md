@@ -194,7 +194,7 @@ To productionize the Agent Chat UI, you'll need to pick one of two ways to authe
 
 ### Quickstart - API Passthrough
 
-The quickest way to productionize the Agent Chat UI is to use the [API Passthrough](https://github.com/langchain-ai/langgraph-nextjs-api-passthrough) package. This package provides a simple way to proxy requests to your LangGraph server, and handle authentication for you.
+The quickest way to productionize the Agent Chat UI is to use the [API Passthrough](https://github.com/bracesproul/langgraph-nextjs-api-passthrough) package ([NPM link here](https://www.npmjs.com/package/langgraph-nextjs-api-passthrough)). This package provides a simple way to proxy requests to your LangGraph server, and handle authentication for you.
 
 This repository already contains all of the code you need to start using this method. The only configuration you need to do is set the proper environment variables.
 
