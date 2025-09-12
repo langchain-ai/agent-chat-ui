@@ -320,7 +320,7 @@ export default function ThreadHistory() {
               variant="ghost"
               className="h-10 w-full justify-start gap-3 px-3 text-sm font-normal hover:bg-gray-100"
               onClick={() => {
-                const params = new URLSearchParams(searchParams.toString());
+                const params = new URLSearchParams(searchParams?.toString());
                 params.delete("threadId");
                 router.replace(
                   `${window.location.pathname}?${params.toString()}`,
@@ -390,7 +390,7 @@ export default function ThreadHistory() {
                   variant="ghost"
                   className="h-10 w-full justify-start gap-3 px-3 text-sm font-normal hover:bg-gray-100"
                   onClick={() => {
-                    const params = new URLSearchParams(searchParams.toString());
+                    const params = new URLSearchParams(searchParams?.toString());
                     params.delete("threadId");
                     router.replace(
                       `${window.location.pathname}?${params.toString()}`,

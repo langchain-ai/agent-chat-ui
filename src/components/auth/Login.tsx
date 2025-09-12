@@ -214,7 +214,7 @@ const Login: React.FC = () => {
             }
 
             // Track login success
-            trackLoginSuccess(loginResponse.isNewUser);
+            trackLoginSuccess(loginResponse.isNewUser as boolean);
 
             // Redirect based on new user flag
             if (loginResponse.isNewUser) {
