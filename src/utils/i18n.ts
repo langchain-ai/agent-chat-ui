@@ -16,6 +16,7 @@ export const RTL_MIRROR_CONFIG = {
     "reviewWidget",
     "flightOptionsWidget",
     "homePage",
+    "checkInOptInWidget",
   ],
 
   // Additional scenarios that might require mirroring (for future expansion)
@@ -36,6 +37,7 @@ export const LANGUAGE_CONFIG = {
     "reviewWidget",
     "flightOptionsWidget",
     "homePage",
+    "checkInOptInWidget",
   ],
 
   // Directory mapping for locale files

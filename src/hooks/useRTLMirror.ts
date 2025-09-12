@@ -138,3 +138,10 @@ export function useReviewWidgetRTL() {
 export function useFlightComponentRTL() {
   return useRTLMirror("flightOptionsWidget"); // Use flightOptionsWidget config for flight components
 }
+
+/**
+ * Hook specifically for CheckInOptIn widget with optimized settings
+ */
+export function useCheckInOptInRTL() {
+  return useRTLMirror("checkInOptInWidget");
+}
