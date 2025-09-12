@@ -5,6 +5,16 @@ const nextConfig = {
       bodySizeLimit: "10mb",
     },
   },
+  transpilePackages: ['react-phone-input-2'],
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+      };
+    }
+    return config;
+  },
 };
 
 export default nextConfig;

@@ -96,14 +96,26 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
   };
 
   return (
-    <div className="rounded-lg bg-white p-4 shadow">
-      <div className="mb-3 flex items-center space-x-2">
-        <h2 className="text-lg font-semibold">{passengerTitle}</h2>
-        <ValidationWarningIcon show={hasPassengerErrors()} />
-      </div>
+    <div className={cn(
+      "rounded-lg bg-white shadow",
+      isDesktop ? "p-4" : "p-3" // More compact padding for mobile
+    )}>
+      {/* Only show title if provided (not inside accordion) */}
+      {passengerTitle && (
+        <div className={cn(
+          "flex items-center space-x-2",
+          isDesktop ? "mb-3" : "mb-2" // Less margin for mobile
+        )}>
+          <h2 className={cn(
+            "font-semibold",
+            isDesktop ? "text-lg" : "text-base" // Smaller text for mobile
+          )}>{passengerTitle}</h2>
+          <ValidationWarningIcon show={hasPassengerErrors()} />
+        </div>
+      )}
 
       {/* Row 1: Title (full width on desktop, mobile stays same) */}
-      <div className="mb-2">
+      <div className={cn(isDesktop ? "mb-2" : "mb-1")}>
         {/* Gender/Title - Always show as mandatory */}
         <div className="flex flex-col">
           <Label
@@ -230,7 +242,10 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
       </div>
 
       {/* Row 2: First Name and Last Name */}
-      <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+      <div className={cn(
+        "grid gap-2",
+        isDesktop ? "grid-cols-1 md:grid-cols-2" : "grid-cols-2" // Always 2 columns on mobile
+      )}>
 
         {/* First Name */}
         <div className="flex flex-col">
@@ -355,8 +370,9 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
           {/* Row 2: Date of Birth and Document Type */}
           <div className={cn(
             "grid gap-2 mb-2",
-            // If both fields are required, show them in 2 columns on desktop
-            (isDateOfBirthRequired && isDocumentRequired) ? "grid-cols-1 md:grid-cols-2" :
+            // If both fields are required, show them in 2 columns (always on mobile, responsive on desktop)
+            (isDateOfBirthRequired && isDocumentRequired) ?
+              (isDesktop ? "grid-cols-1 md:grid-cols-2" : "grid-cols-2") :
             // If only one field is required, show it in 1 column (full width)
             "grid-cols-1"
           )}>
@@ -457,7 +473,10 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
 
           {/* Row 3: Document Number and Expiry Date */}
           {isDocumentRequired && (
-            <div className="grid grid-cols-1 gap-2 md:grid-cols-2 mb-2">
+            <div className={cn(
+              "grid gap-2 mb-2",
+              isDesktop ? "grid-cols-1 md:grid-cols-2" : "grid-cols-2" // Always 2 columns on mobile
+            )}>
               {/* Document Number */}
               <div className="flex flex-col">
                 <div className="mb-0.5 flex items-center space-x-1">
@@ -636,7 +655,14 @@ export const PassengerDetailsCard: React.FC<PassengerDetailsCardProps> = ({
                         <div className="text-xs text-gray-600">
                           {savedPassenger.gender} •{" "}
                           {savedPassenger.dateOfBirth
-                            ? `${t('labels.dateOfBirth', 'Born')} ${savedPassenger.dateOfBirth}`
+                            ? (() => {
+                                // Format date as dd/mm/yyyy
+                                const date = new Date(savedPassenger.dateOfBirth);
+                                const day = String(date.getDate()).padStart(2, '0');
+                                const month = String(date.getMonth() + 1).padStart(2, '0');
+                                const year = date.getFullYear();
+                                return `${t('labels.dateOfBirth', 'Born')} ${day}/${month}/${year}`;
+                              })()
                             : t('messages.noDOB', 'No DOB')}
                         </div>
                       </div>

@@ -8,6 +8,9 @@ import { useStreamContext } from "@/providers/Stream";
 import { useTranslations } from "@/hooks/useTranslations";
 import { useReviewWidgetRTL } from "@/hooks/useRTLMirror";
 import { trackFlightBookingAttempt, trackWidgetInteraction, trackReviewSubmit, type ReviewSubmitAnalytics } from "@/services/analyticsService";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { MobilePassengerSelection } from "./review/MobilePassengerSelection";
+import { MobileReviewBottomSheet } from "./review/MobileReviewBottomSheet";
 import "@/styles/rtl-mirror.css";
 
 // Import modular components
@@ -639,7 +642,8 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
   const isRefundable = selectedFlightOffers?.[0]?.offerRules?.isRefundable || null;
 
   // Detect desktop screen size
-  const [isDesktop, setIsDesktop] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(true); // Default to desktop to prevent flash
+  const [showMobileBottomSheet, setShowMobileBottomSheet] = useState(false);
 
   React.useEffect(() => {
     const checkScreenSize = () => {
@@ -1039,81 +1043,43 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
           </div>
         </div>
       ) : (
-        // Mobile Layout - Single Column
-        <div className="space-y-3">
-          <FlightDetailsCard
+        // Mobile Layout - Passenger Selection with Bottom Sheet
+        <>
+          <MobilePassengerSelection
+            passengers={passengers}
+            savedPassengers={savedPassengers}
+            numberOfTravellers={numberOfTravellers || { adults: 1, children: 0, infants: 0 }}
+            totalPassengers={totalPassengers}
+            onReviewDetails={() => setShowMobileBottomSheet(true)}
+          />
+
+          <MobileReviewBottomSheet
+            isOpen={showMobileBottomSheet}
+            onClose={() => setShowMobileBottomSheet(false)}
             flightDetails={flightDetails}
-            isDesktop={isDesktop}
-          />
-          {passengers.map((passenger, index) => {
-            // Calculate dynamic requirements for this specific passenger
-            const passengerType = getPassengerType(index);
-            const passengerDateOfBirthRequired = getFieldRequirement(index, 'dateOfBirth');
-            const passengerDocumentRequired = getFieldRequirement(index, 'passport');
-
-            // Create passenger-specific validation errors
-            const prefix = `passenger${index}_`;
-            const passengerValidationErrors = {
-              firstName: validationErrors[`${prefix}firstName`] || false,
-              lastName: validationErrors[`${prefix}lastName`] || false,
-              gender: validationErrors[`${prefix}gender`] || false,
-              dateOfBirth: validationErrors[`${prefix}dateOfBirth`] || false,
-              documentType: validationErrors[`${prefix}documentType`] || false,
-              documentNumber: validationErrors[`${prefix}documentNumber`] || false,
-              nationality: validationErrors[`${prefix}nationality`] || false,
-              expiryDate: validationErrors[`${prefix}expiryDate`] || false,
-              issuingCountry: validationErrors[`${prefix}issuingCountry`] || false,
-            };
-
-            return (
-              <PassengerDetailsCard
-                key={index}
-                passenger={passenger}
-                document={documents[index]}
-                savedPassengers={savedPassengers}
-                validationErrors={passengerValidationErrors}
-                isGenderRequired={true} // Always required now
-                isDateOfBirthRequired={passengerDateOfBirthRequired}
-                isDocumentRequired={passengerDocumentRequired}
-                showTravelDocuments={passengerDocumentRequired || passengerDateOfBirthRequired}
-                isDesktop={isDesktop}
-                passengerIndex={index}
-                passengerTitle={totalPassengers === 1 ? t('title.passengerDetails', 'Passenger Details') : getPassengerLabel(index)}
-                passengerType={passengerType}
-                onPassengerChange={(field: string, value: string) => handlePassengerChange(index, field, value)}
-                onDocumentChange={(field: string, value: string) => handleDocumentChange(index, field, value)}
-                onSelectSavedPassenger={(savedPassenger: SavedPassenger) => handleSelectSavedPassenger(index, savedPassenger)}
-                onValidateField={(value: string, fieldName: string) => validateField(value, `${prefix}${fieldName}`)}
-              />
-            );
-          })}
-          <ContactInformationCard
+            passengers={passengers}
+            documents={documents}
+            savedPassengers={savedPassengers}
             contact={contact}
-            validationErrors={validationErrors}
-            onContactChange={handleContactChange}
-            onValidateField={validateField}
-            onValidateEmail={validateEmail}
-          />
-          <PaymentSummaryCard
             paymentSummary={paymentSummary}
             isRefundable={isRefundable}
+            validationErrors={validationErrors}
+            isSubmitting={isSubmitting}
+            isBookingSubmitted={isBookingSubmitted}
             calculateTotal={calculateTotal}
-            isDesktop={isDesktop}
+            getPassengerType={getPassengerType}
+            getFieldRequirement={getFieldRequirement}
+            getPassengerLabel={getPassengerLabel}
+            handlePassengerChange={handlePassengerChange}
+            handleDocumentChange={handleDocumentChange}
+            handleSelectSavedPassenger={handleSelectSavedPassenger}
+            handleContactChange={handleContactChange}
+            validateField={validateField}
+            validateEmail={validateEmail}
+            handleSubmit={handleSubmit}
+            totalPassengers={totalPassengers}
           />
-          <div className="rounded-lg bg-white p-4 shadow">
-            <Button
-              onClick={handleSubmit}
-              disabled={isSubmitting || isBookingSubmitted}
-              className="w-full bg-black text-white hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              {isSubmitting
-                ? t('buttons.processing', 'Processing...')
-                : isBookingSubmitted
-                  ? t('buttons.bookingConfirmed', 'Booking Confirmed')
-                  : t('buttons.confirmBooking', 'Confirm Booking')}
-            </Button>
-          </div>
-        </div>
+        </>
       )}
       </div>
     </div>

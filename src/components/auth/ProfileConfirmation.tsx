@@ -11,8 +11,8 @@ import {
   type UpdateUserNameRequest,
 } from "@/services/authService";
 import { CountryCombobox } from "@/components/widgets/review/CountryCombobox";
-import PhoneInput from "react-phone-input-2";
-import "react-phone-input-2/lib/style.css";
+// import PhoneInput from "react-phone-input-2";
+// import "react-phone-input-2/lib/style.css";
 import {
   trackProfileConfirmationViewed,
   trackProfileFormFilled,
@@ -414,7 +414,7 @@ const ProfileConfirmation: React.FC = () => {
 
   return (
     <div
-      className="flex min-h-0 min-h-screen flex-col bg-white"
+      className="flex min-h-screen flex-col bg-white"
       style={{ fontFamily: "var(--font-uber-move)" }}
     >
       {/* Main Content - Scrollable */}
@@ -535,67 +535,31 @@ const ProfileConfirmation: React.FC = () => {
               >
                 Mobile
               </label>
-              <PhoneInput
-                country={"us"}
+              <Input
+                type="tel"
                 value={phoneNumber}
-                enableSearch
-                searchPlaceholder="Search country"
-                disableSearchIcon
-                searchStyle={{
-                  fontFamily: "var(--font-uber-move)",
-                  fontWeight: 400,
-                  fontSize: "14px",
-                  padding: "10px 12px",
-                  backgroundColor: "#e5e7eb",
-                  border: "none",
-                  borderRadius: "12px",
-                  outline: "none",
-                  width: "100%",
-                  boxSizing: "border-box",
-                }}
-                onChange={(value: string, data: any) => {
+                onChange={(e) => {
+                  const value = e.target.value;
                   setPhoneNumber(value);
-                  // Keep formData in sync for validation and submission
                   setFormData((prev) => ({
                     ...prev,
                     mobileNumber: value,
-                    // Optional metadata for downstream use
-                    countryIso:
-                      (data?.countryCode || "")?.toUpperCase?.() || undefined,
-                    callingCode: data?.dialCode
-                      ? `+${data.dialCode}`
-                      : undefined,
                   }));
                   if (error) setError(null);
                 }}
                 disabled={isLoading}
-                inputClass="phone-input-field"
-                buttonClass="phone-input-button"
-                dropdownClass="phone-input-dropdown"
-                containerClass="phone-input-container"
-                inputStyle={{
+                placeholder="Enter phone number"
+                style={{
                   fontFamily: "var(--font-uber-move)",
                   fontWeight: 400,
                   fontSize: "16px",
-                  padding: "16px 16px 16px 60px",
+                  padding: "16px",
                   backgroundColor: "#e5e7eb",
                   border: "none",
                   borderRadius: "12px",
                   outline: "none",
                   width: "100%",
                   height: "56px",
-                }}
-                buttonStyle={{
-                  backgroundColor: "#e5e7eb",
-                  border: "none",
-                  borderRadius: "12px 0 0 12px",
-                  height: "56px",
-                  width: "60px",
-                }}
-                dropdownStyle={{
-                  fontFamily: "var(--font-uber-move)",
-                  fontWeight: 400,
-                  fontSize: "14px",
                 }}
               />
               <p
