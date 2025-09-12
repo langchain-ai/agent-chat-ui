@@ -351,11 +351,11 @@ export function Thread() {
         ),
         icon: <Armchair className="h-4 w-4" />,
       },
-      // {
-      //   label: t('quickActionTab.showMePastFlights', 'Show me my\npast flights'),
-      //   text: t('quickActionTab.showMePastFlights', 'Show me my past flights'),
-      //   icon: <Ticket className="h-4 w-4" />,
-      // },
+      {
+        label: t('quickActionTab.showMePastFlights', 'Show me my\npast flights'),
+        text: t('quickActionTab.showMePastFlights', 'Show me my past flights'),
+        icon: <Ticket className="h-4 w-4" />,
+      },
       {
         label: t("quickActionTab.doMyWebCheckin", "Please do my\nwebcheckin"),
         text: t("quickActionTab.doMyWebCheckin", "Please do my webcheckin"),
@@ -516,7 +516,7 @@ export function Thread() {
                           "inline-flex items-start gap-3 whitespace-nowrap sm:gap-4",
                         )}
                       >
-                        {quickActions.slice(0, 3).map((qa) => (
+                        {quickActions.slice(0, 4).map((qa) => (
                           <button
                             key={qa.label}
                             type="button"
