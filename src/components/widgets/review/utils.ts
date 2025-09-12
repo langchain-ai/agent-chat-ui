@@ -25,11 +25,11 @@ export const formatDateTime = (isoString: string) => {
       return { date: "Invalid Date", time: "Invalid Time" };
     }
 
-    const dateStr = date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    // Format as dd/mm/yyyy
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    const dateStr = `${day}/${month}/${year}`;
     const timeStr = date.toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
@@ -117,11 +117,11 @@ export const transformApiDataToFlightDetails = (
       const d = new Date(isoString);
       if (isNaN(d.getTime()))
         return { date: "Invalid Date", time: "Invalid Time" };
-      const dateStr = d.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
+      // Format as dd/mm/yyyy
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      const dateStr = `${day}/${month}/${year}`;
       const timeStr = d.toLocaleTimeString("en-GB", {
         hour: "2-digit",
         minute: "2-digit",
