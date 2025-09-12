@@ -1,5 +1,6 @@
 "use client";
 
+import "@/styles/rtl-mirror.css";
 import React, { useState } from "react";
 import { Button } from "@/components/common/ui/button";
 import { Input } from "@/components/common/ui/input";
@@ -19,7 +20,6 @@ import { CountryCombobox } from "./review/CountryCombobox";
 import { validateInput, filterEnglishName, filterEnglishOnly } from "@/utils/input-validation";
 import { useTranslations } from "@/hooks/useTranslations";
 import { useCheckInOptInRTL } from "@/hooks/useRTLMirror";
-import "@/styles/rtl-mirror.css";
 
 interface CheckInOptInWidgetProps {
   apiData?: any;
@@ -289,21 +289,23 @@ const CheckInOptInWidget: React.FC<CheckInOptInWidgetProps> = (args) => {
         )}
         style={mirrorStyles.container}
       >
+        {/* Inner container to reverse the transform for text readability */}
         <div
           className={cn(
-            "mb-6",
+            "w-full",
             // Content-level RTL transformation
             mirrorClasses.content
           )}
           style={mirrorStyles.content}
         >
-          <h2 className="mb-2 text-xl font-semibold text-gray-900">
-            {t('title.webCheckIn', 'Web check-in process for flight from {{departureIata}} to {{arrivalIata}}')
-              .replace('{{departureIata}}', departureIata)
-              .replace('{{arrivalIata}}', arrivalIata)}
-          </h2>
-          <p className="text-sm text-gray-600">{t('title.checkInDetails', 'Check-in details submitted successfully')}</p>
-        </div>
+          <div className="mb-6">
+            <h2 className="mb-2 text-xl font-semibold text-gray-900">
+              {t('title.webCheckIn', 'Web check-in process for flight from {{departureIata}} to {{arrivalIata}}')
+                .replace('{{departureIata}}', departureIata)
+                .replace('{{arrivalIata}}', arrivalIata)}
+            </h2>
+            <p className="text-sm text-gray-600">{t('title.checkInDetails', 'Check-in details submitted successfully')}</p>
+          </div>
         
         <div className="space-y-4">
           <div>
@@ -360,6 +362,7 @@ const CheckInOptInWidget: React.FC<CheckInOptInWidgetProps> = (args) => {
               </div>
             </>
           )}
+          </div>
         </div>
       </div>
     );
@@ -374,23 +377,25 @@ const CheckInOptInWidget: React.FC<CheckInOptInWidgetProps> = (args) => {
       )}
       style={mirrorStyles.container}
     >
+      {/* Inner container to reverse the transform for text readability */}
       <div
         className={cn(
-          "mb-6",
+          "w-full",
           // Content-level RTL transformation
           mirrorClasses.content
         )}
         style={mirrorStyles.content}
       >
-        <h2 className="mb-2 text-xl font-semibold text-gray-900">
-          {t('title.webCheckIn', 'Web check-in process for flight from {{departureIata}} to {{arrivalIata}}')
-            .replace('{{departureIata}}', departureIata)
-            .replace('{{arrivalIata}}', arrivalIata)}
-        </h2>
-        <p className="text-gray-600">
-          {t('messages.checkInInstructions', 'Please provide the required information to proceed with web check-in')}
-        </p>
-      </div>
+        <div className="mb-6">
+          <h2 className="mb-2 text-xl font-semibold text-gray-900">
+            {t('title.webCheckIn', 'Web check-in process for flight from {{departureIata}} to {{arrivalIata}}')
+              .replace('{{departureIata}}', departureIata)
+              .replace('{{arrivalIata}}', arrivalIata)}
+          </h2>
+          <p className="text-gray-600">
+            {t('messages.checkInInstructions', 'Please provide the required information to proceed with web check-in')}
+          </p>
+        </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* PNR Field */}
@@ -675,6 +680,7 @@ const CheckInOptInWidget: React.FC<CheckInOptInWidgetProps> = (args) => {
           </Button>
         </div>
       </form>
+      </div>
     </div>
   );
 };
