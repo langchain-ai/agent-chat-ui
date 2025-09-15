@@ -150,7 +150,7 @@ export const MobilePassengerSelection: React.FC<MobilePassengerSelectionProps> =
   return (
     <div
       className={cn(
-        "mx-auto max-w-sm p-6 bg-white rounded-2xl shadow-sm",
+        "mx-auto max-w-sm p-6 bg-white rounded-2xl shadow-sm overflow-x-hidden",
         // Container-level RTL transformation
         mirrorClasses.container
       )}
@@ -166,7 +166,7 @@ export const MobilePassengerSelection: React.FC<MobilePassengerSelectionProps> =
         style={mirrorStyles.content}
       >
         {/* Title - Exact match to your design */}
-        <h1 className="text-2xl font-semibold text-black mb-2 text-left">
+        <h1 className="text-xl font-semibold text-black mb-2 text-left">
           {t('mobile.whoIsTravelling', 'Who is travelling?')}
         </h1>
 
@@ -176,8 +176,8 @@ export const MobilePassengerSelection: React.FC<MobilePassengerSelectionProps> =
         </p>
 
         {/* Passenger Cards Horizontal Carousel - Updated with placeholder logic and text truncation */}
-        <div className="mb-6 overflow-hidden">
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 px-1">
+        <div className="mb-6 overflow-x-hidden max-w-full">
+          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
             {Array.from({ length: Math.max(2, totalPassengers) }, (_, index) => {
               const displayData = getPassengerDisplayData(index);
 
@@ -185,17 +185,14 @@ export const MobilePassengerSelection: React.FC<MobilePassengerSelectionProps> =
                 <div
                   key={index}
                   className={cn(
-                    "flex-shrink-0 rounded-2xl border bg-white p-3 shadow-sm hover:shadow-md transition-shadow min-h-[120px] cursor-pointer",
-                    // Dynamic responsive widths that ensure proper fit within viewport
-                    "w-[calc(50vw-2.5rem)] min-w-[120px] max-w-[140px]", // 50% viewport width minus container padding and gaps
-                    "sm:w-[150px] sm:min-w-[150px] sm:max-w-[150px]", // Fixed width on small screens and up
+                    "flex-shrink-0 rounded-2xl border bg-white p-4 shadow-sm hover:shadow-md transition-shadow min-h-[120px] cursor-pointer w-[160px]",
                     displayData.isPlaceholder
                       ? "border-gray-200 bg-gray-50" // Slightly different styling for placeholder state
                       : "border-gray-200"
                   )}
                   onClick={onPassengerCardClick || onReviewDetails} // Make individual cards clickable
                 >
-                  {/* Passenger Info - With placeholder logic and text truncation */}
+                  {/* Passenger Info - With placeholder logic and text truncation, no radio button */}
                   <div className="w-full">
                     <div className="text-base font-medium leading-tight mb-1">
                       {displayData.isPlaceholder ? (
@@ -204,9 +201,10 @@ export const MobilePassengerSelection: React.FC<MobilePassengerSelectionProps> =
                           {getPassengerLabel(index)}
                         </span>
                       ) : (
-                        // Show actual passenger name with truncation
+                        // Show actual passenger name with truncation - 16px font-medium
                         <span
                           className="text-black block overflow-hidden text-ellipsis whitespace-nowrap"
+                          style={{ fontSize: '16px' }}
                           title={`${displayData.firstName} ${displayData.lastName}`} // Tooltip for full name
                         >
                           {displayData.firstName} {displayData.lastName}
@@ -218,9 +216,10 @@ export const MobilePassengerSelection: React.FC<MobilePassengerSelectionProps> =
                         // Show placeholder text
                         <span>{t('mobile.selectPassenger', 'Select passenger')}</span>
                       ) : (
-                        // Show actual passenger details with truncation
+                        // Show actual passenger details with truncation - 14px font-medium
                         <span
                           className="block overflow-hidden text-ellipsis whitespace-nowrap"
+                          style={{ fontSize: '14px' }}
                           title={`${displayData.gender} • ${calculateAge(displayData.dateOfBirth)}${t('mobile.yrs', 'yrs')}`}
                         >
                           {displayData.gender} • {calculateAge(displayData.dateOfBirth)}{t('mobile.yrs', 'yrs')}
