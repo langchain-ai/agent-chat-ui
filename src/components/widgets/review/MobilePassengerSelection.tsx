@@ -175,71 +175,63 @@ export const MobilePassengerSelection: React.FC<MobilePassengerSelectionProps> =
           {getSubheaderText()}
         </p>
 
-        {/* Passenger Cards Grid - Updated with placeholder logic and text truncation */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          {Array.from({ length: Math.max(2, totalPassengers) }, (_, index) => {
-            const displayData = getPassengerDisplayData(index);
+        {/* Passenger Cards Horizontal Carousel - Updated with placeholder logic and text truncation */}
+        <div className="mb-6 overflow-hidden">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 px-1">
+            {Array.from({ length: Math.max(2, totalPassengers) }, (_, index) => {
+              const displayData = getPassengerDisplayData(index);
 
-            return (
-              <div
-                key={index}
-                className={cn(
-                  "relative rounded-2xl border bg-white p-4 shadow-sm hover:shadow-md transition-shadow min-h-[120px] cursor-pointer",
-                  displayData.isPlaceholder
-                    ? "border-gray-200 bg-gray-50" // Slightly different styling for placeholder state
-                    : "border-gray-200"
-                )}
-                onClick={onPassengerCardClick || onReviewDetails} // Make individual cards clickable
-              >
-                {/* Radio Button - Exact positioning */}
-                <div className="absolute right-4 top-4">
-                  <div className={cn(
-                    "h-6 w-6 rounded-full border-2 bg-white flex items-center justify-center",
-                    displayData.isSelected ? "border-black" : "border-gray-400"
-                  )}>
-                    <div className={cn(
-                      "h-3 w-3 rounded-full",
-                      displayData.isSelected ? "bg-black" : "bg-transparent"
-                    )}></div>
+              return (
+                <div
+                  key={index}
+                  className={cn(
+                    "flex-shrink-0 rounded-2xl border bg-white p-3 shadow-sm hover:shadow-md transition-shadow min-h-[120px] cursor-pointer",
+                    // Dynamic responsive widths that ensure proper fit within viewport
+                    "w-[calc(50vw-2.5rem)] min-w-[120px] max-w-[140px]", // 50% viewport width minus container padding and gaps
+                    "sm:w-[150px] sm:min-w-[150px] sm:max-w-[150px]", // Fixed width on small screens and up
+                    displayData.isPlaceholder
+                      ? "border-gray-200 bg-gray-50" // Slightly different styling for placeholder state
+                      : "border-gray-200"
+                  )}
+                  onClick={onPassengerCardClick || onReviewDetails} // Make individual cards clickable
+                >
+                  {/* Passenger Info - With placeholder logic and text truncation */}
+                  <div className="w-full">
+                    <div className="text-base font-medium leading-tight mb-1">
+                      {displayData.isPlaceholder ? (
+                        // Show placeholder label
+                        <span className="text-gray-500">
+                          {getPassengerLabel(index)}
+                        </span>
+                      ) : (
+                        // Show actual passenger name with truncation
+                        <span
+                          className="text-black block overflow-hidden text-ellipsis whitespace-nowrap"
+                          title={`${displayData.firstName} ${displayData.lastName}`} // Tooltip for full name
+                        >
+                          {displayData.firstName} {displayData.lastName}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-sm font-medium text-gray-600 leading-tight">
+                      {displayData.isPlaceholder ? (
+                        // Show placeholder text
+                        <span>{t('mobile.selectPassenger', 'Select passenger')}</span>
+                      ) : (
+                        // Show actual passenger details with truncation
+                        <span
+                          className="block overflow-hidden text-ellipsis whitespace-nowrap"
+                          title={`${displayData.gender} • ${calculateAge(displayData.dateOfBirth)}${t('mobile.yrs', 'yrs')}`}
+                        >
+                          {displayData.gender} • {calculateAge(displayData.dateOfBirth)}{t('mobile.yrs', 'yrs')}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-
-                {/* Passenger Info - With placeholder logic and text truncation */}
-                <div className="pr-8">
-                  <div className="text-lg font-semibold leading-tight mb-1">
-                    {displayData.isPlaceholder ? (
-                      // Show placeholder label
-                      <span className="text-gray-500">
-                        {getPassengerLabel(index)}
-                      </span>
-                    ) : (
-                      // Show actual passenger name with truncation
-                      <span
-                        className="text-black block overflow-hidden text-ellipsis whitespace-nowrap"
-                        title={`${displayData.firstName} ${displayData.lastName}`} // Tooltip for full name
-                      >
-                        {displayData.firstName} {displayData.lastName}
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-sm text-gray-600 leading-tight">
-                    {displayData.isPlaceholder ? (
-                      // Show placeholder text
-                      <span>{t('mobile.selectPassenger', 'Select passenger')}</span>
-                    ) : (
-                      // Show actual passenger details with truncation
-                      <span
-                        className="block overflow-hidden text-ellipsis whitespace-nowrap"
-                        title={`${displayData.gender} • ${calculateAge(displayData.dateOfBirth)}${t('mobile.yrs', 'yrs')}`}
-                      >
-                        {displayData.gender} • {calculateAge(displayData.dateOfBirth)}{t('mobile.yrs', 'yrs')}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
 
         {/* Review Details Button - Exact match to your design */}
