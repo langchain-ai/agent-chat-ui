@@ -1,10 +1,10 @@
 import React from "react";
-import { File, Image as ImageIcon, X as XIcon } from "lucide-react";
-import type { Base64ContentBlock } from "@langchain/core/messages";
+import { File, X as XIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { ExtendedImageContentBlock } from "@/lib/multimodal-utils";
 export interface MultimodalPreviewProps {
-  block: Base64ContentBlock;
+  block: ExtendedImageContentBlock;
   removable?: boolean;
   onRemove?: () => void;
   className?: string;
@@ -20,12 +20,16 @@ export const MultimodalPreview: React.FC<MultimodalPreviewProps> = ({
 }) => {
   // Image block
   if (
-    block.type === "image" &&
-    block.source_type === "base64" &&
-    typeof block.mime_type === "string" &&
-    block.mime_type.startsWith("image/")
+    block.type === "image_url" ||
+    (block.type === "image" &&
+      block.source_type === "base64" &&
+      typeof block.mime_type === "string" &&
+      block.mime_type.startsWith("image/"))
   ) {
-    const url = `data:${block.mime_type};base64,${block.data}`;
+    const url =
+      block.type === "image_url"
+        ? block.image_url.url
+        : `data:${block.mime_type};base64,${block.data}`;
     let imgClass: string = "rounded-md object-cover h-16 w-16 text-lg";
     if (size === "sm") imgClass = "rounded-md object-cover h-10 w-10 text-base";
     if (size === "lg") imgClass = "rounded-md object-cover h-24 w-24 text-xl";
