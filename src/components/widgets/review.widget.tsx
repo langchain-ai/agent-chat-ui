@@ -644,17 +644,25 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
   // Detect desktop screen size
   const [isDesktop, setIsDesktop] = useState(true); // Default to desktop to prevent flash
   const [showMobileBottomSheet, setShowMobileBottomSheet] = useState(false);
+  const [hasInitiallyOpened, setHasInitiallyOpened] = useState(false); // Track if we've done initial auto-open
 
   React.useEffect(() => {
     const checkScreenSize = () => {
-      setIsDesktop(window.innerWidth >= 768);
+      const isDesktopSize = window.innerWidth >= 768;
+      setIsDesktop(isDesktopSize);
+
+      // Auto-open bottom sheet on mobile by default ONLY on initial load (unless in read-only mode)
+      if (!isDesktopSize && !readOnly && !hasInitiallyOpened) {
+        setShowMobileBottomSheet(true);
+        setHasInitiallyOpened(true); // Mark that we've done the initial auto-open
+      }
     };
 
     checkScreenSize();
     window.addEventListener("resize", checkScreenSize);
 
     return () => window.removeEventListener("resize", checkScreenSize);
-  }, []);
+  }, [readOnly, hasInitiallyOpened]); // Remove showMobileBottomSheet from dependencies
 
   // Validation helper function to check if form is valid for all passengers
   const validateAllFields = (): ValidationErrors => {
@@ -1050,7 +1058,10 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
             savedPassengers={savedPassengers}
             numberOfTravellers={numberOfTravellers || { adults: 1, children: 0, infants: 0 }}
             totalPassengers={totalPassengers}
+            selectedTravellerIds={selectedTravellerIds}
+            readOnly={readOnly}
             onReviewDetails={() => setShowMobileBottomSheet(true)}
+            onPassengerCardClick={() => setShowMobileBottomSheet(true)} // Make individual cards clickable
           />
 
           <MobileReviewBottomSheet

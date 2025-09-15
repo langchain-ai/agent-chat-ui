@@ -59,7 +59,9 @@
     "hideSavedPassengers": "إخفاء الركاب المحفوظين",
     "confirmBooking": "تأكيد الحجز",
     "processing": "جاري المعالجة...",
-    "bookingConfirmed": "تم تأكيد الحجز"
+    "bookingConfirmed": "تم تأكيد الحجز",
+    "reviewDetails": "مراجعة التفاصيل",
+    "back": "رجوع"
   },
   "sections": {
     "savedPassengers": "الركاب المحفوظون",
@@ -115,5 +117,13 @@
     "baseFareLabel": "الأجرة الأساسية",
     "taxesAndFees": "الضرائب والرسوم",
     "serviceFees": "رسوم الخدمة"
+  },
+  "mobile": {
+    "whoIsTravelling": "من يسافر؟",
+    "chooseOnePassenger": "اختر راكب واحد",
+    "choosePassengers": "اختر {adults} بالغ{adultsPlural}، {children} طفل{childrenPlural}، {infants} رضيع{infantsPlural}",
+    "reviewDetailsTitle": "مراجعة التفاصيل",
+    "yrs": "سنة",
+    "selectPassenger": "اختر راكب"
   }
 }
