@@ -120,37 +120,42 @@ export const FlightDetailsCard: React.FC<FlightDetailsCardProps> = ({
 
                 {/* Mobile Layout */}
                 <div className="sm:hidden">
-                  <div className="mb-3 flex items-center justify-between">
-                    <div className="text-center">
-                      <div className="text-sm font-bold">
-                        {flightDetails.departure.code}
+                  <div className="flex items-center justify-between">
+                    {/* Left side: Departure and Arrival */}
+                    <div className="flex items-center space-x-2 min-w-0 flex-1">
+                      <div className="text-center">
+                        <div className="text-sm font-bold">
+                          {flightDetails.departure.code}
+                        </div>
+                        <div className="text-sm font-bold">
+                          {flightDetails.departure.time}
+                        </div>
                       </div>
-                      <div className="text-sm font-bold">
-                        {flightDetails.departure.time}
+                      <ArrowRight className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                      <div className="text-center">
+                        <div className="text-sm font-bold">
+                          {flightDetails.arrival.code}
+                        </div>
+                        <div className="text-sm font-bold">
+                          {flightDetails.arrival.time}
+                        </div>
                       </div>
                     </div>
-                    <ArrowRight className="h-4 w-4 text-gray-400" />
-                    <div className="text-center">
-                      <div className="text-sm font-bold">
-                        {flightDetails.arrival.code}
-                      </div>
-                      <div className="text-sm font-bold">
-                        {flightDetails.arrival.time}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-center space-x-3">
-                    <AirlineLogo
-                      airlineIata={flightDetails.airline.iataCode || ""}
-                      airlineName={flightDetails.airline.name}
-                      size="sm"
-                    />
-                    <div className="text-center">
-                      <div className="text-sm font-medium text-gray-700">
-                        {flightDetails.airline.name}
-                      </div>
-                      <div className="text-xs text-gray-600">
-                        {flightDetails.airline.cabinClass}
+
+                    {/* Right side: Airline info */}
+                    <div className="flex items-center space-x-2 min-w-0 flex-shrink-0">
+                      <AirlineLogo
+                        airlineIata={flightDetails.airline.iataCode || ""}
+                        airlineName={flightDetails.airline.name}
+                        size="sm"
+                      />
+                      <div className="text-right min-w-0">
+                        <div className="text-xs font-medium text-gray-700 truncate">
+                          {flightDetails.airline.name}
+                        </div>
+                        <div className="text-xs text-gray-600 truncate">
+                          {flightDetails.airline.cabinClass}
+                        </div>
                       </div>
                     </div>
                   </div>

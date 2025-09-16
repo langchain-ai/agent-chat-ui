@@ -352,10 +352,11 @@
     box-sizing: border-box;
   }
 
-  /* Prevent any element from causing horizontal scroll */
+  /* Prevent any element from causing horizontal scroll but allow vertical scroll */
   html,
   body {
     overflow-x: hidden;
+    overflow-y: auto;
     max-width: 100vw;
     box-sizing: border-box;
   }

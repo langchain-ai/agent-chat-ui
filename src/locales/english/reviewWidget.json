@@ -57,9 +57,11 @@
     "selectPassenger": "Select Passenger",
     "showSavedPassengers": "Show Saved Passengers",
     "hideSavedPassengers": "Hide Saved Passengers",
-    "confirmBooking": "Confirm Booking",
+    "confirmBooking": "Continue to Payment",
     "processing": "Processing...",
-    "bookingConfirmed": "Booking Confirmed"
+    "bookingConfirmed": "Booking Confirmed",
+    "reviewDetails": "Review Details",
+    "back": "Back"
   },
   "sections": {
     "savedPassengers": "Saved Passengers",
@@ -116,5 +118,13 @@
     "baseFareLabel": "Base fare",
     "taxesAndFees": "Taxes & fees",
     "serviceFees": "Service fees"
+  },
+  "mobile": {
+    "whoIsTravelling": "Who is travelling?",
+    "chooseOnePassenger": "Choose one passenger",
+    "choosePassengers": "Choose {adults} adult{adultsPlural}, {children} child{childrenPlural}, {infants} infant{infantsPlural}",
+    "reviewDetailsTitle": "Review Details",
+    "yrs": "yrs",
+    "selectPassenger": "Select passenger"
   }
 }

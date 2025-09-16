@@ -7,6 +7,7 @@ declare global {
   interface Window {
     gtag: (...args: any[]) => void;
     dataLayer: any[];
+    clarity: (...args: any[]) => void;
     analyticsDebugger: {
       enable: () => void;
       disable: () => void;
@@ -97,6 +98,20 @@ class AnalyticsDebugger {
     const configScript = document.querySelector("script#google-analytics");
     console.log(`GA config script: ${configScript ? "✅" : "❌"}`);
 
+    // Check Microsoft Clarity
+    const clarityAvailable = typeof window.clarity === "function";
+    console.log(`Clarity function: ${clarityAvailable ? "✅" : "❌"}`);
+
+    // Check Microsoft Clarity script
+    const clarityScript = document.querySelector("script#microsoft-clarity");
+    console.log(`Clarity script: ${clarityScript ? "✅" : "❌"}`);
+
+    // Check for Clarity script in DOM
+    const clarityScriptTag = document.querySelector(
+      'script[src*="clarity.ms"]',
+    );
+    console.log(`Clarity script tag: ${clarityScriptTag ? "✅" : "❌"}`);
+
     // Check network connectivity to GA
     if (gtagAvailable) {
       try {
@@ -105,9 +120,19 @@ class AnalyticsDebugger {
           event_label: "setup_check",
           debug: true,
         });
-        console.log("✅ Test event sent successfully");
+        console.log("✅ GA test event sent successfully");
       } catch (error) {
-        console.error("❌ Error sending test event:", error);
+        console.error("❌ Error sending GA test event:", error);
+      }
+    }
+
+    // Test Microsoft Clarity if available
+    if (clarityAvailable) {
+      try {
+        window.clarity("event", "debug_test");
+        console.log("✅ Clarity test event sent successfully");
+      } catch (error) {
+        console.error("❌ Error sending Clarity test event:", error);
       }
     }
 
