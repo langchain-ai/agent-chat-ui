@@ -88,7 +88,7 @@ export const MobileReviewBottomSheet: React.FC<MobileReviewBottomSheetProps> = (
       <SheetContent
         side="bottom"
         className={cn(
-          "flex h-[90vh] flex-col overflow-hidden sm:h-[85vh]",
+          "flex h-[75vh] flex-col overflow-hidden sm:h-[70vh]",
           // Container-level RTL transformation
           mirrorClasses.container
         )}

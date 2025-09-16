@@ -103,7 +103,7 @@ const DateInput = ({
         <Button
           variant="outline"
           className={cn(
-            "w-full justify-start text-left font-normal focus:border-black focus:ring-black",
+            "w-full justify-start text-left focus:border-black focus:ring-black",
             !date && "text-muted-foreground",
             className,
           )}

@@ -956,7 +956,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
   return (
     <div
       className={cn(
-        "mx-auto max-w-4xl space-y-4 p-4",
+        "w-full space-y-4 p-4 md:mx-auto md:max-w-4xl",
         // Container-level RTL transformation
         mirrorClasses.container
       )}
@@ -1045,7 +1045,7 @@ const ReviewWidget: React.FC<ReviewWidgetProps> = (args: ReviewWidgetProps) => {
                   ? t('buttons.processing', 'Processing...')
                   : isBookingSubmitted
                     ? t('buttons.bookingConfirmed', 'Booking Confirmed')
-                    : t('buttons.confirmBooking', 'Confirm Booking')}
+                    : t('buttons.confirmBooking', 'Continue to Payment')}
               </Button>
             </div>
           </div>

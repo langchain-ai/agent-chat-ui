@@ -42,7 +42,6 @@ export const MobilePassengerSelection: React.FC<MobilePassengerSelectionProps> =
 }) => {
   const { t } = useTranslations('reviewWidget');
 
-  // Initialize RTL mirror detection
   const {
     isRTLMirrorRequired,
     isLoading: isRTLLoading,
@@ -51,31 +50,25 @@ export const MobilePassengerSelection: React.FC<MobilePassengerSelectionProps> =
     isWidgetSupported
   } = useReviewWidgetRTL();
 
-  // Helper function to generate passenger label based on type and sequence (matching main widget)
   const getPassengerLabel = (passengerIndex: number): string => {
     const adults = numberOfTravellers?.adults || 1;
     const children = numberOfTravellers?.children || 0;
 
     if (passengerIndex < adults) {
-      // Adult passengers: "Adult 1", "Adult 2", etc.
       return `${t('labels.adult', 'Adult')} ${passengerIndex + 1}`;
     } else if (passengerIndex < adults + children) {
-      // Children passengers: "Children 1", "Children 2", etc.
       const childIndex = passengerIndex - adults + 1;
       return `${t('labels.children', 'Children')} ${childIndex}`;
     } else {
-      // Infant passengers: "Infants 1", "Infants 2", etc.
       const infantIndex = passengerIndex - adults - children + 1;
       return `${t('labels.infants', 'Infants')} ${infantIndex}`;
     }
   };
 
-  // Helper function to determine if a passenger has been selected
   const isPassengerSelected = (passengerIndex: number): boolean => {
     return selectedTravellerIds[passengerIndex] !== null;
   };
 
-  // Generate subheader text based on passenger count
   const getSubheaderText = () => {
     if (totalPassengers === 1) {
       return t('mobile.chooseOnePassenger', 'Choose one passenger');
@@ -97,9 +90,7 @@ export const MobilePassengerSelection: React.FC<MobilePassengerSelectionProps> =
     }
   };
 
-  // Helper function to get display data for a passenger card
   const getPassengerDisplayData = (passengerIndex: number) => {
-    // In read-only mode, always show actual data if available
     if (readOnly && passengers[passengerIndex]) {
       const passenger = passengers[passengerIndex];
       return {
@@ -107,12 +98,11 @@ export const MobilePassengerSelection: React.FC<MobilePassengerSelectionProps> =
         lastName: passenger.lastName || "",
         gender: passenger.gender || "",
         dateOfBirth: passenger.dateOfBirth || "",
-        isSelected: true, // Always considered selected in read-only mode
+        isSelected: true,
         isPlaceholder: false
       };
     }
 
-    // In live mode, check if passenger has been explicitly selected
     if (isPassengerSelected(passengerIndex) && passengers[passengerIndex]) {
       const passenger = passengers[passengerIndex];
       return {
@@ -125,7 +115,6 @@ export const MobilePassengerSelection: React.FC<MobilePassengerSelectionProps> =
       };
     }
 
-    // Show placeholder when no passenger selected
     return {
       firstName: "",
       lastName: "",
@@ -136,10 +125,9 @@ export const MobilePassengerSelection: React.FC<MobilePassengerSelectionProps> =
     };
   };
 
-  // Show loading state briefly to prevent FOUC
   if (isRTLLoading) {
     return (
-      <div className="mx-auto max-w-sm p-6 bg-white rounded-2xl shadow-sm">
+      <div className="w-full p-6 bg-white rounded-2xl shadow-sm">
         <div className="flex items-center justify-center py-8">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-black"></div>
         </div>
@@ -150,90 +138,76 @@ export const MobilePassengerSelection: React.FC<MobilePassengerSelectionProps> =
   return (
     <div
       className={cn(
-        "mx-auto max-w-sm p-6 bg-white rounded-2xl shadow-sm overflow-x-hidden",
-        // Container-level RTL transformation
+        "w-full p-4 sm:p-6 bg-white rounded-2xl shadow-sm overflow-x-hidden",
         mirrorClasses.container
       )}
       style={{
         fontFamily: "Uber Move, Arial, Helvetica, sans-serif",
-        // Apply CSS transform for complete RTL mirroring
         ...mirrorStyles.container
       }}
     >
-      {/* Inner container to reverse the transform for text readability */}
       <div
         className={cn("w-full", mirrorClasses.content)}
         style={mirrorStyles.content}
       >
-        {/* Title - Exact match to your design */}
         <h1 className="text-xl font-semibold text-black mb-2 text-left">
           {t('mobile.whoIsTravelling', 'Who is travelling?')}
         </h1>
 
-        {/* Subheader */}
         <p className="text-base text-gray-600 mb-6 text-left">
           {getSubheaderText()}
         </p>
 
-        {/* Passenger Cards Horizontal Carousel - Updated with placeholder logic and text truncation */}
-        <div className="mb-6 overflow-x-hidden max-w-full">
-          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-            {Array.from({ length: Math.max(2, totalPassengers) }, (_, index) => {
-              const displayData = getPassengerDisplayData(index);
+        <div className="mb-6 space-y-4">
+          {Array.from({ length: totalPassengers }, (_, index) => {
+            const displayData = getPassengerDisplayData(index);
 
-              return (
-                <div
-                  key={index}
-                  className={cn(
-                    "flex-shrink-0 rounded-2xl border bg-white p-4 shadow-sm hover:shadow-md transition-shadow min-h-[120px] cursor-pointer w-[160px]",
-                    displayData.isPlaceholder
-                      ? "border-gray-200 bg-gray-50" // Slightly different styling for placeholder state
-                      : "border-gray-200"
-                  )}
-                  onClick={onPassengerCardClick || onReviewDetails} // Make individual cards clickable
-                >
-                  {/* Passenger Info - With placeholder logic and text truncation, no radio button */}
-                  <div className="w-full">
-                    <div className="text-base font-medium leading-tight mb-1">
-                      {displayData.isPlaceholder ? (
-                        // Show placeholder label
-                        <span className="text-gray-500">
-                          {getPassengerLabel(index)}
-                        </span>
-                      ) : (
-                        // Show actual passenger name with truncation - 16px font-medium
-                        <span
-                          className="text-black block overflow-hidden text-ellipsis whitespace-nowrap"
-                          style={{ fontSize: '16px' }}
-                          title={`${displayData.firstName} ${displayData.lastName}`} // Tooltip for full name
-                        >
-                          {displayData.firstName} {displayData.lastName}
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-sm font-medium text-gray-600 leading-tight">
-                      {displayData.isPlaceholder ? (
-                        // Show placeholder text
-                        <span>{t('mobile.selectPassenger', 'Select passenger')}</span>
-                      ) : (
-                        // Show actual passenger details with truncation - 14px font-medium
-                        <span
-                          className="block overflow-hidden text-ellipsis whitespace-nowrap"
-                          style={{ fontSize: '14px' }}
-                          title={`${displayData.gender} • ${calculateAge(displayData.dateOfBirth)}${t('mobile.yrs', 'yrs')}`}
-                        >
-                          {displayData.gender} • {calculateAge(displayData.dateOfBirth)}{t('mobile.yrs', 'yrs')}
-                        </span>
-                      )}
-                    </div>
+            return (
+              <div
+                key={index}
+                className={cn(
+                  "w-full rounded-2xl border bg-white p-5 sm:p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer",
+                  displayData.isPlaceholder
+                    ? "border-gray-200 bg-gray-50"
+                    : "border-gray-200"
+                )}
+                onClick={onPassengerCardClick || onReviewDetails}
+              >
+                <div className="w-full">
+                  <div className="text-base font-medium leading-tight mb-1">
+                    {displayData.isPlaceholder ? (
+                      <span className="text-gray-500">
+                        {getPassengerLabel(index)}
+                      </span>
+                    ) : (
+                      <span
+                        className="text-black block overflow-hidden text-ellipsis whitespace-nowrap"
+                        style={{ fontSize: '16px' }}
+                        title={`${displayData.firstName} ${displayData.lastName}`}
+                      >
+                        {displayData.firstName} {displayData.lastName}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-sm font-medium text-gray-600 leading-tight">
+                    {displayData.isPlaceholder ? (
+                      <span>{t('mobile.selectPassenger', 'Select passenger')}</span>
+                    ) : (
+                      <span
+                        className="block overflow-hidden text-ellipsis whitespace-nowrap"
+                        style={{ fontSize: '14px' }}
+                        title={`${displayData.gender} • ${calculateAge(displayData.dateOfBirth)}${t('mobile.yrs', 'yrs')}`}
+                      >
+                        {displayData.gender} • {calculateAge(displayData.dateOfBirth)}{t('mobile.yrs', 'yrs')}
+                      </span>
+                    )}
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
         </div>
 
-        {/* Review Details Button - Exact match to your design */}
         <Button
           onClick={onReviewDetails}
           className="w-full rounded-full bg-gray-100 py-3 px-6 text-base font-medium text-gray-900 hover:bg-gray-200 border-0 shadow-none"
@@ -245,5 +219,6 @@ export const MobilePassengerSelection: React.FC<MobilePassengerSelectionProps> =
     </div>
   );
 };
+
 
 
