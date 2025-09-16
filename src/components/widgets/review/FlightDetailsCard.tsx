@@ -122,7 +122,7 @@ export const FlightDetailsCard: React.FC<FlightDetailsCardProps> = ({
                 <div className="sm:hidden">
                   <div className="flex items-center justify-between">
                     {/* Left side: Departure and Arrival */}
-                    <div className="flex items-center space-x-2 min-w-0 flex-1">
+                    <div className="flex items-center space-x-3 min-w-0 flex-1">
                       <div className="text-center">
                         <div className="text-sm font-bold">
                           {flightDetails.departure.code}
