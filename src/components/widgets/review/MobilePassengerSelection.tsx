@@ -166,7 +166,7 @@ export const MobilePassengerSelection: React.FC<MobilePassengerSelectionProps> =
               <div
                 key={index}
                 className={cn(
-                  "w-full rounded-2xl border bg-white p-5 sm:p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer",
+                  "w-full rounded-2xl border bg-white p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer",
                   displayData.isPlaceholder
                     ? "border-gray-200 bg-gray-50"
                     : "border-gray-200"
@@ -208,13 +208,15 @@ export const MobilePassengerSelection: React.FC<MobilePassengerSelectionProps> =
           })}
         </div>
 
-        <Button
-          onClick={onReviewDetails}
-          className="w-full rounded-full bg-gray-100 py-3 px-6 text-base font-medium text-gray-900 hover:bg-gray-200 border-0 shadow-none"
-          style={{ fontFamily: "Uber Move, Arial, Helvetica, sans-serif" }}
-        >
-          {t('buttons.reviewDetails', 'review details')}
-        </Button>
+        {!readOnly && (
+          <Button
+            onClick={onReviewDetails}
+            className="w-full rounded-full bg-gray-100 py-3 px-6 text-base font-medium text-gray-900 hover:bg-gray-200 border-0 shadow-none"
+            style={{ fontFamily: "Uber Move, Arial, Helvetica, sans-serif" }}
+          >
+            {t('buttons.reviewDetails', 'Review Details')}
+          </Button>
+        )}
       </div>
     </div>
   );
