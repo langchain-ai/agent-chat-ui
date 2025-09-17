@@ -154,9 +154,9 @@ export const MobilePassengerSelection: React.FC<MobilePassengerSelectionProps> =
           {t('mobile.whoIsTravelling', 'Who is travelling?')}
         </h1>
 
-        <p className="text-base text-gray-600 mb-6 text-left">
+        {/* <p className="text-base text-gray-600 mb-6 text-left">
           {getSubheaderText()}
-        </p>
+        </p> */}
 
         <div className="mb-6 space-y-4">
           {Array.from({ length: totalPassengers }, (_, index) => {
@@ -214,7 +214,7 @@ export const MobilePassengerSelection: React.FC<MobilePassengerSelectionProps> =
             className="w-full rounded-full bg-gray-100 py-3 px-6 text-base font-medium text-gray-900 hover:bg-gray-200 border-0 shadow-none"
             style={{ fontFamily: "Uber Move, Arial, Helvetica, sans-serif" }}
           >
-            {t('buttons.reviewDetails', 'Review Details')}
+            {t('buttons.reviewDetails', 'Edit Details')}
           </Button>
         )}
       </div>

@@ -105,7 +105,7 @@ export const MobileReviewBottomSheet: React.FC<MobileReviewBottomSheetProps> = (
         >
           <SheetHeader className="flex-shrink-0 border-b border-gray-200 pb-3">
             <SheetTitle className="text-lg font-medium">
-              {t('mobile.reviewDetailsTitle', 'Review Details')}
+              {t('mobile.reviewDetailsTitle', 'Edit Details')}
             </SheetTitle>
           </SheetHeader>
 

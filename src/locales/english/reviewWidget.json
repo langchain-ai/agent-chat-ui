@@ -60,7 +60,7 @@
     "confirmBooking": "Continue to Payment",
     "processing": "Processing...",
     "bookingConfirmed": "Booking Confirmed",
-    "reviewDetails": "Review Details",
+    "reviewDetails": "Edit Details",
     "back": "Back"
   },
   "sections": {
@@ -123,7 +123,7 @@
     "whoIsTravelling": "Who is travelling?",
     "chooseOnePassenger": "Choose one passenger",
     "choosePassengers": "Choose {adults} adult{adultsPlural}, {children} child{childrenPlural}, {infants} infant{infantsPlural}",
-    "reviewDetailsTitle": "Review Details",
+    "reviewDetailsTitle": "Edit Details",
     "yrs": "yrs",
     "selectPassenger": "Select passenger"
   }
