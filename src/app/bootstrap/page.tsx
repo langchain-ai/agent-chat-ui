@@ -2,7 +2,10 @@
 
 import React, { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { storeJwtTokenWithValidation } from "@/services/authService";
+import {
+  storeJwtTokenWithValidation,
+  setHideOwnerActions,
+} from "@/services/authService";
 
 export default function Bootstrap(): React.ReactNode {
   const params = useSearchParams();
@@ -12,10 +15,16 @@ export default function Bootstrap(): React.ReactNode {
     const userType = params.get("userType") ?? "customer";
     const firstName = params.get("firstName") ?? undefined;
     const lastName = params.get("lastName") ?? undefined;
+    const hideOwnerActionsParam = params.get("hideOwnerActions");
 
     if (jwt) {
       try {
         storeJwtTokenWithValidation(jwt, userType, firstName, lastName);
+        // Persist UI flag if provided
+        if (hideOwnerActionsParam != null) {
+          const normalized = hideOwnerActionsParam.toLowerCase();
+          setHideOwnerActions(normalized === "true" || normalized === "1");
+        }
         window.location.replace("/");
       } catch (err) {
         console.error("Bootstrap auth failed:", err);

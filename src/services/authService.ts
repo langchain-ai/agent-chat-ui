@@ -44,6 +44,31 @@ function upsertUserProfile(patch: Partial<UserProfile>): void {
   setUserProfile({ ...current, ...patch });
 }
 
+// UI flags persisted in localStorage
+const UI_HIDE_OWNER_ACTIONS_KEY = "flyo:ui:hide_owner_actions";
+
+export const setHideOwnerActions = (hide: boolean): void => {
+  try {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(
+      UI_HIDE_OWNER_ACTIONS_KEY,
+      hide ? "true" : "false",
+    );
+  } catch (error) {
+    console.error("Error setting hide owner actions flag:", error);
+  }
+};
+
+export const getHideOwnerActions = (): boolean => {
+  try {
+    if (typeof window === "undefined") return false;
+    const value = window.localStorage.getItem(UI_HIDE_OWNER_ACTIONS_KEY);
+    return value === "true" || value === "1";
+  } catch {
+    return false;
+  }
+};
+
 /**
  * Login with Google OAuth tokens
  */
