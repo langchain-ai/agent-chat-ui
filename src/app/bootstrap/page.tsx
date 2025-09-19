@@ -20,16 +20,15 @@ export default function Bootstrap(): React.ReactNode {
     if (jwt) {
       try {
         storeJwtTokenWithValidation(jwt, userType, firstName, lastName);
-        // Persist UI flag if provided and propagate to next page as a fallback
-        let redirectUrl = "/";
+        // Persist UI flag if provided
         if (hideOwnerActionsParam != null) {
           const normalized = hideOwnerActionsParam.toLowerCase();
           const hide = normalized === "true" || normalized === "1";
           setHideOwnerActions(hide);
-          const qp = new URLSearchParams();
-          qp.set("hideOwnerActions", hide ? "true" : "false");
-          redirectUrl = `/${qp.toString() ? `?${qp.toString()}` : ""}`;
         }
+        // Forward all query params to landing URL so UI can be driven by URL
+        const forwardParams = new URLSearchParams(params.toString());
+        const redirectUrl = `/${forwardParams.toString() ? `?${forwardParams.toString()}` : ""}`;
         // Give WebViews a moment to flush storage before navigating
         setTimeout(() => {
           window.location.replace(redirectUrl);
