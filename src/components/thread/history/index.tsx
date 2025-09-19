@@ -30,6 +30,7 @@ import {
   decodeJwtPayload,
   getUserFullName,
   getHideOwnerActions,
+  setHideOwnerActions,
 } from "@/services/authService";
 import { FlyoLogoSVG } from "@/components/icons/langgraph";
 import { useStreamContext } from "@/providers/Stream";
@@ -149,9 +150,38 @@ function UserProfile() {
   });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [hideOwnerActions, setHideOwnerActionsState] = useState(false);
+  const params = useSearchParams();
 
   useEffect(() => {
     setHideOwnerActionsState(getHideOwnerActions());
+  }, []);
+
+  // React to query param and persist again to handle WebView timing quirks
+  useEffect(() => {
+    try {
+      const flag = params?.get?.("hideOwnerActions");
+      if (flag != null) {
+        const normalized = flag.toLowerCase();
+        const hide = normalized === "true" || normalized === "1";
+        setHideOwnerActions(hide);
+        setHideOwnerActionsState(hide);
+        return;
+      }
+    } catch {}
+    setHideOwnerActionsState(getHideOwnerActions());
+  }, [params]);
+
+  // Refresh from storage on focus or visibility change
+  useEffect(() => {
+    const refresh = () => {
+      setHideOwnerActionsState(getHideOwnerActions());
+    };
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
   }, []);
 
   const handleWhatsAppClick = () => {
