@@ -20,18 +20,30 @@ export default function Bootstrap(): React.ReactNode {
     if (jwt) {
       try {
         storeJwtTokenWithValidation(jwt, userType, firstName, lastName);
-        // Persist UI flag if provided
+        // Persist UI flag if provided and propagate to next page as a fallback
+        let redirectUrl = "/";
         if (hideOwnerActionsParam != null) {
           const normalized = hideOwnerActionsParam.toLowerCase();
-          setHideOwnerActions(normalized === "true" || normalized === "1");
+          const hide = normalized === "true" || normalized === "1";
+          setHideOwnerActions(hide);
+          const qp = new URLSearchParams();
+          qp.set("hideOwnerActions", hide ? "true" : "false");
+          redirectUrl = `/${qp.toString() ? `?${qp.toString()}` : ""}`;
         }
-        window.location.replace("/");
+        // Give WebViews a moment to flush storage before navigating
+        setTimeout(() => {
+          window.location.replace(redirectUrl);
+        }, 100);
       } catch (err) {
         console.error("Bootstrap auth failed:", err);
-        window.location.replace("/login");
+        setTimeout(() => {
+          window.location.replace("/login");
+        }, 100);
       }
     } else {
-      window.location.replace("/login");
+      setTimeout(() => {
+        window.location.replace("/login");
+      }, 100);
     }
   }, [params]);
 

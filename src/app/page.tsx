@@ -12,8 +12,22 @@ import { ProtectedRoute } from "@/components/auth";
 import React from "react";
 import { TabsLayout } from "@/components/thread/TabsLayout";
 import { Navbar } from "@/components/ui/Navbar";
+import { useSearchParams } from "next/navigation";
+import { setHideOwnerActions } from "@/services/authService";
+import { useEffect } from "react";
 
 export default function DemoPage(): React.ReactNode {
+  const params = useSearchParams();
+
+  // Belt-and-suspenders for WebViews: if flag is propagated via query, persist again here
+  useEffect(() => {
+    const flag = params.get("hideOwnerActions");
+    if (flag != null) {
+      const normalized = flag.toLowerCase();
+      setHideOwnerActions(normalized === "true" || normalized === "1");
+    }
+  }, [params]);
+
   return (
     <React.Suspense fallback={<div>Loading (layout)...</div>}>
       <Toaster />
