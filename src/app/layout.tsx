@@ -13,6 +13,13 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Aida",
   description: "Aida Agent Chat",
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "any" }
+    ],
+    apple: { url: "/favicon.svg", type: "image/svg+xml" }
+  },
 };
 
 export default function RootLayout({
