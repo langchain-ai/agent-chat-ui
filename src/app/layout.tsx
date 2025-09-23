@@ -11,8 +11,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Aida",
-  description: "Aida Agent Chat",
+  title: "AiDA",
+  description: "AiDA Agent Chat",
   icons: {
     icon: [
       { url: "/favicon.svg", type: "image/svg+xml" },
