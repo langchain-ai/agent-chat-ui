@@ -52,16 +52,17 @@ function FlightOptionsContent(args: FlightOptionsProps) {
     toggleAirline,
     toggleDepartureTime,
     activeFiltersCount,
+    hasAvailableFilters,
   } = useFlightFilter();
 
   // Initialize translations and RTL mirror detection
-  const { t } = useTranslations('flightOptionsWidget');
+  const { t } = useTranslations("flightOptionsWidget");
   const {
     isRTLMirrorRequired,
     isLoading: isRTLLoading,
     mirrorClasses,
     mirrorStyles,
-    isWidgetSupported
+    isWidgetSupported,
   } = useFlightOptionsRTL();
 
   // All hooks must be called before any conditional logic or early returns
@@ -280,13 +281,8 @@ function FlightOptionsContent(args: FlightOptionsProps) {
         )}
         style={mirrorStyles.content}
       >
-        {/* Header */}
+        {/* Header removed; keep only departure date */}
         <div className="mb-6">
-          <h2 className="mb-2 text-2xl font-bold text-gray-900">
-            {flightOffers.length > 0
-              ? t("title.flightOptions", "Flight Options")
-              : t("messages.noFlightsAvailable", "No flights available")}
-          </h2>
           {/* Departure Date Display */}
           {allFlightOffers.length > 0 && (
             <div className="mb-2">
@@ -303,8 +299,8 @@ function FlightOptionsContent(args: FlightOptionsProps) {
         )} */}
         </div>
 
-        {/* Filter Button - Hidden in read-only mode */}
-        {!readOnly && (
+        {/* Show Filters button only when some filters are active */}
+        {!readOnly && activeFiltersCount > 0 && (
           <div className="mb-6">
             <Button
               variant="outline"
@@ -314,14 +310,12 @@ function FlightOptionsContent(args: FlightOptionsProps) {
             >
               <Filter className="mr-2 h-4 w-4" />
               {t("buttons.filters", "Filters")}
-              {activeFiltersCount > 0 && (
-                <Badge
-                  variant="secondary"
-                  className="ml-1 px-1.5 py-0.5 text-xs"
-                >
-                  {activeFiltersCount}
-                </Badge>
-              )}
+              <Badge
+                variant="secondary"
+                className="ml-1 px-1.5 py-0.5 text-xs"
+              >
+                {activeFiltersCount}
+              </Badge>
             </Button>
           </div>
         )}
