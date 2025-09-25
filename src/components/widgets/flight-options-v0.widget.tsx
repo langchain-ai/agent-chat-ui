@@ -366,10 +366,10 @@ function FlightOptionsContent(args: FlightOptionsProps) {
               defaultValue={getDefaultTab()}
               className="w-full"
             >
-              <TabsList className="w-full overflow-hidden">
+              <TabsList className="w-full gap-1 overflow-hidden rounded-lg">
                 {bestFlight && (
                   <TabsTrigger
-                    className="min-w-0 flex-1 truncate"
+                    className="h-8 min-w-0 flex-1 truncate rounded-lg py-0 text-center sm:h-9"
                     value="best"
                   >
                     {t("tabs.best", "Best")}
@@ -377,7 +377,7 @@ function FlightOptionsContent(args: FlightOptionsProps) {
                 )}
                 {cheapestFlight && (
                   <TabsTrigger
-                    className="min-w-0 flex-1 truncate"
+                    className="h-8 min-w-0 flex-1 truncate rounded-lg py-0 text-center sm:h-9"
                     value="cheapest"
                   >
                     {t("tabs.cheapest", "Cheapest")}
@@ -385,7 +385,7 @@ function FlightOptionsContent(args: FlightOptionsProps) {
                 )}
                 {fastestFlight && (
                   <TabsTrigger
-                    className="min-w-0 flex-1 truncate"
+                    className="h-8 min-w-0 flex-1 truncate rounded-lg py-0 text-center sm:h-9"
                     value="fastest"
                   >
                     {t("tabs.fastest", "Fastest")}
