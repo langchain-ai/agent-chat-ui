@@ -262,7 +262,7 @@ function FlightOptionsContent(args: FlightOptionsProps) {
   return (
     <div
       className={cn(
-        "container mx-auto max-w-6xl p-4",
+        "flight-options-widget container mx-auto max-w-6xl p-4",
         // Container-level RTL transformation using the new system
         mirrorClasses.container,
       )}

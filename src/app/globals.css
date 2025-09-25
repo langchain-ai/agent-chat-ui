@@ -6,39 +6,41 @@
 
 /* Uber Move Font - Using actual Uber Move font files */
 @font-face {
-  font-family: 'Uber Move';
-  src: url('/fonts/UberMove-Light.ttf') format('truetype');
+  font-family: "Uber Move";
+  src: url("/fonts/UberMove-Light.ttf") format("truetype");
   font-weight: 300;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'Uber Move';
-  src: url('/fonts/UberMove-Regular.ttf') format('truetype');
+  font-family: "Uber Move";
+  src: url("/fonts/UberMove-Regular.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'Uber Move';
-  src: url('/fonts/UberMove-Medium.ttf') format('truetype');
+  font-family: "Uber Move";
+  src: url("/fonts/UberMove-Medium.ttf") format("truetype");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'Uber Move';
-  src: url('/fonts/UberMove-Bold.ttf') format('truetype');
+  font-family: "Uber Move";
+  src: url("/fonts/UberMove-Bold.ttf") format("truetype");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
 
 :root {
-  --font-uber-move: 'Uber Move', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-uber-move:
+    "Uber Move", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
 }
 
 .font-uber-move {
@@ -92,7 +94,9 @@
   font-family: var(--font-uber-move) !important;
   font-size: 14px !important;
   border-radius: 8px !important;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
 }
 
 .phone-input-container .react-tel-input .country-list .country {
@@ -240,6 +244,12 @@
 }
 
 @layer utilities {
+  /* WebView overrides: prevent global button min-height from inflating Radix tabs */
+  .flight-options-widget [role="tab"] {
+    min-height: 0 !important;
+    line-height: 1 !important; /* neutralize platform differences */
+  }
+
   /* RTL Support Utilities */
   .rtl {
     direction: rtl;
