@@ -336,29 +336,29 @@ export function Thread() {
   const quickActions: Array<{ label: string; text: string; icon?: ReactNode }> =
     [
       {
-        label: t("quickActionTab.bookMeAFlight", "Book me a\nflight"),
-        text: t("quickActionTab.bookMeAFlight", "Book me a flight"),
+        label: t("quickActionTab.bookMeAFlight.label", "Book me a\nflight"),
+        text: t("quickActionTab.bookMeAFlight.text", "Book me a flight"),
         icon: <Plane className="h-4 w-4" />,
       },
       {
         label: t(
-          "quickActionTab.showFreeLoungeAccess",
+          "quickActionTab.showFreeLoungeAccess.label",
           "Show me free\nlounge access",
         ),
         text: t(
-          "quickActionTab.showFreeLoungeAccess",
+          "quickActionTab.showFreeLoungeAccess.text",
           "Show me free lounge access",
         ),
         icon: <Armchair className="h-4 w-4" />,
       },
       {
-        label: t('quickActionTab.showMePastFlights', 'Show me my\npast flights'),
-        text: t('quickActionTab.showMePastFlights', 'Show me my past flights'),
+        label: t('quickActionTab.showMePastFlights.label', 'Show me my\npast flights'),
+        text: t('quickActionTab.showMePastFlights.text', 'Show me my past flights'),
         icon: <Ticket className="h-4 w-4" />,
       },
       {
-        label: t("quickActionTab.doMyWebCheckin", "Please do my\nwebcheckin"),
-        text: t("quickActionTab.doMyWebCheckin", "Please do my webcheckin"),
+        label: t("quickActionTab.doMyWebCheckin.label", "Please do my\nwebcheckin"),
+        text: t("quickActionTab.doMyWebCheckin.text", "Please do my webcheckin"),
         icon: <Ticket className="h-4 w-4" />,
       },
     ];
