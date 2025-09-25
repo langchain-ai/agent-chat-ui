@@ -366,30 +366,28 @@ function FlightOptionsContent(args: FlightOptionsProps) {
               defaultValue={getDefaultTab()}
               className="w-full"
             >
-              <TabsList
-                className={`grid w-full ${
-                  [bestFlight, cheapestFlight, fastestFlight].filter(Boolean)
-                    .length === 3
-                    ? "grid-cols-3"
-                    : [bestFlight, cheapestFlight, fastestFlight].filter(
-                          Boolean,
-                        ).length === 2
-                      ? "grid-cols-2"
-                      : "grid-cols-1"
-                }`}
-              >
+              <TabsList className="w-full overflow-hidden">
                 {bestFlight && (
-                  <TabsTrigger value="best">
+                  <TabsTrigger
+                    className="min-w-0 flex-1 truncate"
+                    value="best"
+                  >
                     {t("tabs.best", "Best")}
                   </TabsTrigger>
                 )}
                 {cheapestFlight && (
-                  <TabsTrigger value="cheapest">
+                  <TabsTrigger
+                    className="min-w-0 flex-1 truncate"
+                    value="cheapest"
+                  >
                     {t("tabs.cheapest", "Cheapest")}
                   </TabsTrigger>
                 )}
                 {fastestFlight && (
-                  <TabsTrigger value="fastest">
+                  <TabsTrigger
+                    className="min-w-0 flex-1 truncate"
+                    value="fastest"
+                  >
                     {t("tabs.fastest", "Fastest")}
                   </TabsTrigger>
                 )}
