@@ -653,10 +653,10 @@ export function Thread() {
                 <StickToBottom className="relative flex-1 overflow-hidden">
                   <StickyToBottomContent
                     className={cn(
-                      "absolute inset-0 overflow-y-scroll pr-1 pl-3 sm:pr-2 sm:pl-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent",
+                      "absolute inset-0 overflow-y-scroll pr-2 pl-3 sm:pr-2 sm:pl-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent",
                       chatStarted && "grid grid-rows-[1fr_auto]",
                     )}
-                    contentClassName="pt-4 pb-16 sm:pt-8 sm:pb-24 max-w-3xl mx-auto flex flex-col gap-3 w-full"
+                    contentClassName="pt-4 pb-16 sm:pt-8 sm:pb-24 max-w-3xl mx-auto flex flex-col gap-1 w-full"
                     content={
                       <>
                         {blocks.map((block, index) => {
