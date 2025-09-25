@@ -182,7 +182,7 @@ export function HumanMessage({
                   isHumanMessage={true}
                 />
               </div>
-              <p className="bg-muted flex-1 rounded-3xl px-4 py-2 text-right break-words whitespace-pre-wrap">
+              <p className="bg-muted flex-1 rounded-3xl px-4 py-2 text-left break-words whitespace-pre-wrap">
                 {contentString}
               </p>
             </div>
