@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import "@/styles/rtl-mirror.css";
 import { Button } from "@/components/common/ui/button";
-import { Plus, Minus, CalendarIcon } from "lucide-react";
+import { Plus, Minus, CalendarIcon, Check } from "lucide-react";
 import { AirportCombobox } from "@/components/common/ui/airportCombobox";
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
@@ -18,6 +18,17 @@ import { Calendar } from "@/components/ui/calendar";
 import { useTranslations } from "@/hooks/useTranslations";
 import { getSelectedLanguage } from "@/utils/language-storage";
 import { useSearchCriteriaRTL } from "@/hooks/useRTLMirror";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { searchAirports } from "@/services/airportService";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 
 // Hook to get user's language preference and convert to locale format
 function useUserLocale() {
@@ -251,6 +262,13 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
     departureDate: false,
   });
 
+  // Mobile detection and bottom sheet states
+  const isMobile = useMediaQuery("(max-width: 767px)");
+  const [showFromAirportSheet, setShowFromAirportSheet] = useState(false);
+  const [showToAirportSheet, setShowToAirportSheet] = useState(false);
+  const [showDepartureDateSheet, setShowDepartureDateSheet] = useState(false);
+  const [showTravellerSheet, setShowTravellerSheet] = useState(false);
+
   // Validation function to check if all mandatory fields are filled
   const validateForm = () => {
     const errors = {
@@ -407,6 +425,310 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
     return `${parts.join(", ")}, ${translatedClass}`;
   };
 
+  // Helper function to get airport display name from cache or popular airports
+  const getAirportDisplayName = (airportCode: string): string => {
+    if (!airportCode) return '';
+
+    // Check popular airports first
+    const popularAirport = [
+      { code: "DEL", city: "New Delhi" },
+      { code: "BOM", city: "Mumbai" },
+      { code: "BLR", city: "Bangalore" },
+      { code: "MAA", city: "Chennai" },
+      { code: "CCU", city: "Kolkata" },
+      { code: "HYD", city: "Hyderabad" },
+      { code: "AMD", city: "Ahmedabad" },
+      { code: "COK", city: "Kochi" },
+      { code: "GOI", city: "Goa" },
+      { code: "PNQ", city: "Pune" },
+      { code: "JAI", city: "Jaipur" },
+      { code: "IXC", city: "Chandigarh" },
+      { code: "LKO", city: "Lucknow" },
+      { code: "TRV", city: "Thiruvananthapuram" },
+      { code: "IXB", city: "Bagdogra" },
+      { code: "GAU", city: "Guwahati" },
+      { code: "IXR", city: "Ranchi" },
+      { code: "BBI", city: "Bhubaneswar" },
+      { code: "IXU", city: "Aurangabad" },
+      { code: "NAG", city: "Nagpur" },
+      { code: "JFK", city: "New York" },
+      { code: "LAX", city: "Los Angeles" },
+    ].find(airport => airport.code === airportCode);
+
+    if (popularAirport) {
+      return `${popularAirport.code} - ${popularAirport.city}`;
+    }
+
+    // Fallback to just the code if not found
+    return airportCode;
+  };
+
+  // Mobile input components that trigger bottom sheets
+  const MobileAirportInput = ({
+    value,
+    placeholder,
+    onClick,
+    hasError
+  }: {
+    value: string;
+    placeholder: string;
+    onClick: () => void;
+    hasError?: boolean;
+  }) => {
+    const displayValue = value ? getAirportDisplayName(value) : '';
+
+    return (
+      <Button
+        type="button"
+        variant="outline"
+        onClick={onClick}
+        className={cn(
+          "w-full justify-start text-left focus:border-black focus:ring-black",
+          !value && "text-muted-foreground",
+          hasError && "border-red-500"
+        )}
+        disabled={readOnly}
+      >
+        <span className="truncate overflow-hidden whitespace-nowrap">
+          {displayValue || placeholder}
+        </span>
+      </Button>
+    );
+  };
+
+  const MobileDateInput = ({
+    date,
+    placeholder,
+    onClick,
+    hasError
+  }: {
+    date?: Date;
+    placeholder: string;
+    onClick: () => void;
+    hasError?: boolean;
+  }) => {
+    const userLocale = useUserLocale();
+    return (
+      <Button
+        type="button"
+        variant="outline"
+        onClick={onClick}
+        className={cn(
+          "w-full justify-start text-left focus:border-black focus:ring-black",
+          !date && "text-muted-foreground",
+          hasError && "border-red-500"
+        )}
+        disabled={readOnly}
+      >
+        <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
+        <span className="truncate overflow-hidden whitespace-nowrap">
+          {date ? date.toLocaleDateString(userLocale, {
+            weekday: "short",
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          }) : placeholder}
+        </span>
+      </Button>
+    );
+  };
+
+  // Mobile Airport Selector Component with auto-focus and proper scrolling
+  const MobileAirportSelector = ({
+    value,
+    onValueChange,
+    placeholder,
+    excludeAirport,
+    disabled = false,
+    autoFocus = false,
+  }: {
+    value?: string;
+    onValueChange?: (value: string) => void;
+    placeholder?: string;
+    excludeAirport?: string;
+    disabled?: boolean;
+    autoFocus?: boolean;
+  }) => {
+    const [searchQuery, setSearchQuery] = React.useState("");
+    const [apiResults, setApiResults] = React.useState<any[]>([]);
+    const [isLoading, setIsLoading] = React.useState(false);
+    const inputRef = React.useRef<HTMLInputElement>(null);
+
+    // Auto-focus the input when the component mounts
+    React.useEffect(() => {
+      if (autoFocus && inputRef.current) {
+        // Small delay to ensure the sheet animation is complete
+        const timer = setTimeout(() => {
+          inputRef.current?.focus();
+        }, 300);
+        return () => clearTimeout(timer);
+      }
+    }, [autoFocus]);
+
+    // Debounced API call when user types
+    React.useEffect(() => {
+      if (disabled) {
+        setApiResults([]);
+        setIsLoading(false);
+        return;
+      }
+      if (!searchQuery || searchQuery.trim().length === 0) {
+        setApiResults([]);
+        setIsLoading(false);
+        return;
+      }
+
+      const timeoutId = setTimeout(async () => {
+        setIsLoading(true);
+        try {
+          const results = await searchAirports(searchQuery);
+          setApiResults(results);
+        } catch (error) {
+          console.error("Failed to search airports:", error);
+          setApiResults([]);
+        } finally {
+          setIsLoading(false);
+        }
+      }, 100);
+
+      return () => clearTimeout(timeoutId);
+    }, [searchQuery, disabled]);
+
+    const displayAirports = React.useMemo(() => {
+      // If no search query, show popular airports
+      if (!searchQuery || searchQuery.trim().length === 0) {
+        let airports = [
+          { code: "DEL", name: "Indira Gandhi International Airport", city: "New Delhi", country: "India" },
+          { code: "BOM", name: "Chhatrapati Shivaji Maharaj International Airport", city: "Mumbai", country: "India" },
+          { code: "BLR", name: "Kempegowda International Airport", city: "Bangalore", country: "India" },
+          { code: "MAA", name: "Chennai International Airport", city: "Chennai", country: "India" },
+          { code: "CCU", name: "Netaji Subhas Chandra Bose International Airport", city: "Kolkata", country: "India" },
+          { code: "HYD", name: "Rajiv Gandhi International Airport", city: "Hyderabad", country: "India" },
+          { code: "AMD", name: "Sardar Vallabhbhai Patel International Airport", city: "Ahmedabad", country: "India" },
+          { code: "COK", name: "Cochin International Airport", city: "Kochi", country: "India" },
+          { code: "GOI", name: "Goa International Airport", city: "Goa", country: "India" },
+          { code: "PNQ", name: "Pune Airport", city: "Pune", country: "India" },
+          { code: "JAI", name: "Jaipur International Airport", city: "Jaipur", country: "India" },
+          { code: "IXC", name: "Chandigarh Airport", city: "Chandigarh", country: "India" },
+          { code: "LKO", name: "Chaudhary Charan Singh International Airport", city: "Lucknow", country: "India" },
+          { code: "TRV", name: "Trivandrum International Airport", city: "Thiruvananthapuram", country: "India" },
+          { code: "IXB", name: "Bagdogra Airport", city: "Bagdogra", country: "India" },
+          { code: "GAU", name: "Lokpriya Gopinath Bordoloi International Airport", city: "Guwahati", country: "India" },
+          { code: "IXR", name: "Birsa Munda Airport", city: "Ranchi", country: "India" },
+          { code: "BBI", name: "Biju Patnaik International Airport", city: "Bhubaneswar", country: "India" },
+          { code: "IXU", name: "Aurangabad Airport", city: "Aurangabad", country: "India" },
+          { code: "NAG", name: "Dr. Babasaheb Ambedkar International Airport", city: "Nagpur", country: "India" },
+          { code: "JFK", name: "John F. Kennedy International Airport", city: "New York", country: "USA" },
+          { code: "LAX", name: "Los Angeles International Airport", city: "Los Angeles", country: "USA" },
+        ];
+
+        // Exclude the specified airport
+        if (excludeAirport) {
+          airports = airports.filter((airport) => airport.code !== excludeAirport);
+        }
+
+        return airports.map((airport) => ({
+          value: airport.code,
+          label: `${airport.code} - ${airport.city}`,
+          description: airport.name,
+          isPopular: true,
+        }));
+      }
+
+      // If searching, show API results
+      return apiResults
+        .filter((result) => (excludeAirport ? result.k !== excludeAirport : true))
+        .map((result) => {
+          // Parse the API response format
+          const parts = result.v.split(" - ");
+          const cityCountry = parts[0] || result.v;
+          const airportInfo = parts[1] || "";
+
+          // Extract city name from cityCountry (remove country part)
+          const cityName = cityCountry.split(",")[0] || cityCountry;
+
+          return {
+            value: result.k,
+            label: `${result.k} - ${cityName}`,
+            description: airportInfo || result.v,
+            isPopular: false,
+          };
+        });
+    }, [searchQuery, excludeAirport, apiResults]);
+
+    return (
+      <div className="w-full h-full flex flex-col">
+        <Command shouldFilter={false} className="h-full">
+          <CommandInput
+            ref={inputRef}
+            placeholder={t('placeholders.searchAirports', 'Search airports...')}
+            className="h-12"
+            value={searchQuery}
+            onValueChange={setSearchQuery}
+            disabled={disabled}
+          />
+          <CommandList className="flex-1 max-h-none overflow-y-auto">
+            <CommandEmpty>
+              {isLoading ? t('airport.searchingAirports', 'Searching airports...') : t('airport.noAirportsFound', 'No airports found.')}
+            </CommandEmpty>
+            {!searchQuery && displayAirports.length > 0 && (
+              <CommandGroup heading={t('airport.popularAirports', 'Popular Airports')}>
+                {displayAirports.map((airport) => (
+                  <CommandItem
+                    key={airport.value}
+                    value={airport.value}
+                    onSelect={(currentValue) => {
+                      if (disabled) return;
+                      onValueChange?.(currentValue);
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === airport.value ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    <div className="flex flex-col">
+                      <span className="font-medium">{airport.label}</span>
+                      <span className="text-sm text-gray-500 truncate">{airport.description}</span>
+                    </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+            {searchQuery && displayAirports.length > 0 && (
+              <CommandGroup heading={t('airport.searchResults', 'Search Results')}>
+                {displayAirports.map((airport) => (
+                  <CommandItem
+                    key={airport.value}
+                    value={airport.value}
+                    onSelect={(currentValue) => {
+                      if (disabled) return;
+                      onValueChange?.(currentValue);
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === airport.value ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    <div className="flex flex-col">
+                      <span className="font-medium">{airport.label}</span>
+                      <span className="text-sm text-gray-500 truncate">{airport.description}</span>
+                    </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+          </CommandList>
+        </Command>
+      </div>
+    );
+  };
+
   // Show loading state briefly to prevent FOUC
   if (isRTLLoading) {
     return (
@@ -481,20 +803,29 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
             {/* Flight Details - From/To */}
             <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row">
               <div className="flex-1">
-                <AirportCombobox
-                  value={fromAirport}
-                  onValueChange={(value) => {
-                    handleFromAirportChange(value);
-                    // Clear validation error when user starts typing
-                    if (value && value.trim().length > 0) {
-                      setValidationErrors(prev => ({ ...prev, fromAirport: false }));
-                    }
-                  }}
-                  placeholder={t('placeholders.fromAirport', 'From - City or Airport')}
-                  excludeAirport={toAirport}
-                  disabled={readOnly}
-                  className={validationErrors.fromAirport ? "border-red-500" : ""}
-                />
+                {isMobile ? (
+                  <MobileAirportInput
+                    value={fromAirport}
+                    placeholder={t('placeholders.fromAirport', 'From - City or Airport')}
+                    onClick={() => setShowFromAirportSheet(true)}
+                    hasError={validationErrors.fromAirport}
+                  />
+                ) : (
+                  <AirportCombobox
+                    value={fromAirport}
+                    onValueChange={(value) => {
+                      handleFromAirportChange(value);
+                      // Clear validation error when user starts typing
+                      if (value && value.trim().length > 0) {
+                        setValidationErrors(prev => ({ ...prev, fromAirport: false }));
+                      }
+                    }}
+                    placeholder={t('placeholders.fromAirport', 'From - City or Airport')}
+                    excludeAirport={toAirport}
+                    disabled={readOnly}
+                    className={validationErrors.fromAirport ? "border-red-500" : ""}
+                  />
+                )}
                 {validationErrors.fromAirport && (
                   <p className="mt-1 text-xs text-red-500 text-left">
                     {t('validation.fromAirportRequired', 'From airport is required')}
@@ -503,20 +834,29 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
               </div>
 
               <div className="flex-1">
-                <AirportCombobox
-                  value={toAirport}
-                  onValueChange={(value) => {
-                    handleToAirportChange(value);
-                    // Clear validation error when user starts typing
-                    if (value && value.trim().length > 0) {
-                      setValidationErrors(prev => ({ ...prev, toAirport: false }));
-                    }
-                  }}
-                  placeholder={t('placeholders.toAirport', 'To - City or Airport')}
-                  excludeAirport={fromAirport}
-                  disabled={readOnly}
-                  className={validationErrors.toAirport ? "border-red-500" : ""}
-                />
+                {isMobile ? (
+                  <MobileAirportInput
+                    value={toAirport}
+                    placeholder={t('placeholders.toAirport', 'To - City or Airport')}
+                    onClick={() => setShowToAirportSheet(true)}
+                    hasError={validationErrors.toAirport}
+                  />
+                ) : (
+                  <AirportCombobox
+                    value={toAirport}
+                    onValueChange={(value) => {
+                      handleToAirportChange(value);
+                      // Clear validation error when user starts typing
+                      if (value && value.trim().length > 0) {
+                        setValidationErrors(prev => ({ ...prev, toAirport: false }));
+                      }
+                    }}
+                    placeholder={t('placeholders.toAirport', 'To - City or Airport')}
+                    excludeAirport={fromAirport}
+                    disabled={readOnly}
+                    className={validationErrors.toAirport ? "border-red-500" : ""}
+                  />
+                )}
                 {validationErrors.toAirport && (
                   <p className="mt-1 text-xs text-red-500 text-left">
                     {t('validation.toAirportRequired', 'To airport is required')}
@@ -534,18 +874,27 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                     readOnly ? "pointer-events-none opacity-60" : undefined
                   }
                 >
-                  <DateInput
-                    date={departureDate}
-                    onDateChange={(date) => {
-                      handleDepartureDateChange(date);
-                      // Clear validation error when user selects a date
-                      if (date) {
-                        setValidationErrors(prev => ({ ...prev, departureDate: false }));
-                      }
-                    }}
-                    placeholder={t('placeholders.selectDepartureDate', 'Select departure date')}
-                    className={validationErrors.departureDate ? "border-red-500" : ""}
-                  />
+                  {isMobile ? (
+                    <MobileDateInput
+                      date={departureDate}
+                      placeholder={t('placeholders.selectDepartureDate', 'Select departure date')}
+                      onClick={() => setShowDepartureDateSheet(true)}
+                      hasError={validationErrors.departureDate}
+                    />
+                  ) : (
+                    <DateInput
+                      date={departureDate}
+                      onDateChange={(date) => {
+                        handleDepartureDateChange(date);
+                        // Clear validation error when user selects a date
+                        if (date) {
+                          setValidationErrors(prev => ({ ...prev, departureDate: false }));
+                        }
+                      }}
+                      placeholder={t('placeholders.selectDepartureDate', 'Select departure date')}
+                      className={validationErrors.departureDate ? "border-red-500" : ""}
+                    />
+                  )}
                 </div>
                 {validationErrors.departureDate && (
                   <p className="mt-1 text-xs text-red-500 text-left">
@@ -574,22 +923,38 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
 
             {/* Travellers & Class - Dropdown */}
             <div>
-              <Popover
-                open={showTravellerDropdown}
-                onOpenChange={setShowTravellerDropdown}
-              >
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={showTravellerDropdown}
-                    className="w-full justify-between focus:border-black focus:ring-black"
-                    disabled={readOnly}
-                  >
-                    <span>{formatTravellerText()}</span>
-                    <span className="ml-2 text-gray-400">▼</span>
-                  </Button>
-                </PopoverTrigger>
+              {isMobile ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowTravellerSheet(true)}
+                  className="w-full justify-between focus:border-black focus:ring-black"
+                  disabled={readOnly}
+                >
+                  <span className="truncate overflow-hidden whitespace-nowrap flex-1 text-left">
+                    {formatTravellerText()}
+                  </span>
+                  <span className="ml-2 text-gray-400 flex-shrink-0">▼</span>
+                </Button>
+              ) : (
+                <Popover
+                  open={showTravellerDropdown}
+                  onOpenChange={setShowTravellerDropdown}
+                >
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={showTravellerDropdown}
+                      className="w-full justify-between focus:border-black focus:ring-black"
+                      disabled={readOnly}
+                    >
+                      <span className="truncate overflow-hidden whitespace-nowrap flex-1 text-left">
+                        {formatTravellerText()}
+                      </span>
+                      <span className="ml-2 text-gray-400 flex-shrink-0">▼</span>
+                    </Button>
+                  </PopoverTrigger>
                 <PopoverContent
                   className="w-[320px] p-0 sm:w-[380px] md:w-[420px]"
                   align="start"
@@ -732,7 +1097,8 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                     </div>
                   </div>
                 </PopoverContent>
-              </Popover>
+                </Popover>
+              )}
             </div>
 
             {/* Search Button */}
@@ -748,6 +1114,314 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
           </form>
         </div>
       </div>
+
+      {/* Mobile Bottom Sheets */}
+      {isMobile && (
+        <>
+          {/* From Airport Bottom Sheet */}
+          <Sheet open={showFromAirportSheet} onOpenChange={setShowFromAirportSheet}>
+            <SheetContent
+              side="bottom"
+              className={cn(
+                "flex h-[70vh] flex-col overflow-hidden",
+                mirrorClasses.container
+              )}
+              style={{
+                fontFamily: "Uber Move, Arial, Helvetica, sans-serif",
+                ...mirrorStyles.container
+              }}
+            >
+              <div
+                className={cn("w-full h-full flex flex-col", mirrorClasses.content)}
+                style={mirrorStyles.content}
+              >
+                <SheetHeader className="flex-shrink-0 border-b border-gray-200 pb-3">
+                  <SheetTitle className="text-lg font-medium">
+                    {t('placeholders.fromAirport', 'From - City or Airport')}
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="flex-1 overflow-hidden p-4">
+                  <MobileAirportSelector
+                    value={fromAirport}
+                    onValueChange={(value) => {
+                      handleFromAirportChange(value);
+                      if (value && value.trim().length > 0) {
+                        setValidationErrors(prev => ({ ...prev, fromAirport: false }));
+                        setShowFromAirportSheet(false);
+                      }
+                    }}
+                    placeholder={t('placeholders.fromAirport', 'From - City or Airport')}
+                    excludeAirport={toAirport}
+                    disabled={readOnly}
+                    autoFocus={true}
+                  />
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+
+          {/* To Airport Bottom Sheet */}
+          <Sheet open={showToAirportSheet} onOpenChange={setShowToAirportSheet}>
+            <SheetContent
+              side="bottom"
+              className={cn(
+                "flex h-[70vh] flex-col overflow-hidden",
+                mirrorClasses.container
+              )}
+              style={{
+                fontFamily: "Uber Move, Arial, Helvetica, sans-serif",
+                ...mirrorStyles.container
+              }}
+            >
+              <div
+                className={cn("w-full h-full flex flex-col", mirrorClasses.content)}
+                style={mirrorStyles.content}
+              >
+                <SheetHeader className="flex-shrink-0 border-b border-gray-200 pb-3">
+                  <SheetTitle className="text-lg font-medium">
+                    {t('placeholders.toAirport', 'To - City or Airport')}
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="flex-1 overflow-hidden p-4">
+                  <MobileAirportSelector
+                    value={toAirport}
+                    onValueChange={(value) => {
+                      handleToAirportChange(value);
+                      if (value && value.trim().length > 0) {
+                        setValidationErrors(prev => ({ ...prev, toAirport: false }));
+                        setShowToAirportSheet(false);
+                      }
+                    }}
+                    placeholder={t('placeholders.toAirport', 'To - City or Airport')}
+                    excludeAirport={fromAirport}
+                    disabled={readOnly}
+                    autoFocus={true}
+                  />
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+
+          {/* Departure Date Bottom Sheet */}
+          <Sheet open={showDepartureDateSheet} onOpenChange={setShowDepartureDateSheet}>
+            <SheetContent
+              side="bottom"
+              className={cn(
+                "flex h-[65vh] flex-col overflow-hidden",
+                mirrorClasses.container
+              )}
+              style={{
+                fontFamily: "Uber Move, Arial, Helvetica, sans-serif",
+                ...mirrorStyles.container
+              }}
+            >
+              <div
+                className={cn("w-full h-full flex flex-col", mirrorClasses.content)}
+                style={mirrorStyles.content}
+              >
+                <SheetHeader className="flex-shrink-0 border-b border-gray-200 pb-3">
+                  <SheetTitle className="text-lg font-medium">
+                    {t('placeholders.selectDepartureDate', 'Select departure date')}
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="flex-1 overflow-y-auto p-4 flex justify-center items-start">
+                  <Calendar
+                    mode="single"
+                    selected={departureDate}
+                    onSelect={(selectedDate: Date | undefined) => {
+                      handleDepartureDateChange(selectedDate);
+                      if (selectedDate) {
+                        setValidationErrors(prev => ({ ...prev, departureDate: false }));
+                        setShowDepartureDateSheet(false);
+                      }
+                    }}
+                    disabled={(date: Date) => {
+                      const tomorrow = new Date();
+                      tomorrow.setDate(tomorrow.getDate() + 1);
+                      tomorrow.setHours(0, 0, 0, 0);
+                      return date < tomorrow;
+                    }}
+                    className="w-full max-w-sm"
+                  />
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+
+          {/* Traveller Selection Bottom Sheet */}
+          <Sheet open={showTravellerSheet} onOpenChange={setShowTravellerSheet}>
+            <SheetContent
+              side="bottom"
+              className={cn(
+                "flex h-[70vh] flex-col overflow-hidden",
+                mirrorClasses.container
+              )}
+              style={{
+                fontFamily: "Uber Move, Arial, Helvetica, sans-serif",
+                ...mirrorStyles.container
+              }}
+            >
+              <div
+                className={cn("w-full h-full flex flex-col", mirrorClasses.content)}
+                style={mirrorStyles.content}
+              >
+                <SheetHeader className="flex-shrink-0 border-b border-gray-200 pb-3">
+                  <SheetTitle className="text-lg font-medium">
+                    {t('labels.selectTravellers', 'Select travellers')}
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="flex-1 overflow-y-auto">
+                  <div className="space-y-6 p-4">
+                    {/* Select travellers */}
+                    <div>
+                      <h3 className="mb-4 text-lg font-semibold">
+                        {t('labels.selectTravellers', 'Select travellers')}
+                      </h3>
+
+                      {/* Adults */}
+                      <div className="flex items-center justify-between py-3">
+                        <div>
+                          <div className="font-medium">{t('passengerType.adults', 'Adult')}</div>
+                          <div className="text-sm text-gray-500">{t('labels.adultAge', '12+ Years')}</div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 rounded-full p-0"
+                            onClick={() => setAdults(Math.max(1, adults - 1))}
+                            disabled={adults <= 1 || readOnly}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <span className="w-8 text-center font-medium">
+                            {adults}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 rounded-full p-0"
+                            onClick={() => setAdults(adults + 1)}
+                            disabled={readOnly}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Children */}
+                      <div className="flex items-center justify-between py-3">
+                        <div>
+                          <div className="font-medium">{t('passengerType.children', 'Children')}</div>
+                          <div className="text-sm text-gray-500">{t('labels.childrenAge', '2 - 12 yrs')}</div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 rounded-full p-0"
+                            onClick={() => setChildren(Math.max(0, children - 1))}
+                            disabled={children <= 0 || readOnly}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <span className="w-8 text-center font-medium">
+                            {children}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 rounded-full p-0"
+                            onClick={() => setChildren(children + 1)}
+                            disabled={readOnly}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Infants */}
+                      <div className="flex items-center justify-between py-3">
+                        <div>
+                          <div className="font-medium">{t('passengerType.infants', 'Infant')}</div>
+                          <div className="text-sm text-gray-500">{t('labels.infantAge', 'Below 2 yrs')}</div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 rounded-full p-0"
+                            onClick={() => setInfants(Math.max(0, infants - 1))}
+                            disabled={infants <= 0 || readOnly}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <span className="w-8 text-center font-medium">
+                            {infants}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 rounded-full p-0"
+                            onClick={() => setInfants(infants + 1)}
+                            disabled={readOnly}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Select class */}
+                    <div>
+                      <h3 className="mb-4 text-lg font-semibold">{t('labels.selectClass', 'Select class')}</h3>
+                      <div className="space-y-3">
+                        {["Economy", "Business", "Premium Economy"].map(
+                          (classOption) => (
+                            <label
+                              key={classOption}
+                              className="flex cursor-pointer items-center gap-3"
+                            >
+                              <input
+                                type="radio"
+                                name="flightClass"
+                                value={classOption}
+                                checked={flightClass === classOption}
+                                onChange={(e) => setFlightClass(e.target.value)}
+                                className="h-4 w-4 border-gray-300 text-black focus:ring-black"
+                                disabled={readOnly}
+                              />
+                              <span className="font-medium">
+                                {classOption === "Economy" ? t('flightClass.economy', 'Economy') :
+                                 classOption === "Business" ? t('flightClass.business', 'Business') :
+                                 t('flightClass.premiumEconomy', 'Premium Economy')}
+                              </span>
+                            </label>
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex-shrink-0 border-t border-gray-200 p-4">
+                  <Button
+                    onClick={() => setShowTravellerSheet(false)}
+                    className="w-full bg-black text-white hover:bg-gray-800"
+                  >
+                    {t('button.done', 'Done')}
+                  </Button>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </>
+      )}
     </>
   );
 };

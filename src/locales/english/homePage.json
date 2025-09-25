@@ -1,8 +1,20 @@
 {
     "quickActionTab":{
-        "bookMeAFlight": "Book me a\nflight",
-        "showMePastFlights": "Show me my\npast flights",
-        "showFreeLoungeAccess": "Show me free\nlounge access",
-        "doMyWebCheckin": "Please do my\nwebcheckin"
+        "bookMeAFlight": {
+            "label": "Book me a\nflight",
+            "text": "Book me a flight"
+        },
+        "showMePastFlights": {
+            "label": "Show me my\npast flights",
+            "text": "Show me my past flights"
+        },
+        "showFreeLoungeAccess": {
+            "label": "Show me free\nlounge access",
+            "text": "Show me free lounge access"
+        },
+        "doMyWebCheckin": {
+            "label": "Please do my\nwebcheckin",
+            "text": "Please do my webcheckin"
+        }
     }
 }
