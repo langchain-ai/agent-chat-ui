@@ -576,12 +576,51 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
     const [isLoading, setIsLoading] = React.useState(false);
     const [showSearch, setShowSearch] = React.useState(false);
 
+    // Refs for input fields to manage focus
+    const fromInputRef = React.useRef<HTMLInputElement>(null);
+    const toInputRef = React.useRef<HTMLInputElement>(null);
+
     // Reset search when mode changes
     React.useEffect(() => {
       setSearchQuery("");
       setApiResults([]);
       setShowSearch(false);
     }, [mode]);
+
+    // Prevent auto-focus when component mounts or mode changes
+    React.useEffect(() => {
+      // Small delay to ensure the component is fully rendered
+      const timeoutId = setTimeout(() => {
+        // Blur any focused input to prevent keyboard from appearing
+        if (fromInputRef.current && document.activeElement === fromInputRef.current) {
+          fromInputRef.current.blur();
+        }
+        if (toInputRef.current && document.activeElement === toInputRef.current) {
+          toInputRef.current.blur();
+        }
+      }, 100);
+
+      return () => clearTimeout(timeoutId);
+    }, [mode]);
+
+    // Additional effect to prevent initial auto-focus when component first mounts
+    React.useEffect(() => {
+      // Prevent any input from being focused when the bottom sheet opens
+      const preventInitialFocus = () => {
+        if (fromInputRef.current && document.activeElement === fromInputRef.current) {
+          fromInputRef.current.blur();
+        }
+        if (toInputRef.current && document.activeElement === toInputRef.current) {
+          toInputRef.current.blur();
+        }
+      };
+
+      // Run immediately and after a short delay
+      preventInitialFocus();
+      const timeoutId = setTimeout(preventInitialFocus, 50);
+
+      return () => clearTimeout(timeoutId);
+    }, []); // Empty dependency array - runs only on mount
 
 
 
@@ -723,6 +762,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                 </svg>
               </div>
               <input
+                ref={fromInputRef}
                 type="text"
                 placeholder={t('placeholders.fromAirport', 'Enter Origin City/Airport')}
                 value={mode === 'from' ? searchQuery : (fromValue ? getAirportDisplayName(fromValue) : '')}
@@ -792,6 +832,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                 </svg>
               </div>
               <input
+                ref={toInputRef}
                 type="text"
                 placeholder={t('placeholders.toAirport', 'Enter Destination City/Airport')}
                 value={mode === 'to' ? searchQuery : (toValue ? getAirportDisplayName(toValue) : '')}

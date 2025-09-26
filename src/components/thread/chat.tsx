@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import { FormEvent, useEffect, useRef, useState, ReactNode } from "react";
+import { FormEvent, useEffect, useRef, useState, ReactNode, useMemo } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
@@ -152,6 +152,7 @@ export function Thread() {
   const [firstTokenReceived, setFirstTokenReceived] = useState(false); //TODO: remove if not needed
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
   const [firstName, setFirstName] = useState<string>("");
+  const [refreshKey, setRefreshKey] = useState(0); // Force re-render of quick actions
 
   useEffect(() => {
     try {
@@ -264,6 +265,8 @@ export function Thread() {
     // This will update localStorage if a better currency is detected
     try {
       await detectAndSetUserCurrency();
+      // Trigger refresh of quick actions to show updated values
+      setRefreshKey(prev => prev + 1);
     } catch (error) {
       console.warn("Currency detection failed, using stored/default values:", error);
     }
@@ -345,12 +348,8 @@ export function Thread() {
     setContentBlocks([]);
   };
 
-   const userCurrency = getSelectedCurrency();
-    const userCountry = getSelectedCountry();
-
   // Quick Actions: one-click prompts to guide users
-  const quickActions: Array<{ label: string; text: string; icon?: ReactNode }> =
-    [
+  const quickActions: Array<{ label: string; text: string; icon?: ReactNode }> = useMemo(() => [
       {
         label: t("quickActionTab.bookMeAFlight.label", "Book me a\nflight"),
         text: t("quickActionTab.bookMeAFlight.text", "Book me a flight"),
@@ -391,10 +390,10 @@ export function Thread() {
       // },
       {
         label: t("check your country\nand currency"),
-        text: t(`your country: ${userCountry},currency: ${userCurrency}`),
+        text: t(`your country: ${getSelectedCountry() || 'not detected'},currency: ${getSelectedCurrency()}`),
         icon: <Ticket className="h-4 w-4" />,
       }
-    ];
+    ], [refreshKey]); // Re-compute when refreshKey changes
 
   const handleQuickActionClick = async (text: string) => {
     if (isLoading) return;
@@ -403,10 +402,23 @@ export function Thread() {
     const jwtToken = getJwtToken();
     const userId = jwtToken ? GetUserId(jwtToken) : null;
 
+    // For country/currency check, force fresh detection by clearing cache first
+    if (text.includes("your country:")) {
+      try {
+        const { clearGeolocationCache } = await import("@/services/ipGeolocationService");
+        clearGeolocationCache();
+        console.log("🔄 Cleared geolocation cache for fresh detection");
+      } catch (error) {
+        console.warn("Failed to clear geolocation cache:", error);
+      }
+    }
+
     // Perform automatic currency detection based on IP
     // This will update localStorage if a better currency is detected
     try {
       await detectAndSetUserCurrency();
+      // Trigger refresh of quick actions to show updated values
+      setRefreshKey(prev => prev + 1);
     } catch (error) {
       console.warn("Currency detection failed, using stored/default values:", error);
     }

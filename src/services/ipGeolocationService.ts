@@ -26,8 +26,8 @@ interface CachedGeolocation {
   expiresAt: number;
 }
 
-// Cache duration: 24 hours (IP-based location doesn't change frequently)
-const GEOLOCATION_CACHE_DURATION = 24 * 60 * 60 * 1000;
+// Cache duration: 5 minutes (shorter cache to detect VPN/location changes)
+const GEOLOCATION_CACHE_DURATION = 5 * 60 * 1000;
 const GEOLOCATION_CACHE_KEY = "flyo:geolocation:cache";
 
 /**

@@ -48,32 +48,9 @@ export async function detectAndSetUserCurrency(): Promise<CurrencyDetectionResul
   try {
     console.log("🌍 Starting automatic currency detection...");
 
-    // First, check if we already have a stored currency preference
-    const storedCurrency = getSelectedCurrency();
-    const storedCountry = getSelectedCountry();
-
-    // If we have both stored currency and country (and currency is not default INR), use them
-    if (
-      storedCurrency !== "INR" &&
-      storedCountry !== "" &&
-      storedCountry !== "IN"
-    ) {
-      console.log(
-        `💰 Using stored currency: ${storedCurrency} for country: ${storedCountry}`,
-      );
-      return {
-        success: true,
-        currency: storedCurrency,
-        country: storedCountry,
-        source: "localStorage",
-        data: {
-          wasUpdated: false,
-        },
-      };
-    }
-
-    // Attempt IP-based geolocation
-    console.log("🔍 Attempting IP-based geolocation...");
+    // Always attempt fresh IP-based geolocation to detect current location
+    // This ensures VPN changes and location changes are detected properly
+    console.log("🔍 Attempting fresh IP-based geolocation...");
     const geolocationResult: GeolocationResult = await getUserGeolocation();
 
     if (!geolocationResult.success || !geolocationResult.data) {
