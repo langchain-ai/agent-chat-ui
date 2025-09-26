@@ -901,10 +901,10 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
 
                         onValueChange?.(airport.value);
                       }}
-                      className="w-full text-left p-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                      className="w-full text-left py-1 px-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
                       disabled={disabled}
                     >
-                      <div className="flex justify-between items-center min-h-[2.5rem]">
+                      <div className="flex justify-between items-center min-h-[2rem]">
                         <div className="flex-1 min-w-0 pr-4">
                           <div className="font-medium text-black text-sm truncate">
                             {airport.label}
@@ -940,10 +940,10 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
 
                       onValueChange?.(airport.value);
                     }}
-                    className="w-full text-left p-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                    className="w-full text-left py-1 px-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
                     disabled={disabled}
                   >
-                    <div className="flex justify-between items-center min-h-[2.5rem]">
+                    <div className="flex justify-between items-center min-h-[2rem]">
                       <div className="flex-1 min-w-0 pr-4">
                         <div className="font-medium text-black text-sm truncate">
                           {airport.label}
