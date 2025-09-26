@@ -378,17 +378,17 @@ export function Thread() {
         ),
         icon: <Ticket className="h-4 w-4" />,
       },
-      {
-        label: t(
-          "quickActionTab.doMyWebCheckin.label",
-          "Please do my\nwebcheckin",
-        ),
-        text: t(
-          "quickActionTab.doMyWebCheckin.text",
-          "Please do my webcheckin",
-        ),
-        icon: <Ticket className="h-4 w-4" />,
-      },
+      // {
+      //   label: t(
+      //     "quickActionTab.doMyWebCheckin.label",
+      //     "Please do my\nwebcheckin",
+      //   ),
+      //   text: t(
+      //     "quickActionTab.doMyWebCheckin.text",
+      //     "Please do my webcheckin",
+      //   ),
+      //   icon: <Ticket className="h-4 w-4" />,
+      // },
       {
         label: t("check your country\nand currency"),
         text: t(`your country: ${userCountry},currency: ${userCurrency}`),
