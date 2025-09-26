@@ -377,22 +377,17 @@ export function Thread() {
         ),
         icon: <Ticket className="h-4 w-4" />,
       },
-      // {
-      //   label: t(
-      //     "quickActionTab.doMyWebCheckin.label",
-      //     "Please do my\nwebcheckin",
-      //   ),
-      //   text: t(
-      //     "quickActionTab.doMyWebCheckin.text",
-      //     "Please do my webcheckin",
-      //   ),
-      //   icon: <Ticket className="h-4 w-4" />,
-      // },
       {
-        label: t("check your country\nand currency"),
-        text: t(`your country: ${getSelectedCountry() || 'not detected'},currency: ${getSelectedCurrency()}`),
+        label: t(
+          "quickActionTab.doMyWebCheckin.label",
+          "Please do my\nwebcheckin",
+        ),
+        text: t(
+          "quickActionTab.doMyWebCheckin.text",
+          "Please do my webcheckin",
+        ),
         icon: <Ticket className="h-4 w-4" />,
-      }
+      },
     ], [refreshKey]); // Re-compute when refreshKey changes
 
   const handleQuickActionClick = async (text: string) => {
@@ -401,17 +396,6 @@ export function Thread() {
 
     const jwtToken = getJwtToken();
     const userId = jwtToken ? GetUserId(jwtToken) : null;
-
-    // For country/currency check, force fresh detection by clearing cache first
-    if (text.includes("your country:")) {
-      try {
-        const { clearGeolocationCache } = await import("@/services/ipGeolocationService");
-        clearGeolocationCache();
-        console.log("🔄 Cleared geolocation cache for fresh detection");
-      } catch (error) {
-        console.warn("Failed to clear geolocation cache:", error);
-      }
-    }
 
     // Perform automatic currency detection based on IP
     // This will update localStorage if a better currency is detected
