@@ -7,6 +7,7 @@ import { NonAgentFlowProvider } from "@/providers/NonAgentFlowContext";
 import { TabProvider } from "@/providers/TabContext";
 import { ItineraryWidgetProvider } from "@/providers/ItineraryWidgetContext";
 import { LocationProvider } from "@/providers/LocationContext";
+import { CurrencyDetectionProvider } from "@/providers/CurrencyDetectionContext";
 import { Toaster } from "@/components/ui/sonner";
 import { ProtectedRoute } from "@/components/auth";
 import React from "react";
@@ -33,23 +34,25 @@ export default function DemoPage(): React.ReactNode {
       <Toaster />
       <ProtectedRoute>
         <LocationProvider>
-          <ThreadProvider>
-            <StreamProvider>
-              <ArtifactProvider>
-                <NonAgentFlowProvider>
-                  <TabProvider>
-                    <ItineraryWidgetProvider>
-                      <div className="flex h-[100dvh] min-h-0 flex-col">
-                        <div className="min-h-0 flex-1 overflow-hidden">
-                          <TabsLayout />
+          <CurrencyDetectionProvider>
+            <ThreadProvider>
+              <StreamProvider>
+                <ArtifactProvider>
+                  <NonAgentFlowProvider>
+                    <TabProvider>
+                      <ItineraryWidgetProvider>
+                        <div className="flex h-[100dvh] min-h-0 flex-col">
+                          <div className="min-h-0 flex-1 overflow-hidden">
+                            <TabsLayout />
+                          </div>
                         </div>
-                      </div>
-                    </ItineraryWidgetProvider>
-                  </TabProvider>
-                </NonAgentFlowProvider>
-              </ArtifactProvider>
-            </StreamProvider>
-          </ThreadProvider>
+                      </ItineraryWidgetProvider>
+                    </TabProvider>
+                  </NonAgentFlowProvider>
+                </ArtifactProvider>
+              </StreamProvider>
+            </ThreadProvider>
+          </CurrencyDetectionProvider>
         </LocationProvider>
       </ProtectedRoute>
     </React.Suspense>

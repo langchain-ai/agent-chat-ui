@@ -43,6 +43,8 @@ import {
   getUserFirstName,
 } from "@/services/authService";
 import { getSelectedCurrency } from "@/utils/currency-storage";
+import { getSelectedCountry } from "@/utils/country-storage";
+import { detectAndSetUserCurrency } from "@/services/currencyDetectionService";
 import { InterruptManager } from "./messages/interrupt-manager";
 import { GenericInterruptView } from "./messages/generic-interrupt";
 import { NonAgentFlowReopenButton } from "./NonAgentFlowReopenButton";
@@ -248,7 +250,7 @@ export function Thread() {
     prevMessageLength.current = messageBlocks.length;
   }, [isLoading, messageBlocks.length]);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if ((input.trim().length === 0 && contentBlocks.length === 0) || isLoading)
       return;
@@ -257,6 +259,14 @@ export function Thread() {
     // Get user ID from JWT token
     const jwtToken = getJwtToken();
     const userId = jwtToken ? GetUserId(jwtToken) : null;
+
+    // Perform automatic currency detection based on IP
+    // This will update localStorage if a better currency is detected
+    try {
+      await detectAndSetUserCurrency();
+    } catch (error) {
+      console.warn("Currency detection failed, using stored/default values:", error);
+    }
 
     const newHumanMessage: Message = {
       id: uuidv4(),
@@ -296,11 +306,14 @@ export function Thread() {
       };
     }
 
-    // Get user currency preference
+    // Get user currency and country preferences (potentially updated by detection)
     const userCurrency = getSelectedCurrency();
+    const userCountry = getSelectedCountry();
     if (userCurrency) {
       submissionData.userCurrency = userCurrency;
     }
+    // Always include userCountry, even if it's an empty string
+    submissionData.userCountry = userCountry;
 
     const userLanguage = getCurrentLanguage();
     if (userLanguage) {
@@ -331,6 +344,9 @@ export function Thread() {
     setInput("");
     setContentBlocks([]);
   };
+
+   const userCurrency = getSelectedCurrency();
+    const userCountry = getSelectedCountry();
 
   // Quick Actions: one-click prompts to guide users
   const quickActions: Array<{ label: string; text: string; icon?: ReactNode }> =
@@ -373,14 +389,27 @@ export function Thread() {
         ),
         icon: <Ticket className="h-4 w-4" />,
       },
+      {
+        label: t("check your country\nand currency"),
+        text: t(`your country: ${userCountry},currency: ${userCurrency}`),
+        icon: <Ticket className="h-4 w-4" />,
+      }
     ];
 
-  const handleQuickActionClick = (text: string) => {
+  const handleQuickActionClick = async (text: string) => {
     if (isLoading) return;
     setFirstTokenReceived(false);
 
     const jwtToken = getJwtToken();
     const userId = jwtToken ? GetUserId(jwtToken) : null;
+
+    // Perform automatic currency detection based on IP
+    // This will update localStorage if a better currency is detected
+    try {
+      await detectAndSetUserCurrency();
+    } catch (error) {
+      console.warn("Currency detection failed, using stored/default values:", error);
+    }
 
     const newHumanMessage: Message = {
       id: uuidv4(),
@@ -415,10 +444,14 @@ export function Thread() {
       };
     }
 
-    // Get user currency preference
+    // Get user currency and country preferences (potentially updated by detection)
     const userCurrency = getSelectedCurrency();
+    const userCountry = getSelectedCountry();
     if (userCurrency) {
       submissionData.userCurrency = userCurrency;
+    }
+    if (userCountry) {
+      submissionData.userCountry = userCountry;
     }
 
     const userLanguage = getCurrentLanguage();

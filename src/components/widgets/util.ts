@@ -4,7 +4,9 @@ import { toast } from "sonner";
 import { getCachedLocation } from "@/lib/location-cache";
 import { getJwtToken, GetUserId } from "@/services/authService";
 import { getSelectedCurrency } from "@/utils/currency-storage";
+import { getSelectedCountry } from "@/utils/country-storage";
 import { getCurrentLanguage } from "@/utils/i18n";
+import { detectAndSetUserCurrency } from "@/services/currencyDetectionService";
 
 export async function submitInterruptResponse(
   thread: any, // Replace with proper type from your stream context
@@ -20,10 +22,22 @@ export async function submitInterruptResponse(
     // Get location data from cache
     const locationData = await getCachedLocation();
 
-    // Get user currency preference
-    const userCurrency = getSelectedCurrency();
+    // Perform automatic currency detection based on IP
+    // This will update localStorage if a better currency is detected
+    try {
+      await detectAndSetUserCurrency();
+    } catch (error) {
+      console.warn(
+        "Currency detection failed, using stored/default values:",
+        error,
+      );
+    }
 
-    // Build submission data with userId, location, and currency
+    // Get user currency and country preferences (potentially updated by detection)
+    const userCurrency = getSelectedCurrency();
+    const userCountry = getSelectedCountry();
+
+    // Build submission data with userId, location, currency, and country
     const submissionData: any = {};
     if (userId) {
       submissionData.userId = userId;
@@ -39,6 +53,8 @@ export async function submitInterruptResponse(
     if (userCurrency) {
       submissionData.userCurrency = userCurrency;
     }
+    // Always include userCountry, even if it's an empty string
+    submissionData.userCountry = userCountry;
 
     const userLanguage = getCurrentLanguage();
     if (userLanguage) {

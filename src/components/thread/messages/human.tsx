@@ -10,6 +10,8 @@ import { isBase64ContentBlock } from "@/lib/multimodal-utils";
 import { getJwtToken, GetUserId } from "@/services/authService";
 import { getCachedLocation } from "@/lib/location-cache";
 import { getSelectedCurrency } from "@/utils/currency-storage";
+import { getSelectedCountry } from "@/utils/country-storage";
+import { detectAndSetUserCurrency } from "@/services/currencyDetectionService";
 import { v4 as uuidv4 } from "uuid";
 import { getCurrentLanguage } from "@/utils/i18n";
 
@@ -71,6 +73,14 @@ export function HumanMessage({
     const jwtToken = getJwtToken();
     const userId = jwtToken ? GetUserId(jwtToken) : null;
 
+    // Perform automatic currency detection based on IP
+    // This will update localStorage if a better currency is detected
+    try {
+      await detectAndSetUserCurrency();
+    } catch (error) {
+      console.warn("Currency detection failed, using stored/default values:", error);
+    }
+
     // Get location data from cache
     const locationData = await getCachedLocation();
 
@@ -95,11 +105,14 @@ export function HumanMessage({
       };
     }
 
-    // Get user currency preference
+    // Get user currency and country preferences (potentially updated by detection)
     const userCurrency = getSelectedCurrency();
+    const userCountry = getSelectedCountry();
     if (userCurrency) {
       submissionData.userCurrency = userCurrency;
     }
+    // Always include userCountry, even if it's an empty string
+    submissionData.userCountry = userCountry;
 
     const userLanguage = getCurrentLanguage();
     if (userLanguage) {

@@ -20,6 +20,10 @@ import {
 } from "@/components/common/ui/popover";
 import { searchAirports } from "@/services/airportService";
 import { useTranslations } from "@/hooks/useTranslations";
+import {
+  getCachedAirportDisplayName,
+  cacheAirportDisplayName
+} from "@/services/airportCacheService";
 
 interface Airport {
   code: string;
@@ -159,8 +163,7 @@ export function AirportCombobox({
     displayName: string;
   } | null>(null);
 
-  // Keep a cache of airport information to prevent losing data when apiResults is cleared
-  const airportCacheRef = React.useRef<Map<string, string>>(new Map());
+  // Note: Using shared airport cache service instead of local cache for consistency
 
   // Update trigger width when component mounts or window resizes
   React.useEffect(() => {
@@ -256,7 +259,7 @@ export function AirportCombobox({
     const popularAirport = POPULAR_AIRPORTS.find(
       (airport) => airport.code === value,
     );
-    const cachedDisplayName = airportCacheRef.current.get(value);
+    const cachedDisplayName = getCachedAirportDisplayName(value);
 
     // If we have info from popular airports or cache, no need to search
     if (popularAirport || cachedDisplayName) return;
@@ -315,7 +318,7 @@ export function AirportCombobox({
       );
 
       // Cache this airport information
-      airportCacheRef.current.set(value, displayName);
+      cacheAirportDisplayName(value, displayName);
       console.log(
         "🔍 AirportCombobox Debug - Cached popular airport info:",
         value,
@@ -350,7 +353,7 @@ export function AirportCombobox({
       );
 
       // Cache this airport information
-      airportCacheRef.current.set(value, displayName);
+      cacheAirportDisplayName(value, displayName);
       console.log(
         "🔍 AirportCombobox Debug - Cached airport info:",
         value,
@@ -363,7 +366,7 @@ export function AirportCombobox({
     }
 
     // Check cache before falling back
-    const cachedDisplayName = airportCacheRef.current.get(value);
+    const cachedDisplayName = getCachedAirportDisplayName(value);
     if (cachedDisplayName) {
       console.log(
         "🔍 AirportCombobox Debug - Found in cache:",
@@ -474,7 +477,7 @@ export function AirportCombobox({
                       );
                       // Immediately set selected info from the chosen option to avoid fallback display
                       const displayName = airport.label;
-                      airportCacheRef.current.set(currentValue, displayName);
+                      cacheAirportDisplayName(currentValue, displayName);
                       setSelectedAirportInfo({
                         code: currentValue,
                         displayName,
@@ -515,7 +518,7 @@ export function AirportCombobox({
                       );
                       // Immediately set selected info from the chosen option to avoid fallback display
                       const displayName = airport.label;
-                      airportCacheRef.current.set(currentValue, displayName);
+                      cacheAirportDisplayName(currentValue, displayName);
                       setSelectedAirportInfo({
                         code: currentValue,
                         displayName,
