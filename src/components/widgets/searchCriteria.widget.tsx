@@ -22,13 +22,10 @@ import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { searchAirports } from "@/services/airportService";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
+  getCachedAirportDisplayName,
+  cacheAirportDisplayName
+} from "@/services/airportCacheService";
+
 
 // Hook to get user's language preference and convert to locale format
 function useUserLocale() {
@@ -206,6 +203,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
 
   // Prevent accidental clearing on same selection; ignore empty values
   const handleFromAirportChange = (code: string) => {
+    console.log('handleFromAirportChange', code);
     setFromAirport((prev) => (code && code.trim().length > 0 ? code : prev));
   };
   const handleToAirportChange = (code: string) => {
@@ -264,10 +262,15 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
 
   // Mobile detection and bottom sheet states
   const isMobile = useMediaQuery("(max-width: 767px)");
-  const [showFromAirportSheet, setShowFromAirportSheet] = useState(false);
-  const [showToAirportSheet, setShowToAirportSheet] = useState(false);
+  const [showAirportSheet, setShowAirportSheet] = useState(false);
+  const [airportSheetMode, setAirportSheetMode] = useState<'from' | 'to'>('from');
   const [showDepartureDateSheet, setShowDepartureDateSheet] = useState(false);
   const [showTravellerSheet, setShowTravellerSheet] = useState(false);
+
+  // Function to handle mode switching in airport sheet
+  const handleAirportModeChange = (newMode: 'from' | 'to') => {
+    setAirportSheetMode(newMode);
+  };
 
   // Validation function to check if all mandatory fields are filled
   const validateForm = () => {
@@ -456,7 +459,16 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
     ].find(airport => airport.code === airportCode);
 
     if (popularAirport) {
-      return `${popularAirport.code} - ${popularAirport.city}`;
+      const displayName = `${popularAirport.code} - ${popularAirport.city}`;
+      // Cache popular airport for consistency
+      cacheAirportDisplayName(airportCode, displayName);
+      return displayName;
+    }
+
+    // Check cached Cleartrip API data
+    const cachedDisplayName = getCachedAirportDisplayName(airportCode);
+    if (cachedDisplayName) {
+      return cachedDisplayName;
     }
 
     // Fallback to just the code if not found
@@ -475,8 +487,9 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
     onClick: () => void;
     hasError?: boolean;
   }) => {
+    console.log('MobileAirportInput value:', value);
     const displayValue = value ? getAirportDisplayName(value) : '';
-
+    console.log('MobileAirportInput displayValue:', displayValue);
     return (
       <Button
         type="button"
@@ -533,37 +546,44 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
     );
   };
 
-  // Mobile Airport Selector Component with auto-focus and proper scrolling
+  // Helper function to swap airports
+  const handleSwapAirports = () => {
+    const tempFrom = fromAirport;
+    handleFromAirportChange(toAirport || '');
+    handleToAirportChange(tempFrom || '');
+  };
+
+  // Mobile Airport Selector Component - redesigned for single sheet with both From/To
   const MobileAirportSelector = ({
-    value,
-    onValueChange,
-    placeholder,
-    excludeAirport,
+    fromValue,
+    toValue,
+    onFromChange,
+    onToChange,
+    mode,
+    onModeChange,
     disabled = false,
-    autoFocus = false,
   }: {
-    value?: string;
-    onValueChange?: (value: string) => void;
-    placeholder?: string;
-    excludeAirport?: string;
+    fromValue?: string;
+    toValue?: string;
+    onFromChange?: (value: string) => void;
+    onToChange?: (value: string) => void;
+    mode: 'from' | 'to';
+    onModeChange?: (mode: 'from' | 'to') => void;
     disabled?: boolean;
-    autoFocus?: boolean;
   }) => {
     const [searchQuery, setSearchQuery] = React.useState("");
     const [apiResults, setApiResults] = React.useState<any[]>([]);
     const [isLoading, setIsLoading] = React.useState(false);
-    const inputRef = React.useRef<HTMLInputElement>(null);
+    const [showSearch, setShowSearch] = React.useState(false);
 
-    // Auto-focus the input when the component mounts
+    // Reset search when mode changes
     React.useEffect(() => {
-      if (autoFocus && inputRef.current) {
-        // Small delay to ensure the sheet animation is complete
-        const timer = setTimeout(() => {
-          inputRef.current?.focus();
-        }, 300);
-        return () => clearTimeout(timer);
-      }
-    }, [autoFocus]);
+      setSearchQuery("");
+      setApiResults([]);
+      setShowSearch(false);
+    }, [mode]);
+
+
 
     // Debounced API call when user types
     React.useEffect(() => {
@@ -572,7 +592,16 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
         setIsLoading(false);
         return;
       }
-      if (!searchQuery || searchQuery.trim().length === 0) {
+
+      // If no search query or showSearch is false, clear results
+      if (!showSearch || !searchQuery || searchQuery.trim().length === 0) {
+        setApiResults([]);
+        setIsLoading(false);
+        return;
+      }
+
+      // Only search if query has at least 2 characters
+      if (searchQuery.trim().length < 2) {
         setApiResults([]);
         setIsLoading(false);
         return;
@@ -581,7 +610,8 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
       const timeoutId = setTimeout(async () => {
         setIsLoading(true);
         try {
-          const results = await searchAirports(searchQuery);
+          const results = await searchAirports(searchQuery.trim());
+          console.log("API results:", JSON.stringify(results,null,2));
           setApiResults(results);
         } catch (error) {
           console.error("Failed to search airports:", error);
@@ -589,142 +619,305 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
         } finally {
           setIsLoading(false);
         }
-      }, 100);
+      }, 300);
 
       return () => clearTimeout(timeoutId);
-    }, [searchQuery, disabled]);
+    }, [searchQuery, disabled, showSearch]);
+
+    const popularAirports = [
+      { code: "DEL", name: "Indira Gandhi International Airport", city: "New Delhi", country: "India" },
+      { code: "BOM", name: "Chhatrapati Shivaji Maharaj International Airport", city: "Mumbai", country: "India" },
+      { code: "BLR", name: "Kempegowda International Airport", city: "Bangalore", country: "India" },
+      { code: "MAA", name: "Chennai International Airport", city: "Chennai", country: "India" },
+      { code: "CCU", name: "Netaji Subhas Chandra Bose International Airport", city: "Kolkata", country: "India" },
+      { code: "HYD", name: "Rajiv Gandhi International Airport", city: "Hyderabad", country: "India" },
+      { code: "AMD", name: "Sardar Vallabhbhai Patel International Airport", city: "Ahmedabad", country: "India" },
+      { code: "COK", name: "Cochin International Airport", city: "Kochi", country: "India" },
+      { code: "GOI", name: "Goa International Airport", city: "Goa", country: "India" },
+      { code: "PNQ", name: "Pune Airport", city: "Pune", country: "India" },
+      { code: "JAI", name: "Jaipur International Airport", city: "Jaipur", country: "India" },
+      { code: "IXC", name: "Chandigarh Airport", city: "Chandigarh", country: "India" },
+      { code: "LKO", name: "Chaudhary Charan Singh International Airport", city: "Lucknow", country: "India" },
+      { code: "TRV", name: "Trivandrum International Airport", city: "Thiruvananthapuram", country: "India" },
+      { code: "IXB", name: "Bagdogra Airport", city: "Bagdogra", country: "India" },
+      { code: "GAU", name: "Lokpriya Gopinath Bordoloi International Airport", city: "Guwahati", country: "India" },
+      { code: "IXR", name: "Birsa Munda Airport", city: "Ranchi", country: "India" },
+      { code: "BBI", name: "Biju Patnaik International Airport", city: "Bhubaneswar", country: "India" },
+      { code: "IXU", name: "Aurangabad Airport", city: "Aurangabad", country: "India" },
+      { code: "NAG", name: "Dr. Babasaheb Ambedkar International Airport", city: "Nagpur", country: "India" },
+      { code: "JFK", name: "John F. Kennedy International Airport", city: "New York", country: "USA" },
+      { code: "LAX", name: "Los Angeles International Airport", city: "Los Angeles", country: "USA" },
+    ];
 
     const displayAirports = React.useMemo(() => {
-      // If no search query, show popular airports
-      if (!searchQuery || searchQuery.trim().length === 0) {
-        let airports = [
-          { code: "DEL", name: "Indira Gandhi International Airport", city: "New Delhi", country: "India" },
-          { code: "BOM", name: "Chhatrapati Shivaji Maharaj International Airport", city: "Mumbai", country: "India" },
-          { code: "BLR", name: "Kempegowda International Airport", city: "Bangalore", country: "India" },
-          { code: "MAA", name: "Chennai International Airport", city: "Chennai", country: "India" },
-          { code: "CCU", name: "Netaji Subhas Chandra Bose International Airport", city: "Kolkata", country: "India" },
-          { code: "HYD", name: "Rajiv Gandhi International Airport", city: "Hyderabad", country: "India" },
-          { code: "AMD", name: "Sardar Vallabhbhai Patel International Airport", city: "Ahmedabad", country: "India" },
-          { code: "COK", name: "Cochin International Airport", city: "Kochi", country: "India" },
-          { code: "GOI", name: "Goa International Airport", city: "Goa", country: "India" },
-          { code: "PNQ", name: "Pune Airport", city: "Pune", country: "India" },
-          { code: "JAI", name: "Jaipur International Airport", city: "Jaipur", country: "India" },
-          { code: "IXC", name: "Chandigarh Airport", city: "Chandigarh", country: "India" },
-          { code: "LKO", name: "Chaudhary Charan Singh International Airport", city: "Lucknow", country: "India" },
-          { code: "TRV", name: "Trivandrum International Airport", city: "Thiruvananthapuram", country: "India" },
-          { code: "IXB", name: "Bagdogra Airport", city: "Bagdogra", country: "India" },
-          { code: "GAU", name: "Lokpriya Gopinath Bordoloi International Airport", city: "Guwahati", country: "India" },
-          { code: "IXR", name: "Birsa Munda Airport", city: "Ranchi", country: "India" },
-          { code: "BBI", name: "Biju Patnaik International Airport", city: "Bhubaneswar", country: "India" },
-          { code: "IXU", name: "Aurangabad Airport", city: "Aurangabad", country: "India" },
-          { code: "NAG", name: "Dr. Babasaheb Ambedkar International Airport", city: "Nagpur", country: "India" },
-          { code: "JFK", name: "John F. Kennedy International Airport", city: "New York", country: "USA" },
-          { code: "LAX", name: "Los Angeles International Airport", city: "Los Angeles", country: "USA" },
-        ];
-
-        // Exclude the specified airport
-        if (excludeAirport) {
-          airports = airports.filter((airport) => airport.code !== excludeAirport);
-        }
-
-        return airports.map((airport) => ({
-          value: airport.code,
-          label: `${airport.code} - ${airport.city}`,
-          description: airport.name,
-          isPopular: true,
-        }));
-      }
+      const excludeAirport = mode === 'from' ? toValue : fromValue;
 
       // If searching, show API results
-      return apiResults
-        .filter((result) => (excludeAirport ? result.k !== excludeAirport : true))
-        .map((result) => {
-          // Parse the API response format
-          const parts = result.v.split(" - ");
-          const cityCountry = parts[0] || result.v;
-          const airportInfo = parts[1] || "";
+      if (showSearch && searchQuery && searchQuery.trim().length > 0) {
+        console.log('API Results:', JSON.stringify(apiResults,null,2));
+        return apiResults
+          .filter((result) => (excludeAirport ? result.k !== excludeAirport : true))
+          .map((result) => {
+            // Parse Cleartrip API response format
+            // Expected format: {"k":"RAJ","v":"Rajkot, IN - Rajkot Civil (RAJ)"}
+            // Extract city name from the 'v' field (everything before the first comma)
+            let cityName = '';
+            let airportDescription = result.v;
 
-          // Extract city name from cityCountry (remove country part)
-          const cityName = cityCountry.split(",")[0] || cityCountry;
+            // Extract city name - everything before the first comma
+            if (result.v.includes(',')) {
+              cityName = result.v.split(',')[0].trim();
+            } else if (result.v.includes(' - ')) {
+              // Fallback: if no comma, try to get the part before the dash
+              cityName = result.v.split(' - ')[0].trim();
+            } else {
+              // Last fallback: use the IATA code
+              cityName = result.k;
+            }
 
-          return {
-            value: result.k,
-            label: `${result.k} - ${cityName}`,
-            description: airportInfo || result.v,
-            isPopular: false,
-          };
-        });
-    }, [searchQuery, excludeAirport, apiResults]);
+            // Clean up city name - remove any parentheses or extra info
+            cityName = cityName.replace(/\([^)]*\)/g, '').trim();
+
+            return {
+              value: result.k,
+              label: `${result.k} - ${cityName}`,
+              description: airportDescription,
+              isPopular: false,
+            };
+          });
+      }
+
+      // Show popular airports by default
+      let airports = popularAirports;
+      if (excludeAirport) {
+        airports = airports.filter((airport) => airport.code !== excludeAirport);
+      }
+
+      return airports.map((airport) => ({
+        value: airport.code,
+        label: `${airport.code} - ${airport.city}`,
+        description: airport.name,
+        isPopular: true,
+      }));
+    }, [searchQuery, showSearch, apiResults, mode, fromValue, toValue]);
+
+    const onValueChange = mode === 'from' ? onFromChange : onToChange;
 
     return (
-      <div className="w-full h-full flex flex-col">
-        <Command shouldFilter={false} className="h-full">
-          <CommandInput
-            ref={inputRef}
-            placeholder={t('placeholders.searchAirports', 'Search airports...')}
-            className="h-12"
-            value={searchQuery}
-            onValueChange={setSearchQuery}
-            disabled={disabled}
-          />
-          <CommandList className="flex-1 max-h-none overflow-y-auto">
-            <CommandEmpty>
-              {isLoading ? t('airport.searchingAirports', 'Searching airports...') : t('airport.noAirportsFound', 'No airports found.')}
-            </CommandEmpty>
-            {!searchQuery && displayAirports.length > 0 && (
-              <CommandGroup heading={t('airport.popularAirports', 'Popular Airports')}>
+      <div className="w-full h-full flex flex-col" style={{ fontFamily: "Uber Move, Arial, Helvetica, sans-serif" }}>
+        {/* Both Airport Input Fields Section */}
+        <div className="flex-shrink-0 p-4 border-b border-gray-200">
+          {/* Single border container for both input fields */}
+          <div className={cn(
+            "border rounded-lg bg-white overflow-hidden relative",
+            (mode === 'from' || mode === 'to') ? "border-black" : "border-gray-300"
+          )}>
+            {/* Origin/From Input */}
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-black">
+                {/* Origin airport icon - takeoff arrow pointing right */}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-black">
+                  <path d="M7 17l10-10"/>
+                  <path d="M17 7v10"/>
+                  <path d="M17 7H7"/>
+                </svg>
+              </div>
+              <input
+                type="text"
+                placeholder={t('placeholders.fromAirport', 'Enter Origin City/Airport')}
+                value={mode === 'from' ? searchQuery : (fromValue ? getAirportDisplayName(fromValue) : '')}
+                onChange={(e) => {
+                  if (mode === 'from') {
+                    setSearchQuery(e.target.value);
+                    // Enable search mode when user starts typing
+                    if (e.target.value.trim().length > 0) {
+                      setShowSearch(true);
+                    } else {
+                      // If search is cleared, disable search mode to show popular airports
+                      setShowSearch(false);
+                    }
+                  }
+                }}
+                onFocus={() => {
+                  if (mode !== 'from') {
+                    // Switch to 'from' mode when focusing on origin field
+                    onModeChange?.('from');
+                    setSearchQuery('');
+                    setShowSearch(false);
+                  }
+                  // Don't automatically start search mode on focus
+                }}
+                onClick={() => {
+                  if (mode === 'from') {
+                    // Clear the field value and search query when clicking to edit
+                    if (fromValue) {
+                      onFromChange?.('');
+                    }
+                    setSearchQuery('');
+                    setShowSearch(true);
+                  }
+                }}
+                className={cn(
+                  "w-full pl-10 pr-4 py-3 text-base focus:outline-none border-none",
+                  mode === 'from' ? "bg-white" : "bg-gray-50"
+                )}
+                style={{ fontFamily: "Uber Move, Arial, Helvetica, sans-serif" }}
+                disabled={disabled}
+              />
+            </div>
+
+            {/* Separator line with swap button */}
+            <div className="relative border-t border-gray-200">
+              {/* Swap button positioned on the separator line */}
+              <button
+                onClick={handleSwapAirports}
+                className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-gray-300 rounded-full flex items-center justify-center hover:border-gray-400 hover:bg-gray-50 transition-colors"
+                disabled={disabled}
+                aria-label="Swap origin and destination airports"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-600">
+                  <path d="M7 16V4m0 0L3 8m4-4l4 4m6 4v12m0 0l4-4m-4 4l-4-4"/>
+                </svg>
+              </button>
+            </div>
+
+            {/* Destination/To Input */}
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-black">
+                {/* Destination airport icon - landing arrow pointing down-left */}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-black">
+                  <path d="M17 7L7 17"/>
+                  <path d="M7 17V7"/>
+                  <path d="M7 17h10"/>
+                </svg>
+              </div>
+              <input
+                type="text"
+                placeholder={t('placeholders.toAirport', 'Enter Destination City/Airport')}
+                value={mode === 'to' ? searchQuery : (toValue ? getAirportDisplayName(toValue) : '')}
+                onChange={(e) => {
+                  if (mode === 'to') {
+                    setSearchQuery(e.target.value);
+                    // Enable search mode when user starts typing
+                    if (e.target.value.trim().length > 0) {
+                      setShowSearch(true);
+                    } else {
+                      // If search is cleared, disable search mode to show popular airports
+                      setShowSearch(false);
+                    }
+                  }
+                }}
+                onFocus={() => {
+                  if (mode !== 'to') {
+                    // Switch to 'to' mode when focusing on destination field
+                    onModeChange?.('to');
+                    setSearchQuery('');
+                    setShowSearch(false);
+                  }
+                  // Don't automatically start search mode on focus
+                }}
+                onClick={() => {
+                  if (mode === 'to') {
+                    // Clear the field value and search query when clicking to edit
+                    if (toValue) {
+                      onToChange?.('');
+                    }
+                    setSearchQuery('');
+                    setShowSearch(true);
+                  }
+                }}
+                className={cn(
+                  "w-full pl-10 pr-4 py-3 text-base focus:outline-none border-none",
+                  mode === 'to' ? "bg-white" : "bg-gray-50"
+                )}
+                style={{ fontFamily: "Uber Move, Arial, Helvetica, sans-serif" }}
+                disabled={disabled}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Popular Airports List */}
+        <div className="flex-1 overflow-y-auto">
+          {showSearch && searchQuery ? (
+            <div className="p-4">
+              <h3 className="text-sm font-medium text-gray-500 mb-3 uppercase tracking-wide">
+                {isLoading ? t('airport.searchingAirports', 'Searching...') :
+                 `${t('airport.searchResults', 'Search Results')} - ${mode === 'from' ? t('placeholders.fromAirport', 'Origin') : t('placeholders.toAirport', 'Destination')}`}
+              </h3>
+              {displayAirports.length > 0 ? (
+                <div className="space-y-0">
+                  {displayAirports.map((airport) => (
+                    <button
+                      key={airport.value}
+                      onClick={() => {
+                        if (disabled) return;
+
+                        // Cache airport display name if it's from API results (not popular)
+                        if (!airport.isPopular) {
+                          cacheAirportDisplayName(airport.value, airport.label);
+                        }
+
+                        onValueChange?.(airport.value);
+                      }}
+                      className="w-full text-left p-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                      disabled={disabled}
+                    >
+                      <div className="flex justify-between items-center min-h-[3rem]">
+                        <div className="flex-1 min-w-0 pr-4">
+                          <div className="font-medium text-black text-base truncate">
+                            {airport.label}
+                          </div>
+                          <div className="text-sm text-gray-500 truncate">
+                            {airport.description}
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center text-gray-500 py-8">
+                  {t('airport.noAirportsFound', 'No airports found.')}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="p-4">
+              <h3 className="text-sm font-medium text-gray-500 mb-3 uppercase tracking-wide">
+                {t('airport.popularSearches', 'Popular Searches')}
+              </h3>
+              <div className="space-y-0">
                 {displayAirports.map((airport) => (
-                  <CommandItem
+                  <button
                     key={airport.value}
-                    value={airport.value}
-                    onSelect={(currentValue) => {
+                    onClick={() => {
                       if (disabled) return;
-                      onValueChange?.(currentValue);
+
+                      // Cache airport display name for consistency
+                      cacheAirportDisplayName(airport.value, airport.label);
+
+                      onValueChange?.(airport.value);
                     }}
-                    className="cursor-pointer"
+                    className="w-full text-left p-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                    disabled={disabled}
                   >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value === airport.value ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    <div className="flex flex-col">
-                      <span className="font-medium">{airport.label}</span>
-                      <span className="text-sm text-gray-500 truncate">{airport.description}</span>
+                    <div className="flex justify-between items-center min-h-[3rem]">
+                      <div className="flex-1 min-w-0 pr-4">
+                        <div className="font-medium text-black text-base truncate">
+                          {airport.label}
+                        </div>
+                        <div className="text-sm text-gray-500 truncate">
+                          {airport.description}
+                        </div>
+                      </div>
                     </div>
-                  </CommandItem>
+                  </button>
                 ))}
-              </CommandGroup>
-            )}
-            {searchQuery && displayAirports.length > 0 && (
-              <CommandGroup heading={t('airport.searchResults', 'Search Results')}>
-                {displayAirports.map((airport) => (
-                  <CommandItem
-                    key={airport.value}
-                    value={airport.value}
-                    onSelect={(currentValue) => {
-                      if (disabled) return;
-                      onValueChange?.(currentValue);
-                    }}
-                    className="cursor-pointer"
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value === airport.value ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    <div className="flex flex-col">
-                      <span className="font-medium">{airport.label}</span>
-                      <span className="text-sm text-gray-500 truncate">{airport.description}</span>
-                    </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            )}
-          </CommandList>
-        </Command>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     );
   };
@@ -807,7 +1000,10 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                   <MobileAirportInput
                     value={fromAirport}
                     placeholder={t('placeholders.fromAirport', 'From - City or Airport')}
-                    onClick={() => setShowFromAirportSheet(true)}
+                    onClick={() => {
+                      setAirportSheetMode('from');
+                      setShowAirportSheet(true);
+                    }}
                     hasError={validationErrors.fromAirport}
                   />
                 ) : (
@@ -838,7 +1034,10 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                   <MobileAirportInput
                     value={toAirport}
                     placeholder={t('placeholders.toAirport', 'To - City or Airport')}
-                    onClick={() => setShowToAirportSheet(true)}
+                    onClick={() => {
+                      setAirportSheetMode('to');
+                      setShowAirportSheet(true);
+                    }}
                     hasError={validationErrors.toAirport}
                   />
                 ) : (
@@ -1118,12 +1317,26 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
       {/* Mobile Bottom Sheets */}
       {isMobile && (
         <>
-          {/* From Airport Bottom Sheet */}
-          <Sheet open={showFromAirportSheet} onOpenChange={setShowFromAirportSheet}>
+          {/* Airport Selection Bottom Sheet */}
+          <Sheet open={showAirportSheet} onOpenChange={setShowAirportSheet}>
+            {/* Custom floating close button positioned outside SheetContent */}
+            {showAirportSheet && (
+              <div className="fixed top-4 right-4 z-[60]">
+                <button
+                  onClick={() => setShowAirportSheet(false)}
+                  className="w-10 h-10 bg-white border border-gray-300 rounded-full flex items-center justify-center shadow-lg hover:bg-gray-50 hover:border-gray-400 transition-colors"
+                  aria-label="Close airport selection"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-600">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                  </svg>
+                </button>
+              </div>
+            )}
             <SheetContent
               side="bottom"
               className={cn(
-                "flex h-[70vh] flex-col overflow-hidden",
+                "flex h-[90vh] flex-col overflow-hidden [&>button]:hidden",
                 mirrorClasses.container
               )}
               style={{
@@ -1135,67 +1348,51 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
                 className={cn("w-full h-full flex flex-col", mirrorClasses.content)}
                 style={mirrorStyles.content}
               >
-                <SheetHeader className="flex-shrink-0 border-b border-gray-200 pb-3">
-                  <SheetTitle className="text-lg font-medium">
-                    {t('placeholders.fromAirport', 'From - City or Airport')}
-                  </SheetTitle>
-                </SheetHeader>
-                <div className="flex-1 overflow-hidden p-4">
+                <div className="flex-1 overflow-hidden">
                   <MobileAirportSelector
-                    value={fromAirport}
-                    onValueChange={(value) => {
+                    fromValue={fromAirport}
+                    toValue={toAirport}
+                    onFromChange={(value) => {
                       handleFromAirportChange(value);
                       if (value && value.trim().length > 0) {
                         setValidationErrors(prev => ({ ...prev, fromAirport: false }));
-                        setShowFromAirportSheet(false);
+
+                        // Auto-advance selection flow
+                        if (!toAirport || toAirport.trim() === '') {
+                          // If destination is empty, switch to destination field
+                          setTimeout(() => {
+                            handleAirportModeChange('to');
+                          }, 100);
+                        } else {
+                          // Both fields are filled, close the sheet
+                          setTimeout(() => {
+                            setShowAirportSheet(false);
+                          }, 300);
+                        }
                       }
                     }}
-                    placeholder={t('placeholders.fromAirport', 'From - City or Airport')}
-                    excludeAirport={toAirport}
-                    disabled={readOnly}
-                    autoFocus={true}
-                  />
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
-
-          {/* To Airport Bottom Sheet */}
-          <Sheet open={showToAirportSheet} onOpenChange={setShowToAirportSheet}>
-            <SheetContent
-              side="bottom"
-              className={cn(
-                "flex h-[70vh] flex-col overflow-hidden",
-                mirrorClasses.container
-              )}
-              style={{
-                fontFamily: "Uber Move, Arial, Helvetica, sans-serif",
-                ...mirrorStyles.container
-              }}
-            >
-              <div
-                className={cn("w-full h-full flex flex-col", mirrorClasses.content)}
-                style={mirrorStyles.content}
-              >
-                <SheetHeader className="flex-shrink-0 border-b border-gray-200 pb-3">
-                  <SheetTitle className="text-lg font-medium">
-                    {t('placeholders.toAirport', 'To - City or Airport')}
-                  </SheetTitle>
-                </SheetHeader>
-                <div className="flex-1 overflow-hidden p-4">
-                  <MobileAirportSelector
-                    value={toAirport}
-                    onValueChange={(value) => {
+                    onToChange={(value) => {
                       handleToAirportChange(value);
                       if (value && value.trim().length > 0) {
                         setValidationErrors(prev => ({ ...prev, toAirport: false }));
-                        setShowToAirportSheet(false);
+
+                        // Auto-advance selection flow
+                        if (!fromAirport || fromAirport.trim() === '') {
+                          // If origin is empty, switch to origin field
+                          setTimeout(() => {
+                            handleAirportModeChange('from');
+                          }, 100);
+                        } else {
+                          // Both fields are filled, close the sheet
+                          setTimeout(() => {
+                            setShowAirportSheet(false);
+                          }, 300);
+                        }
                       }
                     }}
-                    placeholder={t('placeholders.toAirport', 'To - City or Airport')}
-                    excludeAirport={fromAirport}
+                    mode={airportSheetMode}
+                    onModeChange={handleAirportModeChange}
                     disabled={readOnly}
-                    autoFocus={true}
                   />
                 </div>
               </div>
@@ -1253,7 +1450,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
             <SheetContent
               side="bottom"
               className={cn(
-                "flex h-[70vh] flex-col overflow-hidden",
+                "flex h-[90vh] flex-col overflow-hidden",
                 mirrorClasses.container
               )}
               style={{
