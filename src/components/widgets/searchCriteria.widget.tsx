@@ -811,7 +811,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
               {/* Swap button positioned on the separator line */}
               <button
                 onClick={handleSwapAirports}
-                className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-gray-300 rounded-full flex items-center justify-center hover:border-gray-400 hover:bg-gray-50 transition-colors"
+                className="absolute left-3/4 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-gray-300 rounded-full flex items-center justify-center hover:border-gray-400 hover:bg-gray-50 transition-colors"
                 disabled={disabled}
                 aria-label="Swap origin and destination airports"
               >
@@ -882,7 +882,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
         <div className="flex-1 overflow-y-auto">
           {showSearch && searchQuery ? (
             <div className="p-4">
-              <h3 className="text-sm font-medium text-gray-500 mb-3 uppercase tracking-wide">
+              <h3 className="text-sm font-medium text-gray-500 mb-2 uppercase tracking-wide">
                 {isLoading ? t('airport.searchingAirports', 'Searching...') :
                  `${t('airport.searchResults', 'Search Results')} - ${mode === 'from' ? t('placeholders.fromAirport', 'Origin') : t('placeholders.toAirport', 'Destination')}`}
               </h3>
@@ -901,15 +901,15 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
 
                         onValueChange?.(airport.value);
                       }}
-                      className="w-full text-left p-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                      className="w-full text-left p-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
                       disabled={disabled}
                     >
-                      <div className="flex justify-between items-center min-h-[3rem]">
+                      <div className="flex justify-between items-center min-h-[2.5rem]">
                         <div className="flex-1 min-w-0 pr-4">
-                          <div className="font-medium text-black text-base truncate">
+                          <div className="font-medium text-black text-sm truncate">
                             {airport.label}
                           </div>
-                          <div className="text-sm text-gray-500 truncate">
+                          <div className="text-xs text-gray-500 truncate">
                             {airport.description}
                           </div>
                         </div>
@@ -925,7 +925,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
             </div>
           ) : (
             <div className="p-4">
-              <h3 className="text-sm font-medium text-gray-500 mb-3 uppercase tracking-wide">
+              <h3 className="text-sm font-medium text-gray-500 mb-2 uppercase tracking-wide">
                 {t('airport.popularSearches', 'Popular Searches')}
               </h3>
               <div className="space-y-0">
@@ -940,15 +940,15 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
 
                       onValueChange?.(airport.value);
                     }}
-                    className="w-full text-left p-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                    className="w-full text-left p-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
                     disabled={disabled}
                   >
-                    <div className="flex justify-between items-center min-h-[3rem]">
+                    <div className="flex justify-between items-center min-h-[2.5rem]">
                       <div className="flex-1 min-w-0 pr-4">
-                        <div className="font-medium text-black text-base truncate">
+                        <div className="font-medium text-black text-sm truncate">
                           {airport.label}
                         </div>
-                        <div className="text-sm text-gray-500 truncate">
+                        <div className="text-xs text-gray-500 truncate">
                           {airport.description}
                         </div>
                       </div>
