@@ -1336,7 +1336,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
             <SheetContent
               side="bottom"
               className={cn(
-                "flex h-[90vh] flex-col overflow-hidden [&>button]:hidden",
+                "flex h-[80vh] flex-col overflow-hidden [&>button]:hidden",
                 mirrorClasses.container
               )}
               style={{
@@ -1450,7 +1450,7 @@ const SearchCriteriaWidget = (args: SearchCriteriaProps) => {
             <SheetContent
               side="bottom"
               className={cn(
-                "flex h-[90vh] flex-col overflow-hidden",
+                "flex h-[80vh] flex-col overflow-hidden",
                 mirrorClasses.container
               )}
               style={{
