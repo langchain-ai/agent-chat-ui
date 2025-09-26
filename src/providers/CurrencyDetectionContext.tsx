@@ -5,12 +5,13 @@ import React, {
   useEffect,
   ReactNode,
 } from "react";
-import { 
-  detectAndSetUserCurrency, 
-  getCurrentCurrencyInfo, 
+import {
+  detectOnAppLoad,
+  detectOnLogin,
+  getCurrentCurrencyInfo,
   refreshCurrencyDetection,
   initializeCurrencyDetection,
-  type CurrencyDetectionResult 
+  type CurrencyDetectionResult
 } from "@/services/currencyDetectionService";
 
 interface CurrencyDetectionContextType {
@@ -83,20 +84,27 @@ export const CurrencyDetectionProvider: React.FC<CurrencyDetectionProviderProps>
       try {
         setIsDetecting(true);
         setError(null);
-        
-        console.log("🚀 Initializing currency detection...");
-        await initializeCurrencyDetection();
-        
+
+        console.log("🚀 Initializing currency detection on app load...");
+        const result = await detectOnAppLoad();
+
+        if (result) {
+          setLastDetectionResult(result);
+          if (!result.success && result.error) {
+            setError(result.error.message);
+          }
+        }
+
         // Update current info after initialization
         updateCurrentInfo();
-        
+
         setIsInitialized(true);
         console.log("✅ Currency detection initialized successfully");
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Failed to initialize currency detection";
         console.error("❌ Currency detection initialization failed:", errorMessage);
         setError(errorMessage);
-        
+
         // Still update current info to show fallback values
         updateCurrentInfo();
         setIsInitialized(true); // Mark as initialized even if detection failed
@@ -113,24 +121,24 @@ export const CurrencyDetectionProvider: React.FC<CurrencyDetectionProviderProps>
     try {
       setIsDetecting(true);
       setError(null);
-      
+
       console.log("🔍 Manual currency detection triggered...");
-      const result = await detectAndSetUserCurrency();
-      
+      const result = await detectOnLogin(); // Use login detection for manual triggers
+
       setLastDetectionResult(result);
       updateCurrentInfo();
-      
+
       if (!result.success && result.error) {
         setError(result.error.message);
       }
-      
+
       console.log("✅ Manual currency detection completed:", result);
       return result;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Currency detection failed";
       console.error("❌ Manual currency detection failed:", errorMessage);
       setError(errorMessage);
-      
+
       const fallbackResult: CurrencyDetectionResult = {
         success: false,
         currency: currentCurrency,
@@ -139,7 +147,7 @@ export const CurrencyDetectionProvider: React.FC<CurrencyDetectionProviderProps>
         data: { wasUpdated: false },
         error: { code: "DETECTION_FAILED", message: errorMessage },
       };
-      
+
       setLastDetectionResult(fallbackResult);
       return fallbackResult;
     } finally {

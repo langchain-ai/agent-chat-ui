@@ -4,7 +4,7 @@
  */
 
 const COUNTRY_STORAGE_KEY = "flyo:user:country";
-const DEFAULT_COUNTRY = ""; // Default to empty string when no country detected
+const DEFAULT_COUNTRY = "IN"; // Default to India when no country detected
 
 export interface Country {
   code: string; // ISO 3166-1 alpha-2 country code
@@ -13,7 +13,7 @@ export interface Country {
 
 /**
  * Get selected country from local storage
- * Returns empty string as default if no country is stored
+ * Returns IN as default if no country is stored
  */
 export function getSelectedCountry(): string {
   try {

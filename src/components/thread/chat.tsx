@@ -348,6 +348,9 @@ export function Thread() {
     setContentBlocks([]);
   };
 
+  const userCurrency = getSelectedCurrency();
+    const userCountry = getSelectedCountry();
+
   // Quick Actions: one-click prompts to guide users
   const quickActions: Array<{ label: string; text: string; icon?: ReactNode }> = useMemo(() => [
       {
@@ -377,17 +380,22 @@ export function Thread() {
         ),
         icon: <Ticket className="h-4 w-4" />,
       },
+      // {
+      //   label: t(
+      //     "quickActionTab.doMyWebCheckin.label",
+      //     "Please do my\nwebcheckin",
+      //   ),
+      //   text: t(
+      //     "quickActionTab.doMyWebCheckin.text",
+      //     "Please do my webcheckin",
+      //   ),
+      //   icon: <Ticket className="h-4 w-4" />,
+      // },
       {
-        label: t(
-          "quickActionTab.doMyWebCheckin.label",
-          "Please do my\nwebcheckin",
-        ),
-        text: t(
-          "quickActionTab.doMyWebCheckin.text",
-          "Please do my webcheckin",
-        ),
+        label: 'check you country\nand currency',
+        text: `you country: ${userCountry} and currency: ${userCurrency}`,
         icon: <Ticket className="h-4 w-4" />,
-      },
+      }
     ], [refreshKey]); // Re-compute when refreshKey changes
 
   const handleQuickActionClick = async (text: string) => {

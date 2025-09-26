@@ -1,7 +1,8 @@
 /**
- * Currency Detection Service
- * Automatically detects user's currency based on IP geolocation
- * Integrates IP detection, country-to-currency mapping, and localStorage persistence
+ * Simplified Currency Detection Service
+ * Detects user's currency and country based on IP geolocation
+ * Stores data in localStorage without TTL mechanisms
+ * Triggers on successful login and when data is missing on app load
  */
 
 import {
@@ -41,16 +42,14 @@ export interface CurrencyDetectionResult {
 }
 
 /**
- * Detect and set user currency based on IP geolocation
- * This is the main function that orchestrates the entire detection process
+ * Detect and set user currency and country based on IP geolocation
+ * Used for both login success and missing data scenarios
  */
-export async function detectAndSetUserCurrency(): Promise<CurrencyDetectionResult> {
+export async function detectAndSetUserCurrencyAndCountry(): Promise<CurrencyDetectionResult> {
   try {
-    console.log("🌍 Starting automatic currency detection...");
+    console.log("🌍 Starting IP-based currency and country detection...");
 
-    // Always attempt fresh IP-based geolocation to detect current location
-    // This ensures VPN changes and location changes are detected properly
-    console.log("🔍 Attempting fresh IP-based geolocation...");
+    // Attempt IP-based geolocation
     const geolocationResult: GeolocationResult = await getUserGeolocation();
 
     if (!geolocationResult.success || !geolocationResult.data) {
@@ -59,11 +58,11 @@ export async function detectAndSetUserCurrency(): Promise<CurrencyDetectionResul
         geolocationResult.error?.message,
       );
 
-      // Fallback: use INR for currency and empty string for country when detection fails
+      // Fallback: use INR for currency and IN for country when detection fails
       return {
         success: true,
-        currency: "INR", // Always use INR as currency fallback
-        country: "", // Always use empty string as country fallback when detection fails
+        currency: "INR",
+        country: "IN",
         source: "fallback",
         data: {
           wasUpdated: false,
@@ -86,8 +85,8 @@ export async function detectAndSetUserCurrency(): Promise<CurrencyDetectionResul
       console.log("🔄 No country detected, using fallback values");
       return {
         success: true,
-        currency: "INR", // Use INR as currency fallback
-        country: "", // Use empty string as country fallback
+        currency: "INR",
+        country: "IN",
         source: "fallback",
         data: {
           detectedCountry: "",
@@ -117,7 +116,7 @@ export async function detectAndSetUserCurrency(): Promise<CurrencyDetectionResul
       return {
         success: true,
         currency: "INR",
-        country: "", // Use empty string for country when currency not supported
+        country: "IN",
         source: "fallback",
         data: {
           detectedCountry,
@@ -128,6 +127,31 @@ export async function detectAndSetUserCurrency(): Promise<CurrencyDetectionResul
         error: {
           code: "CURRENCY_NOT_SUPPORTED",
           message: `Detected currency ${detectedCurrency} is not supported`,
+        },
+      };
+    }
+
+    // Verify the currency details exist
+    const currencyDetails = getCurrencyDetails(detectedCurrency);
+    if (!currencyDetails) {
+      console.warn(
+        `⚠️ Currency details not found for ${detectedCurrency}, falling back to INR`,
+      );
+
+      return {
+        success: true,
+        currency: "INR",
+        country: "IN",
+        source: "fallback",
+        data: {
+          detectedCountry,
+          detectedCurrency,
+          ipAddress: ip,
+          wasUpdated: false,
+        },
+        error: {
+          code: "CURRENCY_DETAILS_NOT_FOUND",
+          message: `Currency details not found for ${detectedCurrency}`,
         },
       };
     }
@@ -151,31 +175,6 @@ export async function detectAndSetUserCurrency(): Promise<CurrencyDetectionResul
       // Continue anyway, we can still return the detected values
     }
 
-    // Verify the currency details exist
-    const currencyDetails = getCurrencyDetails(detectedCurrency);
-    if (!currencyDetails) {
-      console.warn(
-        `⚠️ Currency details not found for ${detectedCurrency}, falling back to INR`,
-      );
-
-      return {
-        success: true,
-        currency: "INR",
-        country: "", // Use empty string for country when currency details not found
-        source: "fallback",
-        data: {
-          detectedCountry,
-          detectedCurrency,
-          ipAddress: ip,
-          wasUpdated: false,
-        },
-        error: {
-          code: "CURRENCY_DETAILS_NOT_FOUND",
-          message: `Currency details not found for ${detectedCurrency}`,
-        },
-      };
-    }
-
     console.log(
       `🎉 Successfully detected and set currency: ${detectedCurrency} (${currencyDetails.symbol}) for ${detectedCountry}`,
     );
@@ -195,11 +194,11 @@ export async function detectAndSetUserCurrency(): Promise<CurrencyDetectionResul
   } catch (error) {
     console.error("💥 Unexpected error in currency detection:", error);
 
-    // Fallback to INR currency and empty string country on unexpected errors
+    // Fallback to INR currency and IN country on unexpected errors
     return {
       success: false,
-      currency: "INR", // Always use INR as currency fallback
-      country: "", // Always use empty string as country fallback on errors
+      currency: "INR",
+      country: "IN",
       source: "fallback",
       data: {
         wasUpdated: false,
@@ -211,6 +210,50 @@ export async function detectAndSetUserCurrency(): Promise<CurrencyDetectionResul
       },
     };
   }
+}
+
+/**
+ * Detect currency and country on successful login
+ * Always runs IP detection and stores results in localStorage
+ */
+export async function detectOnLogin(): Promise<CurrencyDetectionResult> {
+  console.log("🔑 Detecting currency and country after successful login...");
+  return await detectAndSetUserCurrencyAndCountry();
+}
+
+/**
+ * Check and detect currency/country on app load
+ * Only runs detection if either country or currency is missing from localStorage
+ */
+export async function detectOnAppLoad(): Promise<CurrencyDetectionResult | null> {
+  const currentCurrency = getSelectedCurrency();
+  const currentCountry = getSelectedCountry();
+
+  // Check if both exist in localStorage
+  const hasCurrency = currentCurrency && currentCurrency !== "";
+  const hasCountry = currentCountry && currentCountry !== "";
+
+  if (hasCurrency && hasCountry) {
+    console.log(
+      "✅ Both currency and country exist in localStorage, skipping detection",
+    );
+    return {
+      success: true,
+      currency: currentCurrency,
+      country: currentCountry,
+      source: "localStorage",
+      data: {
+        wasUpdated: false,
+      },
+    };
+  }
+
+  console.log("🔍 Missing currency or country data, running detection...");
+  console.log(
+    `Current currency: ${currentCurrency}, Current country: ${currentCountry}`,
+  );
+
+  return await detectAndSetUserCurrencyAndCountry();
 }
 
 /**
@@ -255,56 +298,32 @@ export function getCurrentCurrencyInfo(): {
   };
 }
 
-/**
- * Force refresh currency detection
- * Clears caches and re-runs detection
- */
-export async function refreshCurrencyDetection(): Promise<CurrencyDetectionResult> {
-  try {
-    // Clear geolocation cache to force fresh detection
-    const { clearGeolocationCache } = await import("./ipGeolocationService");
-    clearGeolocationCache();
-
-    console.log("🔄 Forcing fresh currency detection...");
-    return await detectAndSetUserCurrency();
-  } catch (error) {
-    console.error("Error in refreshCurrencyDetection:", error);
-
-    return {
-      success: false,
-      currency: getSelectedCurrency(),
-      country: getSelectedCountry(),
-      source: "fallback",
-      data: {
-        wasUpdated: false,
-      },
-      error: {
-        code: "REFRESH_FAILED",
-        message:
-          error instanceof Error
-            ? error.message
-            : "Failed to refresh detection",
-      },
-    };
-  }
+// Legacy function for backward compatibility - now uses new logic
+export async function detectAndSetUserCurrency(): Promise<CurrencyDetectionResult> {
+  console.log(
+    "⚠️ Using legacy detectAndSetUserCurrency - consider using detectOnAppLoad or detectOnLogin",
+  );
+  return await detectAndSetUserCurrencyAndCountry();
 }
 
-/**
- * Initialize currency detection on app startup
- * Should be called once when the app loads
- */
-export async function initializeCurrencyDetection(): Promise<void> {
-  try {
-    console.log("🚀 Initializing currency detection...");
-    const result = await detectAndSetUserCurrency();
+// Legacy function for backward compatibility - now uses new logic
+export async function refreshCurrencyDetection(): Promise<CurrencyDetectionResult> {
+  console.log(
+    "⚠️ Using legacy refreshCurrencyDetection - consider using detectOnLogin",
+  );
+  return await detectAndSetUserCurrencyAndCountry();
+}
 
-    if (result.success) {
+// Legacy function for backward compatibility - now uses new logic
+export async function initializeCurrencyDetection(): Promise<void> {
+  console.log(
+    "⚠️ Using legacy initializeCurrencyDetection - consider using detectOnAppLoad",
+  );
+  try {
+    const result = await detectOnAppLoad();
+    if (result) {
       console.log(
         `✅ Currency detection initialized: ${result.currency} (${result.source})`,
-      );
-    } else {
-      console.warn(
-        `⚠️ Currency detection initialization failed, using fallback: ${result.currency}`,
       );
     }
   } catch (error) {

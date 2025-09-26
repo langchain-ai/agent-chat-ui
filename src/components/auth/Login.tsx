@@ -16,6 +16,7 @@ import {
   trackLoginError,
   trackChatScreenReached,
 } from "@/services/analyticsService";
+import { detectOnLogin } from "@/services/currencyDetectionService";
 
 const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -192,8 +193,27 @@ const Login: React.FC = () => {
               window.location.pathname,
             );
 
+            // Detect currency and country after successful login
+            console.log("Login successful! Detecting currency and country...");
+            try {
+              const detectionResult = await detectOnLogin();
+              if (detectionResult.success) {
+                console.log(
+                  "Currency and country detected after login:",
+                  `${detectionResult.currency} (${detectionResult.country})`,
+                );
+              } else {
+                console.log(
+                  "Currency/country detection failed after login:",
+                  detectionResult.error,
+                );
+              }
+            } catch (error) {
+              console.error("Error detecting currency/country after login:", error);
+            }
+
             // Request location permission after successful login
-            console.log("Login successful! Requesting location permission...");
+            console.log("Requesting location permission...");
             try {
               const locationResult = await getUserLocation();
               if (locationResult.success) {
