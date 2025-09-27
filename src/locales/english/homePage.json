@@ -15,6 +15,10 @@
         "doMyWebCheckin": {
             "label": "Please do my\nwebcheckin",
             "text": "Please do my webcheckin"
+        },
+        "whatDoWeDo": {
+            "label": "What do we\ndo?",
+            "text": "What do we do?"
         }
     }
 }

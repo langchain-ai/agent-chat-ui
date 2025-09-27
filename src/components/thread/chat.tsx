@@ -25,6 +25,7 @@ import {
   Ticket,
   Clock,
   Armchair,
+  HelpCircle,
 } from "lucide-react";
 import { parseAsBoolean, useQueryState } from "nuqs";
 import { toast } from "sonner";
@@ -350,6 +351,17 @@ export function Thread() {
 
   // Quick Actions: one-click prompts to guide users
   const quickActions: Array<{ label: string; text: string; icon?: ReactNode }> = useMemo(() => [
+         {
+      label: t(
+          "quickActionTab.whatDoWeDo.label",
+          "What do we\ndo?",
+        ),
+      text: t(
+          "quickActionTab.whatDoWeDo.text",
+          "What do we do?",
+        ),
+      icon: <HelpCircle className="h-4 w-4" />,
+     },
       {
         label: t("quickActionTab.bookMeAFlight.label", "Book me a\nflight"),
         text: t("quickActionTab.bookMeAFlight.text", "Book me a flight"),
@@ -387,7 +399,7 @@ export function Thread() {
           "Please do my webcheckin",
         ),
         icon: <Ticket className="h-4 w-4" />,
-      },
+      }
     ], [refreshKey]); // Re-compute when refreshKey changes
 
   const handleQuickActionClick = async (text: string) => {
@@ -557,7 +569,7 @@ export function Thread() {
                           "inline-flex items-start gap-3 whitespace-nowrap sm:gap-4",
                         )}
                       >
-                        {quickActions.slice(0, 4).map((qa) => (
+                        {quickActions.slice(0, 5).map((qa) => (
                           <button
                             key={qa.label}
                             type="button"

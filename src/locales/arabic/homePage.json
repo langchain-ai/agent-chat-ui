@@ -1,20 +1,24 @@
 {
-    "quickActionTab":{
-        "bookMeAFlight": {
-            "label": "احجز لي\nرحلة",
-            "text": "احجز لي رحلة"
-        },
-        "showMePastFlights": {
-            "label": "أظهر لي رحلاتي\nالسابقة",
-            "text": "أظهر لي رحلاتي السابقة"
-        },
-        "showFreeLoungeAccess": {
-            "label": "أظهر لي الوصول المجاني\nللصالة",
-            "text": "أظهر لي الوصول المجاني للصالة"
-        },
-        "doMyWebCheckin": {
-            "label": "قم بإجراء تسجيل الوصول\nعبر الإنترنت",
-            "text": "قم بإجراء تسجيل الوصول عبر الإنترنت"
-        }
+  "quickActionTab": {
+    "bookMeAFlight": {
+      "label": "احجز لي\nرحلة",
+      "text": "احجز لي رحلة"
+    },
+    "showMePastFlights": {
+      "label": "أظهر لي رحلاتي\nالسابقة",
+      "text": "أظهر لي رحلاتي السابقة"
+    },
+    "showFreeLoungeAccess": {
+      "label": "أظهر لي الوصول المجاني\nللصالة",
+      "text": "أظهر لي الوصول المجاني للصالة"
+    },
+    "doMyWebCheckin": {
+      "label": "قم بإجراء تسجيل الوصول\nعبر الإنترنت",
+      "text": "قم بإجراء تسجيل الوصول عبر الإنترنت"
+    },
+    "whatDoWeDo": {
+      "label": "ماذا\n نفعل؟",
+      "text": "ماذا نفعل؟"
     }
+  }
 }
