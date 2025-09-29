@@ -354,11 +354,11 @@ export function Thread() {
          {
       label: t(
           "quickActionTab.whatDoWeDo.label",
-          "What does\nFlyo do?",
+          "What can\nFlyo do?",
         ),
       text: t(
           "quickActionTab.whatDoWeDo.text",
-          "What does Flyo do?",
+          "What can Flyo do?",
         ),
       icon: <HelpCircle className="h-4 w-4" />,
      },
@@ -551,7 +551,7 @@ export function Thread() {
                         ) : (
                           "Traveller"
                         )}
-                        {", where are we flying today?"}
+                        {", How can I help you?"}
                       </div>
                     }
                   </div>
