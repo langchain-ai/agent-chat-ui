@@ -1,42 +1,45 @@
+// Global
+import { useState, FormEvent } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { ReactNode, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
-import { useStreamContext } from "@/providers/Stream";
-import { useState, FormEvent } from "react";
-import { Button } from "../ui/button";
-import { Checkpoint, Message } from "@langchain/langgraph-sdk";
-import { AssistantMessage, AssistantMessageLoading } from "./messages/ai";
-import { HumanMessage } from "./messages/human";
-import {
-  DO_NOT_RENDER_ID_PREFIX,
-  ensureToolCallsHaveResponses,
-} from "@/lib/ensure-tool-responses";
-import { LangGraphLogoSVG } from "../icons/langgraph";
-import { TooltipIconButton } from "./tooltip-icon-button";
 import {
   ArrowDown,
   LoaderCircle,
   PanelRightOpen,
   PanelRightClose,
-  SquarePen,
   XIcon,
   Plus,
+  EditIcon,
 } from "lucide-react";
 import { useQueryState, parseAsBoolean } from "nuqs";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
-import ThreadHistory from "./history";
 import { toast } from "sonner";
+import {
+  Button,
+  Heading,
+  IconButton,
+  Switch,
+  Textarea,
+  Tooltip,
+} from "@chakra-ui/react";
+
+// Helpers
+import { Checkpoint, Message } from "@langchain/langgraph-sdk";
+import { AssistantMessage, AssistantMessageLoading } from "./messages/ai";
+import { HumanMessage } from "./messages/human";
+import { useStreamContext } from "@/providers/Stream";
+
+// Lib
+import { cn } from "@/lib/utils";
+import {
+  DO_NOT_RENDER_ID_PREFIX,
+  ensureToolCallsHaveResponses,
+} from "@/lib/ensure-tool-responses";
+import ThreadHistory from "./history";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { Label } from "../ui/label";
-import { Switch } from "../ui/switch";
 import { GitHubSVG } from "../icons/github";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "../ui/tooltip";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { ContentBlocksPreview } from "./ContentBlocksPreview";
 import {
@@ -45,6 +48,8 @@ import {
   ArtifactTitle,
   useArtifactContext,
 } from "./artifact";
+import AvatarLogo from "../blok/Avatar";
+import Image from "next/image";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -77,37 +82,39 @@ function ScrollToBottom(props: { className?: string }) {
   if (isAtBottom) return null;
   return (
     <Button
-      variant="outline"
-      className={props.className}
+      // onClick={scrollToBottom}
       onClick={() => scrollToBottom()}
+      variant="outline"
+      colorScheme="gray"
+      ml={props.className?.includes("ml-auto") ? "auto" : undefined}
+      leftIcon={<ArrowDown size={16} />}
     >
-      <ArrowDown className="h-4 w-4" />
-      <span>Scroll to bottom</span>
+      Scroll to bottom
     </Button>
   );
 }
 
 function OpenGitHubRepo() {
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <a
-            href="https://github.com/langchain-ai/agent-chat-ui"
-            target="_blank"
-            className="flex items-center justify-center"
-          >
-            <GitHubSVG
-              width="24"
-              height="24"
-            />
-          </a>
-        </TooltipTrigger>
-        <TooltipContent side="left">
-          <p>Open GitHub repo</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <Tooltip
+      label="Open GitHub repo"
+      placement="left"
+      hasArrow
+      bg="purple"
+      color="white"
+      openDelay={100}
+    >
+      <a
+        href="https://github.com/langchain-ai/agent-chat-ui"
+        target="_blank"
+        className="flex items-center justify-center"
+      >
+        <GitHubSVG
+          width="24"
+          height="24"
+        />
+      </a>
+    </Tooltip>
   );
 }
 
@@ -274,7 +281,7 @@ export function Thread() {
           }
         >
           <div
-            className="relative h-full"
+            className="relative h-full bg-[rgba(0,0,0,0.06)]"
             style={{ width: 300 }}
           >
             <ThreadHistory />
@@ -313,14 +320,14 @@ export function Thread() {
               <div>
                 {(!chatHistoryOpen || !isLargeScreen) && (
                   <Button
-                    className="hover:bg-gray-100"
                     variant="ghost"
                     onClick={() => setChatHistoryOpen((p) => !p)}
+                    _hover={{ bg: "gray.100" }}
                   >
                     {chatHistoryOpen ? (
-                      <PanelRightOpen className="size-5" />
+                      <PanelRightOpen size={20} />
                     ) : (
-                      <PanelRightClose className="size-5" />
+                      <PanelRightClose size={20} />
                     )}
                   </Button>
                 )}
@@ -360,12 +367,14 @@ export function Thread() {
                     damping: 30,
                   }}
                 >
-                  <LangGraphLogoSVG
-                    width={32}
-                    height={32}
+                  <AvatarLogo
+                    size="sm"
+                    // name="Agentic AI"
+                    src="logo.png"
+                    borderRadius="0"
                   />
                   <span className="text-xl font-semibold tracking-tight">
-                    Agent Chat
+                    Agentic AI
                   </span>
                 </motion.button>
               </div>
@@ -374,22 +383,30 @@ export function Thread() {
                 <div className="flex items-center">
                   <OpenGitHubRepo />
                 </div>
-                <TooltipIconButton
-                  size="lg"
-                  className="p-4"
-                  tooltip="New thread"
-                  variant="ghost"
-                  onClick={() => setThreadId(null)}
+                <Tooltip
+                  label="New thread"
+                  hasArrow
+                  placement="left"
+                  bg="purple"
+                  color="white"
+                  openDelay={100}
                 >
-                  <SquarePen className="size-5" />
-                </TooltipIconButton>
+                  <IconButton
+                    aria-label="New thread"
+                    size="lg"
+                    variant="ghost"
+                    p={4}
+                    icon={<EditIcon />}
+                    onClick={() => setThreadId(null)}
+                  />
+                </Tooltip>
               </div>
 
               <div className="from-background to-background/0 absolute inset-x-0 top-full h-5 bg-gradient-to-b" />
             </div>
           )}
 
-          <StickToBottom className="relative flex-1 overflow-hidden">
+          <StickToBottom className="bg-secondary relative flex-1 overflow-hidden">
             <StickyToBottomContent
               className={cn(
                 "absolute inset-0 overflow-y-scroll px-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent",
@@ -433,13 +450,29 @@ export function Thread() {
                 </>
               }
               footer={
-                <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-white">
+                <div className="sticky bottom-0 flex flex-col items-center gap-8">
                   {!chatStarted && (
-                    <div className="flex items-center gap-3">
-                      <LangGraphLogoSVG className="h-8 flex-shrink-0" />
-                      <h1 className="text-2xl font-semibold tracking-tight">
-                        Agent Chat
-                      </h1>
+                    <div className="animate__animated animate__fadeInUp flex items-center gap-3">
+                      {/* <AvatarLogo
+                        size="md"
+                        // name="Agentic AI"
+                        src="logo.png"
+                        borderRadius="0"
+                      /> */}
+                      <Image
+                        src="/logo.png"
+                        width={48}
+                        height={48}
+                        alt="logo"
+                        priority
+                      />
+                      <Heading
+                        size="lg"
+                        as="h1"
+                        className=""
+                      >
+                        Agentic AI
+                      </Heading>
                     </div>
                   )}
 
@@ -448,7 +481,7 @@ export function Thread() {
                   <div
                     ref={dropRef}
                     className={cn(
-                      "bg-muted relative z-10 mx-auto mb-8 w-full max-w-3xl rounded-2xl shadow-xs transition-all",
+                      "animate__animated animate__fadeInUp relative z-10 mx-auto mb-8 w-full max-w-3xl transition-all",
                       dragOver
                         ? "border-primary border-2 border-dotted"
                         : "border border-solid",
@@ -456,13 +489,14 @@ export function Thread() {
                   >
                     <form
                       onSubmit={handleSubmit}
-                      className="mx-auto grid max-w-3xl grid-rows-[1fr_auto] gap-2"
+                      className="mx-auto grid max-w-3xl grid-rows-[1fr_auto]"
                     >
                       <ContentBlocksPreview
                         blocks={contentBlocks}
                         onRemove={removeBlock}
                       />
-                      <textarea
+                      <Textarea
+                        placeholder="Type your message..."
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onPaste={handlePaste}
@@ -479,35 +513,38 @@ export function Thread() {
                             form?.requestSubmit();
                           }
                         }}
-                        placeholder="Type your message..."
-                        className="field-sizing-content resize-none border-none bg-transparent p-3.5 pb-0 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none"
                       />
 
                       <div className="flex items-center gap-6 p-2 pt-4">
                         <div>
-                          <div className="flex items-center space-x-2">
+                          <div className="group flex items-center space-x-2">
                             <Switch
                               id="render-tool-calls"
-                              checked={hideToolCalls ?? false}
-                              onCheckedChange={setHideToolCalls}
+                              isChecked={hideToolCalls ?? false}
+                              onChange={(e) =>
+                                setHideToolCalls(e.target.checked)
+                              }
+                              colorScheme="purple"
                             />
                             <Label
                               htmlFor="render-tool-calls"
-                              className="text-sm text-gray-600"
+                              className="cursor-pointer text-sm text-gray-600 transition-colors group-hover:[color:var(--colors-purple-500)]"
                             >
                               Hide Tool Calls
                             </Label>
                           </div>
                         </div>
+
                         <Label
                           htmlFor="file-input"
-                          className="flex cursor-pointer items-center gap-2"
+                          className="group flex cursor-pointer items-center gap-2"
                         >
-                          <Plus className="size-5 text-gray-600" />
-                          <span className="text-sm text-gray-600">
+                          <Plus className="size-5 text-gray-600 transition-colors group-hover:[color:var(--colors-purple-500)]" />
+                          <span className="text-sm text-gray-600 group-hover:[color:var(--colors-purple-500)]">
                             Upload PDF or Image
                           </span>
                         </Label>
+
                         <input
                           id="file-input"
                           type="file"
@@ -516,23 +553,30 @@ export function Thread() {
                           accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
                           className="hidden"
                         />
+
                         {stream.isLoading ? (
                           <Button
                             key="stop"
                             onClick={() => stream.stop()}
-                            className="ml-auto"
+                            ml="auto"
+                            colorScheme="red"
+                            leftIcon={
+                              <LoaderCircle className="h-4 w-4 animate-spin" />
+                            }
                           >
-                            <LoaderCircle className="h-4 w-4 animate-spin" />
                             Cancel
                           </Button>
                         ) : (
                           <Button
                             type="submit"
-                            className="ml-auto shadow-md transition-all"
-                            disabled={
+                            ml="auto"
+                            colorScheme="purple"
+                            isDisabled={
                               isLoading ||
                               (!input.trim() && contentBlocks.length === 0)
                             }
+                            boxShadow="md"
+                            transition="all 0.2s"
                           >
                             Send
                           </Button>
@@ -549,12 +593,13 @@ export function Thread() {
           <div className="absolute inset-0 flex min-w-[30vw] flex-col">
             <div className="grid grid-cols-[1fr_auto] border-b p-4">
               <ArtifactTitle className="truncate overflow-hidden" />
-              <button
+              <IconButton
+                aria-label="Close"
+                icon={<XIcon size={20} />}
                 onClick={closeArtifact}
-                className="cursor-pointer"
-              >
-                <XIcon className="size-5" />
-              </button>
+                variant="ghost"
+                cursor="pointer"
+              />
             </div>
             <ArtifactContent className="relative flex-grow" />
           </div>

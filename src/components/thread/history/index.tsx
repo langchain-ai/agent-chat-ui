@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import { useThreads } from "@/providers/Thread";
 import { Thread } from "@langchain/langgraph-sdk";
 import { useEffect } from "react";
@@ -14,6 +13,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { PanelRightOpen, PanelRightClose } from "lucide-react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { Button, Heading, IconButton, Text } from "@chakra-ui/react";
 
 function ThreadList({
   threads,
@@ -45,7 +45,11 @@ function ThreadList({
           >
             <Button
               variant="ghost"
-              className="w-[280px] items-start justify-start text-left font-normal"
+              w="280px"
+              justifyContent="flex-start"
+              alignItems="flex-start"
+              textAlign="left"
+              fontWeight="normal"
               onClick={(e) => {
                 e.preventDefault();
                 onThreadClick?.(t.thread_id);
@@ -53,7 +57,12 @@ function ThreadList({
                 setThreadId(t.thread_id);
               }}
             >
-              <p className="truncate text-ellipsis">{itemText}</p>
+              <Text
+                isTruncated
+                noOfLines={1}
+              >
+                {itemText}
+              </Text>
             </Button>
           </div>
         );
@@ -98,20 +107,28 @@ export default function ThreadHistory() {
     <>
       <div className="shadow-inner-right hidden h-screen w-[300px] shrink-0 flex-col items-start justify-start gap-6 border-r-[1px] border-slate-300 lg:flex">
         <div className="flex w-full items-center justify-between px-4 pt-1.5">
-          <Button
-            className="hover:bg-gray-100"
+          <IconButton
+            aria-label="Toggle chat history"
             variant="ghost"
             onClick={() => setChatHistoryOpen((p) => !p)}
+            _hover={{ bg: "gray.100" }}
+            icon={
+              chatHistoryOpen ? (
+                <PanelRightOpen className="size-5" />
+              ) : (
+                <PanelRightClose className="size-5" />
+              )
+            }
+          />
+
+          <Heading
+            as="h2"
+            size="md"
+            fontWeight="semibold"
+            letterSpacing="tight"
           >
-            {chatHistoryOpen ? (
-              <PanelRightOpen className="size-5" />
-            ) : (
-              <PanelRightClose className="size-5" />
-            )}
-          </Button>
-          <h1 className="text-xl font-semibold tracking-tight">
             Thread History
-          </h1>
+          </Heading>
         </div>
         {threadsLoading ? (
           <ThreadHistoryLoading />
