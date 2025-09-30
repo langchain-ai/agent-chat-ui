@@ -453,12 +453,6 @@ export function Thread() {
                 <div className="sticky bottom-0 flex flex-col items-center gap-8">
                   {!chatStarted && (
                     <div className="animate__animated animate__fadeInUp flex items-center gap-3">
-                      {/* <AvatarLogo
-                        size="md"
-                        // name="Agentic AI"
-                        src="logo.png"
-                        borderRadius="0"
-                      /> */}
                       <Image
                         src="/logo.png"
                         width={48}
