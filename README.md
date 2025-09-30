@@ -30,6 +30,46 @@ Install dependencies:
 pnpm install
 ```
 
+### Additional Dependencies
+
+This project includes additional features that require extra setup:
+
+#### Supabase Integration
+
+Install Supabase dependencies:
+
+```bash
+# Install Supabase npm module
+npm install @supabase/supabase-js
+
+# Install Supabase CLI
+npm install supabase --save-dev
+
+# Supabase CLI login command
+npx supabase login
+
+# Generate Supabase types (replace project-id with your actual project ID)
+npx supabase gen types typescript --project-id YOUR_PROJECT_ID > src/lib/database.types.ts
+```
+
+#### Sitecore Blok Design System
+
+Install Chakra UI v2 with Sitecore Blok theme:
+
+```bash
+# Install Chakra-cli v2
+npm i @chakra-ui/cli@2
+
+# Install Chakra component library
+npm i @chakra-ui/react@2 @emotion/react @emotion/styled framer-motion
+
+# Install Blok theme package
+npm i @sitecore/blok-theme
+
+# Material Design Icons
+npm install @mdi/js
+```
+
 Run the app:
 
 ```bash
