@@ -7,6 +7,8 @@ function isComplexValue(value: any): boolean {
   return Array.isArray(value) || (typeof value === "object" && value !== null);
 }
 
+// Legacy components - kept for backward compatibility
+// These are used in the drawer for detailed rendering
 export function ToolCalls({
   toolCalls,
 }: {
