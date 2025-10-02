@@ -80,19 +80,21 @@ function matchToolCallsWithResults(
   // Look for tool result messages after the current message
   const subsequentMessages = messages.slice(currentMessageIndex + 1);
 
-  toolCalls.forEach((toolCall) => {
-    // Find the corresponding tool result
-    const toolResult = subsequentMessages.find(
-      (msg) =>
-        msg.type === "tool" &&
-        (msg as ToolMessage).tool_call_id === toolCall.id,
-    ) as ToolMessage | undefined;
+  toolCalls
+    .filter((tc) => tc.id && tc.name) // Filter out incomplete tool-call messages when streaming chunks
+    .forEach((toolCall) => {
+      // Find the corresponding tool result
+      const toolResult = subsequentMessages.find(
+        (msg) =>
+          msg.type === "tool" &&
+          (msg as ToolMessage).tool_call_id === toolCall.id,
+      ) as ToolMessage | undefined;
 
-    results.push({
-      toolCall,
-      toolResult,
+      results.push({
+        toolCall,
+        toolResult,
+      });
     });
-  });
 
   return results;
 }
