@@ -191,8 +191,8 @@ export function AssistantMessage({
   }
 
   return (
-    <div className="group mr-auto flex items-start gap-2">
-      <div className="flex flex-col gap-2">
+    <div className="group flex w-full items-start gap-2">
+      <div className="flex w-full flex-col gap-2">
         {contentString.length > 0 && (
           <div className="py-1">
             <MarkdownText>{contentString}</MarkdownText>

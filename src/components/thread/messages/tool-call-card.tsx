@@ -114,7 +114,7 @@ export function ToolCallCards({ items }: { items: ToolCallWithResult[] }) {
   if (!items || items.length === 0) return null;
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-2">
+    <div className="flex w-full flex-col gap-2">
       {items.map((item, idx) => (
         <ToolCallCard
           key={item.toolCall.id || idx}
