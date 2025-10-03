@@ -226,12 +226,17 @@ export function AssistantMessage({
             onSelect={(branch) => thread.setBranch(branch)}
             isLoading={isLoading}
           />
-          <CommandBar
-            content={contentString}
-            isLoading={isLoading}
-            isAiMessage={true}
-            handleRegenerate={() => handleRegenerate(parentCheckpoint)}
-          />
+          {
+            !!toolCallItems.length || (
+              <CommandBar
+                content={contentString}
+                isLoading={isLoading}
+                isAiMessage={true}
+                handleRegenerate={() => handleRegenerate(parentCheckpoint)}
+              />
+            )
+          }
+         
         </div>
       </div>
     </div>
