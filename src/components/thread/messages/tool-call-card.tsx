@@ -2,6 +2,7 @@ import { AIMessage, ToolMessage } from "@langchain/langgraph-sdk";
 import { ChevronRight, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToolCallContext } from "./tool-call-context";
+import { useEffect } from "react";
 
 type ToolCallStatus = "running" | "success" | "failed";
 
@@ -64,8 +65,16 @@ function StatusIndicator({ status }: { status: ToolCallStatus }) {
 }
 
 export function ToolCallCard({ toolCall, toolResult }: ToolCallCardProps) {
-  const { openToolCallDetail } = useToolCallContext();
+  const { openToolCallDetail, updateToolCallDetail } = useToolCallContext();
   const status = getToolCallStatus(toolCall, toolResult);
+
+  // Update drawer when tool result changes
+  useEffect(() => {
+    if (toolCall.id) {
+      updateToolCallDetail(toolCall.id, toolResult);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toolCall.id, toolResult]);
 
   const handleViewDetails = () => {
     openToolCallDetail({

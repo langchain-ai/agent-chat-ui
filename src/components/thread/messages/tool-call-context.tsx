@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useCallback } from "react";
 import { AIMessage, ToolMessage } from "@langchain/langgraph-sdk";
 
 type ToolCallStatus = "running" | "success" | "failed";
@@ -19,9 +19,33 @@ interface ToolCallContextType {
   setIsOpen: (open: boolean) => void;
   openToolCallDetail: (detail: ToolCallDetail) => void;
   closeToolCallDetail: () => void;
+  updateToolCallDetail: (toolCallId: string, toolResult?: ToolMessage) => void;
 }
 
 const ToolCallContext = createContext<ToolCallContextType | undefined>(undefined);
+
+function getToolCallStatus(
+  toolResult?: ToolMessage,
+): ToolCallStatus {
+  if (!toolResult) {
+    return "running";
+  }
+
+  // Check if the result indicates an error
+  const content =
+    typeof toolResult.content === "string"
+      ? toolResult.content
+      : JSON.stringify(toolResult.content);
+
+  if (
+    content.toLowerCase().includes("error") ||
+    content.toLowerCase().includes("failed")
+  ) {
+    return "failed";
+  }
+
+  return "success";
+}
 
 export function ToolCallProvider({ children }: { children: React.ReactNode }) {
   const [toolCallDetail, setToolCallDetail] = useState<ToolCallDetail | null>(null);
@@ -37,6 +61,17 @@ export function ToolCallProvider({ children }: { children: React.ReactNode }) {
     setToolCallDetail(null);
   };
 
+  const updateToolCallDetail = useCallback((toolCallId: string, toolResult?: ToolMessage) => {
+    if (toolCallDetail && toolCallDetail.toolCall.id === toolCallId) {
+      const newStatus = getToolCallStatus(toolResult);
+      setToolCallDetail({
+        ...toolCallDetail,
+        toolResult,
+        status: newStatus,
+      });
+    }
+  }, [toolCallDetail]);
+
   return (
     <ToolCallContext.Provider
       value={{
@@ -46,6 +81,7 @@ export function ToolCallProvider({ children }: { children: React.ReactNode }) {
         setIsOpen,
         openToolCallDetail,
         closeToolCallDetail,
+        updateToolCallDetail,
       }}
     >
       {children}
