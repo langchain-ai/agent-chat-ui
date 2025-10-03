@@ -161,7 +161,19 @@ function ThreadContent() {
     // close artifact and reset artifact context
     closeArtifact();
     setArtifactContext({});
+    
+    // close tool call drawer when thread changes
+    closeToolCallDetail();
   };
+
+  // Close tool call drawer when threadId changes
+  const prevThreadId = useRef(threadId);
+  useEffect(() => {
+    if (prevThreadId.current !== threadId && toolCallOpen) {
+      closeToolCallDetail();
+    }
+    prevThreadId.current = threadId;
+  }, [threadId, toolCallOpen, closeToolCallDetail]);
 
   useEffect(() => {
     if (!stream.error) {
