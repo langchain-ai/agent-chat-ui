@@ -296,13 +296,13 @@ function ThreadContent() {
       <div
         className={cn(
           "grid w-full transition-all duration-500",
-          // 同时显示 artifact 和 tool call
+          // Show both artifact and tool call
           artifactOpen && toolCallOpen && "grid-cols-[2fr_1fr_1fr]",
-          // 只显示 artifact
+          // Show only artifact
           artifactOpen && !toolCallOpen && "grid-cols-[3fr_2fr]",
-          // 只显示 tool call
+          // Show only tool call
           !artifactOpen && toolCallOpen && "grid-cols-[1fr_1fr]",
-          // 都不显示
+          // Show neither
           !artifactOpen && !toolCallOpen && "grid-cols-[1fr_0fr]",
         )}
       >
