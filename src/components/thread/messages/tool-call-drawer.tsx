@@ -1,24 +1,11 @@
-import { AIMessage, ToolMessage } from "@langchain/langgraph-sdk";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
-import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, XIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-type ToolCallStatus = "running" | "success" | "failed";
-
-type ToolCall = NonNullable<AIMessage["tool_calls"]>[number];
+import { ToolCallDetail } from "./tool-call-context";
 
 interface ToolCallDrawerProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
-  toolCall: ToolCall;
-  toolResult?: ToolMessage;
-  status: ToolCallStatus;
+  onClose: () => void;
+  toolCallDetail: ToolCallDetail | null;
 }
 
 function isComplexValue(value: any): boolean {
@@ -27,11 +14,12 @@ function isComplexValue(value: any): boolean {
 
 export function ToolCallDrawer({
   open,
-  onOpenChange,
-  toolCall,
-  toolResult,
-  status,
+  onClose,
+  toolCallDetail,
 }: ToolCallDrawerProps) {
+  if (!open || !toolCallDetail) return null;
+
+  const { toolCall, toolResult, status } = toolCallDetail;
   const args = toolCall.args as Record<string, any>;
   const hasArgs = Object.keys(args).length > 0;
 
@@ -50,10 +38,10 @@ export function ToolCallDrawer({
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[90vw] max-w-none overflow-y-auto sm:w-[50vw] sm:max-w-none px-4">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
+    <div className="relative flex flex-col border-l bg-white">
+      <div className="absolute inset-0 flex min-w-[30vw] flex-col">
+        <div className="grid grid-cols-[1fr_auto] border-b p-4">
+          <div className="flex items-center gap-2">
             {status === "running" && (
               <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
             )}
@@ -63,14 +51,23 @@ export function ToolCallDrawer({
             {status === "failed" && (
               <XCircle className="h-5 w-5 text-red-600" />
             )}
-            Tool Call Details
-          </SheetTitle>
-          <SheetDescription>
+            <h2 className="text-lg font-semibold text-gray-900 truncate overflow-hidden">
+              Tool Call Details
+            </h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="cursor-pointer hover:bg-gray-100 p-1 rounded"
+          >
+            <XIcon className="size-5" />
+          </button>
+        </div>
+        
+        <div className="relative flex-grow overflow-y-auto p-6 space-y-6">
+          <p className="text-sm text-gray-600">
             View detailed information about this tool call and its result.
-          </SheetDescription>
-        </SheetHeader>
+          </p>
 
-        <div className="mt-6 space-y-6">
           {/* Tool Call Section */}
           <div className="space-y-3">
             <h3 className="text-lg font-semibold text-gray-900">Tool Call</h3>
@@ -213,7 +210,7 @@ export function ToolCallDrawer({
             </div>
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </div>
+    </div>
   );
 }

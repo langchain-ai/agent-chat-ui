@@ -45,6 +45,8 @@ import {
   ArtifactTitle,
   useArtifactContext,
 } from "./artifact";
+import { ToolCallProvider, useToolCallContext } from "./messages/tool-call-context";
+import { ToolCallDrawer } from "./messages/tool-call-drawer";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -112,8 +114,17 @@ function OpenGitHubRepo() {
 }
 
 export function Thread() {
+  return (
+    <ToolCallProvider>
+      <ThreadContent />
+    </ToolCallProvider>
+  );
+}
+
+function ThreadContent() {
   const [artifactContext, setArtifactContext] = useArtifactContext();
   const [artifactOpen, closeArtifact] = useArtifactOpen();
+  const { toolCallDetail, isOpen: toolCallOpen, closeToolCallDetail } = useToolCallContext();
 
   const [threadId, _setThreadId] = useQueryState("threadId");
   const [chatHistoryOpen, setChatHistoryOpen] = useQueryState(
@@ -284,8 +295,15 @@ export function Thread() {
 
       <div
         className={cn(
-          "grid w-full grid-cols-[1fr_0fr] transition-all duration-500",
-          artifactOpen && "grid-cols-[3fr_2fr]",
+          "grid w-full transition-all duration-500",
+          // 同时显示 artifact 和 tool call
+          artifactOpen && toolCallOpen && "grid-cols-[2fr_1fr_1fr]",
+          // 只显示 artifact
+          artifactOpen && !toolCallOpen && "grid-cols-[3fr_2fr]",
+          // 只显示 tool call
+          !artifactOpen && toolCallOpen && "grid-cols-[1fr_1fr]",
+          // 都不显示
+          !artifactOpen && !toolCallOpen && "grid-cols-[1fr_0fr]",
         )}
       >
         <motion.div
@@ -545,20 +563,29 @@ export function Thread() {
             />
           </StickToBottom>
         </motion.div>
-        <div className="relative flex flex-col border-l">
-          <div className="absolute inset-0 flex min-w-[30vw] flex-col">
-            <div className="grid grid-cols-[1fr_auto] border-b p-4">
-              <ArtifactTitle className="truncate overflow-hidden" />
-              <button
-                onClick={closeArtifact}
-                className="cursor-pointer"
-              >
-                <XIcon className="size-5" />
-              </button>
+        {artifactOpen && (
+          <div className="relative flex flex-col border-l">
+            <div className="absolute inset-0 flex min-w-[30vw] flex-col">
+              <div className="grid grid-cols-[1fr_auto] border-b p-4">
+                <ArtifactTitle className="truncate overflow-hidden" />
+                <button
+                  onClick={closeArtifact}
+                  className="cursor-pointer"
+                >
+                  <XIcon className="size-5" />
+                </button>
+              </div>
+              <ArtifactContent className="relative flex-grow" />
             </div>
-            <ArtifactContent className="relative flex-grow" />
           </div>
-        </div>
+        )}
+        {toolCallOpen && (
+          <ToolCallDrawer 
+            open={toolCallOpen}
+            onClose={closeToolCallDetail}
+            toolCallDetail={toolCallDetail}
+          />
+        )}
       </div>
     </div>
   );
