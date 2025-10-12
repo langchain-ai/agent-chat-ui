@@ -1,9 +1,11 @@
 """Research Assistant Agent with human-in-the-loop workflow."""
 
 import os
+import pathlib
 from typing import Callable, Literal, TypedDict
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
+from langchain_anthropic import ChatAnthropic
 from langchain_core.tools import BaseTool, tool as create_tool
 from langchain_core.runnables import RunnableConfig
 from langgraph.types import interrupt
@@ -11,18 +13,64 @@ from langgraph.prebuilt.interrupt import HumanInterruptConfig, HumanInterrupt
 from langgraph.prebuilt import create_react_agent
 from tavily import TavilyClient
 
-# 加载环境变量
-load_dotenv()
+# Load environment variables - specify .env file path
+env_path = pathlib.Path(__file__).parent.parent / ".env"
+load_dotenv(env_path)
 
-# 初始化Tavily客户端
+# Initialize Tavily client
 tavily_client = TavilyClient(api_key=os.environ.get("TAVILY_API_KEY"))
 
-# 设置OpenAI客户端
-model = ChatOpenAI(
-    model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
-    openai_api_key=os.getenv("OPENAI_API_KEY"),
-    openai_api_base=os.getenv("OPENAI_BASE_URL")
-)
+# Choose LLM provider based on environment variable
+def create_llm_model():
+    """Create appropriate LLM model based on environment variables"""
+    llm_provider = os.getenv("LLM_PROVIDER", "openai").lower()
+    
+    print(f"LLM Provider: {llm_provider}")
+    
+    if llm_provider == "anthropic":
+        # Configure Anthropic Claude
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        base_url = os.getenv("ANTHROPIC_BASE_URL")
+        model_name = os.getenv("ANTHROPIC_MODEL", "claude-3-5-haiku-20241022")
+        
+        print(f"Anthropic API Key loaded: {'✓' if api_key else '✗'}")
+        print(f"Anthropic Base URL: {base_url}")
+        print(f"Anthropic Model: {model_name}")
+        
+        model_kwargs = {
+            "model": model_name,
+            "anthropic_api_key": api_key,
+        }
+        
+        # Only add base_url if it exists
+        if base_url:
+            model_kwargs["base_url"] = base_url
+            
+        return ChatAnthropic(**model_kwargs)
+        
+    else:
+        # Default to OpenAI
+        api_key = os.getenv("OPENAI_API_KEY")
+        base_url = os.getenv("OPENAI_BASE_URL")
+        model_name = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+        
+        print(f"OpenAI API Key loaded: {'✓' if api_key else '✗'}")
+        print(f"OpenAI Base URL: {base_url}")
+        print(f"OpenAI Model: {model_name}")
+        
+        model_kwargs = {
+            "model": model_name,
+            "openai_api_key": api_key,
+        }
+        
+        # Only add base_url if it exists
+        if base_url:
+            model_kwargs["base_url"] = base_url
+            
+        return ChatOpenAI(**model_kwargs)
+
+# Create LLM model instance
+model = create_llm_model()
 
 
 class TodoItem(TypedDict):
@@ -213,7 +261,7 @@ Current TODO tracking:
 
 # Create the research agent
 agent = create_react_agent(
-    model="openai:gpt-4o-mini",
+    model=model,
     tools=[
         add_human_in_the_loop(create_todo_plan),
         update_todo_status,
