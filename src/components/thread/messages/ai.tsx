@@ -1,12 +1,12 @@
 import { parsePartialJson } from "@langchain/core/output_parsers";
 import { useStreamContext } from "@/providers/Stream";
-import { AIMessage, Checkpoint, Message } from "@langchain/langgraph-sdk";
+import { AIMessage, Checkpoint, Message, ToolMessage } from "@langchain/langgraph-sdk";
 import { getContentString } from "../utils";
 import { BranchSwitcher, CommandBar } from "./shared";
 import { MarkdownText } from "../markdown-text";
 import { LoadExternalComponent } from "@langchain/langgraph-sdk/react-ui";
 import { cn } from "@/lib/utils";
-import { ToolCalls, ToolResult } from "./tool-calls";
+import { ToolCallCards, ToolCallWithResult } from "./tool-call-card";
 import { MessageContentComplex } from "@langchain/core/messages";
 import { Fragment } from "react/jsx-runtime";
 import { isAgentInboxInterruptSchema } from "@/lib/agent-inbox-interrupt";
@@ -67,6 +67,38 @@ function parseAnthropicStreamedToolCalls(
   });
 }
 
+// Helper function to match tool calls with their results
+function matchToolCallsWithResults(
+  toolCalls: AIMessage["tool_calls"],
+  messages: Message[],
+  currentMessageIndex: number,
+): ToolCallWithResult[] {
+  if (!toolCalls || toolCalls.length === 0) return [];
+
+  const results: ToolCallWithResult[] = [];
+
+  // Look for tool result messages after the current message
+  const subsequentMessages = messages.slice(currentMessageIndex + 1);
+
+  toolCalls
+    .filter((tc) => tc.id && tc.name) // Filter out incomplete tool-call messages when streaming chunks
+    .forEach((toolCall) => {
+      // Find the corresponding tool result
+      const toolResult = subsequentMessages.find(
+        (msg) =>
+          msg.type === "tool" &&
+          (msg as ToolMessage).tool_call_id === toolCall.id,
+      ) as ToolMessage | undefined;
+
+      results.push({
+        toolCall,
+        toolResult,
+      });
+    });
+
+  return results;
+}
+
 interface InterruptProps {
   interruptValue?: unknown;
   isLastMessage: boolean;
@@ -110,6 +142,12 @@ export function AssistantMessage({
   );
 
   const thread = useStreamContext();
+
+  // Find the current message index
+  const currentMessageIndex = thread.messages.findIndex(
+    (m) => m.id === message?.id,
+  );
+
   const isLastMessage =
     thread.messages[thread.messages.length - 1].id === message?.id;
   const hasNoAIOrToolMessages = !thread.messages.find(
@@ -128,84 +166,78 @@ export function AssistantMessage({
     "tool_calls" in message &&
     message.tool_calls &&
     message.tool_calls.length > 0;
-  const toolCallsHaveContents =
-    hasToolCalls &&
-    message.tool_calls?.some(
-      (tc) => tc.args && Object.keys(tc.args).length > 0,
-    );
   const hasAnthropicToolCalls = !!anthropicStreamedToolCalls?.length;
   const isToolResult = message?.type === "tool";
 
-  if (isToolResult && hideToolCalls) {
+  // Match tool calls with their results for the new card UI
+  let toolCallItems: ToolCallWithResult[] = [];
+  if (hasToolCalls && message.tool_calls) {
+    toolCallItems = matchToolCallsWithResults(
+      message.tool_calls,
+      thread.messages,
+      currentMessageIndex,
+    );
+  } else if (hasAnthropicToolCalls && anthropicStreamedToolCalls) {
+    toolCallItems = matchToolCallsWithResults(
+      anthropicStreamedToolCalls,
+      thread.messages,
+      currentMessageIndex,
+    );
+  }
+
+  // Hide tool result messages - they're shown in the drawer
+  if (isToolResult) {
     return null;
   }
 
   return (
-    <div className="group mr-auto flex items-start gap-2">
-      <div className="flex flex-col gap-2">
-        {isToolResult ? (
-          <>
-            <ToolResult message={message} />
-            <Interrupt
-              interruptValue={threadInterrupt?.value}
-              isLastMessage={isLastMessage}
-              hasNoAIOrToolMessages={hasNoAIOrToolMessages}
-            />
-          </>
-        ) : (
-          <>
-            {contentString.length > 0 && (
-              <div className="py-1">
-                <MarkdownText>{contentString}</MarkdownText>
-              </div>
-            )}
+    <div className="group flex w-full items-start gap-2">
+      <div className="flex w-full flex-col gap-2">
+        {contentString.length > 0 && (
+          <div className="py-1">
+            <MarkdownText>{contentString}</MarkdownText>
+          </div>
+        )}
 
-            {!hideToolCalls && (
-              <>
-                {(hasToolCalls && toolCallsHaveContents && (
-                  <ToolCalls toolCalls={message.tool_calls} />
-                )) ||
-                  (hasAnthropicToolCalls && (
-                    <ToolCalls toolCalls={anthropicStreamedToolCalls} />
-                  )) ||
-                  (hasToolCalls && (
-                    <ToolCalls toolCalls={message.tool_calls} />
-                  ))}
-              </>
-            )}
+        {!hideToolCalls && toolCallItems.length > 0 && (
+          <ToolCallCards items={toolCallItems} />
+        )}
 
-            {message && (
-              <CustomComponent
-                message={message}
-                thread={thread}
-              />
-            )}
-            <Interrupt
-              interruptValue={threadInterrupt?.value}
-              isLastMessage={isLastMessage}
-              hasNoAIOrToolMessages={hasNoAIOrToolMessages}
-            />
-            <div
-              className={cn(
-                "mr-auto flex items-center gap-2 transition-opacity",
-                "opacity-0 group-focus-within:opacity-100 group-hover:opacity-100",
-              )}
-            >
-              <BranchSwitcher
-                branch={meta?.branch}
-                branchOptions={meta?.branchOptions}
-                onSelect={(branch) => thread.setBranch(branch)}
-                isLoading={isLoading}
-              />
+        {message && (
+          <CustomComponent
+            message={message}
+            thread={thread}
+          />
+        )}
+        <Interrupt
+          interruptValue={threadInterrupt?.value}
+          isLastMessage={isLastMessage}
+          hasNoAIOrToolMessages={hasNoAIOrToolMessages}
+        />
+        <div
+          className={cn(
+            "mr-auto flex items-center gap-2 transition-opacity",
+            "opacity-0 group-focus-within:opacity-100 group-hover:opacity-100",
+          )}
+        >
+          <BranchSwitcher
+            branch={meta?.branch}
+            branchOptions={meta?.branchOptions}
+            onSelect={(branch) => thread.setBranch(branch)}
+            isLoading={isLoading}
+          />
+          {
+            !!toolCallItems.length || (
               <CommandBar
                 content={contentString}
                 isLoading={isLoading}
                 isAiMessage={true}
                 handleRegenerate={() => handleRegenerate(parentCheckpoint)}
               />
-            </div>
-          </>
-        )}
+            )
+          }
+         
+        </div>
       </div>
     </div>
   );

@@ -45,6 +45,8 @@ import {
   ArtifactTitle,
   useArtifactContext,
 } from "./artifact";
+import { ToolCallProvider, useToolCallContext } from "./messages/tool-call-context";
+import { ToolCallDrawer } from "./messages/tool-call-drawer";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -112,8 +114,17 @@ function OpenGitHubRepo() {
 }
 
 export function Thread() {
+  return (
+    <ToolCallProvider>
+      <ThreadContent />
+    </ToolCallProvider>
+  );
+}
+
+function ThreadContent() {
   const [artifactContext, setArtifactContext] = useArtifactContext();
   const [artifactOpen, closeArtifact] = useArtifactOpen();
+  const { toolCallDetail, isOpen: toolCallOpen, closeToolCallDetail } = useToolCallContext();
 
   const [threadId, _setThreadId] = useQueryState("threadId");
   const [chatHistoryOpen, setChatHistoryOpen] = useQueryState(
@@ -150,7 +161,19 @@ export function Thread() {
     // close artifact and reset artifact context
     closeArtifact();
     setArtifactContext({});
+    
+    // close tool call drawer when thread changes
+    closeToolCallDetail();
   };
+
+  // Close tool call drawer when threadId changes
+  const prevThreadId = useRef(threadId);
+  useEffect(() => {
+    if (prevThreadId.current !== threadId && toolCallOpen) {
+      closeToolCallDetail();
+    }
+    prevThreadId.current = threadId;
+  }, [threadId, toolCallOpen, closeToolCallDetail]);
 
   useEffect(() => {
     if (!stream.error) {
@@ -284,8 +307,15 @@ export function Thread() {
 
       <div
         className={cn(
-          "grid w-full grid-cols-[1fr_0fr] transition-all duration-500",
-          artifactOpen && "grid-cols-[3fr_2fr]",
+          "grid w-full transition-all duration-500",
+          // Show both artifact and tool call
+          artifactOpen && toolCallOpen && "grid-cols-[2fr_1fr_1fr]",
+          // Show only artifact
+          artifactOpen && !toolCallOpen && "grid-cols-[3fr_2fr]",
+          // Show only tool call
+          !artifactOpen && toolCallOpen && "grid-cols-[1fr_1fr]",
+          // Show neither
+          !artifactOpen && !toolCallOpen && "grid-cols-[1fr_0fr]",
         )}
       >
         <motion.div
@@ -545,20 +575,29 @@ export function Thread() {
             />
           </StickToBottom>
         </motion.div>
-        <div className="relative flex flex-col border-l">
-          <div className="absolute inset-0 flex min-w-[30vw] flex-col">
-            <div className="grid grid-cols-[1fr_auto] border-b p-4">
-              <ArtifactTitle className="truncate overflow-hidden" />
-              <button
-                onClick={closeArtifact}
-                className="cursor-pointer"
-              >
-                <XIcon className="size-5" />
-              </button>
+        {artifactOpen && (
+          <div className="relative flex flex-col border-l">
+            <div className="absolute inset-0 flex min-w-[30vw] flex-col">
+              <div className="grid grid-cols-[1fr_auto] border-b p-4">
+                <ArtifactTitle className="truncate overflow-hidden" />
+                <button
+                  onClick={closeArtifact}
+                  className="cursor-pointer"
+                >
+                  <XIcon className="size-5" />
+                </button>
+              </div>
+              <ArtifactContent className="relative flex-grow" />
             </div>
-            <ArtifactContent className="relative flex-grow" />
           </div>
-        </div>
+        )}
+        {toolCallOpen && (
+          <ToolCallDrawer 
+            open={toolCallOpen}
+            onClose={closeToolCallDetail}
+            toolCallDetail={toolCallDetail}
+          />
+        )}
       </div>
     </div>
   );
