@@ -212,7 +212,7 @@ Current TODO tracking:
 """
 
 # Create the research agent
-research_agent = create_react_agent(
+agent = create_react_agent(
     model="openai:gpt-4o-mini",
     tools=[
         add_human_in_the_loop(create_todo_plan),
