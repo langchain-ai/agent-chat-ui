@@ -141,8 +141,7 @@ const server = createServer(async (req, res) => {
       method: req.method,
       headers
     };
-    console.log(`[PROXY] ${req.url} -> http://localhost:${SERVER_APP_PORT}${path}`);
-    console.log(`         with headers:`, headers);
+    console.log(`[api PROXY] ${req.url} -> http://localhost:${SERVER_APP_PORT}${path}`);
     const proxyReq = http.request(options, (proxyRes) => {
       res.writeHead(proxyRes.statusCode, proxyRes.headers);
       proxyRes.pipe(res);
@@ -166,7 +165,7 @@ const server = createServer(async (req, res) => {
       method: req.method,
       headers: req.headers
     };
-    console.log(`[PROXY] ${req.url} -> http://localhost:${CLIENT_APP_PORT}${path}`);
+    console.log(`[static PROXY] ${req.url} -> http://localhost:${CLIENT_APP_PORT}${path}`);
     const proxyReq = http.request(options, (proxyRes) => {
       res.writeHead(proxyRes.statusCode, proxyRes.headers);
       proxyRes.pipe(res);
@@ -206,7 +205,7 @@ const server = createServer(async (req, res) => {
       headers: req.headers
     };
     // Log incoming and outgoing proxy request
-    console.log(`[PROXY] ${req.url} -> http://localhost:${CLIENT_APP_PORT}${path}`);
+    console.log(`[aida PROXY] ${req.url} -> http://localhost:${CLIENT_APP_PORT}${path}`);
     const proxyReq = http.request(options, (proxyRes) => {
       res.writeHead(proxyRes.statusCode, proxyRes.headers);
       proxyRes.pipe(res);
@@ -214,7 +213,7 @@ const server = createServer(async (req, res) => {
     proxyReq.on('error', (err) => {
       console.error('Proxy request error:', err);
       res.writeHead(502, { 'Content-Type': 'text/plain' });
-      res.end('Bad Gateway');
+      res.end('Bad Gateway, start the client app using pnpm dev');
     });
     req.pipe(proxyReq);
     return;
