@@ -130,6 +130,35 @@ const StreamSession = ({
 const DEFAULT_API_URL = "http://localhost:2024";
 const DEFAULT_ASSISTANT_ID = "agent";
 
+/**
+ * Resolve a potentially relative URL to an absolute URL.
+ * If the URL is already absolute (starts with http:// or https://), return it as-is.
+ * If it's relative, resolve it against the current window location (full URL including path).
+ */
+function resolveApiUrl(url: string | undefined): string | undefined {
+  if (!url) return undefined;
+  
+  // Check if URL is already absolute
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    return url;
+  }
+  
+  // It's a relative URL, resolve it against the current window location
+  if (typeof window !== "undefined") {
+    try {
+      // Use window.location.href to resolve relative to the current full URL (including path)
+      const resolved = new URL(url, window.location.href);
+      return resolved.toString();
+    } catch (error) {
+      console.error("Failed to resolve API URL:", error);
+      return url;
+    }
+  }
+  
+  // Server-side: can't resolve, return as-is
+  return url;
+}
+
 export const StreamProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
@@ -139,8 +168,11 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
     process.env.NEXT_PUBLIC_ASSISTANT_ID;
 
   // Use URL params with env var fallbacks
+  // Resolve the API URL from env before setting as default
+  const resolvedEnvApiUrl = resolveApiUrl(envApiUrl);
+  
   const [apiUrl, setApiUrl] = useQueryState("apiUrl", {
-    defaultValue: envApiUrl || "",
+    defaultValue: resolvedEnvApiUrl || "",
   });
   const [assistantId, setAssistantId] = useQueryState("assistantId", {
     defaultValue: envAssistantId || "",
@@ -157,8 +189,14 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
     _setApiKey(key);
   };
 
-  // Determine final values to use, prioritizing URL params then env vars
-  const finalApiUrl = apiUrl || envApiUrl;
+  // Wrap setApiUrl to always resolve relative URLs before storing
+  const setResolvedApiUrl = (url: string) => {
+    const resolved = resolveApiUrl(url) || url;
+    setApiUrl(resolved);
+  };
+
+  // Determine final values to use
+  const finalApiUrl = apiUrl || resolvedEnvApiUrl;
   const finalAssistantId = assistantId || envAssistantId;
 
   // Show the form if we: don't have an API URL, or don't have an assistant ID
@@ -188,7 +226,7 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
               const assistantId = formData.get("assistantId") as string;
               const apiKey = formData.get("apiKey") as string;
 
-              setApiUrl(apiUrl);
+              setResolvedApiUrl(apiUrl);
               setApiKey(apiKey);
               setAssistantId(assistantId);
 
@@ -266,7 +304,7 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
   return (
     <StreamSession
       apiKey={apiKey}
-      apiUrl={apiUrl}
+      apiUrl={finalApiUrl}
       assistantId={assistantId}
     >
       {children}
