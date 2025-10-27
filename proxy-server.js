@@ -8,6 +8,7 @@ const CLIENT_APP_PORT = 3000;
 const SERVER_APP_PORT = 3388;
 const CW_CLOUD = "https://us.cwcloudtest.com";
 const SERVICE_NAME = "ai-assistant";
+const CLIENT_APP_NAME = "aida-agent";
 // If true, proxy service API requests to local server (localhost), otherwise to CW_CLOUD
 const USE_LOCAL_SERVER = true; // Set to false to enable cloud proxy mode
 
@@ -76,7 +77,7 @@ async function resolveFirmGuid(host, firm) {
 
 // Utility function to extract firm and engagement from URL
 function parseAidaUrl(url) {
-  const match = url.match(/^\/([^/]+)\/e\/eng\/([^/]+)\/s\/aida-agent/);
+  const match = url.match(new RegExp(`^/([^/]+)/e/eng/([^/]+)/s/${CLIENT_APP_NAME}`));
   if (match) {
     return {
       firm: match[1],
