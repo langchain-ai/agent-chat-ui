@@ -99,7 +99,7 @@ const server = createServer(async (req, res) => {
       try {
         firmGuid = await getFirmGuid(CW_CLOUD, firm);
       } catch (err) {
-        console.error(`Error resolving firm guid for ${firm}:`, err);
+        console.error('Error resolving firm guid for %s:', firm, err);
       }
     }
 
