@@ -151,7 +151,7 @@ function resolveApiUrl(url: string | undefined): string | undefined {
       return resolved.toString();
     } catch (error) {
       console.error("Failed to resolve API URL:", error);
-      return url;
+      return undefined; // Return undefined instead of potentially invalid URL
     }
   }
   

@@ -59,8 +59,6 @@ async function resolveFirmGuid(host, firm) {
       path: `/${firm}/firmLoginToFirmGuid`,
       method: 'GET',
       headers: { 'Accept': '*/*' },
-      // Don't follow redirects
-      followAllRedirects: false,
     };
     const req = https.request(options, (res) => {
       if (res.statusCode === 302 && res.headers.location) {
