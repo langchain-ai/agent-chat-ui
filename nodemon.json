@@ -1,0 +1,10 @@
+{
+  "watch": ["proxy-server.js"],
+  "ext": "js,json",
+  "ignore": ["node_modules/", ".git/", "dist/", ".next/"],
+  "verbose": true,
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "delay": 1000
+}

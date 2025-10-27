@@ -1,10 +1,9 @@
 {
   "name": "agent-chat-ui",
-  "readme": "https://github.com/langchain-ai/agent-chat-ui/blob/main/README.md",
-  "homepage": "https://agentchat.vercel.app",
+  "readme": "https://github.com/caseware/agent-chat-ui/blob/main/README.md",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/langchain-ai/agent-chat-ui.git"
+    "url": "git+https://github.com/caseware/agent-chat-ui.git"
   },
   "private": true,
   "version": "0.0.0",
@@ -13,6 +12,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "proxy": "node proxy-server.js",
+    "proxy:dev": "nodemon proxy-server.js",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "format": "prettier --write .",
@@ -73,6 +74,7 @@
     "eslint-plugin-react-refresh": "^0.4.18",
     "globals": "^15.14.0",
     "next": "^15.2.3",
+    "nodemon": "^3.1.10",
     "postcss": "^8.5.3",
     "prettier": "^3.5.3",
     "prettier-plugin-tailwindcss": "^0.6.11",

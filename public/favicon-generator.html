@@ -1,0 +1,139 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Favicon Generator</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+      }
+      .favicon-container {
+        margin: 20px 0;
+      }
+      canvas {
+        border: 1px solid #ccc;
+        margin: 10px;
+      }
+      button {
+        padding: 10px 20px;
+        margin: 5px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Favicon Generator from SVG</h1>
+
+    <div class="favicon-container">
+      <h3>Original SVG:</h3>
+      <svg
+        width="64"
+        height="64"
+        viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M15.5596 15.2098C17.1888 15.2098 18.5098 16.5308 18.5098 18.16C18.5097 19.7892 17.1888 21.1102 15.5596 21.1102C13.9305 21.11 12.6104 19.7891 12.6104 18.16C12.6104 16.5309 13.9305 15.21 15.5596 15.2098Z"
+          fill="red"
+        />
+        <path
+          d="M8.94043 14.66C11.0903 14.0301 12.9101 14.2403 13.75 14.4002H13.7598C12.3599 15.0703 11.3896 16.5004 11.3896 18.1502C11.3895 19.78 10.0701 21.1002 8.44043 21.1004C6.81052 21.1004 5.49038 19.7801 5.49023 18.1502C5.49023 16.4902 6.67043 15.33 8.94043 14.66Z"
+          fill="red"
+        />
+        <path
+          d="M17.5801 9.5604C18.99 8.75044 20.8003 9.22966 21.6104 10.6395C22.4203 12.0494 21.94 13.8597 20.5303 14.6698C19.0903 15.4998 17.4903 15.0595 15.7803 13.4295C14.1503 11.8796 13.4196 10.1895 13.1396 9.3895H13.1504C14.4303 10.2594 16.1501 10.3803 17.5801 9.5604Z"
+          fill="red"
+        />
+        <path
+          d="M4.9502 9.16978C6.57934 9.16988 7.90039 10.4908 7.90039 12.12C7.90039 13.7491 6.57935 15.0701 4.9502 15.0702C3.32096 15.0702 2 13.7492 2 12.12C2 10.4907 3.32096 9.16978 4.9502 9.16978Z"
+          fill="red"
+        />
+        <path
+          d="M5.95996 4.46958C6.77004 3.0598 8.57033 2.5803 9.99023 3.40024C11.4299 4.23026 11.8399 5.83002 11.29 8.12974C10.7602 10.3093 9.66047 11.7793 9.11035 12.4295L9.09961 12.4198C9.21954 10.8798 8.46999 9.32982 7.04004 8.49985C5.63006 7.67985 5.14997 5.87957 5.95996 4.46958Z"
+          fill="red"
+        />
+        <path
+          d="M15.4902 2.99985C17.1194 2.99998 18.4404 4.32089 18.4404 5.95005C18.4404 7.57918 17.1193 8.90012 15.4902 8.90024C13.861 8.90024 12.5401 7.57925 12.54 5.95005C12.54 4.32081 13.861 2.99985 15.4902 2.99985Z"
+          fill="red"
+        />
+      </svg>
+    </div>
+
+    <div class="favicon-container">
+      <h3>Generated Favicons:</h3>
+      <canvas
+        id="canvas16"
+        width="16"
+        height="16"
+      ></canvas>
+      <canvas
+        id="canvas32"
+        width="32"
+        height="32"
+      ></canvas>
+      <canvas
+        id="canvas48"
+        width="48"
+        height="48"
+      ></canvas>
+      <canvas
+        id="canvas64"
+        width="64"
+        height="64"
+      ></canvas>
+      <br />
+      <button onclick="downloadFavicon(16)">Download 16x16</button>
+      <button onclick="downloadFavicon(32)">Download 32x32</button>
+      <button onclick="downloadFavicon(48)">Download 48x48</button>
+      <button onclick="downloadFavicon(64)">Download 64x64</button>
+      <button onclick="downloadICO()">Download favicon.ico</button>
+    </div>
+
+    <script>
+      const svgString = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15.5596 15.2098C17.1888 15.2098 18.5098 16.5308 18.5098 18.16C18.5097 19.7892 17.1888 21.1102 15.5596 21.1102C13.9305 21.11 12.6104 19.7891 12.6104 18.16C12.6104 16.5309 13.9305 15.21 15.5596 15.2098Z" fill="red"/>
+            <path d="M8.94043 14.66C11.0903 14.0301 12.9101 14.2403 13.75 14.4002H13.7598C12.3599 15.0703 11.3896 16.5004 11.3896 18.1502C11.3895 19.78 10.0701 21.1002 8.44043 21.1004C6.81052 21.1004 5.49038 19.7801 5.49023 18.1502C5.49023 16.4902 6.67043 15.33 8.94043 14.66Z" fill="red"/>
+            <path d="M17.5801 9.5604C18.99 8.75044 20.8003 9.22966 21.6104 10.6395C22.4203 12.0494 21.94 13.8597 20.5303 14.6698C19.0903 15.4998 17.4903 15.0595 15.7803 13.4295C14.1503 11.8796 13.4196 10.1895 13.1396 9.3895H13.1504C14.4303 10.2594 16.1501 10.3803 17.5801 9.5604Z" fill="red"/>
+            <path d="M4.9502 9.16978C6.57934 9.16988 7.90039 10.4908 7.90039 12.12C7.90039 13.7491 6.57935 15.0701 4.9502 15.0702C3.32096 15.0702 2 13.7492 2 12.12C2 10.4907 3.32096 9.16978 4.9502 9.16978Z" fill="red"/>
+            <path d="M5.95996 4.46958C6.77004 3.0598 8.57033 2.5803 9.99023 3.40024C11.4299 4.23026 11.8399 5.83002 11.29 8.12974C10.7602 10.3093 9.66047 11.7793 9.11035 12.4295L9.09961 12.4198C9.21954 10.8798 8.46999 9.32982 7.04004 8.49985C5.63006 7.67985 5.14997 5.87957 5.95996 4.46958Z" fill="red"/>
+            <path d="M15.4902 2.99985C17.1194 2.99998 18.4404 4.32089 18.4404 5.95005C18.4404 7.57918 17.1193 8.90012 15.4902 8.90024C13.861 8.90024 12.5401 7.57925 12.54 5.95005C12.54 4.32081 13.861 2.99985 15.4902 2.99985Z" fill="red"/>
+        </svg>`;
+
+      function renderSVGToCanvas(canvas, size) {
+        const ctx = canvas.getContext("2d");
+        const img = new Image();
+        const blob = new Blob([svgString], { type: "image/svg+xml" });
+        const url = URL.createObjectURL(blob);
+
+        img.onload = function () {
+          ctx.clearRect(0, 0, size, size);
+          ctx.drawImage(img, 0, 0, size, size);
+          URL.revokeObjectURL(url);
+        };
+
+        img.src = url;
+      }
+
+      function downloadFavicon(size) {
+        const canvas = document.getElementById(`canvas${size}`);
+        const link = document.createElement("a");
+        link.download = `favicon-${size}x${size}.png`;
+        link.href = canvas.toDataURL();
+        link.click();
+      }
+
+      function downloadICO() {
+        // For ICO files, you'll need a specialized library or online converter
+        // This downloads the 32x32 version as a substitute
+        downloadFavicon(32);
+      }
+
+      // Initialize canvases
+      window.onload = function () {
+        [16, 32, 48, 64].forEach((size) => {
+          renderSVGToCanvas(document.getElementById(`canvas${size}`), size);
+        });
+      };
+    </script>
+  </body>
+</html>
