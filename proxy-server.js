@@ -1,13 +1,13 @@
-import { createServer } from 'http';
-import http from 'http';
-import https from 'https';
+import { createServer } from "http";
+import http from "http";
+import https from "https";
 
 // Constants
 const PROXY_PORT = 3300;
 const CLIENT_APP_PORT = 3000;
 const SERVER_APP_PORT = 3388;
-const CW_CLOUD = 'https://us.cwcloudtest.com';
-const SERVICE_NAME = 'ai-assistant';
+const CW_CLOUD = "https://us.cwcloudtest.com";
+const SERVICE_NAME = "ai-assistant";
 // If true, proxy service API requests to local server (localhost), otherwise to CW_CLOUD
 const USE_LOCAL_SERVER = true; // Set to false to enable cloud proxy mode
 
@@ -23,7 +23,7 @@ async function getFirmGuid(host, firm) {
   let value = firmGuids.get(firm);
   if (value) {
     // If value is a Promise (in-flight), await it so all callers share the same resolution
-    if (typeof value.then === 'function') {
+    if (typeof value.then === "function") {
       try {
         return await value;
       } catch (err) {
@@ -35,7 +35,7 @@ async function getFirmGuid(host, firm) {
     return value;
   }
   // No value yet: start resolving, store the Promise to avoid duplicate requests
-  const promise = resolveFirmGuid(host, firm).catch(err => {
+  const promise = resolveFirmGuid(host, firm).catch((err) => {
     firmGuids.delete(firm);
     throw err;
   });
@@ -55,21 +55,21 @@ async function getFirmGuid(host, firm) {
 async function resolveFirmGuid(host, firm) {
   return new Promise((resolve, reject) => {
     const options = {
-      hostname: host.replace(/^https?:\/\//, ''),
+      hostname: host.replace(/^https?:\/\//, ""),
       path: `/${firm}/firmLoginToFirmGuid`,
-      method: 'GET',
-      headers: { 'Accept': '*/*' },
+      method: "GET",
+      headers: { Accept: "*/*" },
     };
     const req = https.request(options, (res) => {
       if (res.statusCode === 302 && res.headers.location) {
-        const guid = res.headers.location.replace(/^\//, '').toLowerCase();
+        const guid = res.headers.location.replace(/^\//, "").toLowerCase();
         firmGuids.set(firm, guid);
         resolve(guid);
       } else {
-        reject(new Error('Failed to resolve firm guid: unexpected response'));
+        reject(new Error("Failed to resolve firm guid: unexpected response"));
       }
     });
-    req.on('error', reject);
+    req.on("error", reject);
     req.end();
   });
 }
@@ -80,7 +80,7 @@ function parseAidaUrl(url) {
   if (match) {
     return {
       firm: match[1],
-      engagement: match[2]
+      engagement: match[2],
     };
   }
   return null;
@@ -97,7 +97,7 @@ const server = createServer(async (req, res) => {
       try {
         firmGuid = await getFirmGuid(CW_CLOUD, firm);
       } catch (err) {
-        console.error('Error resolving firm guid for %s:', firm, err);
+        console.error("Error resolving firm guid for %s:", firm, err);
       }
     }
 
@@ -109,15 +109,15 @@ const server = createServer(async (req, res) => {
       targetUrl = new URL(rewrittenPath, `http://localhost:${SERVER_APP_PORT}`);
       path = targetUrl.pathname + targetUrl.search;
       const headers = { ...req.headers };
-      if (firm) headers['cloud-firm'] = firm;
-      if (firmGuid) headers['cloud-firm-guid'] = firmGuid;
-      if (engagement) headers['engagement-id-base64'] = engagement;
+      if (firm) headers["cloud-firm"] = firm;
+      if (firmGuid) headers["cloud-firm-guid"] = firmGuid;
+      if (engagement) headers["engagement-id-base64"] = engagement;
       options = {
-        hostname: 'localhost',
+        hostname: "localhost",
         port: SERVER_APP_PORT,
         path,
         method: req.method,
-        headers
+        headers,
       };
       proxyModule = http;
       logTarget = `http://localhost:${SERVER_APP_PORT}${path}`;
@@ -126,29 +126,29 @@ const server = createServer(async (req, res) => {
       targetUrl = new URL(req.url, CW_CLOUD);
       path = targetUrl.pathname + targetUrl.search;
       const headers = { ...req.headers };
-      if (firm) headers['cloud-firm'] = firm;
-      if (firmGuid) headers['cloud-firm-guid'] = firmGuid;
-      if (engagement) headers['engagement-id-base64'] = engagement;
+      if (firm) headers["cloud-firm"] = firm;
+      if (firmGuid) headers["cloud-firm-guid"] = firmGuid;
+      if (engagement) headers["engagement-id-base64"] = engagement;
       headers.host = targetUrl.hostname;
       options = {
         hostname: targetUrl.hostname,
-        port: targetUrl.port || (targetUrl.protocol === 'https:' ? 443 : 80),
+        port: targetUrl.port || (targetUrl.protocol === "https:" ? 443 : 80),
         path,
         method: req.method,
-        headers
+        headers,
       };
-      proxyModule = targetUrl.protocol === 'https:' ? https : http;
-      logTarget = `${targetUrl.protocol}//${targetUrl.hostname}${options.port ? `:${options.port}` : ''}${path}`;
+      proxyModule = targetUrl.protocol === "https:" ? https : http;
+      logTarget = `${targetUrl.protocol}//${targetUrl.hostname}${options.port ? `:${options.port}` : ""}${path}`;
     }
     console.log(`[api PROXY] ${req.url} -> ${logTarget}`);
     const proxyReq = proxyModule.request(options, (proxyRes) => {
       res.writeHead(proxyRes.statusCode, proxyRes.headers);
       proxyRes.pipe(res);
     });
-    proxyReq.on('error', (err) => {
-      console.error('Proxy request error:', err);
-      res.writeHead(502, { 'Content-Type': 'text/plain' });
-      res.end('Bad Gateway');
+    proxyReq.on("error", (err) => {
+      console.error("Proxy request error:", err);
+      res.writeHead(502, { "Content-Type": "text/plain" });
+      res.end("Bad Gateway");
     });
     req.pipe(proxyReq);
     return;
@@ -158,21 +158,23 @@ const server = createServer(async (req, res) => {
     const targetUrl = new URL(req.url, `http://localhost:${CLIENT_APP_PORT}`);
     const path = targetUrl.pathname + targetUrl.search;
     const options = {
-      hostname: 'localhost',
+      hostname: "localhost",
       port: CLIENT_APP_PORT,
       path,
       method: req.method,
-      headers: req.headers
+      headers: req.headers,
     };
-    console.log(`[static PROXY] ${req.url} -> http://localhost:${CLIENT_APP_PORT}${path}`);
+    console.log(
+      `[static PROXY] ${req.url} -> http://localhost:${CLIENT_APP_PORT}${path}`,
+    );
     const proxyReq = http.request(options, (proxyRes) => {
       res.writeHead(proxyRes.statusCode, proxyRes.headers);
       proxyRes.pipe(res);
     });
-    proxyReq.on('error', (err) => {
-      console.error('Proxy request error:', err);
-      res.writeHead(502, { 'Content-Type': 'text/plain' });
-      res.end('Bad Gateway');
+    proxyReq.on("error", (err) => {
+      console.error("Proxy request error:", err);
+      res.writeHead(502, { "Content-Type": "text/plain" });
+      res.end("Bad Gateway");
     });
     req.pipe(proxyReq);
     return;
@@ -195,65 +197,67 @@ const server = createServer(async (req, res) => {
     }
     // Route to local client app (always HTTP), always to root but preserve query string
     const targetUrl = new URL(req.url, `http://localhost:${CLIENT_APP_PORT}`);
-    const path = targetUrl.search ? '/' + targetUrl.search : '/';
+    const path = targetUrl.search ? "/" + targetUrl.search : "/";
     const options = {
-      hostname: 'localhost',
+      hostname: "localhost",
       port: CLIENT_APP_PORT,
       path,
       method: req.method,
-      headers: req.headers
+      headers: req.headers,
     };
     // Log incoming and outgoing proxy request
-    console.log(`[aida PROXY] ${req.url} -> http://localhost:${CLIENT_APP_PORT}${path}`);
+    console.log(
+      `[aida PROXY] ${req.url} -> http://localhost:${CLIENT_APP_PORT}${path}`,
+    );
     const proxyReq = http.request(options, (proxyRes) => {
       res.writeHead(proxyRes.statusCode, proxyRes.headers);
       proxyRes.pipe(res);
     });
-    proxyReq.on('error', (err) => {
-      console.error('Proxy request error:', err);
-      res.writeHead(502, { 'Content-Type': 'text/plain' });
-      res.end('Bad Gateway, start the client app using pnpm dev');
+    proxyReq.on("error", (err) => {
+      console.error("Proxy request error:", err);
+      res.writeHead(502, { "Content-Type": "text/plain" });
+      res.end("Bad Gateway, start the client app using pnpm dev");
     });
     req.pipe(proxyReq);
     return;
   }
-  
+
   // Parse the target URL using WHATWG URL API
   const targetUrl = new URL(req.url, CW_CLOUD);
-  
+
   // Update Host header to match target server
   const headers = { ...req.headers };
   headers.host = targetUrl.hostname;
-  
+
   // Prepare proxy request options
   const options = {
     hostname: targetUrl.hostname,
-    port: targetUrl.port || (targetUrl.protocol === 'https:' ? 443 : 80),
+    port: targetUrl.port || (targetUrl.protocol === "https:" ? 443 : 80),
     path: targetUrl.pathname + targetUrl.search,
     method: req.method,
-    headers: headers
+    headers: headers,
   };
   // Choose http or https based on protocol
-  const proxyModule = targetUrl.protocol === 'https:' ? https : http;
+  const proxyModule = targetUrl.protocol === "https:" ? https : http;
   // Log incoming and outgoing proxy request
-  const proto = targetUrl.protocol.replace(':', '');
+  const proto = targetUrl.protocol.replace(":", "");
   const port = options.port;
-  const fullUrl = `${proto}://${options.hostname}${port ? `:${port}` : ''}${options.path}`;
+  const fullUrl = `${proto}://${options.hostname}${port ? `:${port}` : ""}${options.path}`;
   console.log(`[PROXY] ${req.url} -> ${fullUrl}`);
   const proxyReq = proxyModule.request(options, (proxyRes) => {
     res.writeHead(proxyRes.statusCode, proxyRes.headers);
     proxyRes.pipe(res);
   });
-  proxyReq.on('error', (err) => {
-    console.error('Proxy request error:', err);
-    res.writeHead(502, { 'Content-Type': 'text/plain' });
-    res.end('Bad Gateway');
+  proxyReq.on("error", (err) => {
+    console.error("Proxy request error:", err);
+    res.writeHead(502, { "Content-Type": "text/plain" });
+    res.end("Bad Gateway");
   });
   req.pipe(proxyReq);
 });
 
-server.on('error', (err) => {
-  console.error('Server error:', err);
+server.on("error", (err) => {
+  console.error("Server error:", err);
 });
 
 server.listen(PROXY_PORT, () => {
@@ -273,14 +277,14 @@ function rewriteServiceApiPath(url) {
   // Remove everything up to and including /ms/{SERVICE_NAME}
   const idx = url.indexOf(`/ms/${SERVICE_NAME}`);
   if (idx === -1) return url;
-  return url.substring(idx + `/ms/${SERVICE_NAME}`.length) || '/';
+  return url.substring(idx + `/ms/${SERVICE_NAME}`.length) || "/";
 }
 // Utility function to check if a request is for a static asset
 function isStaticAsset(url) {
   return (
-    url.startsWith('/_next/') ||
-    url.startsWith('/__nextjs') ||
-    url.startsWith('/favicon') ||
-    url.startsWith('/.well-known/')
+    url.startsWith("/_next/") ||
+    url.startsWith("/__nextjs") ||
+    url.startsWith("/favicon") ||
+    url.startsWith("/.well-known/")
   );
 }

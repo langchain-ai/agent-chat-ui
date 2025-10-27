@@ -137,12 +137,12 @@ const DEFAULT_ASSISTANT_ID = "agent";
  */
 function resolveApiUrl(url: string | undefined): string | undefined {
   if (!url) return undefined;
-  
+
   // Check if URL is already absolute
   if (url.startsWith("http://") || url.startsWith("https://")) {
     return url;
   }
-  
+
   // It's a relative URL, resolve it against the current window location
   if (typeof window !== "undefined") {
     try {
@@ -154,7 +154,7 @@ function resolveApiUrl(url: string | undefined): string | undefined {
       return undefined; // Return undefined instead of potentially invalid URL
     }
   }
-  
+
   // Server-side: can't resolve, return as-is
   return url;
 }
@@ -170,7 +170,7 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
   // Use URL params with env var fallbacks
   // Resolve the API URL from env before setting as default
   const resolvedEnvApiUrl = resolveApiUrl(envApiUrl);
-  
+
   const [apiUrl, setApiUrl] = useQueryState("apiUrl", {
     defaultValue: resolvedEnvApiUrl || "",
   });
@@ -212,8 +212,8 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
               </h1>
             </div>
             <p className="text-muted-foreground">
-              Welcome to AiDA Agent Chat! Before you get started, you need to enter
-              the URL of the deployment and the graph ID.
+              Welcome to AiDA Agent Chat! Before you get started, you need to
+              enter the URL of the deployment and the graph ID.
             </p>
           </div>
           <form
