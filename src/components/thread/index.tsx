@@ -427,6 +427,16 @@ export function Thread() {
                       handleRegenerate={handleRegenerate}
                     />
                   )}
+                  {/* Render interrupt after all messages if it exists and we have messages
+                      This handles sequential interrupts where the interrupt comes after previous messages */}
+                  {!hasNoAIOrToolMessages && !!stream.interrupt && !isLoading && (
+                    <AssistantMessage
+                      key="interrupt-msg-after-messages"
+                      message={undefined}
+                      isLoading={isLoading}
+                      handleRegenerate={handleRegenerate}
+                    />
+                  )}
                   {isLoading && !firstTokenReceived && (
                     <AssistantMessageLoading />
                   )}
