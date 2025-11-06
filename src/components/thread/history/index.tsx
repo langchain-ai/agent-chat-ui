@@ -2,6 +2,8 @@ import { Button } from "@/components/ui/button";
 import { useThreads } from "@/providers/Thread";
 import { Thread } from "@langchain/langgraph-sdk";
 import { useEffect } from "react";
+import { useStreamContext } from "@/providers/Stream";
+import { toast } from "sonner";
 
 import { getContentString } from "../utils";
 import { useQueryState, parseAsBoolean } from "nuqs";
@@ -14,6 +16,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { PanelRightOpen, PanelRightClose } from "lucide-react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { ThreadItem } from "./ThreadItem";
 
 function ThreadList({
   threads,
@@ -23,12 +26,53 @@ function ThreadList({
   onThreadClick?: (threadId: string) => void;
 }) {
   const [threadId, setThreadId] = useQueryState("threadId");
+  const { client } = useStreamContext();
+  const { getThreads, setThreads } = useThreads();
+
+  const handleDeleteThread = async (threadIdToDelete: string) => {
+    try {
+      await client?.threads.delete(threadIdToDelete);
+      toast.success("Conversation deleted successfully");
+      // Refresh threads list
+      const updatedThreads = await getThreads();
+      setThreads(updatedThreads);
+      // If the deleted thread was active, reset the thread
+      if (threadId === threadIdToDelete) {
+        setThreadId(null);
+      }
+    } catch (error) {
+      console.error("Error deleting thread:", error);
+      toast.error("Failed to delete conversation");
+    }
+  };
+
+  const handleUpdateThreadTitle = async (
+    threadIdToUpdate: string,
+    newTitle: string,
+  ) => {
+    try {
+      // Update thread metadata with new title
+      await client?.threads.update(threadIdToUpdate, {
+        metadata: { title: newTitle },
+      });
+      toast.success("Conversation title updated");
+      // Refresh threads list
+      const updatedThreads = await getThreads();
+      setThreads(updatedThreads);
+    } catch (error) {
+      console.error("Error updating thread title:", error);
+      toast.error("Failed to update title");
+    }
+  };
 
   return (
     <div className="flex h-full w-full flex-col items-start justify-start gap-2 overflow-y-scroll [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent">
       {threads.map((t) => {
         let itemText = t.thread_id;
-        if (
+        // Check for custom title in metadata first
+        if (t.metadata && typeof t.metadata === "object" && "title" in t.metadata) {
+          itemText = String(t.metadata.title);
+        } else if (
           typeof t.values === "object" &&
           t.values &&
           "messages" in t.values &&
@@ -39,23 +83,19 @@ function ThreadList({
           itemText = getContentString(firstMessage.content);
         }
         return (
-          <div
+          <ThreadItem
             key={t.thread_id}
-            className="w-full px-1"
-          >
-            <Button
-              variant="ghost"
-              className="w-[280px] items-start justify-start text-left font-normal"
-              onClick={(e) => {
-                e.preventDefault();
-                onThreadClick?.(t.thread_id);
-                if (t.thread_id === threadId) return;
-                setThreadId(t.thread_id);
-              }}
-            >
-              <p className="truncate text-ellipsis">{itemText}</p>
-            </Button>
-          </div>
+            thread={t}
+            isActive={threadId === t.thread_id}
+            displayText={itemText}
+            onSelect={() => {
+              onThreadClick?.(t.thread_id);
+              if (t.thread_id === threadId) return;
+              setThreadId(t.thread_id);
+            }}
+            onDelete={handleDeleteThread}
+            onUpdateTitle={handleUpdateThreadTitle}
+          />
         );
       })}
     </div>

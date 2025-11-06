@@ -45,6 +45,8 @@ import {
   ArtifactTitle,
   useArtifactContext,
 } from "./artifact";
+import { SettingsDialog } from "../settings/SettingsDialog";
+import { useSettings } from "@/providers/Settings";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -114,6 +116,7 @@ function OpenGitHubRepo() {
 export function Thread() {
   const [artifactContext, setArtifactContext] = useArtifactContext();
   const [artifactOpen, closeArtifact] = useArtifactOpen();
+  const { config } = useSettings();
 
   const [threadId, _setThreadId] = useQueryState("threadId");
   const [chatHistoryOpen, setChatHistoryOpen] = useQueryState(
@@ -360,17 +363,20 @@ export function Thread() {
                     damping: 30,
                   }}
                 >
-                  <LangGraphLogoSVG
-                    width={32}
-                    height={32}
+                  <img
+                    src={config.branding.logoPath}
+                    alt="Logo"
+                    width={config.branding.logoWidth}
+                    height={config.branding.logoHeight}
                   />
                   <span className="text-xl font-semibold tracking-tight">
-                    Agent Chat
+                    {config.branding.appName}
                   </span>
                 </motion.button>
               </div>
 
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <SettingsDialog />
                 <div className="flex items-center">
                   <OpenGitHubRepo />
                 </div>
@@ -436,9 +442,15 @@ export function Thread() {
                 <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-white">
                   {!chatStarted && (
                     <div className="flex items-center gap-3">
-                      <LangGraphLogoSVG className="h-8 flex-shrink-0" />
+                      <img
+                        src={config.branding.logoPath}
+                        alt="Logo"
+                        width={config.branding.logoWidth * 1.5}
+                        height={config.branding.logoHeight * 1.5}
+                        className="flex-shrink-0"
+                      />
                       <h1 className="text-2xl font-semibold tracking-tight">
-                        Agent Chat
+                        {config.branding.appName}
                       </h1>
                     </div>
                   )}

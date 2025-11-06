@@ -1,0 +1,84 @@
+# Chat Interface Configuration
+# This file allows you to customize the chat interface
+
+# Application branding
+branding:
+  # Application name displayed in the UI
+  appName: "Agent Chat"
+  # Logo file path (relative to public directory)
+  logoPath: "/logo.svg"
+  # Logo dimensions
+  logoWidth: 32
+  logoHeight: 32
+
+# Chat interface buttons
+buttons:
+  # Enable/disable web search button
+  enableWebSearch: true
+  # Web search button text
+  webSearchText: "Search Web"
+  # Enable/disable file upload button
+  enableFileUpload: true
+  # File upload button text
+  fileUploadText: "Upload PDF or Image"
+  # Submit button text
+  submitButtonText: "Send"
+  # Cancel button text
+  cancelButtonText: "Cancel"
+
+# Tool display settings
+tools:
+  # Show tool calls by default
+  showToolCalls: true
+  # Tool call display mode: "detailed" | "compact"
+  displayMode: "detailed"
+  # Available tools (empty means all tools are enabled)
+  enabledTools: []
+  # Disabled tools (takes precedence over enabledTools)
+  disabledTools: []
+
+# Message display settings
+messages:
+  # Maximum width of message container (in pixels)
+  maxWidth: 768
+  # Enable markdown rendering
+  enableMarkdown: true
+  # Enable LaTeX math rendering
+  enableMath: true
+  # Enable code syntax highlighting
+  enableCodeHighlight: true
+  # Enable table rendering
+  enableTables: true
+
+# Thread/Conversation settings
+threads:
+  # Show thread history sidebar by default
+  showHistory: false
+  # Enable thread deletion
+  enableDeletion: true
+  # Enable thread title editing
+  enableTitleEdit: true
+  # Auto-generate thread titles
+  autoGenerateTitles: true
+
+# UI Theme settings
+theme:
+  # Font family: "sans" | "serif" | "mono"
+  fontFamily: "sans"
+  # Font size: "small" | "medium" | "large"
+  fontSize: "medium"
+  # Color scheme: "light" | "dark" | "auto"
+  colorScheme: "light"
+
+# Feature flags
+features:
+  # Enable web search integration
+  webSearch: true
+  # Enable artifact viewer
+  artifactViewer: true
+  # Enable file uploads
+  fileUploads: true
+  # Enable image preview
+  imagePreview: true
+  # Enable PDF preview
+  pdfPreview: true
