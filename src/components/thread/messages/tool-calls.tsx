@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useSettings } from "@/providers/Settings";
 
-function isComplexValue(value: any): boolean {
+function isComplexValue(value: unknown): boolean {
   return Array.isArray(value) || (typeof value === "object" && value !== null);
 }
 
@@ -31,7 +31,7 @@ function ToolCallItem({
   toolCall,
   isLoading
 }: {
-  toolCall: NonNullable<AIMessage["tool_calls"]>[0];
+  toolCall: NonNullable<AIMessage["tool_calls"]>[number];
   isLoading?: boolean;
 }) {
   const { userSettings } = useSettings();
@@ -43,7 +43,7 @@ function ToolCallItem({
     }
   }, [isLoading, userSettings.autoCollapseToolCalls]);
 
-  const args = toolCall.args as Record<string, any>;
+  const args = toolCall.args as Record<string, unknown>;
   const hasArgs = Object.keys(args).length > 0;
   const argEntries = Object.entries(args);
   const shouldShowExpander = argEntries.length > 3;

@@ -43,26 +43,39 @@ function CustomComponent({
   );
 }
 
+interface ToolUseContent {
+  type: "tool_use";
+  id: string;
+  name?: string;
+  input?: string | object;
+}
+
+function isToolUseContent(content: MessageContentComplex): content is ToolUseContent {
+  return content.type === "tool_use" && "id" in content;
+}
+
 function parseAnthropicStreamedToolCalls(
   content: MessageContentComplex[],
 ): AIMessage["tool_calls"] {
-  const toolCallContents = content.filter((c) => c.type === "tool_use" && c.id);
+  const toolCallContents = content.filter(isToolUseContent);
 
   return toolCallContents.map((tc) => {
-    const toolCall = tc as Record<string, any>;
-    let json: Record<string, any> = {};
-    if (toolCall?.input) {
+    let args: Record<string, unknown> = {};
+    if (tc.input) {
       try {
-        json = parsePartialJson(toolCall.input) ?? {};
+        const parsedInput = typeof tc.input === "string"
+          ? parsePartialJson(tc.input)
+          : tc.input;
+        args = parsedInput ?? {};
       } catch {
         // Pass
       }
     }
     return {
-      name: toolCall.name ?? "",
-      id: toolCall.id ?? "",
-      args: json,
-      type: "tool_call",
+      name: tc.name ?? "",
+      id: tc.id,
+      args,
+      type: "tool_call" as const,
     };
   });
 }

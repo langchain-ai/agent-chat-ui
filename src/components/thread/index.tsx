@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import { ReactNode, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { UI, PLACEHOLDERS } from "@/lib/constants";
 import { useStreamContext } from "@/providers/Stream";
 import { useState, FormEvent } from "react";
 import { Button } from "../ui/button";
@@ -265,13 +266,13 @@ export function Thread() {
       <div className="relative hidden lg:flex">
         <motion.div
           className="absolute z-20 h-full overflow-hidden border-r border-border bg-sidebar"
-          style={{ width: 300 }}
+          style={{ width: UI.CHAT_SIDEBAR_WIDTH }}
           animate={
             isLargeScreen
-              ? { x: chatHistoryOpen ? 0 : -300 }
-              : { x: chatHistoryOpen ? 0 : -300 }
+              ? { x: chatHistoryOpen ? 0 : -UI.CHAT_SIDEBAR_WIDTH }
+              : { x: chatHistoryOpen ? 0 : -UI.CHAT_SIDEBAR_WIDTH }
           }
-          initial={{ x: -300 }}
+          initial={{ x: -UI.CHAT_SIDEBAR_WIDTH }}
           transition={
             isLargeScreen
               ? { type: "spring", stiffness: 300, damping: 30 }
@@ -280,7 +281,7 @@ export function Thread() {
         >
           <div
             className="relative h-full flex flex-col"
-            style={{ width: 300 }}
+            style={{ width: UI.CHAT_SIDEBAR_WIDTH }}
           >
             <div className="flex-1 overflow-hidden">
               <ThreadHistory />
@@ -496,9 +497,9 @@ export function Thread() {
                             form?.requestSubmit();
                           }
                         }}
-                        placeholder="무엇이든 물어보세요"
+                        placeholder={PLACEHOLDERS.CHAT_INPUT}
                         rows={1}
-                        style={{ maxHeight: '490px' }}
+                        style={{ maxHeight: `${UI.CHAT_TEXTAREA_MAX_HEIGHT}px` }}
                         className="field-sizing-content resize-none border-none bg-transparent px-4 pt-4 pb-2 text-base leading-relaxed shadow-none ring-0 outline-none focus:ring-0 focus:outline-none placeholder:text-muted-foreground overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-track]:bg-transparent"
                       />
 
