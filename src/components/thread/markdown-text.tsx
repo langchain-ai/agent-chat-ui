@@ -47,7 +47,7 @@ const CodeHeader: FC<CodeHeaderProps> = ({ language, code }) => {
   };
 
   return (
-    <div className="flex items-center justify-between gap-4 rounded-t-xl bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white/90 border-b border-zinc-700">
+    <div className="flex items-center justify-between gap-4 rounded-t-xl bg-zinc-800 dark:bg-zinc-800 px-5 py-2.5 text-sm font-medium text-white/90 border-b border-zinc-700 dark:border-zinc-600">
       <span className="lowercase text-xs font-mono">{language}</span>
       <TooltipIconButton
         tooltip="Copy"
@@ -196,7 +196,7 @@ const defaultComponents: any = {
   pre: ({ className, ...props }: { className?: string }) => (
     <pre
       className={cn(
-        "w-full overflow-x-auto rounded-xl bg-black text-white shadow-md border border-border/20",
+        "w-full overflow-x-auto rounded-xl bg-zinc-900 dark:bg-zinc-900 text-white shadow-md border border-border/30 dark:border-zinc-700",
         className,
       )}
       {...props}
