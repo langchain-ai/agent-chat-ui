@@ -161,24 +161,52 @@ export function SettingsDialog() {
             </div>
           </div>
 
-          {/* Features Section */}
+          {/* UI Behavior Section */}
           <div className="space-y-3">
-            <h3 className="text-lg font-semibold">Features</h3>
+            <h3 className="text-lg font-semibold">UI Behavior</h3>
             <div className="space-y-4 rounded-lg border p-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="web-search">Enable Web Search</Label>
+                  <Label htmlFor="auto-collapse">Auto-collapse Tool Calls</Label>
                   <p className="text-sm text-muted-foreground">
-                    Allow the assistant to search the web for information
+                    Automatically collapse tool call details after response completes
                   </p>
                 </div>
                 <Switch
-                  id="web-search"
-                  checked={userSettings.enableWebSearch}
+                  id="auto-collapse"
+                  checked={userSettings.autoCollapseToolCalls}
                   onCheckedChange={(checked) =>
-                    updateUserSettings({ enableWebSearch: checked })
+                    updateUserSettings({ autoCollapseToolCalls: checked })
                   }
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="chat-width">Chat Width</Label>
+                <div className="flex gap-2">
+                  <Button
+                    variant={
+                      userSettings.chatWidth === "default" ? "default" : "outline"
+                    }
+                    onClick={() =>
+                      updateUserSettings({ chatWidth: "default" })
+                    }
+                    className="flex-1"
+                  >
+                    Default
+                  </Button>
+                  <Button
+                    variant={
+                      userSettings.chatWidth === "wide" ? "default" : "outline"
+                    }
+                    onClick={() =>
+                      updateUserSettings({ chatWidth: "wide" })
+                    }
+                    className="flex-1"
+                  >
+                    Wide
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

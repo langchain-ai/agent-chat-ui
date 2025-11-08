@@ -8,8 +8,6 @@ export interface ChatConfig {
     logoHeight: number;
   };
   buttons: {
-    enableWebSearch: boolean;
-    webSearchText: string;
     enableFileUpload: boolean;
     fileUploadText: string;
     submitButtonText: string;
@@ -39,8 +37,11 @@ export interface ChatConfig {
     fontSize: "small" | "medium" | "large";
     colorScheme: "light" | "dark" | "auto";
   };
+  ui: {
+    autoCollapseToolCalls: boolean;
+    chatWidth: "default" | "wide";
+  };
   features: {
-    webSearch: boolean;
     artifactViewer: boolean;
     fileUploads: boolean;
     imagePreview: boolean;
@@ -57,8 +58,6 @@ export const defaultConfig: ChatConfig = {
     logoHeight: 32,
   },
   buttons: {
-    enableWebSearch: true,
-    webSearchText: "Search Web",
     enableFileUpload: true,
     fileUploadText: "Upload PDF or Image",
     submitButtonText: "Send",
@@ -88,8 +87,11 @@ export const defaultConfig: ChatConfig = {
     fontSize: "medium",
     colorScheme: "light",
   },
+  ui: {
+    autoCollapseToolCalls: true,
+    chatWidth: "default",
+  },
   features: {
-    webSearch: true,
     artifactViewer: true,
     fileUploads: true,
     imagePreview: true,
@@ -119,6 +121,7 @@ export async function loadConfig(): Promise<ChatConfig> {
       messages: { ...defaultConfig.messages, ...config.messages },
       threads: { ...defaultConfig.threads, ...config.threads },
       theme: { ...defaultConfig.theme, ...config.theme },
+      ui: { ...defaultConfig.ui, ...config.ui },
       features: { ...defaultConfig.features, ...config.features },
     };
   } catch (error) {

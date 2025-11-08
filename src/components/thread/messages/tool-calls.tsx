@@ -1,7 +1,8 @@
 import { AIMessage, ToolMessage } from "@langchain/langgraph-sdk";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { useSettings } from "@/providers/Settings";
 
 function isComplexValue(value: any): boolean {
   return Array.isArray(value) || (typeof value === "object" && value !== null);
@@ -9,22 +10,39 @@ function isComplexValue(value: any): boolean {
 
 export function ToolCalls({
   toolCalls,
+  isLoading,
 }: {
   toolCalls: AIMessage["tool_calls"];
+  isLoading?: boolean;
 }) {
+  const { userSettings } = useSettings();
   if (!toolCalls || toolCalls.length === 0) return null;
 
   return (
-    <div className="mx-auto grid max-w-3xl grid-rows-[1fr_auto] gap-3">
+    <div className={`mx-auto grid ${userSettings.chatWidth === "default" ? "max-w-3xl" : "max-w-5xl"} grid-rows-[1fr_auto] gap-3`}>
       {toolCalls.map((tc, idx) => {
-        return <ToolCallItem key={idx} toolCall={tc} />;
+        return <ToolCallItem key={idx} toolCall={tc} isLoading={isLoading} />;
       })}
     </div>
   );
 }
 
-function ToolCallItem({ toolCall }: { toolCall: AIMessage["tool_calls"][0] }) {
+function ToolCallItem({
+  toolCall,
+  isLoading
+}: {
+  toolCall: AIMessage["tool_calls"][0];
+  isLoading?: boolean;
+}) {
+  const { userSettings } = useSettings();
   const [isExpanded, setIsExpanded] = useState(true);
+
+  useEffect(() => {
+    if (userSettings.autoCollapseToolCalls && isLoading === false) {
+      setIsExpanded(false);
+    }
+  }, [isLoading, userSettings.autoCollapseToolCalls]);
+
   const args = toolCall.args as Record<string, any>;
   const hasArgs = Object.keys(args).length > 0;
   const argEntries = Object.entries(args);
@@ -119,8 +137,21 @@ function ToolCallItem({ toolCall }: { toolCall: AIMessage["tool_calls"][0] }) {
   );
 }
 
-export function ToolResult({ message }: { message: ToolMessage }) {
+export function ToolResult({
+  message,
+  isLoading
+}: {
+  message: ToolMessage;
+  isLoading?: boolean;
+}) {
+  const { userSettings } = useSettings();
   const [isExpanded, setIsExpanded] = useState(true);
+
+  useEffect(() => {
+    if (userSettings.autoCollapseToolCalls && isLoading === false) {
+      setIsExpanded(false);
+    }
+  }, [isLoading, userSettings.autoCollapseToolCalls]);
 
   let parsedContent: any;
   let isJsonContent = false;
@@ -148,7 +179,7 @@ export function ToolResult({ message }: { message: ToolMessage }) {
       : contentStr;
 
   return (
-    <div className="mx-auto grid max-w-3xl grid-rows-[1fr_auto] gap-3">
+    <div className={`mx-auto grid ${userSettings.chatWidth === "default" ? "max-w-3xl" : "max-w-5xl"} grid-rows-[1fr_auto] gap-3`}>
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
