@@ -47,8 +47,8 @@ const CodeHeader: FC<CodeHeaderProps> = ({ language, code }) => {
   };
 
   return (
-    <div className="flex items-center justify-between gap-4 rounded-t-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white">
-      <span className="lowercase [&>span]:text-xs">{language}</span>
+    <div className="flex items-center justify-between gap-4 rounded-t-xl bg-zinc-800 dark:bg-zinc-800 px-5 py-2.5 text-sm font-medium text-white/90 border-b border-zinc-700 dark:border-zinc-600">
+      <span className="lowercase text-xs font-mono">{language}</span>
       <TooltipIconButton
         tooltip="Copy"
         onClick={onCopy}
@@ -114,7 +114,7 @@ const defaultComponents: any = {
   ),
   p: ({ className, ...props }: { className?: string }) => (
     <p
-      className={cn("mt-5 mb-5 leading-7 first:mt-0 last:mb-0", className)}
+      className={cn("mt-5 mb-5 leading-relaxed text-foreground/90 first:mt-0 last:mb-0", className)}
       {...props}
     />
   ),
@@ -135,13 +135,13 @@ const defaultComponents: any = {
   ),
   ul: ({ className, ...props }: { className?: string }) => (
     <ul
-      className={cn("my-5 ml-6 list-disc [&>li]:mt-2", className)}
+      className={cn("my-5 ml-6 list-disc [&>li]:mt-2 [&>li]:leading-relaxed", className)}
       {...props}
     />
   ),
   ol: ({ className, ...props }: { className?: string }) => (
     <ol
-      className={cn("my-5 ml-6 list-decimal [&>li]:mt-2", className)}
+      className={cn("my-5 ml-6 list-decimal [&>li]:mt-2 [&>li]:leading-relaxed", className)}
       {...props}
     />
   ),
@@ -196,7 +196,7 @@ const defaultComponents: any = {
   pre: ({ className, ...props }: { className?: string }) => (
     <pre
       className={cn(
-        "max-w-4xl overflow-x-auto rounded-lg bg-black text-white",
+        "w-full overflow-x-auto rounded-xl bg-zinc-900 dark:bg-zinc-900 text-white shadow-md border border-border/30 dark:border-zinc-700",
         className,
       )}
       {...props}
@@ -234,7 +234,7 @@ const defaultComponents: any = {
 
     return (
       <code
-        className={cn("rounded font-semibold", className)}
+        className={cn("rounded-md bg-muted/60 px-1.5 py-0.5 font-mono text-[0.9em] font-medium border border-border/30", className)}
         {...props}
       >
         {children}
