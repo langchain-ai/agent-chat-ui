@@ -26,6 +26,7 @@ import { getApiKey } from "@/lib/api-key";
 import { useThreads } from "./Thread";
 import { toast } from "sonner";
 import { AssistantConfigProvider } from "./AssistantConfig";
+import { TIMING } from "@/lib/constants";
 
 export type StateType = { messages: Message[]; ui?: UIMessage[] };
 
@@ -44,7 +45,7 @@ const useTypedStream = useStream<
 type StreamContextType = ReturnType<typeof useTypedStream>;
 const StreamContext = createContext<StreamContextType | undefined>(undefined);
 
-async function sleep(ms = 4000) {
+async function sleep(ms = TIMING.THREAD_FETCH_DELAY) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 

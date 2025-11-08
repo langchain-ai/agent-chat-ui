@@ -7,6 +7,19 @@ export function isValidUUID(str: string): boolean {
   return UUID_REGEX.test(str);
 }
 
+/**
+ * Valid fields for assistant selection
+ * Based on @langchain/langgraph-sdk's assistant schema
+ */
+type AssistantSelectField =
+  | "assistant_id"
+  | "graph_id"
+  | "config"
+  | "created_at"
+  | "updated_at"
+  | "metadata"
+  | "name";
+
 export interface AssistantConfig {
   configurable?: Record<string, any>;
   [key: string]: any;
@@ -38,10 +51,10 @@ export interface SearchAssistantsRequest {
   graph_id?: string;
   limit?: number;
   offset?: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   sort_by?: "assistant_id" | "created_at" | "updated_at" | "name" | "graph_id";
   sort_order?: "asc" | "desc";
-  select?: string[];
+  select?: AssistantSelectField[];
 }
 
 export async function getAssistant(
