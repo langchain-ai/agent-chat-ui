@@ -12,6 +12,7 @@ export interface ChatConfig {
     fileUploadText: string;
     submitButtonText: string;
     cancelButtonText: string;
+    chatInputPlaceholder: string;
   };
   tools: {
     showToolCalls: boolean;
@@ -62,6 +63,7 @@ export const defaultConfig: ChatConfig = {
     fileUploadText: "Upload PDF or Image",
     submitButtonText: "Send",
     cancelButtonText: "Cancel",
+    chatInputPlaceholder: "무엇이든 물어보세요",
   },
   tools: {
     showToolCalls: true,

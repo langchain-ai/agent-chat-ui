@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import { ReactNode, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { UI, PLACEHOLDERS } from "@/lib/constants";
+import { UI } from "@/lib/constants";
 import { useStreamContext } from "@/providers/Stream";
 import { useState, FormEvent } from "react";
 import { Button } from "../ui/button";
@@ -462,7 +462,7 @@ export function Thread() {
                   <div
                     ref={dropRef}
                     className={cn(
-                      "relative z-10 mx-auto mb-8 w-full rounded-3xl shadow-md transition-all border bg-card",
+                      "relative z-10 mx-auto mb-8 w-full rounded-3xl shadow-md transition-all border bg-card dark:bg-zinc-800",
                       userSettings.chatWidth === "default" ? "max-w-3xl" : "max-w-5xl",
                       dragOver
                         ? "border-primary border-2 border-dotted"
@@ -497,7 +497,7 @@ export function Thread() {
                             form?.requestSubmit();
                           }
                         }}
-                        placeholder={PLACEHOLDERS.CHAT_INPUT}
+                        placeholder={config.buttons.chatInputPlaceholder}
                         rows={1}
                         style={{ maxHeight: `${UI.CHAT_TEXTAREA_MAX_HEIGHT}px` }}
                         className="field-sizing-content resize-none border-none bg-transparent px-4 pt-4 pb-2 text-base leading-relaxed shadow-none ring-0 outline-none focus:ring-0 focus:outline-none placeholder:text-muted-foreground overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-track]:bg-transparent"
