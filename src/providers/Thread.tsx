@@ -8,6 +8,7 @@ import {
   ReactNode,
   useCallback,
   useState,
+  useMemo,
   Dispatch,
   SetStateAction,
 } from "react";
@@ -53,13 +54,16 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
     return threads;
   }, [apiUrl, assistantId]);
 
-  const value = {
-    getThreads,
-    threads,
-    setThreads,
-    threadsLoading,
-    setThreadsLoading,
-  };
+  const value = useMemo(
+    () => ({
+      getThreads,
+      threads,
+      setThreads,
+      threadsLoading,
+      setThreadsLoading,
+    }),
+    [getThreads, threads, threadsLoading]
+  );
 
   return (
     <ThreadContext.Provider value={value}>{children}</ThreadContext.Provider>
