@@ -1,0 +1,47 @@
+# Agent Chat UI Settings Configuration
+# This file configures the appearance and behavior of the chat interface
+
+branding:
+  appName: "Teddy Chat"
+  logoPath: "/logo.svg"
+  logoWidth: 32
+  logoHeight: 32
+
+buttons:
+  enableWebSearch: true
+  webSearchText: "Search Web"
+  enableFileUpload: true
+  fileUploadText: "Upload PDF or Image"
+  submitButtonText: "Send"
+  cancelButtonText: "Cancel"
+
+tools:
+  showToolCalls: true
+  displayMode: "detailed"
+  enabledTools: []
+  disabledTools: []
+
+messages:
+  maxWidth: 768
+  enableMarkdown: true
+  enableMath: true
+  enableCodeHighlight: true
+  enableTables: true
+
+threads:
+  showHistory: false
+  enableDeletion: true
+  enableTitleEdit: true
+  autoGenerateTitles: true
+
+theme:
+  fontFamily: "serif"
+  fontSize: "large"
+  colorScheme: "light"
+
+features:
+  webSearch: true
+  artifactViewer: true
+  fileUploads: true
+  imagePreview: true
+  pdfPreview: true
