@@ -47,9 +47,10 @@ export function SettingsDialog() {
     } else if (schemas?.config_schema?.properties) {
       // Initialize with default values from schema
       const defaults: Record<string, any> = {};
-      Object.entries(schemas.config_schema.properties).forEach(([key, schema]: [string, any]) => {
-        if (schema.default !== undefined) {
-          defaults[key] = schema.default;
+      Object.entries(schemas.config_schema.properties).forEach(([key, schema]) => {
+        const schemaObj = schema as { default?: unknown };
+        if (schemaObj.default !== undefined) {
+          defaults[key] = schemaObj.default;
         }
       });
       setConfigValues(defaults);
@@ -57,7 +58,7 @@ export function SettingsDialog() {
     }
   }, [config, schemas]);
 
-  const handleConfigChange = (key: string, value: any) => {
+  const handleConfigChange = (key: string, value: unknown) => {
     setConfigValues((prev) => ({ ...prev, [key]: value }));
   };
 
