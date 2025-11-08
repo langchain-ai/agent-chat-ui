@@ -443,17 +443,47 @@ export function Thread() {
               footer={
                 <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-background">
                   {!chatStarted && (
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={config.branding.logoPath}
-                        alt="Logo"
-                        width={config.branding.logoWidth * 1.5}
-                        height={config.branding.logoHeight * 1.5}
-                        className="flex-shrink-0"
-                      />
-                      <h1 className="text-2xl font-semibold tracking-tight">
-                        {config.branding.appName}
-                      </h1>
+                    <div className="flex flex-col items-center gap-6 w-full max-w-3xl mx-auto px-4">
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={config.branding.logoPath}
+                            alt="Logo"
+                            width={config.branding.logoWidth * 1.5}
+                            height={config.branding.logoHeight * 1.5}
+                            className="flex-shrink-0"
+                          />
+                          <h1 className="text-2xl font-semibold tracking-tight">
+                            {config.branding.appName}
+                          </h1>
+                        </div>
+                        {config.branding.description && (
+                          <p className="text-muted-foreground text-center text-sm">
+                            {config.branding.description}
+                          </p>
+                        )}
+                      </div>
+                      {config.branding.chatOpeners && config.branding.chatOpeners.length > 0 && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+                          {config.branding.chatOpeners.slice(0, 4).map((opener, index) => (
+                            <button
+                              key={index}
+                              onClick={() => {
+                                setInput(opener);
+                                setTimeout(() => {
+                                  const form = document.querySelector('form');
+                                  form?.requestSubmit();
+                                }, 0);
+                              }}
+                              className="group relative overflow-hidden rounded-xl border border-border bg-card hover:bg-accent hover:border-primary transition-all duration-200 p-4 text-left shadow-sm hover:shadow-md"
+                            >
+                              <p className="text-sm text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                                {opener}
+                              </p>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
 

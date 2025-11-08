@@ -6,6 +6,8 @@ export interface ChatConfig {
     logoPath: string;
     logoWidth: number;
     logoHeight: number;
+    description?: string;
+    chatOpeners?: string[];
   };
   buttons: {
     enableFileUpload: boolean;
@@ -57,6 +59,13 @@ export const defaultConfig: ChatConfig = {
     logoPath: "/logo.svg",
     logoWidth: 32,
     logoHeight: 32,
+    description: "AI 어시스턴트와 대화를 시작하세요",
+    chatOpeners: [
+      "오늘의 날씨는 어때?",
+      "간단한 요리 레시피 추천해줘",
+      "Python 코딩 도움이 필요해",
+      "재미있는 이야기 들려줘",
+    ],
   },
   buttons: {
     enableFileUpload: true,
