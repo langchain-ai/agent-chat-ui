@@ -401,7 +401,7 @@ export function Thread() {
                 userSettings.chatWidth === "default" ? "px-4" : "px-2",
               )}
               contentClassName={cn(
-                "pt-8 pb-16 mx-auto flex flex-col gap-4 w-full",
+                "pt-8 pb-16 mx-auto flex flex-col gap-6 w-full",
                 userSettings.chatWidth === "default" ? "max-w-3xl" : "max-w-5xl"
               )}
               content={

@@ -19,7 +19,7 @@ export function ToolCalls({
   if (!toolCalls || toolCalls.length === 0) return null;
 
   return (
-    <div className={`mx-auto grid ${userSettings.chatWidth === "default" ? "max-w-3xl" : "max-w-5xl"} grid-rows-[1fr_auto] gap-3`}>
+    <div className={`mx-auto grid ${userSettings.chatWidth === "default" ? "max-w-3xl" : "max-w-5xl"} grid-rows-[1fr_auto] gap-4`}>
       {toolCalls.map((tc, idx) => {
         return <ToolCallItem key={idx} toolCall={tc} isLoading={isLoading} />;
       })}
@@ -31,7 +31,7 @@ function ToolCallItem({
   toolCall,
   isLoading
 }: {
-  toolCall: AIMessage["tool_calls"][0];
+  toolCall: NonNullable<AIMessage["tool_calls"]>[0];
   isLoading?: boolean;
 }) {
   const { userSettings } = useSettings();
@@ -49,16 +49,16 @@ function ToolCallItem({
   const shouldShowExpander = argEntries.length > 3;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md">
+    <div className="overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm transition-all duration-200 hover:shadow-md hover:border-border">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full border-b border-border bg-black/5 px-4 py-3 text-left transition-colors hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
+        className="w-full border-b border-border/50 bg-muted/30 px-5 py-3.5 text-left transition-all duration-200 hover:bg-muted/50"
       >
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-foreground/10 dark:bg-foreground/15">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-foreground/8 ring-1 ring-foreground/5">
               <svg
-                className="h-3.5 w-3.5 text-foreground"
+                className="h-3.5 w-3.5 text-foreground/70"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -71,10 +71,10 @@ function ToolCallItem({
                 />
               </svg>
             </div>
-            <h3 className="font-semibold text-foreground">
+            <h3 className="font-medium text-foreground text-sm">
               {toolCall.name}
               {toolCall.id && (
-                <code className="ml-2 rounded-md bg-muted px-2 py-1 text-xs font-mono text-muted-foreground shadow-sm">
+                <code className="ml-2 rounded-md bg-muted/70 px-2 py-0.5 text-xs font-mono text-muted-foreground/80 border border-border/30">
                   {toolCall.id.slice(0, 8)}...
                 </code>
               )}
@@ -82,9 +82,9 @@ function ToolCallItem({
           </div>
           <motion.div
             animate={{ rotate: isExpanded ? 0 : -90 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
           >
-            <ChevronDown className="h-5 w-5 text-muted-foreground" />
+            <ChevronDown className="h-4 w-4 text-muted-foreground/70" />
           </motion.div>
         </div>
       </button>
@@ -94,28 +94,28 @@ function ToolCallItem({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
+            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
             className="overflow-hidden"
           >
             {hasArgs ? (
               <div className="bg-card">
                 <table className="min-w-full">
-                  <tbody className="divide-y divide-border">
+                  <tbody className="divide-y divide-border/40">
                     {argEntries.map(([key, value], argIdx) => (
                       <tr
                         key={argIdx}
-                        className="transition-colors hover:bg-muted/50"
+                        className="transition-colors duration-150 hover:bg-muted/30"
                       >
-                        <td className="px-4 py-3 text-sm font-semibold whitespace-nowrap text-foreground bg-black/5 dark:bg-white/5">
+                        <td className="px-5 py-3 text-xs font-semibold whitespace-nowrap text-foreground/70 bg-muted/20 w-1/4">
                           {key}
                         </td>
-                        <td className="px-4 py-3 text-sm text-foreground/80">
+                        <td className="px-5 py-3 text-sm text-foreground/85">
                           {isComplexValue(value) ? (
-                            <code className="block rounded-md bg-muted px-3 py-2 font-mono text-xs break-all border border-border">
+                            <code className="block rounded-lg bg-muted/40 px-3 py-2 font-mono text-xs break-all border border-border/30">
                               {JSON.stringify(value, null, 2)}
                             </code>
                           ) : (
-                            <span className="font-medium">{String(value)}</span>
+                            <span className="font-normal">{String(value)}</span>
                           )}
                         </td>
                       </tr>
@@ -124,8 +124,8 @@ function ToolCallItem({
                 </table>
               </div>
             ) : (
-              <div className="bg-card px-4 py-3">
-                <code className="text-sm text-muted-foreground italic">
+              <div className="bg-card px-5 py-4">
+                <code className="text-xs text-muted-foreground/60 italic">
                   No arguments
                 </code>
               </div>
@@ -179,17 +179,17 @@ export function ToolResult({
       : contentStr;
 
   return (
-    <div className={`mx-auto grid ${userSettings.chatWidth === "default" ? "max-w-3xl" : "max-w-5xl"} grid-rows-[1fr_auto] gap-3`}>
-      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md">
+    <div className={`mx-auto grid ${userSettings.chatWidth === "default" ? "max-w-3xl" : "max-w-5xl"} grid-rows-[1fr_auto] gap-4`}>
+      <div className="overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm transition-all duration-200 hover:shadow-md hover:border-border">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full border-b border-border bg-black/5 px-4 py-3 text-left transition-colors hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
+          className="w-full border-b border-border/50 bg-muted/30 px-5 py-3.5 text-left transition-all duration-200 hover:bg-muted/50"
         >
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-foreground/10 dark:bg-foreground/15">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-foreground/8 ring-1 ring-foreground/5">
                 <svg
-                  className="h-3.5 w-3.5 text-foreground"
+                  className="h-3.5 w-3.5 text-foreground/70"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -203,29 +203,29 @@ export function ToolResult({
                 </svg>
               </div>
               {message.name ? (
-                <h3 className="font-semibold text-foreground">
+                <h3 className="font-medium text-foreground text-sm">
                   Tool Result:{" "}
-                  <code className="rounded-md bg-muted px-2 py-1 text-sm font-mono text-muted-foreground shadow-sm">
+                  <code className="rounded-md bg-muted/70 px-2 py-0.5 text-xs font-mono text-muted-foreground/80 border border-border/30">
                     {message.name}
                   </code>
                 </h3>
               ) : (
-                <h3 className="font-semibold text-foreground">
+                <h3 className="font-medium text-foreground text-sm">
                   Tool Result
                 </h3>
               )}
             </div>
             <div className="flex items-center gap-2">
               {message.tool_call_id && (
-                <code className="rounded-md bg-muted px-2 py-1 text-xs font-mono text-muted-foreground shadow-sm">
+                <code className="rounded-md bg-muted/70 px-2 py-0.5 text-xs font-mono text-muted-foreground/80 border border-border/30">
                   {message.tool_call_id.slice(0, 8)}...
                 </code>
               )}
               <motion.div
                 animate={{ rotate: isExpanded ? 0 : -90 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
               >
-                <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                <ChevronDown className="h-4 w-4 text-muted-foreground/70" />
               </motion.div>
             </div>
           </div>
@@ -237,7 +237,7 @@ export function ToolResult({
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
+              transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
             >
               <div className="p-3">
                 <AnimatePresence
@@ -246,14 +246,14 @@ export function ToolResult({
                 >
                   <motion.div
                     key={isExpanded ? "expanded" : "collapsed"}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.2 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
                   >
                     {isJsonContent ? (
                       <table className="min-w-full">
-                        <tbody className="divide-y divide-border">
+                        <tbody className="divide-y divide-border/40">
                           {(Array.isArray(parsedContent)
                             ? isExpanded
                               ? parsedContent
@@ -266,18 +266,18 @@ export function ToolResult({
                             return (
                               <tr
                                 key={argIdx}
-                                className="transition-colors hover:bg-muted/50"
+                                className="transition-colors duration-150 hover:bg-muted/30"
                               >
-                                <td className="px-4 py-3 text-sm font-semibold whitespace-nowrap text-foreground bg-black/5 dark:bg-white/5">
+                                <td className="px-5 py-3 text-xs font-semibold whitespace-nowrap text-foreground/70 bg-muted/20 w-1/4">
                                   {key}
                                 </td>
-                                <td className="px-4 py-3 text-sm text-foreground/80">
+                                <td className="px-5 py-3 text-sm text-foreground/85">
                                   {isComplexValue(value) ? (
-                                    <code className="block rounded-md bg-muted px-3 py-2 font-mono text-xs break-all border border-border">
+                                    <code className="block rounded-lg bg-muted/40 px-3 py-2 font-mono text-xs break-all border border-border/30">
                                       {JSON.stringify(value, null, 2)}
                                     </code>
                                   ) : (
-                                    <span className="font-medium">{String(value)}</span>
+                                    <span className="font-normal">{String(value)}</span>
                                   )}
                                 </td>
                               </tr>
@@ -286,7 +286,7 @@ export function ToolResult({
                         </tbody>
                       </table>
                     ) : (
-                      <code className="block rounded-md bg-muted px-3 py-2 text-sm font-mono border border-border">
+                      <code className="block rounded-lg bg-muted/40 px-3 py-2.5 text-sm font-mono border border-border/30 leading-relaxed">
                         {displayedContent}
                       </code>
                     )}
@@ -302,19 +302,19 @@ export function ToolResult({
                     e.stopPropagation();
                     setIsExpanded(!isExpanded);
                   }}
-                  className="flex w-full cursor-pointer items-center justify-center gap-2 border-t border-border bg-black/5 py-2 text-sm font-medium text-foreground transition-all duration-200 ease-in-out hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10"
+                  className="flex w-full cursor-pointer items-center justify-center gap-2 border-t border-border/40 bg-muted/20 py-2.5 text-xs font-medium text-foreground/70 transition-all duration-150 ease-in-out hover:bg-muted/40"
                   initial={{ scale: 1 }}
-                  whileHover={{ scale: 1.005 }}
-                  whileTap={{ scale: 0.995 }}
+                  whileHover={{ scale: 1.002 }}
+                  whileTap={{ scale: 0.998 }}
                 >
                   {isExpanded ? (
                     <>
-                      <ChevronUp className="h-4 w-4" />
+                      <ChevronUp className="h-3.5 w-3.5" />
                       <span>Show less</span>
                     </>
                   ) : (
                     <>
-                      <ChevronDown className="h-4 w-4" />
+                      <ChevronDown className="h-3.5 w-3.5" />
                       <span>Show more</span>
                     </>
                   )}

@@ -72,7 +72,7 @@ export async function searchAssistants(
 ): Promise<Assistant[]> {
   try {
     const client = createClient(apiUrl, apiKey);
-    const response = await client.assistants.search(request);
+    const response = await client.assistants.search(request as any);
     return response as Assistant[];
   } catch (error) {
     console.error("Failed to search assistants:", error);
