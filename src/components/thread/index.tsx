@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import { ReactNode, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { UI, PLACEHOLDERS } from "@/lib/constants";
+import { UI } from "@/lib/constants";
 import { useStreamContext } from "@/providers/Stream";
 import { useState, FormEvent } from "react";
 import { Button } from "../ui/button";
@@ -25,6 +25,7 @@ import {
   Paperclip,
   Wrench,
   ArrowUp,
+  BookOpen,
 } from "lucide-react";
 import { useQueryState, parseAsBoolean } from "nuqs";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
@@ -50,6 +51,7 @@ import {
 } from "./artifact";
 import { SettingsDialog } from "../settings/SettingsDialog";
 import { useSettings } from "@/providers/Settings";
+import { FullDescriptionModal } from "./FullDescriptionModal";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -124,13 +126,14 @@ export function Thread() {
   const [threadId, _setThreadId] = useQueryState("threadId");
   const [chatHistoryOpen, setChatHistoryOpen] = useQueryState(
     "chatHistoryOpen",
-    parseAsBoolean.withDefault(false),
+    parseAsBoolean.withDefault(config.threads.sidebarOpenByDefault),
   );
   const [hideToolCalls, setHideToolCalls] = useQueryState(
     "hideToolCalls",
     parseAsBoolean.withDefault(false),
   );
   const [input, setInput] = useState("");
+  const [fullDescriptionOpen, setFullDescriptionOpen] = useState(false);
   const {
     contentBlocks,
     setContentBlocks,
@@ -284,7 +287,7 @@ export function Thread() {
             style={{ width: UI.CHAT_SIDEBAR_WIDTH }}
           >
             <div className="flex-1 overflow-hidden">
-              <ThreadHistory />
+              <ThreadHistory onShowGuide={() => setFullDescriptionOpen(true)} />
             </div>
             <div className="border-t border-border p-4">
               <SettingsDialog />
@@ -441,19 +444,61 @@ export function Thread() {
                 </>
               }
               footer={
-                <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-background">
+                <div className="sticky bottom-0 flex flex-col items-center gap-20 bg-background">
                   {!chatStarted && (
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={config.branding.logoPath}
-                        alt="Logo"
-                        width={config.branding.logoWidth * 1.5}
-                        height={config.branding.logoHeight * 1.5}
-                        className="flex-shrink-0"
-                      />
-                      <h1 className="text-2xl font-semibold tracking-tight">
-                        {config.branding.appName}
-                      </h1>
+                    <div className={cn(
+                      "flex flex-col items-center gap-6 w-full mx-auto",
+                      userSettings.chatWidth === "default" ? "max-w-3xl" : "max-w-5xl"
+                    )}>
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={config.branding.logoPath}
+                            alt="Logo"
+                            width={config.branding.logoWidth * 1.5}
+                            height={config.branding.logoHeight * 1.5}
+                            className="flex-shrink-0"
+                          />
+                          <h1 className="text-2xl font-semibold tracking-tight">
+                            {config.branding.appName}
+                          </h1>
+                        </div>
+                        {config.branding.description && (
+                          <p className="text-muted-foreground text-center text-sm">
+                            {config.branding.description}
+                          </p>
+                        )}
+                        {config.branding.fullDescription && (
+                          <button
+                            onClick={() => setFullDescriptionOpen(true)}
+                            className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors"
+                          >
+                            <BookOpen className="h-4 w-4" />
+                            <span>자세한 설명 보기</span>
+                          </button>
+                        )}
+                      </div>
+                      {config.branding.chatOpeners && config.branding.chatOpeners.length > 0 && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+                          {config.branding.chatOpeners.slice(0, 4).map((opener, index) => (
+                            <button
+                              key={index}
+                              onClick={() => {
+                                setInput(opener);
+                                setTimeout(() => {
+                                  const form = document.querySelector('form');
+                                  form?.requestSubmit();
+                                }, 0);
+                              }}
+                              className="group relative overflow-hidden rounded-xl border border-border bg-card hover:bg-accent hover:border-primary transition-all duration-200 p-4 text-left shadow-sm hover:shadow-md min-h-[3.5rem] flex items-center"
+                            >
+                              <p className="text-sm text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                                {opener}
+                              </p>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -462,7 +507,7 @@ export function Thread() {
                   <div
                     ref={dropRef}
                     className={cn(
-                      "relative z-10 mx-auto mb-8 w-full rounded-3xl shadow-md transition-all border bg-card",
+                      "relative z-10 mx-auto mb-8 w-full rounded-3xl shadow-md transition-all border bg-card dark:bg-[#212121]",
                       userSettings.chatWidth === "default" ? "max-w-3xl" : "max-w-5xl",
                       dragOver
                         ? "border-primary border-2 border-dotted"
@@ -497,7 +542,7 @@ export function Thread() {
                             form?.requestSubmit();
                           }
                         }}
-                        placeholder={PLACEHOLDERS.CHAT_INPUT}
+                        placeholder={config.buttons.chatInputPlaceholder}
                         rows={1}
                         style={{ maxHeight: `${UI.CHAT_TEXTAREA_MAX_HEIGHT}px` }}
                         className="field-sizing-content resize-none border-none bg-transparent px-4 pt-4 pb-2 text-base leading-relaxed shadow-none ring-0 outline-none focus:ring-0 focus:outline-none placeholder:text-muted-foreground overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-track]:bg-transparent"
@@ -505,29 +550,33 @@ export function Thread() {
 
                       <div className="flex items-center justify-between gap-2 px-3 pb-3">
                         <div className="flex items-center gap-1">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Label
-                                  htmlFor="file-input"
-                                  className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg transition-colors hover:bg-accent"
-                                >
-                                  <Paperclip className="h-4 w-4 text-muted-foreground" />
-                                </Label>
-                              </TooltipTrigger>
-                              <TooltipContent side="top">
-                                <p>Upload files</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          <input
-                            id="file-input"
-                            type="file"
-                            onChange={handleFileUpload}
-                            multiple
-                            accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
-                            className="hidden"
-                          />
+                          {config.buttons.enableFileUpload && (
+                            <>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Label
+                                      htmlFor="file-input"
+                                      className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg transition-colors hover:bg-accent"
+                                    >
+                                      <Paperclip className="h-4 w-4 text-muted-foreground" />
+                                    </Label>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top">
+                                    <p>Upload files</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              <input
+                                id="file-input"
+                                type="file"
+                                onChange={handleFileUpload}
+                                multiple
+                                accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
+                                className="hidden"
+                              />
+                            </>
+                          )}
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -596,6 +645,10 @@ export function Thread() {
           </div>
         </div>
       </div>
+      <FullDescriptionModal
+        open={fullDescriptionOpen}
+        onOpenChange={setFullDescriptionOpen}
+      />
     </div>
   );
 }

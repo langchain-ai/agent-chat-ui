@@ -48,7 +48,7 @@
 
 .dark {
   /* Refined dark monochrome - inspired by modern AI interfaces */
-  --background: oklch(0.10 0 0);
+  --background: oklch(0.13 0 0);
   --foreground: oklch(0.96 0 0);
   /* Card backgrounds with subtle elevation */
   --card: oklch(0.14 0 0);

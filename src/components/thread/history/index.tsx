@@ -7,7 +7,11 @@ import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { DesktopSidebar } from "./components/DesktopSidebar";
 import { MobileSidebar } from "./components/MobileSidebar";
 
-export default function ThreadHistory() {
+interface ThreadHistoryProps {
+  onShowGuide?: () => void;
+}
+
+export default function ThreadHistory({ onShowGuide }: ThreadHistoryProps) {
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
   const [chatHistoryOpen, setChatHistoryOpen] = useQueryState(
     "chatHistoryOpen",
@@ -53,6 +57,7 @@ export default function ThreadHistory() {
         chatHistoryOpen={chatHistoryOpen}
         onToggleChatHistory={handleToggleChatHistory}
         onNewChat={handleNewChat}
+        onShowGuide={onShowGuide}
       />
       <MobileSidebar
         threads={threads}
@@ -63,6 +68,7 @@ export default function ThreadHistory() {
         }}
         onNewChat={handleMobileNewChat}
         onThreadClick={handleMobileThreadClick}
+        onShowGuide={onShowGuide}
       />
     </>
   );
