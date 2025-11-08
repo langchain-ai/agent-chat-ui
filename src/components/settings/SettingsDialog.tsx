@@ -1,6 +1,6 @@
 "use client";
 
-import { Settings as SettingsIcon, X, RefreshCw, Trash2 } from "lucide-react";
+import { Settings as SettingsIcon, X, RefreshCw, Trash2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,6 +22,7 @@ import { getApiKey } from "@/lib/api-key";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useQueryState } from "nuqs";
+import { ConnectionDialog } from "./ConnectionDialog";
 
 export function SettingsDialog() {
   const { userSettings, updateUserSettings, resetUserSettings } = useSettings();
@@ -32,6 +33,7 @@ export function SettingsDialog() {
   const [configValues, setConfigValues] = useState<Record<string, any>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [connectionDialogOpen, setConnectionDialogOpen] = useState(false);
 
   // Track if config has been initialized to prevent infinite loops
   const isInitialized = useRef(false);
@@ -342,14 +344,24 @@ export function SettingsDialog() {
                   </p>
                 )}
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => refetchConfig()}
-                disabled={isLoading}
-              >
-                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setConnectionDialogOpen(true)}
+                >
+                  <Plus className="mr-1 h-4 w-4" />
+                  New Connection
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => refetchConfig()}
+                  disabled={isLoading}
+                >
+                  <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
             </div>
 
             {isLoading ? (
@@ -471,6 +483,11 @@ export function SettingsDialog() {
           </div>
         </div>
       </DialogContent>
+
+      <ConnectionDialog
+        open={connectionDialogOpen}
+        onOpenChange={setConnectionDialogOpen}
+      />
     </Dialog>
   );
 }

@@ -6,7 +6,7 @@ branding:
   # Application name displayed in the UI
   appName: "Agent Chat"
   # Logo file path (relative to public directory)
-  logoPath: "/logo.svg"
+  logoPath: "/logo.png"
   # Logo dimensions
   logoWidth: 32
   logoHeight: 32

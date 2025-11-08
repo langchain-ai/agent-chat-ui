@@ -35,8 +35,8 @@ export interface ChatConfig {
 // Default configuration
 export const defaultConfig: ChatConfig = {
   branding: {
-    appName: "Agent Chat",
-    logoPath: "/logo.svg",
+    appName: "TeddyNote Chat",
+    logoPath: "/logo.png",
     logoWidth: 32,
     logoHeight: 32,
     description: "AI 어시스턴트와 대화를 시작하세요",

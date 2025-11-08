@@ -16,7 +16,7 @@ buttons:
   chatInputPlaceholder: "궁금한 내용을 물어보세요."
 
 threads:
-  showHistory: false
+  showHistory: true
   enableDeletion: true
   enableTitleEdit: true
   autoGenerateTitles: true
