@@ -126,7 +126,7 @@ export function Thread() {
   const [threadId, _setThreadId] = useQueryState("threadId");
   const [chatHistoryOpen, setChatHistoryOpen] = useQueryState(
     "chatHistoryOpen",
-    parseAsBoolean.withDefault(false),
+    parseAsBoolean.withDefault(config.threads.sidebarOpenByDefault),
   );
   const [hideToolCalls, setHideToolCalls] = useQueryState(
     "hideToolCalls",
@@ -444,9 +444,12 @@ export function Thread() {
                 </>
               }
               footer={
-                <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-background">
+                <div className="sticky bottom-0 flex flex-col items-center gap-20 bg-background">
                   {!chatStarted && (
-                    <div className="flex flex-col items-center gap-6 w-full max-w-3xl mx-auto px-4">
+                    <div className={cn(
+                      "flex flex-col items-center gap-6 w-full mx-auto",
+                      userSettings.chatWidth === "default" ? "max-w-3xl" : "max-w-5xl"
+                    )}>
                       <div className="flex flex-col items-center gap-3">
                         <div className="flex items-center gap-3">
                           <img
@@ -487,7 +490,7 @@ export function Thread() {
                                   form?.requestSubmit();
                                 }, 0);
                               }}
-                              className="group relative overflow-hidden rounded-xl border border-border bg-card hover:bg-accent hover:border-primary transition-all duration-200 p-4 text-left shadow-sm hover:shadow-md"
+                              className="group relative overflow-hidden rounded-xl border border-border bg-card hover:bg-accent hover:border-primary transition-all duration-200 p-4 text-left shadow-sm hover:shadow-md min-h-[3.5rem] flex items-center"
                             >
                               <p className="text-sm text-foreground line-clamp-2 group-hover:text-primary transition-colors">
                                 {opener}
@@ -504,7 +507,7 @@ export function Thread() {
                   <div
                     ref={dropRef}
                     className={cn(
-                      "relative z-10 mx-auto mb-8 w-full rounded-3xl shadow-md transition-all border bg-card dark:bg-zinc-800",
+                      "relative z-10 mx-auto mb-8 w-full rounded-3xl shadow-md transition-all border bg-card dark:bg-[#212121]",
                       userSettings.chatWidth === "default" ? "max-w-3xl" : "max-w-5xl",
                       dragOver
                         ? "border-primary border-2 border-dotted"
@@ -547,29 +550,33 @@ export function Thread() {
 
                       <div className="flex items-center justify-between gap-2 px-3 pb-3">
                         <div className="flex items-center gap-1">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Label
-                                  htmlFor="file-input"
-                                  className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg transition-colors hover:bg-accent"
-                                >
-                                  <Paperclip className="h-4 w-4 text-muted-foreground" />
-                                </Label>
-                              </TooltipTrigger>
-                              <TooltipContent side="top">
-                                <p>Upload files</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          <input
-                            id="file-input"
-                            type="file"
-                            onChange={handleFileUpload}
-                            multiple
-                            accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
-                            className="hidden"
-                          />
+                          {config.buttons.enableFileUpload && (
+                            <>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Label
+                                      htmlFor="file-input"
+                                      className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg transition-colors hover:bg-accent"
+                                    >
+                                      <Paperclip className="h-4 w-4 text-muted-foreground" />
+                                    </Label>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top">
+                                    <p>Upload files</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              <input
+                                id="file-input"
+                                type="file"
+                                onChange={handleFileUpload}
+                                multiple
+                                accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
+                                className="hidden"
+                              />
+                            </>
+                          )}
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>

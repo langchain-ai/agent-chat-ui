@@ -6,6 +6,7 @@ import { NewChatButton } from "./NewChatButton";
 import { ThreadList } from "./ThreadList";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { BookOpen } from "lucide-react";
+import { ICON_SIZE_SM } from "../constants";
 
 interface MobileSidebarProps {
   threads: Thread[];
@@ -39,13 +40,13 @@ export function MobileSidebar({
           {onShowGuide && (
             <Button
               variant="ghost"
-              className="w-full justify-start gap-2 text-sm font-normal hover:bg-accent"
+              className="w-full justify-start gap-2 px-3 py-2 text-sm font-medium hover:bg-accent"
               onClick={() => {
                 onShowGuide();
                 onOpenChange(false);
               }}
             >
-              <BookOpen className="h-4 w-4" />
+              <BookOpen className={ICON_SIZE_SM} />
               <span>사용 가이드</span>
             </Button>
           )}

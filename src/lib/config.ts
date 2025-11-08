@@ -12,29 +12,14 @@ export interface ChatConfig {
   };
   buttons: {
     enableFileUpload: boolean;
-    fileUploadText: string;
-    submitButtonText: string;
-    cancelButtonText: string;
     chatInputPlaceholder: string;
-  };
-  tools: {
-    showToolCalls: boolean;
-    displayMode: "detailed" | "compact";
-    enabledTools: string[];
-    disabledTools: string[];
-  };
-  messages: {
-    maxWidth: number;
-    enableMarkdown: boolean;
-    enableMath: boolean;
-    enableCodeHighlight: boolean;
-    enableTables: boolean;
   };
   threads: {
     showHistory: boolean;
     enableDeletion: boolean;
     enableTitleEdit: boolean;
     autoGenerateTitles: boolean;
+    sidebarOpenByDefault: boolean;
   };
   theme: {
     fontFamily: "sans" | "serif" | "mono";
@@ -44,12 +29,6 @@ export interface ChatConfig {
   ui: {
     autoCollapseToolCalls: boolean;
     chatWidth: "default" | "wide";
-  };
-  features: {
-    artifactViewer: boolean;
-    fileUploads: boolean;
-    imagePreview: boolean;
-    pdfPreview: boolean;
   };
 }
 
@@ -71,29 +50,14 @@ export const defaultConfig: ChatConfig = {
   },
   buttons: {
     enableFileUpload: true,
-    fileUploadText: "Upload PDF or Image",
-    submitButtonText: "Send",
-    cancelButtonText: "Cancel",
     chatInputPlaceholder: "무엇이든 물어보세요",
-  },
-  tools: {
-    showToolCalls: true,
-    displayMode: "detailed",
-    enabledTools: [],
-    disabledTools: [],
-  },
-  messages: {
-    maxWidth: 768,
-    enableMarkdown: true,
-    enableMath: true,
-    enableCodeHighlight: true,
-    enableTables: true,
   },
   threads: {
     showHistory: false,
     enableDeletion: true,
     enableTitleEdit: true,
     autoGenerateTitles: true,
+    sidebarOpenByDefault: false,
   },
   theme: {
     fontFamily: "sans",
@@ -102,13 +66,7 @@ export const defaultConfig: ChatConfig = {
   },
   ui: {
     autoCollapseToolCalls: true,
-    chatWidth: "default",
-  },
-  features: {
-    artifactViewer: true,
-    fileUploads: true,
-    imagePreview: true,
-    pdfPreview: true,
+    chatWidth: "wide",
   },
 };
 
@@ -130,12 +88,9 @@ export async function loadConfig(): Promise<ChatConfig> {
     return {
       branding: { ...defaultConfig.branding, ...config.branding },
       buttons: { ...defaultConfig.buttons, ...config.buttons },
-      tools: { ...defaultConfig.tools, ...config.tools },
-      messages: { ...defaultConfig.messages, ...config.messages },
       threads: { ...defaultConfig.threads, ...config.threads },
       theme: { ...defaultConfig.theme, ...config.theme },
       ui: { ...defaultConfig.ui, ...config.ui },
-      features: { ...defaultConfig.features, ...config.features },
     };
   } catch (error) {
     console.error("Error loading config:", error);

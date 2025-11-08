@@ -1,44 +1,26 @@
-# Agent Chat UI Settings Configuration
-# This file configures the appearance and behavior of the chat interface
-
 branding:
-  appName: "Teddy Chat"
-  logoPath: "/logo.svg"
-  logoWidth: 32
-  logoHeight: 32
-  description: "AI 어시스턴트와 대화를 시작하세요"
+  appName: "TeddyNote Chat"
+  logoPath: "/logo.png"
+  logoWidth: 28
+  logoHeight: 28
+  description: "테디노트 챗봇에게 무엇이든 물어보세요."
   chatOpeners:
     - "오늘의 날씨는 어때?"
-    - "간단한 요리 레시피 추천해줘"
-    - "Python 코딩 도움이 필요해"
-    - "재미있는 이야기 들려줘"
+    - "AI 뉴스 검색해줘. 표로 정리해줘."
+    - "LLM 동작 원리가 궁금해."
+    - "에이전트가 뭐야?"
   fullDescription: "/full-description.md"
 
 buttons:
   enableFileUpload: true
-  fileUploadText: "Upload PDF or Image"
-  submitButtonText: "Send"
-  cancelButtonText: "Cancel"
-  chatInputPlaceholder: "무엇이든 물어보세요"
-
-tools:
-  showToolCalls: true
-  displayMode: "detailed"
-  enabledTools: []
-  disabledTools: []
-
-messages:
-  maxWidth: 768
-  enableMarkdown: true
-  enableMath: true
-  enableCodeHighlight: true
-  enableTables: true
+  chatInputPlaceholder: "궁금한 내용을 물어보세요."
 
 threads:
   showHistory: false
   enableDeletion: true
   enableTitleEdit: true
   autoGenerateTitles: true
+  sidebarOpenByDefault: true
 
 theme:
   fontFamily: "serif"
@@ -47,10 +29,4 @@ theme:
 
 ui:
   autoCollapseToolCalls: true
-  chatWidth: "default"
-
-features:
-  artifactViewer: true
-  fileUploads: true
-  imagePreview: true
-  pdfPreview: true
+  chatWidth: "wide"

@@ -5,6 +5,7 @@ import { PanelRightOpen, PanelRightClose, BookOpen } from "lucide-react";
 import { NewChatButton } from "./NewChatButton";
 import { ThreadList } from "./ThreadList";
 import { ThreadHistoryLoading } from "./ThreadHistoryLoading";
+import { ICON_SIZE_SM } from "../constants";
 
 interface DesktopSidebarProps {
   threads: Thread[];
@@ -48,13 +49,13 @@ export function DesktopSidebar({
 
       {/* Guide button */}
       {onShowGuide && (
-        <div className="px-3 pb-2">
+        <div className="pb-2">
           <Button
             variant="ghost"
-            className="w-full justify-start gap-2 text-sm font-normal hover:bg-accent"
+            className="w-full justify-start gap-2 px-3 py-2 text-sm font-medium hover:bg-accent"
             onClick={onShowGuide}
           >
-            <BookOpen className="h-4 w-4" />
+            <BookOpen className={ICON_SIZE_SM} />
             <span>사용 가이드</span>
           </Button>
         </div>
