@@ -8,6 +8,7 @@ export interface ChatConfig {
     logoHeight: number;
     description?: string;
     chatOpeners?: string[];
+    fullDescription?: string;
   };
   buttons: {
     enableFileUpload: boolean;
@@ -66,6 +67,7 @@ export const defaultConfig: ChatConfig = {
       "Python 코딩 도움이 필요해",
       "재미있는 이야기 들려줘",
     ],
+    fullDescription: "/full-description.md",
   },
   buttons: {
     enableFileUpload: true,

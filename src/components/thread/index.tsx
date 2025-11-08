@@ -25,6 +25,7 @@ import {
   Paperclip,
   Wrench,
   ArrowUp,
+  BookOpen,
 } from "lucide-react";
 import { useQueryState, parseAsBoolean } from "nuqs";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
@@ -50,6 +51,7 @@ import {
 } from "./artifact";
 import { SettingsDialog } from "../settings/SettingsDialog";
 import { useSettings } from "@/providers/Settings";
+import { FullDescriptionModal } from "./FullDescriptionModal";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -131,6 +133,7 @@ export function Thread() {
     parseAsBoolean.withDefault(false),
   );
   const [input, setInput] = useState("");
+  const [fullDescriptionOpen, setFullDescriptionOpen] = useState(false);
   const {
     contentBlocks,
     setContentBlocks,
@@ -284,7 +287,7 @@ export function Thread() {
             style={{ width: UI.CHAT_SIDEBAR_WIDTH }}
           >
             <div className="flex-1 overflow-hidden">
-              <ThreadHistory />
+              <ThreadHistory onShowGuide={() => setFullDescriptionOpen(true)} />
             </div>
             <div className="border-t border-border p-4">
               <SettingsDialog />
@@ -462,6 +465,15 @@ export function Thread() {
                             {config.branding.description}
                           </p>
                         )}
+                        {config.branding.fullDescription && (
+                          <button
+                            onClick={() => setFullDescriptionOpen(true)}
+                            className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors"
+                          >
+                            <BookOpen className="h-4 w-4" />
+                            <span>자세한 설명 보기</span>
+                          </button>
+                        )}
                       </div>
                       {config.branding.chatOpeners && config.branding.chatOpeners.length > 0 && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
@@ -626,6 +638,10 @@ export function Thread() {
           </div>
         </div>
       </div>
+      <FullDescriptionModal
+        open={fullDescriptionOpen}
+        onOpenChange={setFullDescriptionOpen}
+      />
     </div>
   );
 }
