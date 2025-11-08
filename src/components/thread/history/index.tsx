@@ -30,7 +30,7 @@ export default function ThreadHistory({ onShowGuide }: ThreadHistoryProps) {
       .then(setThreads)
       .catch(console.error)
       .finally(() => setThreadsLoading(false));
-  }, [getThreads, setThreads, setThreadsLoading]);
+  }, [getThreads]);
 
   const handleNewChat = () => {
     setThreadId(null);

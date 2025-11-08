@@ -266,35 +266,37 @@ export function Thread() {
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
-      <div className="relative hidden lg:flex">
-        <motion.div
-          className="absolute z-20 h-full overflow-hidden border-r border-border bg-sidebar"
-          style={{ width: UI.CHAT_SIDEBAR_WIDTH }}
-          animate={
-            isLargeScreen
-              ? { x: chatHistoryOpen ? 0 : -UI.CHAT_SIDEBAR_WIDTH }
-              : { x: chatHistoryOpen ? 0 : -UI.CHAT_SIDEBAR_WIDTH }
-          }
-          initial={{ x: -UI.CHAT_SIDEBAR_WIDTH }}
-          transition={
-            isLargeScreen
-              ? { type: "spring", stiffness: 300, damping: 30 }
-              : { duration: 0 }
-          }
-        >
-          <div
-            className="relative h-full flex flex-col"
+      {config.threads.showHistory && (
+        <div className="relative hidden lg:flex">
+          <motion.div
+            className="absolute z-20 h-full overflow-hidden border-r border-border bg-sidebar"
             style={{ width: UI.CHAT_SIDEBAR_WIDTH }}
+            animate={
+              isLargeScreen
+                ? { x: chatHistoryOpen ? 0 : -UI.CHAT_SIDEBAR_WIDTH }
+                : { x: chatHistoryOpen ? 0 : -UI.CHAT_SIDEBAR_WIDTH }
+            }
+            initial={{ x: -UI.CHAT_SIDEBAR_WIDTH }}
+            transition={
+              isLargeScreen
+                ? { type: "spring", stiffness: 300, damping: 30 }
+                : { duration: 0 }
+            }
           >
-            <div className="flex-1 overflow-hidden">
-              <ThreadHistory onShowGuide={() => setFullDescriptionOpen(true)} />
+            <div
+              className="relative h-full flex flex-col"
+              style={{ width: UI.CHAT_SIDEBAR_WIDTH }}
+            >
+              <div className="flex-1 overflow-hidden">
+                <ThreadHistory onShowGuide={() => setFullDescriptionOpen(true)} />
+              </div>
+              <div className="border-t border-border p-4">
+                <SettingsDialog />
+              </div>
             </div>
-            <div className="border-t border-border p-4">
-              <SettingsDialog />
-            </div>
-          </div>
-        </motion.div>
-      </div>
+          </motion.div>
+        </div>
+      )}
 
       <div
         className={cn(
@@ -309,8 +311,8 @@ export function Thread() {
           )}
           layout={isLargeScreen}
           animate={{
-            marginLeft: chatHistoryOpen ? (isLargeScreen ? 300 : 0) : 0,
-            width: chatHistoryOpen
+            marginLeft: config.threads.showHistory && chatHistoryOpen ? (isLargeScreen ? 300 : 0) : 0,
+            width: config.threads.showHistory && chatHistoryOpen
               ? isLargeScreen
                 ? "calc(100% - 300px)"
                 : "100%"
@@ -325,7 +327,7 @@ export function Thread() {
           {!chatStarted && (
             <div className="absolute top-0 left-0 z-10 flex w-full items-center justify-between gap-3 p-2 pl-4">
               <div>
-                {(!chatHistoryOpen || !isLargeScreen) && (
+                {config.threads.showHistory && (!chatHistoryOpen || !isLargeScreen) && (
                   <Button
                     className="hover:bg-accent"
                     variant="ghost"
@@ -348,7 +350,7 @@ export function Thread() {
             <div className="relative z-10 flex items-center justify-between gap-3 p-2">
               <div className="relative flex items-center justify-start gap-2">
                 <div className="absolute left-0 z-10">
-                  {(!chatHistoryOpen || !isLargeScreen) && (
+                  {config.threads.showHistory && (!chatHistoryOpen || !isLargeScreen) && (
                     <Button
                       className="hover:bg-accent"
                       variant="ghost"
@@ -366,7 +368,7 @@ export function Thread() {
                   className="flex cursor-pointer items-center gap-2"
                   onClick={() => setThreadId(null)}
                   animate={{
-                    marginLeft: !chatHistoryOpen ? 48 : 0,
+                    marginLeft: config.threads.showHistory && !chatHistoryOpen ? 48 : 0,
                   }}
                   transition={{
                     type: "spring",
