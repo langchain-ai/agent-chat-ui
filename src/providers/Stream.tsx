@@ -24,6 +24,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { getApiKey } from "@/lib/api-key";
 import { useThreads } from "./Thread";
 import { toast } from "sonner";
+import { AssistantConfigProvider } from "./AssistantConfig";
 
 export type StateType = { messages: Message[]; ui?: UIMessage[] };
 
@@ -121,7 +122,13 @@ const StreamSession = ({
 
   return (
     <StreamContext.Provider value={streamValue}>
-      {children}
+      <AssistantConfigProvider
+        apiUrl={apiUrl}
+        assistantId={assistantId}
+        apiKey={apiKey}
+      >
+        {children}
+      </AssistantConfigProvider>
     </StreamContext.Provider>
   );
 };
