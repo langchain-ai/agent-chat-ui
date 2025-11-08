@@ -4,6 +4,7 @@ import React, {
   ReactNode,
   useState,
   useEffect,
+  useCallback,
 } from "react";
 import { useStream } from "@langchain/langgraph-sdk/react";
 import { type Message } from "@langchain/langgraph-sdk";
@@ -79,26 +80,38 @@ const StreamSession = ({
 }) => {
   const [threadId, setThreadId] = useQueryState("threadId");
   const { getThreads, setThreads } = useThreads();
+
+  // Memoize callbacks to prevent infinite re-renders
+  const handleCustomEvent = useCallback(
+    (event: any, options: any) => {
+      if (isUIMessage(event) || isRemoveUIMessage(event)) {
+        options.mutate((prev: StateType) => {
+          const ui = uiMessageReducer(prev.ui ?? [], event);
+          return { ...prev, ui };
+        });
+      }
+    },
+    []
+  );
+
+  const handleThreadId = useCallback(
+    (id: string) => {
+      setThreadId(id);
+      // Refetch threads list when thread ID changes.
+      // Wait for some seconds before fetching so we're able to get the new thread that was created.
+      sleep().then(() => getThreads().then(setThreads).catch(console.error));
+    },
+    [setThreadId, getThreads, setThreads]
+  );
+
   const streamValue = useTypedStream({
     apiUrl,
     apiKey: apiKey ?? undefined,
     assistantId,
     threadId: threadId ?? null,
     fetchStateHistory: true,
-    onCustomEvent: (event, options) => {
-      if (isUIMessage(event) || isRemoveUIMessage(event)) {
-        options.mutate((prev) => {
-          const ui = uiMessageReducer(prev.ui ?? [], event);
-          return { ...prev, ui };
-        });
-      }
-    },
-    onThreadId: (id) => {
-      setThreadId(id);
-      // Refetch threads list when thread ID changes.
-      // Wait for some seconds before fetching so we're able to get the new thread that was created.
-      sleep().then(() => getThreads().then(setThreads).catch(console.error));
-    },
+    onCustomEvent: handleCustomEvent,
+    onThreadId: handleThreadId,
   });
 
   useEffect(() => {
