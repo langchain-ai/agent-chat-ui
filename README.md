@@ -1,5 +1,7 @@
 # Agent Chat UI
 
+![TeddyNote Chat](assets/chat-interface.png)
+
 LangGraph 에이전트를 위한 Next.js 기반 채팅 인터페이스입니다. YAML 기반 설정을 통한 높은 커스터마이징 옵션을 제공합니다.
 
 원본 프로젝트인 [https://github.com/langchain-ai/agent-chat-ui](https://github.com/langchain-ai/agent-chat-ui) 을 참고하여 수정한 프로젝트 입니다.
@@ -10,9 +12,14 @@ Agent Chat UI는 Next.js 15로 구축된 프로덕션 수준의 채팅 인터페
 
 ## 요구사항
 
+### 프론트엔드 (agent-chat-ui)
 - Node.js 18.x 이상
 - pnpm 10.x (패키지 매니저)
-- LangGraph 서버 엔드포인트 (로컬 또는 배포된 서버)
+
+### 백엔드 (react-agent)
+- Python 3.11 이상
+- uv (Python 패키지 매니저)
+- OpenAI API 키 (또는 다른 LLM API 키)
 
 ## 설치 방법
 
@@ -29,18 +36,40 @@ cd agent-chat-ui
 pnpm install
 ```
 
-### 3. 환경 변수 설정
+### 3. LangGraph 백엔드 서버 설정
 
-루트 디렉토리에 `.env` 파일을 생성합니다:
+이 채팅 UI는 LangGraph 백엔드 서버와 연결하여 동작합니다. 로컬 개발 환경에서 테스트하려면 먼저 백엔드 서버를 설정해야 합니다.
+
+#### 백엔드 서버 설치
 
 ```bash
+# 백엔드 저장소 클론
+git clone https://github.com/teddylee777/react-agent
+cd react-agent
+
+# 환경 변수 설정
+cp .env.example .env
+# .env 파일을 편집하여 필요한 API 키 설정 (OPENAI_API_KEY 등)
+
+# LangGraph 개발 서버 실행
+uv run langgraph dev
+```
+
+백엔드 서버가 `http://localhost:2024`에서 실행됩니다.
+
+#### 프론트엔드 환경 변수 설정
+
+agent-chat-ui 디렉토리로 돌아와서 `.env` 파일을 생성합니다:
+
+```bash
+cd ../agent-chat-ui
 cp .env.example .env
 ```
 
-다음 환경 변수를 설정합니다:
+로컬 개발을 위한 환경 변수를 설정합니다:
 
 ```env
-# 필수: LangGraph API 엔드포인트
+# 필수: LangGraph API 엔드포인트 (로컬 개발용)
 NEXT_PUBLIC_API_URL=http://localhost:2024
 
 # 필수: Assistant/Graph ID
@@ -55,13 +84,29 @@ LANGSMITH_API_KEY=lsv2_...
 
 ### 개발 모드
 
-핫 리로드가 지원되는 개발 서버를 시작합니다:
+**1단계: LangGraph 백엔드 서버 실행**
+
+먼저 백엔드 서버를 실행합니다 (react-agent 디렉토리에서):
 
 ```bash
+cd react-agent
+uv run langgraph dev
+```
+
+백엔드 서버가 `http://localhost:2024`에서 실행됩니다.
+
+**2단계: 프론트엔드 개발 서버 실행**
+
+새 터미널 창을 열어 프론트엔드 서버를 시작합니다:
+
+```bash
+cd agent-chat-ui
 pnpm dev
 ```
 
-애플리케이션이 `http://localhost:3000`에서 실행됩니다.
+프론트엔드 애플리케이션이 `http://localhost:3000`에서 실행됩니다.
+
+이제 브라우저에서 `http://localhost:3000`에 접속하면 LangGraph 백엔드와 연결된 채팅 인터페이스를 사용할 수 있습니다.
 
 ### 프로덕션 빌드
 
@@ -284,11 +329,20 @@ pnpm build
 
 ### 일반적인 문제
 
-**문제**: 애플리케이션이 시작되지 않음
+**문제**: 프론트엔드 애플리케이션이 시작되지 않음
 **해결**: Node.js 버전(18+)을 확인하고 `pnpm install`을 다시 실행하세요
 
-**문제**: LangGraph 서버에 연결할 수 없음
-**해결**: `NEXT_PUBLIC_API_URL` 환경 변수를 확인하고 LangGraph 서버가 실행 중인지 확인하세요
+**문제**: LangGraph 백엔드 서버에 연결할 수 없음
+**해결**:
+- `NEXT_PUBLIC_API_URL` 환경 변수가 `http://localhost:2024`로 설정되어 있는지 확인하세요
+- 백엔드 서버가 실행 중인지 확인하세요 (`cd react-agent && uv run langgraph dev`)
+- 백엔드 서버 터미널에서 에러 메시지를 확인하세요
+
+**문제**: 백엔드 서버가 실행되지 않음
+**해결**:
+- Python 버전(3.11+)과 uv가 설치되어 있는지 확인하세요
+- `react-agent/.env` 파일에 필요한 API 키가 설정되어 있는지 확인하세요
+- `uv sync` 명령어로 의존성을 다시 설치하세요
 
 **문제**: 파일 업로드가 작동하지 않음
 **해결**: `public/settings.yaml`에서 `enableFileUpload: true`로 설정되어 있는지 확인하세요
