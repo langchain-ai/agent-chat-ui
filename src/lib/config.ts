@@ -100,9 +100,13 @@ export const defaultConfig: ChatConfig = {
 // Load configuration from YAML file
 export async function loadConfig(): Promise<ChatConfig> {
   try {
-    const response = await fetch("/chat-config.yaml");
+    // Try to load settings.yaml first, fallback to chat-config.yaml
+    let response = await fetch("/settings.yaml");
     if (!response.ok) {
-      console.warn("Failed to load chat-config.yaml, using default config");
+      response = await fetch("/chat-config.yaml");
+    }
+    if (!response.ok) {
+      console.warn("Failed to load settings.yaml or chat-config.yaml, using default config");
       return defaultConfig;
     }
     const yamlText = await response.text();

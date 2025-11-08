@@ -1,4 +1,4 @@
-/* Modern markdown styles inspired by GPT interface */
+/* Modern markdown styles inspired by Claude.ai interface */
 .markdown-content {
   line-height: 1.7;
 }
@@ -13,32 +13,36 @@
 }
 
 .dark .markdown-content code:not(pre code) {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.15);
   color: #e5e7eb;
+  font-weight: 500;
 }
 
 .markdown-content a {
   color: #2563eb;
-  text-decoration: none;
+  text-decoration: underline;
+  text-decoration-color: rgba(37, 99, 235, 0.4);
   font-weight: 500;
-  transition: color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .markdown-content a:hover {
   color: #1d4ed8;
-  text-decoration: underline;
+  text-decoration-color: rgba(29, 78, 216, 0.7);
 }
 
 .dark .markdown-content a {
   color: #60a5fa;
+  text-decoration-color: rgba(96, 165, 250, 0.4);
 }
 
 .dark .markdown-content a:hover {
   color: #93c5fd;
+  text-decoration-color: rgba(147, 197, 253, 0.7);
 }
 
 .markdown-content blockquote {
-  border-left: 4px solid #e5e7eb;
+  border-left: 3px solid #e5e7eb;
   padding-left: 1rem;
   margin: 1rem 0;
   color: #6b7280;
@@ -46,8 +50,8 @@
 }
 
 .dark .markdown-content blockquote {
-  border-left-color: #374151;
-  color: #9ca3af;
+  border-left-color: #4b5563;
+  color: #a1a8b0;
 }
 
 .markdown-content pre {
@@ -87,8 +91,8 @@
 }
 
 .dark .markdown-content th {
-  border-bottom-color: #374151;
-  color: #f9fafb;
+  border-bottom-color: #4b5563;
+  color: #e5e7eb;
 }
 
 .markdown-content td {
@@ -98,8 +102,8 @@
 }
 
 .dark .markdown-content td {
-  border-bottom-color: #1f2937;
-  color: #d1d5db;
+  border-bottom-color: #2d333b;
+  color: #c9d1d9;
 }
 
 .markdown-content tbody tr {
@@ -111,7 +115,7 @@
 }
 
 .dark .markdown-content tbody tr:hover {
-  background-color: #1f2937;
+  background-color: #22272e;
 }
 
 .markdown-content tbody tr:last-child td {
@@ -133,7 +137,7 @@
 }
 
 .dark .markdown-content li::marker {
-  color: #9ca3af;
+  color: #8b92a0;
 }
 
 /* Horizontal rule */
@@ -144,5 +148,20 @@
 }
 
 .dark .markdown-content hr {
-  border-top-color: #374151;
+  border-top-color: #3d444d;
+}
+
+/* Headings in dark mode */
+.dark .markdown-content h1,
+.dark .markdown-content h2,
+.dark .markdown-content h3,
+.dark .markdown-content h4,
+.dark .markdown-content h5,
+.dark .markdown-content h6 {
+  color: #e5e7eb;
+}
+
+/* Better text selection in dark mode */
+.dark .markdown-content ::selection {
+  background-color: rgba(96, 165, 250, 0.3);
 }
