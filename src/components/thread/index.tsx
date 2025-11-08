@@ -118,7 +118,7 @@ function OpenGitHubRepo() {
 export function Thread() {
   const [artifactContext, setArtifactContext] = useArtifactContext();
   const [artifactOpen, closeArtifact] = useArtifactOpen();
-  const { config } = useSettings();
+  const { config, userSettings } = useSettings();
 
   const [threadId, _setThreadId] = useQueryState("threadId");
   const [chatHistoryOpen, setChatHistoryOpen] = useQueryState(
@@ -386,15 +386,6 @@ export function Thread() {
                 <div className="flex items-center">
                   <OpenGitHubRepo />
                 </div>
-                <TooltipIconButton
-                  size="lg"
-                  className="p-4"
-                  tooltip="New thread"
-                  variant="ghost"
-                  onClick={() => setThreadId(null)}
-                >
-                  <SquarePen className="size-5" />
-                </TooltipIconButton>
               </div>
 
               <div className="from-background to-background/0 absolute inset-x-0 top-full h-5 bg-gradient-to-b" />
@@ -404,11 +395,15 @@ export function Thread() {
           <StickToBottom className="relative flex-1 overflow-hidden">
             <StickyToBottomContent
               className={cn(
-                "absolute inset-0 overflow-y-scroll px-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-track]:bg-transparent",
+                "absolute inset-0 overflow-y-scroll [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-track]:bg-transparent",
                 !chatStarted && "mt-[25vh] flex flex-col items-stretch",
                 chatStarted && "grid grid-rows-[1fr_auto]",
+                userSettings.chatWidth === "default" ? "px-4" : "px-2",
               )}
-              contentClassName="pt-8 pb-16  max-w-3xl mx-auto flex flex-col gap-4 w-full"
+              contentClassName={cn(
+                "pt-8 pb-16 mx-auto flex flex-col gap-4 w-full",
+                userSettings.chatWidth === "default" ? "max-w-3xl" : "max-w-5xl"
+              )}
               content={
                 <>
                   {messages
@@ -466,7 +461,8 @@ export function Thread() {
                   <div
                     ref={dropRef}
                     className={cn(
-                      "relative z-10 mx-auto mb-8 w-full max-w-3xl rounded-3xl shadow-md transition-all border bg-card",
+                      "relative z-10 mx-auto mb-8 w-full rounded-3xl shadow-md transition-all border bg-card",
+                      userSettings.chatWidth === "default" ? "max-w-3xl" : "max-w-5xl",
                       dragOver
                         ? "border-primary border-2 border-dotted"
                         : "border-border",
@@ -474,7 +470,10 @@ export function Thread() {
                   >
                     <form
                       onSubmit={handleSubmit}
-                      className="mx-auto grid max-w-3xl grid-rows-[1fr_auto]"
+                      className={cn(
+                        "mx-auto grid grid-rows-[1fr_auto]",
+                        userSettings.chatWidth === "default" ? "max-w-3xl" : "max-w-5xl"
+                      )}
                     >
                       <ContentBlocksPreview
                         blocks={contentBlocks}

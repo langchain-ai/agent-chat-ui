@@ -13,10 +13,6 @@ branding:
 
 # Chat interface buttons
 buttons:
-  # Enable/disable web search button
-  enableWebSearch: true
-  # Web search button text
-  webSearchText: "Search Web"
   # Enable/disable file upload button
   enableFileUpload: true
   # File upload button text
@@ -70,10 +66,15 @@ theme:
   # Color scheme: "light" | "dark" | "auto"
   colorScheme: "light"
 
+# UI Behavior settings
+ui:
+  # Auto-collapse tool calls after response completes
+  autoCollapseToolCalls: true
+  # Chat width: "default" | "wide"
+  chatWidth: "default"
+
 # Feature flags
 features:
-  # Enable web search integration
-  webSearch: true
   # Enable artifact viewer
   artifactViewer: true
   # Enable file uploads

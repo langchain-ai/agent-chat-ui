@@ -8,8 +8,6 @@ branding:
   logoHeight: 32
 
 buttons:
-  enableWebSearch: true
-  webSearchText: "Search Web"
   enableFileUpload: true
   fileUploadText: "Upload PDF or Image"
   submitButtonText: "Send"
@@ -39,8 +37,11 @@ theme:
   fontSize: "large"
   colorScheme: "light"
 
+ui:
+  autoCollapseToolCalls: true
+  chatWidth: "default"
+
 features:
-  webSearch: true
   artifactViewer: true
   fileUploads: true
   imagePreview: true

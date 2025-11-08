@@ -145,7 +145,7 @@ export function AssistantMessage({
       <div className="flex flex-col gap-2">
         {isToolResult ? (
           <>
-            <ToolResult message={message} />
+            <ToolResult message={message} isLoading={isLoading} />
             <Interrupt
               interruptValue={threadInterrupt?.value}
               isLastMessage={isLastMessage}
@@ -163,13 +163,13 @@ export function AssistantMessage({
             {!hideToolCalls && (
               <>
                 {(hasToolCalls && toolCallsHaveContents && (
-                  <ToolCalls toolCalls={message.tool_calls} />
+                  <ToolCalls toolCalls={message.tool_calls} isLoading={isLoading} />
                 )) ||
                   (hasAnthropicToolCalls && (
-                    <ToolCalls toolCalls={anthropicStreamedToolCalls} />
+                    <ToolCalls toolCalls={anthropicStreamedToolCalls} isLoading={isLoading} />
                   )) ||
                   (hasToolCalls && (
-                    <ToolCalls toolCalls={message.tool_calls} />
+                    <ToolCalls toolCalls={message.tool_calls} isLoading={isLoading} />
                   ))}
               </>
             )}

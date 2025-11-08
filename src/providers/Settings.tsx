@@ -11,8 +11,9 @@ import { ChatConfig, defaultConfig, loadConfig } from "@/lib/config";
 export interface UserSettings {
   fontFamily: "sans" | "serif" | "mono";
   fontSize: "small" | "medium" | "large";
-  enableWebSearch: boolean;
   colorScheme: "light" | "dark" | "auto";
+  autoCollapseToolCalls: boolean;
+  chatWidth: "default" | "wide";
 }
 
 interface SettingsContextType {
@@ -54,19 +55,31 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [config, setConfig] = useState<ChatConfig>(defaultConfig);
-  const [userSettings, setUserSettings] = useState<UserSettings>(() => {
-    const stored = loadUserSettings();
-    return {
-      fontFamily: stored.fontFamily || defaultConfig.theme.fontFamily,
-      fontSize: stored.fontSize || defaultConfig.theme.fontSize,
-      enableWebSearch: stored.enableWebSearch ?? defaultConfig.features.webSearch,
-      colorScheme: stored.colorScheme || defaultConfig.theme.colorScheme,
-    };
+  const [isHydrated, setIsHydrated] = useState(false);
+  const [userSettings, setUserSettings] = useState<UserSettings>({
+    fontFamily: defaultConfig.theme.fontFamily,
+    fontSize: defaultConfig.theme.fontSize,
+    colorScheme: defaultConfig.theme.colorScheme,
+    autoCollapseToolCalls: defaultConfig.ui.autoCollapseToolCalls,
+    chatWidth: defaultConfig.ui.chatWidth,
   });
 
   // Load config on mount
   useEffect(() => {
     loadConfig().then(setConfig);
+  }, []);
+
+  // Load user settings from localStorage after hydration
+  useEffect(() => {
+    const stored = loadUserSettings();
+    setUserSettings({
+      fontFamily: stored.fontFamily || defaultConfig.theme.fontFamily,
+      fontSize: stored.fontSize || defaultConfig.theme.fontSize,
+      colorScheme: stored.colorScheme || defaultConfig.theme.colorScheme,
+      autoCollapseToolCalls: stored.autoCollapseToolCalls ?? defaultConfig.ui.autoCollapseToolCalls,
+      chatWidth: stored.chatWidth || defaultConfig.ui.chatWidth,
+    });
+    setIsHydrated(true);
   }, []);
 
   // Apply theme settings to document
@@ -110,8 +123,9 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({
     const defaultUserSettings: UserSettings = {
       fontFamily: config.theme.fontFamily,
       fontSize: config.theme.fontSize,
-      enableWebSearch: config.features.webSearch,
       colorScheme: config.theme.colorScheme,
+      autoCollapseToolCalls: config.ui.autoCollapseToolCalls,
+      chatWidth: config.ui.chatWidth,
     };
     setUserSettings(defaultUserSettings);
     saveUserSettings(defaultUserSettings);
