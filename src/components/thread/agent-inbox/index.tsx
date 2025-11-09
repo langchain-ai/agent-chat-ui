@@ -13,9 +13,10 @@ interface ThreadViewProps {
 export function ThreadView({ interrupt }: ThreadViewProps) {
   const thread = useStreamContext();
   const interrupts = useMemo(
-    () => (Array.isArray(interrupt) ? interrupt : [interrupt]).filter(
-      (item): item is Interrupt<HITLRequest> => !!item,
-    ),
+    () =>
+      (Array.isArray(interrupt) ? interrupt : [interrupt]).filter(
+        (item): item is Interrupt<HITLRequest> => !!item,
+      ),
     [interrupt],
   );
   const [activeInterruptIndex, setActiveInterruptIndex] = useState(0);
@@ -56,7 +57,7 @@ export function ThreadView({ interrupt }: ThreadViewProps) {
   }
 
   return (
-    <div className="flex h-[80vh] w-full flex-col overflow-y-scroll rounded-2xl bg-gray-50/50 p-8 lg:flex-row [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent">
+    <div className="flex h-full w-full flex-col rounded-2xl bg-gray-50 p-8 lg:flex-row">
       {showSidePanel ? (
         <StateView
           handleShowSidePanel={handleShowSidePanel}
@@ -81,7 +82,7 @@ export function ThreadView({ interrupt }: ThreadViewProps) {
                       "rounded-full border px-3 py-1 text-sm transition-colors",
                       idx === activeInterruptIndex
                         ? "border-primary bg-primary/10 text-primary"
-                        : "border-gray-300 bg-white text-gray-600 hover:border-primary hover:text-primary",
+                        : "hover:border-primary hover:text-primary border-gray-300 bg-white text-gray-600",
                     )}
                   >
                     {title}

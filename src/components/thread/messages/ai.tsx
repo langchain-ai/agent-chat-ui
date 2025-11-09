@@ -80,8 +80,8 @@ function Interrupt({
 }: InterruptProps) {
   const fallbackValue = Array.isArray(interrupt)
     ? (interrupt as Record<string, any>[])
-    : ((interrupt as { value?: unknown } | undefined)?.value ??
-        interrupt) as Record<string, any>;
+    : (((interrupt as { value?: unknown } | undefined)?.value ??
+        interrupt) as Record<string, any>);
 
   return (
     <>
@@ -146,8 +146,8 @@ export function AssistantMessage({
   }
 
   return (
-    <div className="group mr-auto flex items-start gap-2">
-      <div className="flex flex-col gap-2">
+    <div className="group mr-auto flex w-full items-start gap-2">
+      <div className="flex w-full flex-col gap-2">
         {isToolResult ? (
           <>
             <ToolResult message={message} />

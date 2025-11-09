@@ -69,7 +69,9 @@ function isValidHitlRequest(
   );
 }
 
-function getDecisionStatus(decision: Decision | undefined): DecisionType | null {
+function getDecisionStatus(
+  decision: Decision | undefined,
+): DecisionType | null {
   if (!decision) return null;
   return decision.type;
 }
@@ -307,7 +309,7 @@ export function ThreadActionsView({
   const interruptValue = singleActionInterrupt.value as HITLRequest;
 
   return (
-    <div className="flex min-h-full w-full flex-col gap-9">
+    <div className="flex min-h-full w-full max-w-full flex-col gap-9">
       <div className="flex w-full flex-wrap items-center justify-between gap-3">
         <div className="flex items-center justify-start gap-3">
           <p className="text-2xl tracking-tighter text-pretty">
@@ -374,7 +376,7 @@ export function ThreadActionsView({
                   status === "reject" && "border-red-500 bg-red-200",
                   status === "edit" && "border-amber-500 bg-amber-200",
                   index === currentIndex &&
-                    "outline outline-2 outline-offset-2 outline-primary",
+                    "outline-primary outline-2 outline-offset-2",
                 )}
               >
                 <span className="sr-only">Action {index + 1}</span>
@@ -408,9 +410,7 @@ export function ThreadActionsView({
               variant="outline"
               size="sm"
               disabled={currentIndex === 0}
-              onClick={() =>
-                setCurrentIndex((prev) => Math.max(0, prev - 1))
-              }
+              onClick={() => setCurrentIndex((prev) => Math.max(0, prev - 1))}
             >
               Previous
             </Button>
@@ -427,17 +427,17 @@ export function ThreadActionsView({
               Next
             </Button>
           </div>
-        <Button
-          variant="brand"
-          disabled={!hasAllDecisions || submittingAll}
-          onClick={handleSubmitAll}
-        >
-          {submittingAll
-            ? "Submitting..."
-            : `Submit all ${actionRequests.length} decisions`}
-        </Button>
-      </div>
-    )}
+          <Button
+            variant="brand"
+            disabled={!hasAllDecisions || submittingAll}
+            onClick={handleSubmitAll}
+          >
+            {submittingAll
+              ? "Submitting..."
+              : `Submit all ${actionRequests.length} decisions`}
+          </Button>
+        </div>
+      )}
 
       {!hasMultipleActions && streamFinished && (
         <p className="text-base font-medium text-green-600">

@@ -121,7 +121,9 @@ function EditActionCard({
   ) => Promise<void> | void;
 }) {
   const defaultRows = React.useRef<Record<string, number>>({});
-  const editResponse = humanResponse.find((response) => response.type === "edit");
+  const editResponse = humanResponse.find(
+    (response) => response.type === "edit",
+  );
   const approveResponse = humanResponse.find(
     (response) => response.type === "approve",
   );
@@ -181,45 +183,49 @@ function EditActionCard({
   };
 
   return (
-    <div className="flex w-full flex-col items-start gap-4 rounded-lg border border-gray-300 p-6">
+    <div className="flex w-full min-w-full flex-col items-start gap-4 rounded-lg border border-gray-300 p-6">
       <div className="flex w-full items-center justify-between">
         <p className="text-base font-semibold text-black">{header}</p>
         <ResetButton handleReset={handleReset} />
       </div>
 
-      {Object.entries(editResponse.edited_action.args).map(([key, value], idx) => {
-        const stringValue =
-          typeof value === "string" || typeof value === "number"
-            ? value.toString()
-            : JSON.stringify(value, null);
+      {Object.entries(editResponse.edited_action.args).map(
+        ([key, value], idx) => {
+          const stringValue =
+            typeof value === "string" || typeof value === "number"
+              ? value.toString()
+              : JSON.stringify(value, null);
 
-        if (defaultRows.current[key] === undefined) {
-          defaultRows.current[key] = !stringValue.length
-            ? 3
-            : Math.max(stringValue.length / 30, 7);
-        }
+          if (defaultRows.current[key] === undefined) {
+            defaultRows.current[key] = !stringValue.length
+              ? 3
+              : Math.max(stringValue.length / 30, 7);
+          }
 
-        return (
-          <div
-            className="flex h-full w-full flex-col items-start gap-1 px-[1px]"
-            key={`allow-edit-args--${key}-${idx}`}
-          >
-            <div className="flex w-full flex-col items-start gap-[6px]">
-              <p className="min-w-fit text-sm font-medium">
-                {prettifyText(key)}
-              </p>
-              <Textarea
-                disabled={isLoading}
-                className="h-full"
-                value={stringValue}
-                onChange={(event) => onEditChange(event.target.value, editResponse, key)}
-                onKeyDown={handleKeyDown}
-                rows={defaultRows.current[key] || 8}
-              />
+          return (
+            <div
+              className="flex h-full w-full flex-col items-start gap-1 px-[1px]"
+              key={`allow-edit-args--${key}-${idx}`}
+            >
+              <div className="flex w-full flex-col items-start gap-[6px]">
+                <p className="min-w-fit text-sm font-medium">
+                  {prettifyText(key)}
+                </p>
+                <Textarea
+                  disabled={isLoading}
+                  className="h-full w-full max-w-full"
+                  value={stringValue}
+                  onChange={(event) =>
+                    onEditChange(event.target.value, editResponse, key)
+                  }
+                  onKeyDown={handleKeyDown}
+                  rows={defaultRows.current[key] || 8}
+                />
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        },
+      )}
 
       <div className="flex w-full items-center justify-end gap-2">
         <Button
@@ -268,7 +274,7 @@ function RejectActionCard({
   };
 
   return (
-    <div className="flex w-full flex-col items-start gap-4 rounded-xl border border-gray-300 p-6">
+    <div className="flex w-full max-w-full flex-col items-start gap-4 rounded-xl border border-gray-300 p-6">
       <div className="flex w-full items-center justify-between">
         <p className="text-base font-semibold text-black">Reject</p>
         <ResetButton handleReset={() => onChange("", rejectResponse)} />
@@ -280,6 +286,7 @@ function RejectActionCard({
         <p className="min-w-fit text-sm font-medium">Reason</p>
         <Textarea
           disabled={isLoading}
+          className="w-full max-w-full"
           value={rejectResponse.message ?? ""}
           onChange={(event) => onChange(event.target.value, rejectResponse)}
           onKeyDown={handleKeyDown}
@@ -419,10 +426,7 @@ export function InboxItemInput({
     });
   };
 
-  const onRejectChange = (
-    change: string,
-    response: DecisionWithEdits,
-  ) => {
+  const onRejectChange = (change: string, response: DecisionWithEdits) => {
     if (response.type !== "reject") {
       console.error("Mismatched response type for rejection");
       return;
@@ -451,10 +455,10 @@ export function InboxItemInput({
   };
 
   return (
-    <div className="flex w-full flex-col items-start justify-start gap-2">
+    <div className="flex w-full max-w-full flex-col items-start justify-start gap-2">
       {showArgsOutsideCards && <ArgsRenderer args={actionArgs} />}
 
-      <div className="flex w-full flex-col items-start gap-2">
+      <div className="flex w-full flex-col items-stretch gap-2">
         <EditAndApprove
           humanResponse={humanResponse}
           isLoading={isLoading}
