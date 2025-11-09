@@ -1,8 +1,13 @@
 import { BaseMessage, isBaseMessage } from "@langchain/core/messages";
 import { format } from "date-fns";
 import { startCase } from "lodash";
-import { HumanResponseWithEdits, SubmitType } from "./types";
-import { HumanInterrupt } from "@langchain/langgraph/prebuilt";
+import {
+  Action,
+  Decision,
+  DecisionWithEdits,
+  HITLRequest,
+  SubmitType,
+} from "./types";
 
 export function prettifyText(action: string) {
   return startCase(action.replace(/_/g, " "));
@@ -82,109 +87,119 @@ export function unknownToPrettyDate(input: unknown): string | undefined {
 }
 
 export function createDefaultHumanResponse(
-  interrupt: HumanInterrupt,
+  hitlRequest: HITLRequest,
   initialHumanInterruptEditValue: React.MutableRefObject<
     Record<string, string>
   >,
 ): {
-  responses: HumanResponseWithEdits[];
+  responses: DecisionWithEdits[];
   defaultSubmitType: SubmitType | undefined;
-  hasAccept: boolean;
+  hasApprove: boolean;
 } {
-  const responses: HumanResponseWithEdits[] = [];
-  if (interrupt.config.allow_edit) {
-    if (interrupt.config.allow_accept) {
-      Object.entries(interrupt.action_request.args).forEach(([k, v]) => {
-        let stringValue = "";
-        if (typeof v === "string") {
-          stringValue = v;
-        } else {
-          stringValue = JSON.stringify(v, null);
-        }
+  const responses: DecisionWithEdits[] = [];
+  const actionRequest = hitlRequest.action_requests?.[0];
+  const reviewConfig =
+    hitlRequest.review_configs?.find(
+      (config) => config.action_name === actionRequest?.name,
+    ) ?? hitlRequest.review_configs?.[0];
 
-        if (
-          !initialHumanInterruptEditValue.current ||
-          !(k in initialHumanInterruptEditValue.current)
-        ) {
-          initialHumanInterruptEditValue.current = {
-            ...initialHumanInterruptEditValue.current,
-            [k]: stringValue,
-          };
-        } else if (
-          k in initialHumanInterruptEditValue.current &&
-          initialHumanInterruptEditValue.current[k] !== stringValue
-        ) {
-          console.error(
-            "KEY AND VALUE FOUND IN initialHumanInterruptEditValue.current THAT DOES NOT MATCH THE ACTION REQUEST",
-            {
-              key: k,
-              value: stringValue,
-              expectedValue: initialHumanInterruptEditValue.current[k],
-            },
-          );
-        }
-      });
-      responses.push({
-        type: "edit",
-        args: interrupt.action_request,
-        acceptAllowed: true,
-        editsMade: false,
-      });
-    } else {
-      responses.push({
-        type: "edit",
-        args: interrupt.action_request,
-        acceptAllowed: false,
-      });
-    }
+  if (!actionRequest || !reviewConfig) {
+    return { responses: [], defaultSubmitType: undefined, hasApprove: false };
   }
-  if (interrupt.config.allow_respond) {
+
+  const allowedDecisions = reviewConfig.allowed_decisions ?? [];
+
+  if (allowedDecisions.includes("edit")) {
+    Object.entries(actionRequest.args).forEach(([key, value]) => {
+      const stringValue =
+        typeof value === "string" || typeof value === "number"
+          ? value.toString()
+          : JSON.stringify(value, null);
+      initialHumanInterruptEditValue.current = {
+        ...initialHumanInterruptEditValue.current,
+        [key]: stringValue,
+      };
+    });
+
+    const editedAction: Action = {
+      name: actionRequest.name,
+      args: { ...actionRequest.args },
+    };
+
     responses.push({
-      type: "response",
-      args: "",
+      type: "edit",
+      edited_action: editedAction,
+      acceptAllowed: allowedDecisions.includes("approve"),
+      editsMade: false,
     });
   }
 
-  if (interrupt.config.allow_ignore) {
-    responses.push({
-      type: "ignore",
-      args: null,
-    });
+  if (allowedDecisions.includes("approve")) {
+    responses.push({ type: "approve" });
   }
 
-  // Set the submit type.
-  // Priority: accept > response  > edit
-  const acceptAllowedConfig = interrupt.config.allow_accept;
-  const ignoreAllowedConfig = interrupt.config.allow_ignore;
+  if (allowedDecisions.includes("reject")) {
+    responses.push({ type: "reject", message: "" });
+  }
 
-  const hasResponse = responses.find((r) => r.type === "response");
-  const hasAccept =
-    responses.find((r) => r.acceptAllowed) || acceptAllowedConfig;
-  const hasEdit = responses.find((r) => r.type === "edit");
-
+  // Determine default submit type. Priority: approve > reject > edit
   let defaultSubmitType: SubmitType | undefined;
-  if (hasAccept) {
-    defaultSubmitType = "accept";
-  } else if (hasResponse) {
-    defaultSubmitType = "response";
-  } else if (hasEdit) {
+
+  if (allowedDecisions.includes("approve")) {
+    defaultSubmitType = "approve";
+  } else if (allowedDecisions.includes("reject")) {
+    defaultSubmitType = "reject";
+  } else if (allowedDecisions.includes("edit")) {
     defaultSubmitType = "edit";
   }
 
-  if (acceptAllowedConfig && !responses.find((r) => r.type === "accept")) {
-    responses.push({
-      type: "accept",
-      args: null,
-    });
-  }
-  if (ignoreAllowedConfig && !responses.find((r) => r.type === "ignore")) {
-    responses.push({
-      type: "ignore",
-      args: null,
-    });
+  const hasApprove = allowedDecisions.includes("approve");
+
+  return { responses, defaultSubmitType, hasApprove };
+}
+
+export function buildDecisionFromState(
+  responses: DecisionWithEdits[],
+  selectedSubmitType: SubmitType | undefined,
+): { decision?: Decision; error?: string } {
+  if (!responses.length) {
+    return { error: "Please enter a response." };
   }
 
-  return { responses, defaultSubmitType, hasAccept: !!hasAccept };
+  const selectedDecision = responses.find(
+    (response) => response.type === selectedSubmitType,
+  );
+
+  if (!selectedDecision) {
+    return { error: "No response selected." };
+  }
+
+  if (selectedDecision.type === "approve") {
+    return { decision: { type: "approve" } };
+  }
+
+  if (selectedDecision.type === "reject") {
+    const message = selectedDecision.message?.trim();
+    if (!message) {
+      return { error: "Please provide a rejection reason." };
+    }
+    return { decision: { type: "reject", message } };
+  }
+
+  if (selectedDecision.type === "edit") {
+    if (selectedDecision.acceptAllowed && !selectedDecision.editsMade) {
+      return { decision: { type: "approve" } };
+    }
+
+    return {
+      decision: {
+        type: "edit",
+        edited_action: selectedDecision.edited_action,
+      },
+    };
+  }
+
+  return { error: "Unsupported response type." };
 }
 
 export function constructOpenInStudioURL(

@@ -1,32 +1,48 @@
+import { useEffect, useMemo, useState } from "react";
+import { Interrupt } from "@langchain/langgraph-sdk";
+import { cn } from "@/lib/utils";
+import { useStreamContext } from "@/providers/Stream";
+import { HITLRequest } from "./types";
 import { StateView } from "./components/state-view";
 import { ThreadActionsView } from "./components/thread-actions-view";
-import { useState } from "react";
-import { HumanInterrupt } from "@langchain/langgraph/prebuilt";
-import { useStreamContext } from "@/providers/Stream";
 
 interface ThreadViewProps {
-  interrupt: HumanInterrupt | HumanInterrupt[];
+  interrupt: Interrupt<HITLRequest> | Interrupt<HITLRequest>[];
 }
 
 export function ThreadView({ interrupt }: ThreadViewProps) {
-  const interruptObj = Array.isArray(interrupt) ? interrupt[0] : interrupt;
   const thread = useStreamContext();
+  const interrupts = useMemo(
+    () => (Array.isArray(interrupt) ? interrupt : [interrupt]).filter(
+      (item): item is Interrupt<HITLRequest> => !!item,
+    ),
+    [interrupt],
+  );
+  const [activeInterruptIndex, setActiveInterruptIndex] = useState(0);
   const [showDescription, setShowDescription] = useState(false);
   const [showState, setShowState] = useState(false);
   const showSidePanel = showDescription || showState;
 
+  useEffect(() => {
+    setActiveInterruptIndex(0);
+  }, [interrupts.length]);
+
+  const activeInterrupt = interrupts[activeInterruptIndex];
+  const activeDescription =
+    activeInterrupt?.value?.action_requests?.[0]?.description ?? "";
+
   const handleShowSidePanel = (
-    showState: boolean,
-    showDescription: boolean,
+    showStateFlag: boolean,
+    showDescriptionFlag: boolean,
   ) => {
-    if (showState && showDescription) {
+    if (showStateFlag && showDescriptionFlag) {
       console.error("Cannot show both state and description");
       return;
     }
-    if (showState) {
+    if (showStateFlag) {
       setShowDescription(false);
       setShowState(true);
-    } else if (showDescription) {
+    } else if (showDescriptionFlag) {
       setShowState(false);
       setShowDescription(true);
     } else {
@@ -35,22 +51,52 @@ export function ThreadView({ interrupt }: ThreadViewProps) {
     }
   };
 
+  if (!activeInterrupt) {
+    return null;
+  }
+
   return (
     <div className="flex h-[80vh] w-full flex-col overflow-y-scroll rounded-2xl bg-gray-50/50 p-8 lg:flex-row [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent">
       {showSidePanel ? (
         <StateView
           handleShowSidePanel={handleShowSidePanel}
-          description={interruptObj.description}
+          description={activeDescription}
           values={thread.values}
           view={showState ? "state" : "description"}
         />
       ) : (
-        <ThreadActionsView
-          interrupt={interruptObj}
-          handleShowSidePanel={handleShowSidePanel}
-          showState={showState}
-          showDescription={showDescription}
-        />
+        <div className="flex w-full flex-col gap-6">
+          {interrupts.length > 1 && (
+            <div className="flex flex-wrap items-center gap-2">
+              {interrupts.map((it, idx) => {
+                const title =
+                  it.value?.action_requests?.[0]?.name ??
+                  `Interrupt ${idx + 1}`;
+                return (
+                  <button
+                    key={it.id ?? idx}
+                    type="button"
+                    onClick={() => setActiveInterruptIndex(idx)}
+                    className={cn(
+                      "rounded-full border px-3 py-1 text-sm transition-colors",
+                      idx === activeInterruptIndex
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-gray-300 bg-white text-gray-600 hover:border-primary hover:text-primary",
+                    )}
+                  >
+                    {title}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          <ThreadActionsView
+            interrupt={activeInterrupt}
+            handleShowSidePanel={handleShowSidePanel}
+            showState={showState}
+            showDescription={showDescription}
+          />
+        </div>
       )}
     </div>
   );
