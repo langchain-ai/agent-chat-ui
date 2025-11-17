@@ -17,13 +17,13 @@ import {
 import { useQueryState } from "nuqs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { LangGraphLogoSVG } from "@/components/icons/langgraph";
 import { Label } from "@/components/ui/label";
 import { ArrowRight } from "lucide-react";
 import { PasswordInput } from "@/components/ui/password-input";
 import { getApiKey } from "@/lib/api-key";
 import { useThreads } from "./Thread";
 import { toast } from "sonner";
+import { useCustomStream } from "@/hooks/useCustomStream";
 
 export type StateType = { messages: Message[]; ui?: UIMessage[] };
 
@@ -79,27 +79,71 @@ const StreamSession = ({
 }) => {
   const [threadId, setThreadId] = useQueryState("threadId");
   const { getThreads, setThreads } = useThreads();
-  const streamValue = useTypedStream({
+  
+  // Use our custom stream hook instead of the buggy useStream
+  const customStream = useCustomStream({
     apiUrl,
     apiKey: apiKey ?? undefined,
     assistantId,
     threadId: threadId ?? null,
-    fetchStateHistory: true,
-    onCustomEvent: (event, options) => {
-      if (isUIMessage(event) || isRemoveUIMessage(event)) {
-        options.mutate((prev) => {
-          const ui = uiMessageReducer(prev.ui ?? [], event);
-          return { ...prev, ui };
-        });
-      }
-    },
-    onThreadId: (id) => {
+  });
+
+  // Create a compatible interface for the existing components
+  const streamValue = {
+    messages: customStream.messages,
+    isLoading: customStream.isLoading,
+    error: customStream.error,
+    submit: async (input: any, options?: any) => customStream.submit(input, options),
+    stop: async () => customStream.stop(),
+    // Add dummy implementations for other properties that might be used
+    interrupt: null,
+    getMessagesMetadata: () => ({}),
+    setBranch: () => {},
+    values: { messages: customStream.messages },
+    isThreadLoading: false,
+    branch: "",
+    history: [],
+    setThreadId: (id: string | null) => {
       setThreadId(id);
-      // Refetch threads list when thread ID changes.
-      // Wait for some seconds before fetching so we're able to get the new thread that was created.
+      // Refetch threads list when thread ID changes
       sleep().then(() => getThreads().then(setThreads).catch(console.error));
     },
-  });
+    setValues: (v: { messages?: any[] }) => {
+      if (v?.messages) customStream.setMessages(v.messages as any);
+    },
+    setError: () => {},
+    experimental_branchTree: null,
+    client: null,
+    assistantId,
+    joinStream: () => {},
+  } as any;
+
+  // Load history when threadId changes
+  // Load history when threadId changes (ignore idempotent URL changes)
+  useEffect(() => {
+    const prevRef = (window as any).__lg_prev_tid_ref || { current: undefined };
+    (window as any).__lg_prev_tid_ref = prevRef;
+    if (prevRef.current === threadId) return;
+    prevRef.current = threadId;
+
+    (async () => {
+      if (!threadId) {
+        customStream.setMessages([]);
+        return;
+      }
+      try {
+        const res = await fetch(`${apiUrl}/threads/${threadId}/history`, {
+          headers: apiKey ? { 'X-Api-Key': apiKey } : undefined,
+        });
+        if (!res.ok) throw new Error(`history ${res.status}`);
+        const history = await res.json();
+        customStream.setMessages(history);
+      } catch (e) {
+        console.error('Failed to load history', e);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [threadId, apiUrl, apiKey]);
 
   useEffect(() => {
     checkGraphStatus(apiUrl, apiKey).then((ok) => {
@@ -168,7 +212,7 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
         <div className="animate-in fade-in-0 zoom-in-95 bg-background flex max-w-3xl flex-col rounded-lg border shadow-lg">
           <div className="mt-14 flex flex-col gap-2 border-b p-6">
             <div className="flex flex-col items-start gap-2">
-              <LangGraphLogoSVG className="h-7" />
+              <img src="/logo.svg" alt="ITS Assistant" className="h-7" />
               <h1 className="text-xl font-semibold tracking-tight">
                 Agent Chat
               </h1>
@@ -266,8 +310,8 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
   return (
     <StreamSession
       apiKey={apiKey}
-      apiUrl={apiUrl}
-      assistantId={assistantId}
+      apiUrl={finalApiUrl}
+      assistantId={finalAssistantId}
     >
       {children}
     </StreamSession>

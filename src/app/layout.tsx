@@ -11,8 +11,13 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Agent Chat",
-  description: "Agent Chat UX by LangChain",
+  title: "Seneca ITS Assistant",
+  description: "AI assistant for Seneca College IT support",
+  icons: {
+    icon: [{ url: "/logo.svg" }],
+    shortcut: "/logo.svg",
+    apple: [{ url: "/logo.svg" }],
+  },
 };
 
 export default function RootLayout({

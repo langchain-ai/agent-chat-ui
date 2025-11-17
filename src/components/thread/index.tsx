@@ -12,7 +12,6 @@ import {
   DO_NOT_RENDER_ID_PREFIX,
   ensureToolCallsHaveResponses,
 } from "@/lib/ensure-tool-responses";
-import { LangGraphLogoSVG } from "../icons/langgraph";
 import { TooltipIconButton } from "./tooltip-icon-button";
 import {
   ArrowDown,
@@ -93,8 +92,9 @@ function OpenGitHubRepo() {
       <Tooltip>
         <TooltipTrigger asChild>
           <a
-            href="https://github.com/langchain-ai/agent-chat-ui"
+            href="https://github.com/ar7w7in/Seneca_ITS_Assistant"
             target="_blank"
+            rel="noopener noreferrer"
             className="flex items-center justify-center"
           >
             <GitHubSVG
@@ -104,7 +104,7 @@ function OpenGitHubRepo() {
           </a>
         </TooltipTrigger>
         <TooltipContent side="left">
-          <p>Open GitHub repo</p>
+          <p>Open project repository</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
@@ -183,10 +183,15 @@ export function Thread() {
   // TODO: this should be part of the useStream hook
   const prevMessageLength = useRef(0);
   useEffect(() => {
+    const last = messages[messages.length - 1];
+    const aiHasContent =
+      last?.type === "ai" &&
+      Array.isArray((last as any).content) &&
+      (last as any).content[0]?.text?.length > 0;
+
     if (
-      messages.length !== prevMessageLength.current &&
-      messages?.length &&
-      messages[messages.length - 1].type === "ai"
+      (messages.length !== prevMessageLength.current && last?.type === "ai") ||
+      aiHasContent
     ) {
       setFirstTokenReceived(true);
     }
@@ -360,12 +365,9 @@ export function Thread() {
                     damping: 30,
                   }}
                 >
-                  <LangGraphLogoSVG
-                    width={32}
-                    height={32}
-                  />
+                  <img src="/logo.svg" alt="Seneca ITS Assistant" width={32} height={32} />
                   <span className="text-xl font-semibold tracking-tight">
-                    Agent Chat
+                    ITS Assistant Chat
                   </span>
                 </motion.button>
               </div>
@@ -396,7 +398,7 @@ export function Thread() {
                 !chatStarted && "mt-[25vh] flex flex-col items-stretch",
                 chatStarted && "grid grid-rows-[1fr_auto]",
               )}
-              contentClassName="pt-8 pb-16 max-w-3xl mx-auto flex flex-col gap-4 w-full"
+              contentClassName="pt-8 pb-16  max-w-3xl mx-auto flex flex-col gap-4 w-full"
               content={
                 <>
                   {messages
@@ -436,7 +438,7 @@ export function Thread() {
                 <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-white">
                   {!chatStarted && (
                     <div className="flex items-center gap-3">
-                      <LangGraphLogoSVG className="h-8 flex-shrink-0" />
+                      <img src="/logo.svg" alt="Seneca ITS Assistant" className="h-8 flex-shrink-0" />
                       <h1 className="text-2xl font-semibold tracking-tight">
                         Agent Chat
                       </h1>

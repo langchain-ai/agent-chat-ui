@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, ChangeEvent } from "react";
 import { toast } from "sonner";
-import { ContentBlock } from "@langchain/core/messages";
+import type { Base64ContentBlock } from "@langchain/core/messages";
 import { fileToContentBlock } from "@/lib/multimodal-utils";
 
 export const SUPPORTED_FILE_TYPES = [
@@ -12,24 +12,24 @@ export const SUPPORTED_FILE_TYPES = [
 ];
 
 interface UseFileUploadOptions {
-  initialBlocks?: ContentBlock.Multimodal.Data[];
+  initialBlocks?: Base64ContentBlock[];
 }
 
 export function useFileUpload({
   initialBlocks = [],
 }: UseFileUploadOptions = {}) {
   const [contentBlocks, setContentBlocks] =
-    useState<ContentBlock.Multimodal.Data[]>(initialBlocks);
+    useState<Base64ContentBlock[]>(initialBlocks);
   const dropRef = useRef<HTMLDivElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const dragCounter = useRef(0);
 
-  const isDuplicate = (file: File, blocks: ContentBlock.Multimodal.Data[]) => {
+  const isDuplicate = (file: File, blocks: Base64ContentBlock[]) => {
     if (file.type === "application/pdf") {
       return blocks.some(
         (b) =>
           b.type === "file" &&
-          b.mimeType === "application/pdf" &&
+          b.mime_type === "application/pdf" &&
           b.metadata?.filename === file.name,
       );
     }
@@ -38,7 +38,7 @@ export function useFileUpload({
         (b) =>
           b.type === "image" &&
           b.metadata?.name === file.name &&
-          b.mimeType === file.type,
+          b.mime_type === file.type,
       );
     }
     return false;
@@ -225,7 +225,7 @@ export function useFileUpload({
         return contentBlocks.some(
           (b) =>
             b.type === "file" &&
-            b.mimeType === "application/pdf" &&
+            b.mime_type === "application/pdf" &&
             b.metadata?.filename === file.name,
         );
       }
@@ -234,7 +234,7 @@ export function useFileUpload({
           (b) =>
             b.type === "image" &&
             b.metadata?.name === file.name &&
-            b.mimeType === file.type,
+            b.mime_type === file.type,
         );
       }
       return false;

@@ -36,22 +36,27 @@ function getThreadSearchMetadata(
 export function ThreadProvider({ children }: { children: ReactNode }) {
   const [apiUrl] = useQueryState("apiUrl");
   const [assistantId] = useQueryState("assistantId");
+  // Fallback to env vars if URL params are absent
+  const envApiUrl: string | undefined = process.env.NEXT_PUBLIC_API_URL;
+  const envAssistantId: string | undefined = process.env.NEXT_PUBLIC_ASSISTANT_ID;
+  const effectiveApiUrl = apiUrl || envApiUrl || "";
+  const effectiveAssistantId = assistantId || envAssistantId || "";
   const [threads, setThreads] = useState<Thread[]>([]);
   const [threadsLoading, setThreadsLoading] = useState(false);
 
   const getThreads = useCallback(async (): Promise<Thread[]> => {
-    if (!apiUrl || !assistantId) return [];
-    const client = createClient(apiUrl, getApiKey() ?? undefined);
+    if (!effectiveApiUrl || !effectiveAssistantId) return [];
+    const client = createClient(effectiveApiUrl, getApiKey() ?? undefined);
 
     const threads = await client.threads.search({
       metadata: {
-        ...getThreadSearchMetadata(assistantId),
+        ...getThreadSearchMetadata(effectiveAssistantId),
       },
       limit: 100,
     });
 
     return threads;
-  }, [apiUrl, assistantId]);
+  }, [effectiveApiUrl, effectiveAssistantId]);
 
   const value = {
     getThreads,
