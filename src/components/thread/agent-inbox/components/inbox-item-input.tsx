@@ -107,9 +107,9 @@ function ResponseComponent({
   };
 
   return (
-    <div className="flex w-full flex-col items-start gap-4 rounded-xl border-[1px] border-gray-300 p-6">
+    <div className="flex w-full flex-col items-start gap-3 rounded-xl border-[1px] border-gray-300 p-4">
       <div className="flex w-full items-center justify-between">
-        <p className="text-base font-semibold text-black">
+        <p className="text-sm font-semibold text-black">
           Respond to assistant
         </p>
         <ResetButton
@@ -161,7 +161,7 @@ function AcceptComponent({
   ) => Promise<void>;
 }) {
   return (
-    <div className="flex w-full flex-col items-start gap-4 rounded-lg border-[1px] border-gray-300 p-6">
+    <div className="flex w-full flex-col items-start gap-3 rounded-lg border-[1px] border-gray-300 p-4">
       {actionRequestArgs && Object.keys(actionRequestArgs).length > 0 && (
         <ArgsRenderer args={actionRequestArgs} />
       )}
@@ -171,7 +171,7 @@ function AcceptComponent({
         onClick={handleSubmit}
         className="w-full"
       >
-        Accept
+        Submit
       </Button>
     </div>
   );
@@ -220,7 +220,7 @@ function EditAndOrAcceptComponent({
   const header = editResponse.acceptAllowed ? "Edit/Accept" : "Edit";
   let buttonText = "Submit";
   if (editResponse.acceptAllowed && !editResponse.editsMade) {
-    buttonText = "Accept";
+    buttonText = "Submit";
   }
 
   const handleReset = () => {
@@ -258,9 +258,9 @@ function EditAndOrAcceptComponent({
   };
 
   return (
-    <div className="flex w-full flex-col items-start gap-4 rounded-lg border-[1px] border-gray-300 p-6">
+    <div className="flex w-full flex-col items-start gap-3 rounded-lg border-[1px] border-gray-300 p-4">
       <div className="flex w-full items-center justify-between">
-        <p className="text-base font-semibold text-black">{header}</p>
+        <p className="text-sm font-semibold text-black">{header}</p>
         <ResetButton handleReset={handleReset} />
       </div>
 

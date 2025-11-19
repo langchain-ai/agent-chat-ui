@@ -101,6 +101,15 @@ const StreamSession = ({
     },
   });
 
+  // Log interrupt changes
+  useEffect(() => {
+    console.log('[StreamContext] Interrupt changed:', {
+      interruptId: streamValue.interrupt?.id,
+      hasInterrupt: !!streamValue.interrupt,
+      interrupt: streamValue.interrupt,
+    });
+  }, [streamValue.interrupt]);
+
   useEffect(() => {
     checkGraphStatus(apiUrl, apiKey).then((ok) => {
       if (!ok) {

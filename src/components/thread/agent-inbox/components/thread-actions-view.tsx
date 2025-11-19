@@ -102,12 +102,26 @@ export function ThreadActionsView({
   const actionsDisabled = loading || streaming;
   const ignoreAllowed = interrupt.config.allow_ignore;
 
+  // Hide the component content while resolving/ignoring
+  if (streaming && !hasEdited && !hasAddedResponse) {
+    return (
+      <div className="flex min-h-full w-full flex-col items-center justify-center gap-4">
+        <div className="flex items-center gap-2">
+          <div className="bg-foreground/50 h-2 w-2 animate-[pulse_1.5s_ease-in-out_infinite] rounded-full"></div>
+          <div className="bg-foreground/50 h-2 w-2 animate-[pulse_1.5s_ease-in-out_0.5s_infinite] rounded-full"></div>
+          <div className="bg-foreground/50 h-2 w-2 animate-[pulse_1.5s_ease-in-out_1s_infinite] rounded-full"></div>
+        </div>
+        <p className="text-muted-foreground text-sm">Processing...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex min-h-full w-full flex-col gap-9">
+    <div className="flex min-h-full w-full flex-col gap-4">
       {/* Header */}
-      <div className="flex w-full flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center justify-start gap-3">
-          <p className="text-2xl tracking-tighter text-pretty">{threadTitle}</p>
+      <div className="flex w-full flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center justify-start gap-2">
+          <p className="text-xl font-semibold tracking-tight">{threadTitle}</p>
           {threadId && <ThreadIdCopyable threadId={threadId} />}
         </div>
         <div className="flex flex-row items-center justify-start gap-2">
@@ -130,27 +144,6 @@ export function ThreadActionsView({
         </div>
       </div>
 
-      <div className="flex w-full flex-row items-center justify-start gap-2">
-        <Button
-          variant="outline"
-          className="border-gray-500 bg-white font-normal text-gray-800"
-          onClick={handleResolve}
-          disabled={actionsDisabled}
-        >
-          Mark as Resolved
-        </Button>
-        {ignoreAllowed && (
-          <Button
-            variant="outline"
-            className="border-gray-500 bg-white font-normal text-gray-800"
-            onClick={handleIgnore}
-            disabled={actionsDisabled}
-          >
-            Ignore
-          </Button>
-        )}
-      </div>
-
       {/* Actions */}
       <InboxItemInput
         acceptAllowed={acceptAllowed}
@@ -168,6 +161,30 @@ export function ThreadActionsView({
         setHasEdited={setHasEdited}
         handleSubmit={handleSubmit}
       />
+
+      {/* Action Buttons - Compact row at bottom */}
+      <div className="flex w-full flex-row items-center justify-start gap-2">
+        <Button
+          variant="default"
+          size="sm"
+          className="bg-green-600 hover:bg-green-700 text-white"
+          onClick={handleResolve}
+          disabled={actionsDisabled}
+        >
+          Accept
+        </Button>
+        {ignoreAllowed && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-gray-400 text-gray-700"
+            onClick={handleIgnore}
+            disabled={actionsDisabled}
+          >
+            Ignore
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

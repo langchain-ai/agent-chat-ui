@@ -68,19 +68,49 @@ export default function useInterruptedActions({
   const [hasAddedResponse, setHasAddedResponse] = useState(false);
   const [acceptAllowed, setAcceptAllowed] = useState(false);
 
+  // Clear loading state when interrupt changes or clears
   useEffect(() => {
+    // If we're in a loading/streaming state and the interrupt changes or clears,
+    // that means the operation completed
+    if ((loading || streaming) && !thread.isLoading) {
+      setLoading(false);
+      setStreaming(false);
+    }
+  }, [interrupt, thread.isLoading, loading, streaming]);
+
+  useEffect(() => {
+    console.log('[useInterruptedActions] Interrupt changed:', {
+      interruptId: (interrupt as any)?.id,
+      fullInterrupt: interrupt,
+      actionRequest: interrupt.action_request,
+    });
+    
     try {
       const { responses, defaultSubmitType, hasAccept } =
         createDefaultHumanResponse(interrupt, initialHumanInterruptEditValue);
       setSelectedSubmitType(defaultSubmitType);
       setHumanResponse(responses);
       setAcceptAllowed(hasAccept);
+      
+      // Reset all state when interrupt changes
+      setLoading(false);
+      setStreaming(false);
+      setStreamFinished(false);
+      setHasEdited(false);
+      setHasAddedResponse(false);
+      
+      console.log('[useInterruptedActions] State reset complete', {
+        responses,
+        defaultSubmitType,
+        hasAccept
+      });
     } catch (e) {
       console.error("Error formatting and setting human response state", e);
     }
   }, [interrupt]);
 
   const resumeRun = (response: HumanResponse[]): boolean => {
+    console.log('[resumeRun] Submitting resume command:', response);
     try {
       thread.submit(
         {},
@@ -90,6 +120,7 @@ export default function useInterruptedActions({
           },
         },
       );
+      console.log('[resumeRun] Resume command submitted successfully');
       return true;
     } catch (e: any) {
       console.error("Error sending human response", e);
@@ -100,6 +131,7 @@ export default function useInterruptedActions({
   const handleSubmit = async (
     e: React.MouseEvent<HTMLButtonElement, MouseEvent> | KeyboardEvent,
   ) => {
+    console.log('[handleSubmit] Starting submit process');
     e.preventDefault();
     if (!humanResponse) {
       toast.error("Error", {
@@ -113,6 +145,8 @@ export default function useInterruptedActions({
 
     let errorOccurred = false;
     initialHumanInterruptEditValue.current = {};
+    
+    console.log('[handleSubmit] Human response:', humanResponse);
 
     if (
       humanResponse.some((r) => ["response", "edit", "accept"].includes(r.type))
@@ -234,14 +268,16 @@ export default function useInterruptedActions({
     }
 
     setLoading(true);
+    setStreaming(true);
     initialHumanInterruptEditValue.current = {};
 
     resumeRun([ignoreResponse]);
 
-    setLoading(false);
     toast("Successfully ignored thread", {
       duration: 5000,
     });
+
+    // Loading state will be cleared when interrupt updates
   };
 
   const handleResolve = async (
@@ -250,22 +286,41 @@ export default function useInterruptedActions({
     e.preventDefault();
 
     setLoading(true);
+    setStreaming(true);
     initialHumanInterruptEditValue.current = {};
 
     try {
-      thread.submit(
-        {},
-        {
-          command: {
-            goto: END,
+      // First, we need to resume the interrupt with a null response to clear it
+      // Then send goto: END
+      console.log('[handleResolve] Resolving interrupt with null response');
+      
+      // Find an accept or ignore response to clear the interrupt
+      const acceptResponse = humanResponse.find((r) => r.type === "accept");
+      
+      if (acceptResponse) {
+        console.log('[handleResolve] Using accept response to clear interrupt');
+        resumeRun([acceptResponse]);
+      } else {
+        // If no accept is available, just send goto: END
+        console.log('[handleResolve] No accept response, sending goto: END directly');
+        thread.submit(
+          {},
+          {
+            command: {
+              goto: END,
+            },
           },
-        },
-      );
+        );
+      }
 
       toast("Success", {
-        description: "Marked thread as resolved.",
+        description: "Action accepted and marked as resolved.",
         duration: 3000,
       });
+
+      // Wait for the stream to process and clear the interrupt
+      // The loading state will hide the interrupt UI
+      await new Promise((resolve) => setTimeout(resolve, 500));
     } catch (e) {
       console.error("Error marking thread as resolved", e);
       toast.error("Error", {
@@ -274,9 +329,12 @@ export default function useInterruptedActions({
         closeButton: true,
         duration: 3000,
       });
+      setLoading(false);
+      setStreaming(false);
     }
 
-    setLoading(false);
+    // Keep loading state until the stream updates
+    // The interrupt will disappear when stream.interrupt is cleared
   };
 
   const supportsMultipleMethods =
