@@ -427,6 +427,15 @@ export function Thread() {
                       handleRegenerate={handleRegenerate}
                     />
                   )}
+                  {/* Special case: interrupt arrives while streaming, before the message is complete */}
+                  {!hasNoAIOrToolMessages && isLoading && !!stream.interrupt && (
+                    <AssistantMessage
+                      key={`interrupt-loading-${stream.interrupt.id}`}
+                      message={undefined}
+                      isLoading={isLoading}
+                      handleRegenerate={handleRegenerate}
+                    />
+                  )}
                   {isLoading && !firstTokenReceived && (
                     <AssistantMessageLoading />
                   )}

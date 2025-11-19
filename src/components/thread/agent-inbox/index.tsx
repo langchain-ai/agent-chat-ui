@@ -1,6 +1,6 @@
 import { StateView } from "./components/state-view";
 import { ThreadActionsView } from "./components/thread-actions-view";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { HumanInterrupt } from "@langchain/langgraph/prebuilt";
 import { useStreamContext } from "@/providers/Stream";
 
@@ -14,6 +14,19 @@ export function ThreadView({ interrupt }: ThreadViewProps) {
   const [showDescription, setShowDescription] = useState(false);
   const [showState, setShowState] = useState(false);
   const showSidePanel = showDescription || showState;
+
+  console.log('[ThreadView] Rendering with interrupt:', {
+    interruptId: (interruptObj as any)?.id,
+    actionRequest: (interruptObj as any)?.action_request,
+    showSidePanel,
+  });
+
+  // Reset state when interrupt changes
+  useEffect(() => {
+    console.log('[ThreadView] Interrupt changed, resetting state');
+    setShowDescription(false);
+    setShowState(false);
+  }, [interruptObj]);
 
   const handleShowSidePanel = (
     showState: boolean,
@@ -36,7 +49,7 @@ export function ThreadView({ interrupt }: ThreadViewProps) {
   };
 
   return (
-    <div className="flex h-[80vh] w-full flex-col overflow-y-scroll rounded-2xl bg-gray-50/50 p-8 lg:flex-row [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent">
+    <div className="flex w-full flex-col overflow-y-auto rounded-2xl bg-gray-50/50 p-4 lg:flex-row [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent">
       {showSidePanel ? (
         <StateView
           handleShowSidePanel={handleShowSidePanel}
