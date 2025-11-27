@@ -45,6 +45,7 @@ import {
   ArtifactTitle,
   useArtifactContext,
 } from "./artifact";
+import { InitialChoicePrompt } from "./initial-choice-prompt";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -396,9 +397,12 @@ export function Thread() {
                 !chatStarted && "mt-[25vh] flex flex-col items-stretch",
                 chatStarted && "grid grid-rows-[1fr_auto]",
               )}
-              contentClassName="pt-8 pb-16 max-w-3xl mx-auto flex flex-col gap-4 w-full"
+              contentClassName="pt-8 pb-16  max-w-3xl mx-auto flex flex-col gap-4 w-full"
               content={
                 <>
+                  {!chatStarted && messages.length === 0 && (
+                    <InitialChoicePrompt />
+                  )}
                   {messages
                     .filter((m) => !m.id?.startsWith(DO_NOT_RENDER_ID_PREFIX))
                     .map((message, index) =>
