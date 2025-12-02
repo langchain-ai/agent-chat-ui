@@ -156,7 +156,12 @@ export function AssistantMessage({
     hasNoAIOrToolMessages,
     threadInterruptId: threadInterrupt?.id,
     hasThreadInterrupt: !!threadInterrupt,
-    totalMessages: thread.messages.length
+    totalMessages: thread.messages.length,
+    allUIComponents: thread.values.ui?.map(ui => ({
+      id: ui.id,
+      name: ui.name,
+      message_id: ui.metadata?.message_id
+    }))
   });
 
   const parentCheckpoint = meta?.firstSeenState?.parent_checkpoint;

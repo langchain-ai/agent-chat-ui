@@ -6,6 +6,7 @@ import { useStreamContext } from "@/providers/Stream";
 import { useState, FormEvent } from "react";
 import { Button } from "../ui/button";
 import { Checkpoint, Message } from "@langchain/langgraph-sdk";
+import { LoadExternalComponent } from "@langchain/langgraph-sdk/react-ui";
 import { AssistantMessage, AssistantMessageLoading } from "./messages/ai";
 import { HumanMessage } from "./messages/human";
 import {
@@ -436,6 +437,19 @@ export function Thread() {
                       handleRegenerate={handleRegenerate}
                     />
                   )}
+                  {/* Render standalone UI components (those without message_id) */}
+                  {stream.values.ui
+                    ?.filter((ui) => !ui.metadata?.message_id)
+                    .map((ui) => (
+                      <div key={ui.id} className="mr-auto flex items-start gap-2">
+                        <div className="flex flex-col gap-2">
+                          <LoadExternalComponent
+                            stream={stream}
+                            message={ui}
+                          />
+                        </div>
+                      </div>
+                    ))}
                   {isLoading && !firstTokenReceived && (
                     <AssistantMessageLoading />
                   )}

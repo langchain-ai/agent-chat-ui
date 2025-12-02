@@ -38,8 +38,9 @@ export async function fileToContentBlock(
     source_type: "base64",
     mime_type: "application/pdf",
     data,
+    filename: file.name,
     metadata: { filename: file.name },
-  };
+  } as Base64ContentBlock;
 }
 
 // Helper to convert File to base64 string
