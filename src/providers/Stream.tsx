@@ -4,6 +4,7 @@ import React, {
   ReactNode,
   useState,
   useEffect,
+  useMemo,
 } from "react";
 import { useStream } from "@langchain/langgraph-sdk/react";
 import { type Message } from "@langchain/langgraph-sdk";
@@ -79,7 +80,7 @@ const StreamSession = ({
 }) => {
   const [threadId, setThreadId] = useQueryState("threadId");
   const { getThreads, setThreads } = useThreads();
-  const streamValue = useTypedStream({
+  const rawStream = useTypedStream({
     apiUrl,
     apiKey: apiKey ?? undefined,
     assistantId,
@@ -100,6 +101,19 @@ const StreamSession = ({
       sleep().then(() => getThreads().then(setThreads).catch(console.error));
     },
   });
+
+  // Define a streamValue for overwriting the settings
+  const streamValue = useMemo(() => {
+    const { submit: rawSubmit, ...rest } = rawStream;
+    const submit = (values: any, options: any = {}) => {
+      // We can set a recursion limit here!
+      const mergedConfig = { recursion_limit: 1000, ...(options.config || {}) };
+      return rawSubmit(values, { ...options, config: mergedConfig , context : {
+        "custom_instructions": "i love egypt , remember this information"
+      } }); 
+    };
+    return { ...rest, submit } as typeof rawStream;
+  }, [rawStream]);
 
   // Log interrupt changes
   useEffect(() => {
