@@ -68,45 +68,31 @@ function parseAnthropicStreamedToolCalls(
 }
 
 interface InterruptProps {
-  interruptValue?: unknown;
+  interrupt?: unknown;
   isLastMessage: boolean;
-  isLastAIOrToolMessage: boolean;
   hasNoAIOrToolMessages: boolean;
 }
 
 function Interrupt({
-  interruptValue,
+  interrupt,
   isLastMessage,
-  isLastAIOrToolMessage,
   hasNoAIOrToolMessages,
 }: InterruptProps) {
-  // Get the interrupt ID to use as a stable key for forcing remount
-  const interruptId = interruptValue && typeof interruptValue === 'object' && 'id' in interruptValue 
-    ? String(interruptValue.id) 
-    : undefined;
-
-  // Render interrupt if this is the last AI/tool message OR if there are no AI/tool messages at all
-  const shouldRender = isLastAIOrToolMessage || hasNoAIOrToolMessages;
-
-  console.log('[Interrupt Component]', {
-    interruptId,
-    hasInterruptValue: !!interruptValue,
-    isLastMessage,
-    isLastAIOrToolMessage,
-    hasNoAIOrToolMessages,
-    isAgentInbox: isAgentInboxInterruptSchema(interruptValue),
-    shouldRender,
-    willRender: (isAgentInboxInterruptSchema(interruptValue) && shouldRender) ||
-                (interruptValue && !isAgentInboxInterruptSchema(interruptValue) && shouldRender)
-  });
+  const fallbackValue = Array.isArray(interrupt)
+    ? (interrupt as Record<string, any>[])
+    : (((interrupt as { value?: unknown } | undefined)?.value ??
+        interrupt) as Record<string, any>);
 
   return (
     <>
-      {isAgentInboxInterruptSchema(interruptValue) && shouldRender && (
-        <ThreadView key={interruptId} interrupt={interruptValue} />
-      )}
-      {interruptValue && !isAgentInboxInterruptSchema(interruptValue) && shouldRender ? (
-        <GenericInterruptView key={interruptId} interrupt={interruptValue} />
+      {isAgentInboxInterruptSchema(interrupt) &&
+        (isLastMessage || hasNoAIOrToolMessages) && (
+          <ThreadView interrupt={interrupt} />
+        )}
+      {interrupt &&
+      !isAgentInboxInterruptSchema(interrupt) &&
+      (isLastMessage || hasNoAIOrToolMessages) ? (
+        <GenericInterruptView interrupt={fallbackValue} />
       ) : null}
     </>
   );
@@ -131,38 +117,11 @@ export function AssistantMessage({
   const thread = useStreamContext();
   const isLastMessage =
     thread.messages[thread.messages.length - 1].id === message?.id;
-  
-  // Check if this is the last AI or tool message in the visible messages
-  const aiAndToolMessages = thread.messages.filter(
-    (m) => m.type === "ai" || m.type === "tool"
-  );
-  const isLastAIOrToolMessage = 
-    aiAndToolMessages.length > 0 && 
-    aiAndToolMessages[aiAndToolMessages.length - 1].id === message?.id;
-  
   const hasNoAIOrToolMessages = !thread.messages.find(
     (m) => m.type === "ai" || m.type === "tool",
   );
   const meta = message ? thread.getMessagesMetadata(message) : undefined;
   const threadInterrupt = thread.interrupt;
-
-  console.log('[AssistantMessage]', {
-    messageId: message?.id,
-    messageType: message?.type,
-    isLastMessage,
-    isLastAIOrToolMessage,
-    lastMessageInThread: thread.messages[thread.messages.length - 1]?.id,
-    lastMessageType: thread.messages[thread.messages.length - 1]?.type,
-    hasNoAIOrToolMessages,
-    threadInterruptId: threadInterrupt?.id,
-    hasThreadInterrupt: !!threadInterrupt,
-    totalMessages: thread.messages.length,
-    allUIComponents: thread.values.ui?.map(ui => ({
-      id: ui.id,
-      name: ui.name,
-      message_id: ui.metadata?.message_id
-    }))
-  });
 
   const parentCheckpoint = meta?.firstSeenState?.parent_checkpoint;
   const anthropicStreamedToolCalls = Array.isArray(content)
@@ -187,16 +146,14 @@ export function AssistantMessage({
   }
 
   return (
-    <div className="group mr-auto flex items-start gap-2">
-      <div className="flex flex-col gap-2">
+    <div className="group mr-auto flex w-full items-start gap-2">
+      <div className="flex w-full flex-col gap-2">
         {isToolResult ? (
           <>
             <ToolResult message={message} />
             <Interrupt
-              key={threadInterrupt?.id || 'no-interrupt-tool'}
-              interruptValue={threadInterrupt?.value}
+              interrupt={threadInterrupt}
               isLastMessage={isLastMessage}
-              isLastAIOrToolMessage={isLastAIOrToolMessage}
               hasNoAIOrToolMessages={hasNoAIOrToolMessages}
             />
           </>
@@ -229,10 +186,8 @@ export function AssistantMessage({
               />
             )}
             <Interrupt
-              key={threadInterrupt?.id || 'no-interrupt-ai'}
-              interruptValue={threadInterrupt?.value}
+              interrupt={threadInterrupt}
               isLastMessage={isLastMessage}
-              isLastAIOrToolMessage={isLastAIOrToolMessage}
               hasNoAIOrToolMessages={hasNoAIOrToolMessages}
             />
             <div
