@@ -25,6 +25,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { getApiKey } from "@/lib/api-key";
 import { useThreads } from "./Thread";
 import { toast } from "sonner";
+import { useStatelessStream } from "@/hooks/use-stateless-stream";
 
 export type StateType = { messages: Message[]; ui?: UIMessage[] };
 
@@ -67,6 +68,86 @@ async function checkGraphStatus(
   }
 }
 
+// Check if stateless mode is enabled via environment variable
+const isStatelessMode = process.env.NEXT_PUBLIC_STATELESS_MODE === "true";
+
+// Debug log to verify env variable is being read
+console.log('[Stream] NEXT_PUBLIC_STATELESS_MODE:', process.env.NEXT_PUBLIC_STATELESS_MODE);
+console.log('[Stream] isStatelessMode:', isStatelessMode);
+
+// Stateless Stream Session - uses client.runs.stream(null, ...) for true stateless runs
+const StatelessStreamSession = ({
+  children,
+  apiKey,
+  apiUrl,
+  assistantId,
+}: {
+  children: ReactNode;
+  apiKey: string | null;
+  apiUrl: string;
+  assistantId: string;
+}) => {
+  const rawStream = useStatelessStream<StateType>({
+    apiUrl,
+    apiKey: apiKey ?? undefined,
+    assistantId,
+    onCustomEvent: (event, options) => {
+      if (isUIMessage(event) || isRemoveUIMessage(event)) {
+        options.mutate((prev) => {
+          const ui = uiMessageReducer(prev.ui ?? [], event);
+          return { ...prev, ui };
+        });
+      }
+    },
+    onError: (error) => {
+      console.error('[StatelessStreamSession] Error:', error);
+    },
+  });
+
+  // Define a streamValue for overwriting the settings
+  const streamValue = useMemo(() => {
+    const { submit: rawSubmit, ...rest } = rawStream;
+    const submit = (values: any, options: any = {}) => {
+      console.log('[StatelessStreamSession] submit called - true stateless mode');
+      const mergedConfig = { recursion_limit: 1000, ...(options.config || {}) };
+      return rawSubmit(values, { 
+        ...options, 
+        config: mergedConfig,
+        context: {
+          "custom_instructions": "i love egypt , remember this information",
+          ...(options.context || {}),
+        }
+      }); 
+    };
+    return { ...rest, submit } as any;
+  }, [rawStream]);
+
+  useEffect(() => {
+    checkGraphStatus(apiUrl, apiKey).then((ok) => {
+      if (!ok) {
+        toast.error("Failed to connect to LangGraph server", {
+          description: () => (
+            <p>
+              Please ensure your graph is running at <code>{apiUrl}</code> and
+              your API key is correctly set (if connecting to a deployed graph).
+            </p>
+          ),
+          duration: 10000,
+          richColors: true,
+          closeButton: true,
+        });
+      }
+    });
+  }, [apiKey, apiUrl]);
+
+  return (
+    <StreamContext.Provider value={streamValue}>
+      {children}
+    </StreamContext.Provider>
+  );
+};
+
+// Stateful Stream Session - uses threads for persistence
 const StreamSession = ({
   children,
   apiKey,
@@ -80,6 +161,7 @@ const StreamSession = ({
 }) => {
   const [threadId, setThreadId] = useQueryState("threadId");
   const { getThreads, setThreads } = useThreads();
+  
   const rawStream = useTypedStream({
     apiUrl,
     apiKey: apiKey ?? undefined,
@@ -283,6 +365,19 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
           </form>
         </div>
       </div>
+    );
+  }
+
+  // Use stateless or stateful session based on env variable
+  if (isStatelessMode) {
+    return (
+      <StatelessStreamSession
+        apiKey={apiKey}
+        apiUrl={apiUrl}
+        assistantId={assistantId}
+      >
+        {children}
+      </StatelessStreamSession>
     );
   }
 

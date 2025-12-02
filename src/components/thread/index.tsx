@@ -2,6 +2,9 @@ import { v4 as uuidv4 } from "uuid";
 import { ReactNode, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+
+// Check if stateless mode is enabled via environment variable
+const isStatelessMode = process.env.NEXT_PUBLIC_STATELESS_MODE === "true";
 import { useStreamContext } from "@/providers/Stream";
 import { useState, FormEvent } from "react";
 import { Button } from "../ui/button";
@@ -258,30 +261,33 @@ export function Thread() {
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
-      <div className="relative hidden lg:flex">
-        <motion.div
-          className="absolute z-20 h-full overflow-hidden border-r bg-white"
-          style={{ width: 300 }}
-          animate={
-            isLargeScreen
-              ? { x: chatHistoryOpen ? 0 : -300 }
-              : { x: chatHistoryOpen ? 0 : -300 }
-          }
-          initial={{ x: -300 }}
-          transition={
-            isLargeScreen
-              ? { type: "spring", stiffness: 300, damping: 30 }
-              : { duration: 0 }
-          }
-        >
-          <div
-            className="relative h-full"
+      {/* Hide thread history sidebar in stateless mode */}
+      {!isStatelessMode && (
+        <div className="relative hidden lg:flex">
+          <motion.div
+            className="absolute z-20 h-full overflow-hidden border-r bg-white"
             style={{ width: 300 }}
+            animate={
+              isLargeScreen
+                ? { x: chatHistoryOpen ? 0 : -300 }
+                : { x: chatHistoryOpen ? 0 : -300 }
+            }
+            initial={{ x: -300 }}
+            transition={
+              isLargeScreen
+                ? { type: "spring", stiffness: 300, damping: 30 }
+                : { duration: 0 }
+            }
           >
-            <ThreadHistory />
-          </div>
-        </motion.div>
-      </div>
+            <div
+              className="relative h-full"
+              style={{ width: 300 }}
+            >
+              <ThreadHistory />
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       <div
         className={cn(
@@ -312,7 +318,8 @@ export function Thread() {
           {!chatStarted && (
             <div className="absolute top-0 left-0 z-10 flex w-full items-center justify-between gap-3 p-2 pl-4">
               <div>
-                {(!chatHistoryOpen || !isLargeScreen) && (
+                {/* Hide chat history toggle in stateless mode */}
+                {!isStatelessMode && (!chatHistoryOpen || !isLargeScreen) && (
                   <Button
                     className="hover:bg-gray-100"
                     variant="ghost"
@@ -335,7 +342,8 @@ export function Thread() {
             <div className="relative z-10 flex items-center justify-between gap-3 p-2">
               <div className="relative flex items-center justify-start gap-2">
                 <div className="absolute left-0 z-10">
-                  {(!chatHistoryOpen || !isLargeScreen) && (
+                  {/* Hide chat history toggle in stateless mode */}
+                  {!isStatelessMode && (!chatHistoryOpen || !isLargeScreen) && (
                     <Button
                       className="hover:bg-gray-100"
                       variant="ghost"
@@ -375,15 +383,18 @@ export function Thread() {
                 <div className="flex items-center">
                   <OpenGitHubRepo />
                 </div>
-                <TooltipIconButton
-                  size="lg"
-                  className="p-4"
-                  tooltip="New thread"
-                  variant="ghost"
-                  onClick={() => setThreadId(null)}
-                >
-                  <SquarePen className="size-5" />
-                </TooltipIconButton>
+                {/* Hide new thread button in stateless mode */}
+                {!isStatelessMode && (
+                  <TooltipIconButton
+                    size="lg"
+                    className="p-4"
+                    tooltip="New thread"
+                    variant="ghost"
+                    onClick={() => setThreadId(null)}
+                  >
+                    <SquarePen className="size-5" />
+                  </TooltipIconButton>
+                )}
               </div>
 
               <div className="from-background to-background/0 absolute inset-x-0 top-full h-5 bg-gradient-to-b" />
