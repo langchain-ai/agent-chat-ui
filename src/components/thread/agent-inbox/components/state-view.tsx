@@ -23,8 +23,8 @@ const messageTypeToLabel = (message: BaseMessage) => {
   let type = "";
   if ("type" in message) {
     type = message.type as string;
-  } else {
-    type = message._getType();
+  } else if ("getType" in message) {
+    type = (message as BaseMessage).getType();
   }
 
   switch (type) {
@@ -249,7 +249,7 @@ export function StateView({
   return (
     <div
       className={cn(
-        "flex w-full flex-row gap-0",
+        "flex min-w-full flex-row gap-0",
         view === "state" &&
           "border-t-[1px] border-gray-100 lg:border-t-[0px] lg:border-l-[1px]",
       )}

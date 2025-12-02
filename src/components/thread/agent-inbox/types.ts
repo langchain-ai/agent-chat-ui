@@ -1,12 +1,44 @@
 import { BaseMessage } from "@langchain/core/messages";
-import { Thread, ThreadStatus } from "@langchain/langgraph-sdk";
-import { HumanInterrupt, HumanResponse } from "@langchain/langgraph/prebuilt";
+import { Interrupt, Thread, ThreadStatus } from "@langchain/langgraph-sdk";
 
-export type HumanResponseWithEdits = HumanResponse &
-  (
-    | { acceptAllowed?: false; editsMade?: never }
-    | { acceptAllowed?: true; editsMade?: boolean }
-  );
+export type DecisionType = "approve" | "edit" | "reject";
+
+export interface Action {
+  name: string;
+  args: Record<string, unknown>;
+}
+
+export interface ActionRequest {
+  name: string;
+  args: Record<string, unknown>;
+  description?: string;
+}
+
+export interface ReviewConfig {
+  action_name: string;
+  allowed_decisions: DecisionType[];
+  args_schema?: Record<string, unknown>;
+}
+
+export interface HITLRequest {
+  action_requests: ActionRequest[];
+  review_configs: ReviewConfig[];
+}
+
+export type Decision =
+  | { type: "approve" }
+  | { type: "reject"; message?: string }
+  | { type: "edit"; edited_action: Action };
+
+export type DecisionWithEdits =
+  | { type: "approve" }
+  | { type: "reject"; message?: string }
+  | {
+      type: "edit";
+      edited_action: Action;
+      acceptAllowed?: boolean;
+      editsMade?: boolean;
+    };
 
 export type Email = {
   id: string;
@@ -36,7 +68,7 @@ export type ThreadData<
 } & (
   | {
       status: "interrupted";
-      interrupts: HumanInterrupt[] | undefined;
+      interrupts: Interrupt<HITLRequest>[] | undefined;
     }
   | {
       status: "idle" | "busy" | "error";
@@ -46,7 +78,7 @@ export type ThreadData<
 
 export type ThreadStatusWithAll = ThreadStatus | "all";
 
-export type SubmitType = "accept" | "response" | "edit";
+export type SubmitType = DecisionType;
 
 export interface AgentInbox {
   /**
