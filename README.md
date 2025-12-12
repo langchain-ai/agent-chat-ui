@@ -74,11 +74,12 @@ You can control the visibility of messages within the Agent Chat UI in two main 
 
 **1. Prevent Live Streaming:**
 
-To stop messages from being displayed _as they stream_ from an LLM call, add the `langsmith:nostream` tag to the chat model's configuration. The UI normally uses `on_chat_model_stream` events to render streaming messages; this tag prevents those events from being emitted for the tagged model.
+To stop messages from being displayed _as they stream_ from an LLM call, add the `nostream` tag to the chat model's configuration (or `langsmith:nostream` for LangGraph versions before 0.6.0). The UI normally uses `on_chat_model_stream` events to render streaming messages; this tag prevents those events from being emitted for the tagged model.
 
 _Python Example:_
 
 ```python
+# LangGraph versions before 0.6.0
 from langchain_anthropic import ChatAnthropic
 
 # Add tags via the .with_config method
@@ -87,14 +88,34 @@ model = ChatAnthropic().with_config(
 )
 ```
 
+```python
+# LangGraph versions 0.6.0 and later
+from langchain_anthropic import ChatAnthropic
+
+# Add tags via the .with_config method
+model = ChatAnthropic().with_config(
+    config={"tags": ["nostream"]}
+)
+```
+
 _TypeScript Example:_
 
 ```typescript
+// LangGraph versions before 0.6.0
 import { ChatAnthropic } from "@langchain/anthropic";
 
 const model = new ChatAnthropic()
   // Add tags via the .withConfig method
   .withConfig({ tags: ["langsmith:nostream"] });
+```
+
+```typescript
+// LangGraph versions 0.6.0 and later
+import { ChatAnthropic } from "@langchain/anthropic";
+
+const model = new ChatAnthropic()
+  // Add tags via the .withConfig method
+  .withConfig({ tags: ["nostream"] });
 ```
 
 **Note:** Even if streaming is hidden this way, the message will still appear after the LLM call completes if it's saved to the graph's state without further modification.
