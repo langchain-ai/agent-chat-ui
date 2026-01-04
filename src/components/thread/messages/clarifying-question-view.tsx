@@ -119,10 +119,10 @@ export function ClarifyingQuestionView({
   };
 
   return (
-    <div className="w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+    <div className="w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
       {/* Question Header */}
-      <div className="border-b border-gray-200 bg-gray-50 px-5 py-4">
-        <p className="text-lg font-medium leading-relaxed text-gray-900">
+      <div className="border-b border-gray-200 bg-gray-50 px-5 py-4 dark:border-gray-700 dark:bg-gray-800">
+        <p className="text-lg font-medium leading-relaxed text-gray-900 dark:text-gray-50">
           {interruptValue.question}
         </p>
       </div>
@@ -134,8 +134,8 @@ export function ClarifyingQuestionView({
             key={option.value}
             className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-all ${
               selectedOption === option.value
-                ? "border-gray-900 bg-gray-100 ring-1 ring-gray-900"
-                : "border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100"
+                ? "border-gray-900 bg-gray-100 ring-1 ring-gray-900 dark:border-gray-400 dark:bg-gray-800 dark:ring-gray-400"
+                : "border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600 dark:hover:bg-gray-700"
             }`}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
@@ -146,13 +146,13 @@ export function ClarifyingQuestionView({
               value={option.value}
               checked={selectedOption === option.value}
               onChange={() => setSelectedOption(option.value)}
-              className="mt-0.5 h-4 w-4 cursor-pointer border-gray-300 text-gray-900 focus:ring-gray-500 accent-gray-900"
+              className="mt-0.5 h-4 w-4 cursor-pointer border-gray-300 text-gray-900 focus:ring-gray-500 accent-gray-900 dark:border-gray-600"
             />
             <span
               className={`flex-1 text-sm ${
                 selectedOption === option.value
-                  ? "font-medium text-gray-900"
-                  : "text-gray-700"
+                  ? "font-medium text-gray-900 dark:text-gray-50"
+                  : "text-gray-700 dark:text-gray-300"
               }`}
             >
               {option.label}
@@ -173,7 +173,7 @@ export function ClarifyingQuestionView({
               <div className="mt-3 space-y-2 pl-7">
                 <Label
                   htmlFor="custom-input"
-                  className="text-sm font-medium text-gray-700"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
                 >
                   직접 입력
                 </Label>
@@ -182,7 +182,7 @@ export function ClarifyingQuestionView({
                   value={customText}
                   onChange={(e) => setCustomText(e.target.value)}
                   placeholder="원하는 내용을 자유롭게 작성해주세요..."
-                  className="min-h-[100px] resize-none border-gray-300 bg-white focus:border-gray-500 focus:ring-gray-500"
+                  className="min-h-[100px] resize-none border-gray-300 bg-white focus:border-gray-500 focus:ring-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-50"
                 />
               </div>
             </motion.div>
@@ -191,10 +191,10 @@ export function ClarifyingQuestionView({
       </div>
 
       {/* Submit Button */}
-      <div className="flex justify-end border-t border-gray-100 bg-gray-50 px-5 py-4">
+      <div className="flex justify-end border-t border-gray-100 bg-gray-50 px-5 py-4 dark:border-gray-700 dark:bg-gray-800">
         {decided ? (
           // Show decided state in multi-interrupt mode
-          <div className="flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-3 text-white">
+          <div className="flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-3 text-white dark:bg-gray-50 dark:text-gray-900">
             <Check className="h-5 w-5" />
             <span className="font-medium">응답 완료됨</span>
           </div>
@@ -206,7 +206,7 @@ export function ClarifyingQuestionView({
               !selectedOption ||
               (selectedOption === "4" && !customText.trim())
             }
-            className="min-w-[120px] bg-gray-900 hover:bg-gray-800"
+            className="min-w-[120px] bg-gray-900 hover:bg-gray-800 dark:bg-gray-50 dark:text-gray-900 dark:hover:bg-gray-200"
           >
             {isSubmitting ? (
               <>

@@ -26,22 +26,22 @@ export default function Sidebar() {
   // On mobile, render only the Sheet component
   if (isLargeScreen) {
     return (
-      <div className="flex h-screen w-[280px] shrink-0 flex-col bg-white">
+      <div className="flex h-screen w-[280px] shrink-0 flex-col bg-white dark:bg-gray-900">
         {/* Header */}
         <div className="flex items-center gap-2 px-4 py-3">
           <Button
-            className="hover:bg-gray-50"
+            className="hover:bg-gray-50 dark:hover:bg-gray-800"
             variant="ghost"
             size="icon"
             onClick={() => setSidebarOpen((p) => !p)}
           >
             {sidebarOpen ? (
-              <PanelRightOpen className="size-5 text-gray-600" />
+              <PanelRightOpen className="size-5 text-gray-600 dark:text-gray-400" />
             ) : (
-              <PanelRightClose className="size-5 text-gray-600" />
+              <PanelRightClose className="size-5 text-gray-600 dark:text-gray-400" />
             )}
           </Button>
-          <span className="flex-1 text-lg font-semibold tracking-tight text-gray-900">
+          <span className="flex-1 text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-50">
             Deep Agent Builder
           </span>
         </div>
@@ -70,8 +70,8 @@ export default function Sidebar() {
       onOpenChange={(open) => setSidebarOpen(open)}
     >
       <SheetContent side="left" className="flex w-[280px] flex-col p-0">
-        <SheetHeader className="border-b border-gray-200 px-4 py-3">
-          <SheetTitle className="text-lg font-semibold tracking-tight text-gray-900">
+        <SheetHeader className="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
+          <SheetTitle className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-50">
             Deep Agent Builder
           </SheetTitle>
         </SheetHeader>

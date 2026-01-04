@@ -149,8 +149,8 @@ export function MultiInterruptContainer({
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="rounded-lg border border-gray-300 bg-gray-100 px-4 py-3">
-        <p className="text-sm font-medium text-gray-700">
+      <div className="rounded-lg border border-gray-300 bg-gray-100 px-4 py-3 dark:border-gray-600 dark:bg-gray-800">
+        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
           {interrupts.length}개의 확인이 필요합니다
         </p>
       </div>
@@ -162,7 +162,7 @@ export function MultiInterruptContainer({
       <Button
         onClick={handleSubmitAll}
         disabled={!allDecided || isSubmitting}
-        className="w-full bg-gray-900 hover:bg-gray-800"
+        className="w-full bg-gray-900 hover:bg-gray-800 dark:bg-gray-50 dark:text-gray-900 dark:hover:bg-gray-200"
         size="lg"
       >
         {isSubmitting ? (

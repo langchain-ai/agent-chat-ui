@@ -35,10 +35,10 @@ function ArgsRenderer({ args }: { args: Record<string, unknown> }) {
             key={`args-${key}`}
             className="flex flex-col items-start gap-1"
           >
-            <p className="text-sm leading-[18px] text-wrap text-gray-600">
+            <p className="text-sm leading-[18px] text-wrap text-gray-600 dark:text-gray-400">
               {prettifyText(key)}
             </p>
-            <span className="w-full max-w-full rounded-xl bg-zinc-100 p-3 text-[13px] leading-[18px] text-black">
+            <span className="w-full max-w-full rounded-xl bg-zinc-100 p-3 text-[13px] leading-[18px] text-black dark:bg-gray-800 dark:text-white">
               <MarkdownText>{stringValue}</MarkdownText>
             </span>
           </div>
@@ -83,7 +83,7 @@ function ApproveOnly({
   ) => Promise<void> | void;
 }) {
   return (
-    <div className="flex w-full flex-col items-start gap-4 rounded-lg border border-gray-300 p-6">
+    <div className="flex w-full flex-col items-start gap-4 rounded-lg border border-gray-300 p-6 dark:border-gray-600">
       {Object.keys(actionRequestArgs).length > 0 && (
         <ArgsRenderer args={actionRequestArgs} />
       )}
@@ -183,9 +183,9 @@ function EditActionCard({
   };
 
   return (
-    <div className="flex w-full min-w-full flex-col items-start gap-4 rounded-lg border border-gray-300 p-6">
+    <div className="flex w-full min-w-full flex-col items-start gap-4 rounded-lg border border-gray-300 p-6 dark:border-gray-600">
       <div className="flex w-full items-center justify-between">
-        <p className="text-base font-semibold text-black">{header}</p>
+        <p className="text-base font-semibold text-black dark:text-white">{header}</p>
         <ResetButton handleReset={handleReset} />
       </div>
 
@@ -274,9 +274,9 @@ function RejectActionCard({
   };
 
   return (
-    <div className="flex w-full max-w-full flex-col items-start gap-4 rounded-xl border border-gray-300 p-6">
+    <div className="flex w-full max-w-full flex-col items-start gap-4 rounded-xl border border-gray-300 p-6 dark:border-gray-600">
       <div className="flex w-full items-center justify-between">
-        <p className="text-base font-semibold text-black">Reject</p>
+        <p className="text-base font-semibold text-black dark:text-white">Reject</p>
         <ResetButton handleReset={() => onChange("", rejectResponse)} />
       </div>
 
@@ -486,10 +486,10 @@ export function InboxItemInput({
         />
 
         {isLoading && (
-          <p className="text-sm text-gray-600">Submitting decision...</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Submitting decision...</p>
         )}
         {selectedSubmitType && supportsMultipleMethods && (
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
             Currently selected: {prettifyText(selectedSubmitType)}
           </p>
         )}

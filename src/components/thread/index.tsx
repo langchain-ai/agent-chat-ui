@@ -218,7 +218,7 @@ export function Thread() {
       {/* Desktop Sidebar */}
       <div className="relative hidden lg:flex">
         <motion.div
-          className="absolute z-20 h-full overflow-hidden border-r bg-white"
+          className="absolute z-20 h-full overflow-hidden border-r bg-white dark:bg-gray-900 dark:border-gray-700"
           style={{ width: 280 }}
           animate={
             isLargeScreen
@@ -276,7 +276,7 @@ export function Thread() {
                   <div>
                     {(!sidebarOpen || !isLargeScreen) && (
                       <Button
-                        className="hover:bg-gray-100"
+                        className="hover:bg-gray-100 dark:hover:bg-gray-800"
                         variant="ghost"
                         onClick={() => setSidebarOpen((p) => !p)}
                       >
@@ -296,7 +296,7 @@ export function Thread() {
                 <div className="absolute left-0 z-10">
                   {(!sidebarOpen || !isLargeScreen) && (
                     <Button
-                      className="hover:bg-gray-100"
+                      className="hover:bg-gray-100 dark:hover:bg-gray-800"
                       variant="ghost"
                       onClick={() => setSidebarOpen((p) => !p)}
                     >
@@ -345,8 +345,8 @@ export function Thread() {
           <StickToBottom className="relative flex-1 overflow-hidden">
             <StickyToBottomContent
               className={cn(
-                "absolute inset-0 overflow-y-scroll px-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent",
-                !chatStarted && "mt-[25vh] flex flex-col items-stretch",
+                "absolute inset-0 overflow-y-scroll px-4 bg-white dark:bg-black [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent dark:[&::-webkit-scrollbar-thumb]:bg-gray-600",
+                !chatStarted && "flex flex-col items-center justify-center",
                 chatStarted && "grid grid-rows-[1fr_auto]",
               )}
               contentClassName="pt-8 pb-16 max-w-3xl mx-auto flex flex-col gap-4 w-full"
@@ -386,7 +386,7 @@ export function Thread() {
                 </>
               }
               footer={
-                <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-white">
+                <div className="sticky bottom-0 flex flex-col gap-8 bg-white dark:bg-black">
                   {!chatStarted && (
                     <div className="mx-4 flex min-h-[40vh] grow flex-col items-center justify-center gap-4 text-center">
                       <svg
@@ -416,7 +416,7 @@ export function Thread() {
 
                   <ScrollToBottom className="animate-in fade-in-0 zoom-in-95 absolute bottom-full left-1/2 mb-4 -translate-x-1/2" />
 
-                  <div className="bg-muted relative z-10 mx-auto mb-8 w-full max-w-3xl rounded-2xl border border-solid shadow-xs transition-all">
+                  <div className="bg-muted relative z-10 mx-4 mb-8 w-full max-w-3xl rounded-2xl border border-solid shadow-xs transition-all lg:mx-auto">
                     <form
                       onSubmit={handleSubmit}
                       className="mx-auto grid max-w-3xl grid-rows-[1fr_auto] gap-2"

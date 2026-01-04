@@ -21,20 +21,20 @@ function RecommendationItem({
   recommendation: ToolRecommendation;
 }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+    <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
       <div className="flex items-start gap-3">
-        <Wrench className="mt-0.5 h-5 w-5 flex-shrink-0 text-gray-600" />
+        <Wrench className="mt-0.5 h-5 w-5 flex-shrink-0 text-gray-600 dark:text-gray-400" />
         <div className="flex-1 space-y-2">
-          <h4 className="font-semibold text-gray-900">
+          <h4 className="font-semibold text-gray-900 dark:text-gray-50">
             {recommendation.tool_name}
           </h4>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             <span className="font-medium">경로:</span>{" "}
-            <code className="rounded bg-gray-200 px-1.5 py-0.5 text-xs">
+            <code className="rounded bg-gray-200 px-1.5 py-0.5 text-xs dark:bg-gray-700">
               {recommendation.tool_path}
             </code>
           </p>
-          <p className="text-sm leading-relaxed text-gray-700">
+          <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
             <span className="font-medium">사유:</span> {recommendation.reason}
           </p>
         </div>
@@ -164,10 +164,10 @@ export function ToolRecommendationView({
   }
 
   return (
-    <div className="w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+    <div className="w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
       {/* Header */}
-      <div className="border-b border-gray-200 bg-gray-50 px-5 py-4">
-        <h3 className="text-lg font-semibold text-gray-900">도구 추천</h3>
+      <div className="border-b border-gray-200 bg-gray-50 px-5 py-4 dark:border-gray-700 dark:bg-gray-800">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-50">도구 추천</h3>
       </div>
 
       {/* Recommendations List */}
@@ -185,17 +185,17 @@ export function ToolRecommendationView({
       </div>
 
       {/* Summary */}
-      <div className="border-t border-gray-200 bg-gray-50 px-5 py-4">
-        <p className="text-sm leading-relaxed text-gray-700">
+      <div className="border-t border-gray-200 bg-gray-50 px-5 py-4 dark:border-gray-700 dark:bg-gray-800">
+        <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
           {args.summary}
         </p>
       </div>
 
       {/* Action Section */}
-      <div className="border-t border-gray-200 px-5 py-4">
+      <div className="border-t border-gray-200 px-5 py-4 dark:border-gray-700">
         {decided ? (
           // Show decided state in multi-interrupt mode
-          <div className="flex items-center justify-center gap-2 rounded-lg bg-gray-900 py-3 text-white">
+          <div className="flex items-center justify-center gap-2 rounded-lg bg-gray-900 py-3 text-white dark:bg-gray-50 dark:text-gray-900">
             <Check className="h-5 w-5" />
             <span className="font-medium">
               {(decided as { decisions?: { type?: string }[] })?.decisions?.[0]?.type === "approve"
@@ -211,7 +211,7 @@ export function ToolRecommendationView({
                 value={rejectMessage}
                 onChange={(e) => setRejectMessage(e.target.value)}
                 placeholder="수정 의견을 입력하세요..."
-                className="min-h-[80px] resize-none border-gray-300 bg-white focus:border-gray-500 focus:ring-gray-500"
+                className="min-h-[80px] resize-none border-gray-300 bg-white focus:border-gray-500 focus:ring-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-50"
                 disabled={isSubmitting}
               />
             </div>
@@ -222,7 +222,7 @@ export function ToolRecommendationView({
                 onClick={handleReject}
                 disabled={isSubmitting || !rejectMessage.trim()}
                 variant="outline"
-                className="min-w-[100px] border-gray-300 hover:bg-gray-100"
+                className="min-w-[100px] border-gray-300 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-800"
               >
                 {isSubmitting ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -234,7 +234,7 @@ export function ToolRecommendationView({
               <Button
                 onClick={handleApprove}
                 disabled={isSubmitting}
-                className="min-w-[100px] bg-gray-900 hover:bg-gray-800"
+                className="min-w-[100px] bg-gray-900 hover:bg-gray-800 dark:bg-gray-50 dark:text-gray-900 dark:hover:bg-gray-200"
               >
                 {isSubmitting ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

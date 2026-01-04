@@ -298,8 +298,8 @@ export function ThreadActionsView({
 
   if (!isValidHitlRequest(interrupt)) {
     return (
-      <div className="flex min-h-full w-full flex-col items-center justify-center rounded-2xl bg-gray-50/50 p-8">
-        <p className="text-sm text-gray-600">
+      <div className="flex min-h-full w-full flex-col items-center justify-center rounded-2xl bg-gray-50/50 p-8 dark:bg-gray-800/50">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           Unable to render interrupt. The data provided is not in the expected
           HITL format.
         </p>
@@ -342,7 +342,7 @@ export function ThreadActionsView({
       <div className="flex w-full flex-row flex-wrap items-center justify-start gap-2">
         <Button
           variant="outline"
-          className="border-gray-500 bg-white font-normal text-gray-800"
+          className="border-gray-500 bg-white font-normal text-gray-800 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
           onClick={handleResolve}
           disabled={actionsDisabled}
         >
@@ -351,7 +351,7 @@ export function ThreadActionsView({
         {hasMultipleActions && allAllowApprove && (
           <Button
             variant="outline"
-            className="border-gray-500 bg-white font-normal text-gray-800"
+            className="border-gray-500 bg-white font-normal text-gray-800 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
             onClick={handleApproveAll}
             disabled={actionsDisabled}
           >
