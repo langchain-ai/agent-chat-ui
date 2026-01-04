@@ -9,10 +9,26 @@ import { cn } from "@/lib/utils";
 import { ToolCalls, ToolResult } from "./tool-calls";
 import { MessageContentComplex } from "@langchain/core/messages";
 import { Fragment } from "react/jsx-runtime";
+import { useMemo } from "react";
 import { isAgentInboxInterruptSchema } from "@/lib/agent-inbox-interrupt";
+import {
+  isClarifyingQuestionInterrupt,
+  getClarifyingQuestionInterrupt,
+} from "@/lib/clarifying-question-interrupt";
+import {
+  isMiddlewareRecommendationInterrupt,
+  getMiddlewareRecommendationInterrupt,
+} from "@/lib/middleware-recommendation-interrupt";
+import {
+  isToolRecommendationInterrupt,
+  getToolRecommendationInterrupt,
+} from "@/lib/tool-recommendation-interrupt";
 import { ThreadView } from "../agent-inbox";
-import { useQueryState, parseAsBoolean } from "nuqs";
 import { GenericInterruptView } from "./generic-interrupt";
+import { ClarifyingQuestionView } from "./clarifying-question-view";
+import { MiddlewareRecommendationView } from "./middleware-recommendation-view";
+import { ToolRecommendationView } from "./tool-recommendation-view";
+import { MultiInterruptContainer } from "./multi-interrupt-container";
 import { useArtifact } from "../artifact";
 
 function CustomComponent({
@@ -78,24 +94,96 @@ function Interrupt({
   isLastMessage,
   hasNoAIOrToolMessages,
 }: InterruptProps) {
-  const fallbackValue = Array.isArray(interrupt)
-    ? (interrupt as Record<string, any>[])
-    : (((interrupt as { value?: unknown } | undefined)?.value ??
-        interrupt) as Record<string, any>);
+  const thread = useStreamContext();
+  const shouldRender = isLastMessage || hasNoAIOrToolMessages;
 
-  return (
-    <>
-      {isAgentInboxInterruptSchema(interrupt) &&
-        (isLastMessage || hasNoAIOrToolMessages) && (
-          <ThreadView interrupt={interrupt} />
-        )}
-      {interrupt &&
-      !isAgentInboxInterruptSchema(interrupt) &&
-      (isLastMessage || hasNoAIOrToolMessages) ? (
-        <GenericInterruptView interrupt={fallbackValue} />
-      ) : null}
-    </>
-  );
+  // Collect ALL interrupts from ALL tasks in history
+  // SDK's thread.interrupt only returns the last task's last interrupt,
+  // but parallel subgraph agents create multiple tasks with separate interrupts
+  const allInterrupts = useMemo(() => {
+    // Early exit: SDK says no interrupt → return empty (prevents stale UI after resume)
+    if (!interrupt) {
+      return [];
+    }
+
+    // If interrupt is already an array (from __interrupt__), use it directly
+    if (Array.isArray(interrupt) && interrupt.length > 0) {
+      return interrupt;
+    }
+
+    // Try to collect from history (all tasks' interrupts)
+    if (thread.history?.length) {
+      const lastState = thread.history[thread.history.length - 1];
+      if (lastState?.tasks?.length) {
+        const collectedInterrupts = lastState.tasks.flatMap(
+          (task) => task.interrupts ?? []
+        );
+        if (collectedInterrupts.length > 0) {
+          return collectedInterrupts;
+        }
+      }
+    }
+
+    // Fallback to single interrupt from SDK
+    return interrupt ? [interrupt] : [];
+  }, [thread.history, interrupt]);
+
+  // Don't show if: no interrupts, loading, or shouldn't render
+  if (allInterrupts.length === 0 || thread.isLoading || !shouldRender) return null;
+
+  // Use collected interrupts
+  const interrupts = allInterrupts;
+
+  // Multiple interrupts → use MultiInterruptContainer
+  if (interrupts.length > 1) {
+    return (
+      <MultiInterruptContainer
+        interrupts={interrupts}
+        isLastMessage={isLastMessage}
+        hasNoAIOrToolMessages={hasNoAIOrToolMessages}
+      />
+    );
+  }
+
+  // Single interrupt → render directly
+  const singleInterrupt = interrupts[0];
+
+  // Check for ClarifyingQuestion interrupt first
+  if (isClarifyingQuestionInterrupt(singleInterrupt)) {
+    const clarifyingInterrupt = getClarifyingQuestionInterrupt(singleInterrupt);
+    if (clarifyingInterrupt) {
+      return <ClarifyingQuestionView interrupt={clarifyingInterrupt} />;
+    }
+  }
+
+  // Check for MiddlewareRecommendation interrupt
+  if (isMiddlewareRecommendationInterrupt(singleInterrupt)) {
+    const middlewareInterrupt = getMiddlewareRecommendationInterrupt(singleInterrupt);
+    if (middlewareInterrupt) {
+      return <MiddlewareRecommendationView interrupt={middlewareInterrupt} />;
+    }
+  }
+
+  // Check for ToolRecommendation interrupt
+  if (isToolRecommendationInterrupt(singleInterrupt)) {
+    const toolInterrupt = getToolRecommendationInterrupt(singleInterrupt);
+    if (toolInterrupt) {
+      return <ToolRecommendationView interrupt={toolInterrupt} />;
+    }
+  }
+
+  // AgentInbox (generic HITL)
+  if (
+    isAgentInboxInterruptSchema(singleInterrupt) &&
+    !isMiddlewareRecommendationInterrupt(singleInterrupt) &&
+    !isToolRecommendationInterrupt(singleInterrupt)
+  ) {
+    return <ThreadView interrupt={singleInterrupt} />;
+  }
+
+  // Generic fallback
+  const fallbackValue = (singleInterrupt as { value?: unknown })?.value ?? singleInterrupt;
+  return <GenericInterruptView interrupt={fallbackValue as Record<string, unknown>} />;
 }
 
 export function AssistantMessage({
@@ -109,10 +197,6 @@ export function AssistantMessage({
 }) {
   const content = message?.content ?? [];
   const contentString = getContentString(content);
-  const [hideToolCalls] = useQueryState(
-    "hideToolCalls",
-    parseAsBoolean.withDefault(false),
-  );
 
   const thread = useStreamContext();
   const isLastMessage =
@@ -141,10 +225,6 @@ export function AssistantMessage({
   const hasAnthropicToolCalls = !!anthropicStreamedToolCalls?.length;
   const isToolResult = message?.type === "tool";
 
-  if (isToolResult && hideToolCalls) {
-    return null;
-  }
-
   return (
     <div className="group mr-auto flex w-full items-start gap-2">
       <div className="flex w-full flex-col gap-2">
@@ -165,19 +245,15 @@ export function AssistantMessage({
               </div>
             )}
 
-            {!hideToolCalls && (
-              <>
-                {(hasToolCalls && toolCallsHaveContents && (
-                  <ToolCalls toolCalls={message.tool_calls} />
-                )) ||
-                  (hasAnthropicToolCalls && (
-                    <ToolCalls toolCalls={anthropicStreamedToolCalls} />
-                  )) ||
-                  (hasToolCalls && (
-                    <ToolCalls toolCalls={message.tool_calls} />
-                  ))}
-              </>
-            )}
+            {(hasToolCalls && toolCallsHaveContents && (
+              <ToolCalls toolCalls={message.tool_calls} />
+            )) ||
+              (hasAnthropicToolCalls && (
+                <ToolCalls toolCalls={anthropicStreamedToolCalls} />
+              )) ||
+              (hasToolCalls && (
+                <ToolCalls toolCalls={message.tool_calls} />
+              ))}
 
             {message && (
               <CustomComponent

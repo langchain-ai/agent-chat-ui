@@ -1,0 +1,93 @@
+# LangGraph Documentation Index
+
+Official LangChain/LangGraph documentation URLs for web_fetch operations.
+
+## MCP Endpoint
+
+- MCP Server: https://docs.langchain.com/mcp
+
+---
+
+## Core APIs
+
+- [Graph API Overview](https://docs.langchain.com/oss/python/langgraph/graph-api.md): StateGraph, nodes, edges, compilation
+- [Functional API Overview](https://docs.langchain.com/oss/python/langgraph/functional-api.md): Declarative workflow definition
+- [Use Graph API](https://docs.langchain.com/oss/python/langgraph/use-graph-api.md): Practical guide for Graph API
+- [Use Functional API](https://docs.langchain.com/oss/python/langgraph/use-functional-api.md): Practical guide for Functional API
+- [Choosing APIs](https://docs.langchain.com/oss/python/langgraph/choosing-apis.md): When to use Graph vs Functional API
+
+---
+
+## State & Memory
+
+- [Memory](https://docs.langchain.com/oss/python/langgraph/add-memory.md): Adding memory to graphs
+- [Persistence](https://docs.langchain.com/oss/python/langgraph/persistence.md): Checkpointing and state persistence
+- [Durable Execution](https://docs.langchain.com/oss/python/langgraph/durable-execution.md): Reliable long-running workflows
+
+---
+
+## Advanced Features
+
+- [Interrupts](https://docs.langchain.com/oss/python/langgraph/interrupts.md): Human-in-the-loop with interrupt_before/after
+- [Streaming](https://docs.langchain.com/oss/python/langgraph/streaming.md): Real-time output streaming
+- [Subgraphs](https://docs.langchain.com/oss/python/langgraph/use-subgraphs.md): Modular graph composition
+- [Time Travel](https://docs.langchain.com/oss/python/langgraph/use-time-travel.md): Checkpoint navigation and replay
+
+---
+
+## LangChain Agents
+
+- [Agents Overview](https://docs.langchain.com/oss/python/langchain/agents.md): Building agents with LangChain
+- [Tools](https://docs.langchain.com/oss/python/langchain/tools.md): Tool definition and usage
+- [Middleware Overview](https://docs.langchain.com/oss/python/langchain/middleware/overview.md): Agent middleware patterns
+- [Human-in-the-Loop](https://docs.langchain.com/oss/python/langchain/human-in-the-loop.md): Human approval patterns
+- [Structured Output](https://docs.langchain.com/oss/python/langchain/structured-output.md): Structured response generation
+
+---
+
+## Multi-Agent Systems
+
+- [Multi-Agent Overview](https://docs.langchain.com/oss/python/langchain/multi-agent/index.md): Multi-agent architecture
+- [Handoffs](https://docs.langchain.com/oss/python/langchain/multi-agent/handoffs.md): Agent handoff patterns
+- [Router](https://docs.langchain.com/oss/python/langchain/multi-agent/router.md): Routing between agents
+- [Subagents](https://docs.langchain.com/oss/python/langchain/multi-agent/subagents.md): Subagent delegation
+
+---
+
+## MCP Integration
+
+- [MCP Overview](https://docs.langchain.com/oss/python/langchain/mcp.md): Model Context Protocol integration
+
+---
+
+## Model Integrations
+
+- [Anthropic](https://docs.langchain.com/oss/python/integrations/providers/anthropic.md): Claude integration
+- [OpenAI](https://docs.langchain.com/oss/python/integrations/providers/openai.md): GPT integration
+- [Chat Models](https://docs.langchain.com/oss/python/integrations/chat/index.md): All chat model integrations
+
+---
+
+## Migration & Reference
+
+- [LangGraph v1 Migration](https://docs.langchain.com/oss/python/migrate/langgraph-v1.md): Migration from v0.x to v1
+- [LangChain v1 Migration](https://docs.langchain.com/oss/python/migrate/langchain-v1.md): LangChain migration guide
+- [LangGraph SDK Reference](https://docs.langchain.com/oss/python/reference/langgraph-python.md): API reference
+- [LangChain SDK Reference](https://docs.langchain.com/oss/python/reference/langchain-python.md): API reference
+
+---
+
+## Tutorials
+
+- [Quickstart](https://docs.langchain.com/oss/python/langgraph/quickstart.md): Getting started with LangGraph
+- [Agentic RAG](https://docs.langchain.com/oss/python/langgraph/agentic-rag.md): Build a custom RAG agent
+- [SQL Agent](https://docs.langchain.com/oss/python/langgraph/sql-agent.md): Build a custom SQL agent
+- [Thinking in LangGraph](https://docs.langchain.com/oss/python/langgraph/thinking-in-langgraph.md): Mental models for LangGraph
+
+---
+
+## Deployment
+
+- [Local Server](https://docs.langchain.com/oss/python/langgraph/local-server.md): Run LangGraph locally
+- [LangSmith Studio](https://docs.langchain.com/oss/python/langgraph/studio.md): Visual debugging
+- [Deployment](https://docs.langchain.com/oss/python/langgraph/deploy.md): Production deployment

@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import { ReactNode, useEffect, useRef } from "react";
+import { ReactNode, useEffect, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
@@ -12,33 +12,24 @@ import {
   DO_NOT_RENDER_ID_PREFIX,
   ensureToolCallsHaveResponses,
 } from "@/lib/ensure-tool-responses";
-import { LangGraphLogoSVG } from "../icons/langgraph";
 import { TooltipIconButton } from "./tooltip-icon-button";
 import {
   ArrowDown,
+  ArrowUp,
   LoaderCircle,
   PanelRightOpen,
   PanelRightClose,
-  SquarePen,
+  MessageSquarePlus,
   XIcon,
-  Plus,
 } from "lucide-react";
+import { ModelSelector } from "./model-selector";
 import { useQueryState, parseAsBoolean } from "nuqs";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
-import ThreadHistory from "./history";
+import Sidebar from "@/components/sidebar";
+import { SecretsScreen } from "@/components/secrets";
+import { useAgents } from "@/providers/Agent";
 import { toast } from "sonner";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { Label } from "../ui/label";
-import { Switch } from "../ui/switch";
-import { GitHubSVG } from "../icons/github";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "../ui/tooltip";
-import { useFileUpload } from "@/hooks/use-file-upload";
-import { ContentBlocksPreview } from "./ContentBlocksPreview";
 import {
   useArtifactOpen,
   ArtifactContent,
@@ -87,54 +78,17 @@ function ScrollToBottom(props: { className?: string }) {
   );
 }
 
-function OpenGitHubRepo() {
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <a
-            href="https://github.com/langchain-ai/agent-chat-ui"
-            target="_blank"
-            className="flex items-center justify-center"
-          >
-            <GitHubSVG
-              width="24"
-              height="24"
-            />
-          </a>
-        </TooltipTrigger>
-        <TooltipContent side="left">
-          <p>Open GitHub repo</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
-}
-
 export function Thread() {
   const [artifactContext, setArtifactContext] = useArtifactContext();
   const [artifactOpen, closeArtifact] = useArtifactOpen();
 
   const [threadId, _setThreadId] = useQueryState("threadId");
-  const [chatHistoryOpen, setChatHistoryOpen] = useQueryState(
-    "chatHistoryOpen",
+  const [sidebarOpen, setSidebarOpen] = useQueryState(
+    "sidebarOpen",
     parseAsBoolean.withDefault(false),
   );
-  const [hideToolCalls, setHideToolCalls] = useQueryState(
-    "hideToolCalls",
-    parseAsBoolean.withDefault(false),
-  );
+  const { showSecrets } = useAgents();
   const [input, setInput] = useState("");
-  const {
-    contentBlocks,
-    setContentBlocks,
-    handleFileUpload,
-    dropRef,
-    removeBlock,
-    resetBlocks: _resetBlocks,
-    dragOver,
-    handlePaste,
-  } = useFileUpload();
   const [firstTokenReceived, setFirstTokenReceived] = useState(false);
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
 
@@ -196,17 +150,13 @@ export function Thread() {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if ((input.trim().length === 0 && contentBlocks.length === 0) || isLoading)
-      return;
+    if (input.trim().length === 0 || isLoading) return;
     setFirstTokenReceived(false);
 
     const newHumanMessage: Message = {
       id: uuidv4(),
       type: "human",
-      content: [
-        ...(input.trim().length > 0 ? [{ type: "text", text: input }] : []),
-        ...contentBlocks,
-      ] as Message["content"],
+      content: input,
     };
 
     const toolMessages = ensureToolCallsHaveResponses(stream.messages);
@@ -233,7 +183,6 @@ export function Thread() {
     );
 
     setInput("");
-    setContentBlocks([]);
   };
 
   const handleRegenerate = (
@@ -250,23 +199,33 @@ export function Thread() {
     });
   };
 
-  const chatStarted = !!threadId || !!messages.length;
-  const hasNoAIOrToolMessages = !messages.find(
-    (m) => m.type === "ai" || m.type === "tool",
+  const chatStarted = useMemo(
+    () => !!threadId || !!messages.length,
+    [threadId, messages.length]
+  );
+  const hasNoAIOrToolMessages = useMemo(
+    () => !messages.find((m) => m.type === "ai" || m.type === "tool"),
+    [messages]
   );
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
+      {/* Mobile Sidebar - rendered outside desktop wrapper */}
+      <div className="lg:hidden">
+        <Sidebar />
+      </div>
+
+      {/* Desktop Sidebar */}
       <div className="relative hidden lg:flex">
         <motion.div
           className="absolute z-20 h-full overflow-hidden border-r bg-white"
-          style={{ width: 300 }}
+          style={{ width: 280 }}
           animate={
             isLargeScreen
-              ? { x: chatHistoryOpen ? 0 : -300 }
-              : { x: chatHistoryOpen ? 0 : -300 }
+              ? { x: sidebarOpen ? 0 : -280 }
+              : { x: sidebarOpen ? 0 : -280 }
           }
-          initial={{ x: -300 }}
+          initial={{ x: -280 }}
           transition={
             isLargeScreen
               ? { type: "spring", stiffness: 300, damping: 30 }
@@ -275,9 +234,9 @@ export function Thread() {
         >
           <div
             className="relative h-full"
-            style={{ width: 300 }}
+            style={{ width: 280 }}
           >
-            <ThreadHistory />
+            <Sidebar />
           </div>
         </motion.div>
       </div>
@@ -295,10 +254,10 @@ export function Thread() {
           )}
           layout={isLargeScreen}
           animate={{
-            marginLeft: chatHistoryOpen ? (isLargeScreen ? 300 : 0) : 0,
-            width: chatHistoryOpen
+            marginLeft: sidebarOpen ? (isLargeScreen ? 280 : 0) : 0,
+            width: sidebarOpen
               ? isLargeScreen
-                ? "calc(100% - 300px)"
+                ? "calc(100% - 280px)"
                 : "100%"
               : "100%",
           }}
@@ -308,39 +267,40 @@ export function Thread() {
               : { duration: 0 }
           }
         >
-          {!chatStarted && (
-            <div className="absolute top-0 left-0 z-10 flex w-full items-center justify-between gap-3 p-2 pl-4">
-              <div>
-                {(!chatHistoryOpen || !isLargeScreen) && (
-                  <Button
-                    className="hover:bg-gray-100"
-                    variant="ghost"
-                    onClick={() => setChatHistoryOpen((p) => !p)}
-                  >
-                    {chatHistoryOpen ? (
-                      <PanelRightOpen className="size-5" />
-                    ) : (
-                      <PanelRightClose className="size-5" />
+          {showSecrets ? (
+            <SecretsScreen />
+          ) : (
+            <>
+              {!chatStarted && (
+                <div className="absolute top-0 left-0 z-10 flex w-full items-center justify-between gap-3 p-2 pl-4">
+                  <div>
+                    {(!sidebarOpen || !isLargeScreen) && (
+                      <Button
+                        className="hover:bg-gray-100"
+                        variant="ghost"
+                        onClick={() => setSidebarOpen((p) => !p)}
+                      >
+                        {sidebarOpen ? (
+                          <PanelRightOpen className="size-5" />
+                        ) : (
+                          <PanelRightClose className="size-5" />
+                        )}
+                      </Button>
                     )}
-                  </Button>
-                )}
-              </div>
-              <div className="absolute top-2 right-4 flex items-center">
-                <OpenGitHubRepo />
-              </div>
-            </div>
-          )}
-          {chatStarted && (
+                  </div>
+                </div>
+              )}
+              {chatStarted && (
             <div className="relative z-10 flex items-center justify-between gap-3 p-2">
               <div className="relative flex items-center justify-start gap-2">
                 <div className="absolute left-0 z-10">
-                  {(!chatHistoryOpen || !isLargeScreen) && (
+                  {(!sidebarOpen || !isLargeScreen) && (
                     <Button
                       className="hover:bg-gray-100"
                       variant="ghost"
-                      onClick={() => setChatHistoryOpen((p) => !p)}
+                      onClick={() => setSidebarOpen((p) => !p)}
                     >
-                      {chatHistoryOpen ? (
+                      {sidebarOpen ? (
                         <PanelRightOpen className="size-5" />
                       ) : (
                         <PanelRightClose className="size-5" />
@@ -352,7 +312,7 @@ export function Thread() {
                   className="flex cursor-pointer items-center gap-2"
                   onClick={() => setThreadId(null)}
                   animate={{
-                    marginLeft: !chatHistoryOpen ? 48 : 0,
+                    marginLeft: !sidebarOpen ? 48 : 0,
                   }}
                   transition={{
                     type: "spring",
@@ -360,20 +320,13 @@ export function Thread() {
                     damping: 30,
                   }}
                 >
-                  <LangGraphLogoSVG
-                    width={32}
-                    height={32}
-                  />
                   <span className="text-xl font-semibold tracking-tight">
-                    Agent Chat
+                    Deep Agent Builder
                   </span>
                 </motion.button>
               </div>
 
               <div className="flex items-center gap-4">
-                <div className="flex items-center">
-                  <OpenGitHubRepo />
-                </div>
                 <TooltipIconButton
                   size="lg"
                   className="p-4"
@@ -381,7 +334,7 @@ export function Thread() {
                   variant="ghost"
                   onClick={() => setThreadId(null)}
                 >
-                  <SquarePen className="size-5" />
+                  <MessageSquarePlus className="size-5" />
                 </TooltipIconButton>
               </div>
 
@@ -435,37 +388,42 @@ export function Thread() {
               footer={
                 <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-white">
                   {!chatStarted && (
-                    <div className="flex items-center gap-3">
-                      <LangGraphLogoSVG className="h-8 flex-shrink-0" />
-                      <h1 className="text-2xl font-semibold tracking-tight">
-                        Agent Chat
+                    <div className="mx-4 flex min-h-[40vh] grow flex-col items-center justify-center gap-4 text-center">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24px"
+                        height="24px"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        className="size-8 text-gray-900 dark:text-gray-50 [&_path]:stroke-1"
+                      >
+                        <path
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2px"
+                          d="M4.5 22v-5m0-10V2M2 4.5h5m-5 15h5M13 3l-1.734 4.509c-.282.733-.423 1.1-.643 1.408a3 3 0 0 1-.706.707c-.308.219-.675.36-1.408.642L4 12l4.509 1.734c.733.282 1.1.423 1.408.643.273.194.512.433.707.706.219.308.36.675.642 1.408L13 21l1.734-4.509c.282-.733.423-1.1.643-1.408.194-.273.433-.512.706-.707.308-.219.675-.36 1.408-.642L22 12l-4.509-1.734c-.733-.282-1.1-.423-1.408-.642a3 3 0 0 1-.706-.707c-.22-.308-.36-.675-.643-1.408z"
+                        />
+                      </svg>
+                      <h1 className="text-2xl font-medium leading-tight tracking-tighter text-gray-900 dark:text-gray-50">
+                        생성하려는 에이전트에 대해 알려주세요
                       </h1>
+                      <h3 className="text-base leading-tight tracking-tight font-normal text-gray-500 dark:text-gray-400">
+                        원하는 에이전트가 무엇을 하길 원하는지 설명해 주시면, 단계별로 안내해 드리겠습니다
+                      </h3>
                     </div>
                   )}
 
                   <ScrollToBottom className="animate-in fade-in-0 zoom-in-95 absolute bottom-full left-1/2 mb-4 -translate-x-1/2" />
 
-                  <div
-                    ref={dropRef}
-                    className={cn(
-                      "bg-muted relative z-10 mx-auto mb-8 w-full max-w-3xl rounded-2xl shadow-xs transition-all",
-                      dragOver
-                        ? "border-primary border-2 border-dotted"
-                        : "border border-solid",
-                    )}
-                  >
+                  <div className="bg-muted relative z-10 mx-auto mb-8 w-full max-w-3xl rounded-2xl border border-solid shadow-xs transition-all">
                     <form
                       onSubmit={handleSubmit}
                       className="mx-auto grid max-w-3xl grid-rows-[1fr_auto] gap-2"
                     >
-                      <ContentBlocksPreview
-                        blocks={contentBlocks}
-                        onRemove={removeBlock}
-                      />
                       <textarea
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        onPaste={handlePaste}
                         onKeyDown={(e) => {
                           if (
                             e.key === "Enter" &&
@@ -479,71 +437,54 @@ export function Thread() {
                             form?.requestSubmit();
                           }
                         }}
-                        placeholder="Type your message..."
+                        placeholder={chatStarted ? "메시지를 입력하세요..." : "구축하려는 에이전트에 대해 설명해 주세요..."}
                         className="field-sizing-content resize-none border-none bg-transparent p-3.5 pb-0 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none"
                       />
 
-                      <div className="flex items-center gap-6 p-2 pt-4">
-                        <div>
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              id="render-tool-calls"
-                              checked={hideToolCalls ?? false}
-                              onCheckedChange={setHideToolCalls}
-                            />
-                            <Label
-                              htmlFor="render-tool-calls"
-                              className="text-sm text-gray-600"
-                            >
-                              Hide Tool Calls
-                            </Label>
+                      <div className="flex flex-wrap items-center justify-between gap-2 p-3">
+                        {!chatStarted && (
+                          <div className="flex flex-wrap items-center gap-3">
+                            <ModelSelector />
                           </div>
-                        </div>
-                        <Label
-                          htmlFor="file-input"
-                          className="flex cursor-pointer items-center gap-2"
-                        >
-                          <Plus className="size-5 text-gray-600" />
-                          <span className="text-sm text-gray-600">
-                            Upload PDF or Image
-                          </span>
-                        </Label>
-                        <input
-                          id="file-input"
-                          type="file"
-                          onChange={handleFileUpload}
-                          multiple
-                          accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
-                          className="hidden"
-                        />
-                        {stream.isLoading ? (
-                          <Button
-                            key="stop"
-                            onClick={() => stream.stop()}
-                            className="ml-auto"
-                          >
-                            <LoaderCircle className="h-4 w-4 animate-spin" />
-                            Cancel
-                          </Button>
-                        ) : (
-                          <Button
-                            type="submit"
-                            className="ml-auto shadow-md transition-all"
-                            disabled={
-                              isLoading ||
-                              (!input.trim() && contentBlocks.length === 0)
-                            }
-                          >
-                            Send
-                          </Button>
                         )}
+                        <div className={`flex justify-end gap-2 ${chatStarted ? 'w-full' : 'ml-auto'}`}>
+                          {stream.isLoading ? (
+                            <Button
+                              key="stop"
+                              onClick={() => stream.stop()}
+                            >
+                              <LoaderCircle className="h-4 w-4 animate-spin" />
+                              취소
+                            </Button>
+                          ) : (
+                            <Button
+                              type="submit"
+                              className="rounded-full p-2 shadow-md transition-all"
+                              disabled={isLoading || !input.trim()}
+                            >
+                              <ArrowUp className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
+                      {!chatStarted && (
+                        <div className="flex justify-center pb-3">
+                          <button
+                            type="button"
+                            className="inline-flex items-center justify-center gap-1.5 px-2 py-1 rounded-sm text-xs text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                          >
+                            직접 수동으로 생성하기
+                          </button>
+                        </div>
+                      )}
                     </form>
                   </div>
                 </div>
               }
             />
           </StickToBottom>
+            </>
+          )}
         </motion.div>
         <div className="relative flex flex-col border-l">
           <div className="absolute inset-0 flex min-w-[30vw] flex-col">

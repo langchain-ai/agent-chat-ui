@@ -1,0 +1,39 @@
+{
+  "skill_name": "nextjs",
+  "tech_version": "15.3.3",
+  "version": "1.0.0",
+  "created": "2025-11-12T10:32:28.427554",
+  "last_updated": "2025-11-12T10:32:28.427562",
+  "last_verified": null,
+  "age_days": null,
+  "status": "uninitialized",
+  "references": {
+    "nextjs-patterns.md": {
+      "type": "external",
+      "decay_rate": "monthly",
+      "last_verified": null,
+      "freshness_queries": [
+        "nextjs latest version 2025",
+        "nextjs best practices current 2025"
+      ],
+      "critical": true,
+      "status": "not_fetched"
+    }
+  },
+  "search_metadata": {
+    "queries_used": [],
+    "sources_fetched": [],
+    "search_timestamp": null,
+    "search_engine": "WebSearch"
+  },
+  "content_metadata": {
+    "word_count": 0,
+    "patterns_count": 0,
+    "mistakes_count": 0,
+    "has_official_docs": false,
+    "has_best_practices": false,
+    "has_antipatterns": false,
+    "has_integration_examples": false,
+    "confidence": null
+  }
+}
