@@ -44,7 +44,7 @@ export function MultiInterruptContainer({
     setDecisions((prev) => ({ ...prev, [interruptId]: payload }));
   };
 
-  const handleSubmitAll = async () => {
+  const handleSubmitAll = () => {
     if (Object.keys(decisions).length !== interrupts.length) {
       toast.error("모든 항목에 대해 결정해주세요", {
         description: `${Object.keys(decisions).length}/${interrupts.length}개 결정됨`,
@@ -53,6 +53,8 @@ export function MultiInterruptContainer({
       return;
     }
 
+    // Note: After successful submit, this component will unmount as interrupt is resolved
+    // Do NOT set isSubmitting(false) in finally - it causes state update on unmounted component
     setIsSubmitting(true);
     try {
       thread.submit(
@@ -71,7 +73,7 @@ export function MultiInterruptContainer({
         description: "결정 제출 중 오류가 발생했습니다.",
         duration: 5000,
       });
-    } finally {
+      // Only reset isSubmitting on error - success leads to component unmount
       setIsSubmitting(false);
     }
   };

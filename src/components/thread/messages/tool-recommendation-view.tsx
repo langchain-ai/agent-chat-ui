@@ -70,7 +70,7 @@ export function ToolRecommendationView({
     return interruptId ? { [interruptId]: value } : value;
   };
 
-  const handleApprove = async () => {
+  const handleApprove = () => {
     const resumePayload = { decisions: [{ type: "approve" }] };
 
     // Multi-interrupt mode: just pass decision to parent
@@ -84,6 +84,8 @@ export function ToolRecommendationView({
     }
 
     // Single interrupt mode: submit immediately
+    // Note: After successful submit, this component will unmount as interrupt is resolved
+    // Do NOT set isSubmitting(false) in finally - it causes state update on unmounted component
     setIsSubmitting(true);
     try {
       thread.submit(
@@ -105,12 +107,12 @@ export function ToolRecommendationView({
         description: "승인 중 오류가 발생했습니다.",
         duration: 5000,
       });
-    } finally {
+      // Only reset isSubmitting on error - success leads to component unmount
       setIsSubmitting(false);
     }
   };
 
-  const handleReject = async () => {
+  const handleReject = () => {
     if (!rejectMessage.trim()) {
       toast.error("입력 필요", {
         description: "수정 의견을 입력해주세요.",
@@ -132,6 +134,7 @@ export function ToolRecommendationView({
     }
 
     // Single interrupt mode: submit immediately
+    // Note: After successful submit, this component will unmount as interrupt is resolved
     setIsSubmitting(true);
     try {
       thread.submit(
@@ -153,7 +156,7 @@ export function ToolRecommendationView({
         description: "수정요청 중 오류가 발생했습니다.",
         duration: 5000,
       });
-    } finally {
+      // Only reset isSubmitting on error - success leads to component unmount
       setIsSubmitting(false);
     }
   };

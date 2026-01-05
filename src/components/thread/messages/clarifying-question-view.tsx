@@ -54,7 +54,7 @@ export function ClarifyingQuestionView({
     { value: "4", label: interruptValue.option_4 },
   ];
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!selectedOption) {
       toast.error("선택 필요", {
         description: "옵션을 선택해주세요.",
@@ -92,6 +92,8 @@ export function ClarifyingQuestionView({
     }
 
     // Single interrupt mode: submit immediately
+    // Note: After successful submit, this component will unmount as interrupt is resolved
+    // Do NOT set isSubmitting(false) in finally - it causes state update on unmounted component
     setIsSubmitting(true);
     try {
       thread.submit(
@@ -113,7 +115,7 @@ export function ClarifyingQuestionView({
         description: "응답 전송 중 오류가 발생했습니다.",
         duration: 5000,
       });
-    } finally {
+      // Only reset isSubmitting on error - success leads to component unmount
       setIsSubmitting(false);
     }
   };
