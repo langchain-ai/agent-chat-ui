@@ -112,21 +112,46 @@ const StreamSession = ({
     [] // Empty deps - refs are always stable
   );
 
+  // DEBUG: Track render count
+  const renderCountRef = useRef(0);
+  renderCountRef.current += 1;
+
   // Memoize the entire config object to prevent useStream from reinitializing
   const streamConfig = useMemo(
-    () => ({
-      apiUrl,
-      apiKey: apiKey ?? undefined,
-      assistantId,
-      threadId: threadId ?? null,
-      fetchStateHistory: true,
-      onCustomEvent: handleCustomEvent,
-      onThreadId: handleThreadId,
-    }),
+    () => {
+      console.log('[StreamSession] streamConfig recalculating');
+      return {
+        apiUrl,
+        apiKey: apiKey ?? undefined,
+        assistantId,
+        threadId: threadId ?? null,
+        fetchStateHistory: true,
+        onCustomEvent: handleCustomEvent,
+        onThreadId: handleThreadId,
+      };
+    },
     [apiUrl, apiKey, assistantId, threadId, handleCustomEvent, handleThreadId]
   );
 
   const streamValue = useTypedStream(streamConfig);
+
+  // DEBUG: Log StreamSession renders and key state
+  console.log('[StreamSession] render #', renderCountRef.current, {
+    threadId,
+    isLoading: streamValue.isLoading,
+    hasInterrupt: !!streamValue.interrupt,
+    messagesCount: streamValue.messages?.length,
+    historyLength: streamValue.history?.length,
+  });
+
+  // DEBUG: Track streamValue reference changes
+  const prevStreamValueRef = useRef(streamValue);
+  useEffect(() => {
+    if (prevStreamValueRef.current !== streamValue) {
+      console.log('[StreamSession] streamValue reference changed');
+      prevStreamValueRef.current = streamValue;
+    }
+  }, [streamValue]);
 
   useEffect(() => {
     checkGraphStatus(apiUrl, apiKey).then((ok) => {

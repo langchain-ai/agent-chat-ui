@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { ToolCalls, ToolResult } from "./tool-calls";
 import { MessageContentComplex } from "@langchain/core/messages";
 import { Fragment } from "react/jsx-runtime";
-import { useMemo, memo } from "react";
+import { useMemo, memo, useRef, useEffect } from "react";
 import { isAgentInboxInterruptSchema } from "@/lib/agent-inbox-interrupt";
 import {
   isClarifyingQuestionInterrupt,
@@ -97,36 +97,89 @@ function Interrupt({
   const thread = useStreamContext();
   const shouldRender = isLastMessage || hasNoAIOrToolMessages;
 
+  // DEBUG: Track render count
+  const renderCountRef = useRef(0);
+  renderCountRef.current += 1;
+
+  // DEBUG: Log every render with key info
+  console.log('[Interrupt] render #', renderCountRef.current, {
+    hasInterrupt: !!interrupt,
+    isLoading: thread.isLoading,
+    shouldRender,
+    historyLength: thread.history?.length,
+  });
+
+  // Cache previous result to prevent unnecessary re-renders
+  const prevInterruptsRef = useRef<unknown[]>([]);
+  const prevInterruptIdRef = useRef<string | undefined>(undefined);
+
   // Collect ALL interrupts from ALL tasks in history
   // SDK's thread.interrupt only returns the last task's last interrupt,
   // but parallel subgraph agents create multiple tasks with separate interrupts
   const allInterrupts = useMemo(() => {
+    console.log('[Interrupt] useMemo allInterrupts recalculating');
+
     // Early exit: SDK says no interrupt → return empty (prevents stale UI after resume)
     if (!interrupt) {
-      return [];
+      if (prevInterruptsRef.current.length === 0) {
+        return prevInterruptsRef.current; // Return same reference if already empty
+      }
+      prevInterruptsRef.current = [];
+      prevInterruptIdRef.current = undefined;
+      return prevInterruptsRef.current;
     }
+
+    // Get current interrupt ID for comparison
+    const currentInterruptId = (interrupt as { id?: string })?.id;
 
     // If interrupt is already an array (from __interrupt__), use it directly
     if (Array.isArray(interrupt) && interrupt.length > 0) {
+      // Check if content changed by comparing IDs
+      const firstId = (interrupt[0] as { id?: string })?.id;
+      if (firstId === prevInterruptIdRef.current && prevInterruptsRef.current.length === interrupt.length) {
+        return prevInterruptsRef.current; // Return cached reference if same
+      }
+      prevInterruptsRef.current = interrupt;
+      prevInterruptIdRef.current = firstId;
       return interrupt;
     }
 
     // Try to collect from history (all tasks' interrupts)
-    if (thread.history?.length) {
-      const lastState = thread.history[thread.history.length - 1];
+    // Use stable reference check: only recalculate if history length changed
+    const historyLength = thread.history?.length ?? 0;
+    if (historyLength > 0) {
+      const lastState = thread.history![historyLength - 1];
       if (lastState?.tasks?.length) {
         const collectedInterrupts = lastState.tasks.flatMap(
           (task) => task.interrupts ?? []
         );
         if (collectedInterrupts.length > 0) {
+          // Check if content changed
+          const firstId = (collectedInterrupts[0] as { id?: string })?.id;
+          if (firstId === prevInterruptIdRef.current && prevInterruptsRef.current.length === collectedInterrupts.length) {
+            return prevInterruptsRef.current; // Return cached reference if same
+          }
+          prevInterruptsRef.current = collectedInterrupts;
+          prevInterruptIdRef.current = firstId;
           return collectedInterrupts;
         }
       }
     }
 
     // Fallback to single interrupt from SDK
-    return interrupt ? [interrupt] : [];
-  }, [thread.history, interrupt]);
+    if (currentInterruptId === prevInterruptIdRef.current && prevInterruptsRef.current.length === 1) {
+      return prevInterruptsRef.current; // Return cached reference if same
+    }
+    const result = [interrupt];
+    prevInterruptsRef.current = result;
+    prevInterruptIdRef.current = currentInterruptId;
+    return result;
+  }, [thread.history?.length, interrupt]); // Use history length instead of full history reference
+
+  // DEBUG: Log when allInterrupts changes
+  useEffect(() => {
+    console.log('[Interrupt] allInterrupts changed, length:', allInterrupts.length);
+  }, [allInterrupts]);
 
   // Don't show if: no interrupts, loading, or shouldn't render
   if (allInterrupts.length === 0 || thread.isLoading || !shouldRender) return null;

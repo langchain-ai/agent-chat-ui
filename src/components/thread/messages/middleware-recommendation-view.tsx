@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { Loader2, Package, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -62,6 +62,16 @@ export function MiddlewareRecommendationView({
   const [rejectMessage, setRejectMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // DEBUG: Track render count
+  const renderCountRef = useRef(0);
+  renderCountRef.current += 1;
+  console.log('[MiddlewareRecommendationView] render #', renderCountRef.current, {
+    isSubmitting,
+    isLoading: thread.isLoading,
+    decided: !!decided,
+    interruptId: interrupt.id,
+  });
+
   // Check if in multi-interrupt mode (onDecision provided)
   const isMultiMode = !!onDecision;
 
@@ -81,6 +91,7 @@ export function MiddlewareRecommendationView({
   };
 
   const handleApprove = () => {
+    console.log('[MiddlewareRecommendationView] handleApprove called');
     const resumePayload = { decisions: [{ type: "approve" }] };
 
     // Multi-interrupt mode: just pass decision to parent
@@ -96,8 +107,10 @@ export function MiddlewareRecommendationView({
     // Single interrupt mode: submit immediately
     // Note: After successful submit, this component will unmount as interrupt is resolved
     // Do NOT set isSubmitting(false) in finally - it causes state update on unmounted component
+    console.log('[MiddlewareRecommendationView] calling setIsSubmitting(true)');
     setIsSubmitting(true);
     try {
+      console.log('[MiddlewareRecommendationView] calling thread.submit');
       thread.submit(
         {},
         {
@@ -106,6 +119,7 @@ export function MiddlewareRecommendationView({
           },
         }
       );
+      console.log('[MiddlewareRecommendationView] thread.submit returned');
 
       toast.success("승인 완료", {
         description: "미들웨어 추천이 승인되었습니다.",
@@ -120,6 +134,7 @@ export function MiddlewareRecommendationView({
       // Only reset isSubmitting on error - success leads to component unmount
       setIsSubmitting(false);
     }
+    console.log('[MiddlewareRecommendationView] handleApprove finished');
   };
 
   const handleReject = () => {

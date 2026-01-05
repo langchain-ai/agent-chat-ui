@@ -16,7 +16,10 @@
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:ui": "vitest --ui"
   },
   "dependencies": {
     "@langchain/core": "^1.0.2",
@@ -61,12 +64,15 @@
   "devDependencies": {
     "@eslint/js": "^9.19.0",
     "@tailwindcss/postcss": "^4.0.13",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
     "@types/lodash": "^4.17.16",
     "@types/node": "^22.13.5",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
     "@types/react-syntax-highlighter": "^15.5.13",
     "@types/uuid": "^10.0.0",
+    "@vitejs/plugin-react": "^5.1.2",
     "autoprefixer": "^10.4.20",
     "dotenv": "^16.4.7",
     "eslint": "^9.19.0",
@@ -74,6 +80,7 @@
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.18",
     "globals": "^15.14.0",
+    "jsdom": "^27.4.0",
     "next": "^15.5.7",
     "postcss": "^8.5.3",
     "prettier": "^3.5.3",
@@ -81,7 +88,8 @@
     "tailwind-scrollbar": "^4.0.1",
     "tailwindcss": "^4.0.13",
     "typescript": "~5.7.2",
-    "typescript-eslint": "^8.22.0"
+    "typescript-eslint": "^8.22.0",
+    "vitest": "^4.0.16"
   },
   "overrides": {
     "react-is": "^19.0.0-rc-69d4b800-20241021"
