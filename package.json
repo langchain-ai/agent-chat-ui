@@ -45,6 +45,7 @@
     "react": "^19.1.4",
     "react-dom": "^19.1.4",
     "react-markdown": "^10.0.1",
+    "react-resizable-panels": "^4.2.1",
     "react-syntax-highlighter": "^15.5.0",
     "recharts": "^2.15.1",
     "rehype-katex": "^7.0.1",

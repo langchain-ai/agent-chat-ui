@@ -10,11 +10,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useEffect, useState } from "react";
-import { useAgents } from "@/providers/Agent";
+import { useRouter } from "next/navigation";
 
 export function SidebarFooter() {
+  const router = useRouter();
   const { theme, setTheme, resolvedTheme } = useTheme();
-  const { setShowSecrets } = useAgents();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -39,7 +39,7 @@ export function SidebarFooter() {
         tooltip="Secrets"
         variant="ghost"
         className="size-9 p-2"
-        onClick={() => setShowSecrets(true)}
+        onClick={() => router.push("/secrets")}
       >
         <Key className="size-5 text-gray-600 dark:text-gray-400" />
       </TooltipIconButton>
@@ -73,6 +73,7 @@ export function SidebarFooter() {
         tooltip="Settings"
         variant="ghost"
         className="size-9 p-2"
+        onClick={() => router.push("/settings")}
       >
         <Settings className="size-5 text-gray-600 dark:text-gray-400" />
       </TooltipIconButton>

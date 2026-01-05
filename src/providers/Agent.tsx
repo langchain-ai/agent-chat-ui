@@ -1,49 +1,24 @@
 "use client";
 
-import { v4 as uuidv4 } from "uuid";
 import {
   createContext,
   useContext,
   ReactNode,
   useState,
   useCallback,
+  useEffect,
+  useMemo,
 } from "react";
-import { Agent, AgentFormData } from "@/lib/types/agent";
-
-const DUMMY_AGENTS: Agent[] = [
-  {
-    id: "agent-1",
-    name: "Customer Support Agent",
-    description: "Handles customer inquiries",
-    instructions: "You are a helpful customer support agent...",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "agent-2",
-    name: "Code Assistant",
-    description: "Helps with coding tasks",
-    instructions: "You are an expert programmer...",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "agent-3",
-    name: "Research Assistant",
-    description: "Analyzes and summarizes research",
-    instructions: "You are a research assistant...",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
+import type { AgentSummary } from "@/lib/types/agent-builder";
+import { getAgents } from "@/lib/api/agent-builder";
 
 interface AgentContextType {
-  agents: Agent[];
-  selectedAgent: Agent | null;
-  setSelectedAgent: (agent: Agent | null) => void;
-  createAgent: (data: AgentFormData) => Agent;
-  updateAgent: (id: string, data: Partial<AgentFormData>) => void;
-  deleteAgent: (id: string) => void;
+  agents: AgentSummary[];
+  selectedAgent: AgentSummary | null;
+  setSelectedAgent: (agent: AgentSummary | null) => void;
+  isLoading: boolean;
+  error: string | null;
+  refetchAgents: () => Promise<void>;
   showSecrets: boolean;
   setShowSecrets: (value: boolean) => void;
 }
@@ -51,58 +26,45 @@ interface AgentContextType {
 const AgentContext = createContext<AgentContextType | undefined>(undefined);
 
 export function AgentProvider({ children }: { children: ReactNode }) {
-  const [agents, setAgents] = useState<Agent[]>(DUMMY_AGENTS);
-  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+  const [agents, setAgents] = useState<AgentSummary[]>([]);
+  const [selectedAgent, setSelectedAgent] = useState<AgentSummary | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showSecrets, setShowSecrets] = useState(false);
 
-  const createAgent = useCallback((data: AgentFormData): Agent => {
-    const newAgent: Agent = {
-      id: uuidv4(),
-      name: data.name,
-      description: data.description,
-      instructions: data.instructions,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    setAgents((prev) => [newAgent, ...prev]);
-    setSelectedAgent(newAgent);
-
-    return newAgent;
+  const fetchAgents = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await getAgents();
+      setAgents(response.agents);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to fetch agents";
+      setError(errorMessage);
+      console.error("Failed to fetch agents:", err);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const updateAgent = useCallback(
-    (id: string, data: Partial<AgentFormData>) => {
-      setAgents((prev) =>
-        prev.map((agent) =>
-          agent.id === id
-            ? {
-                ...agent,
-                ...data,
-                updatedAt: new Date(),
-              }
-            : agent
-        )
-      );
-    },
-    []
+  // Fetch agents on mount
+  useEffect(() => {
+    fetchAgents();
+  }, [fetchAgents]);
+
+  const value = useMemo(
+    () => ({
+      agents,
+      selectedAgent,
+      setSelectedAgent,
+      isLoading,
+      error,
+      refetchAgents: fetchAgents,
+      showSecrets,
+      setShowSecrets,
+    }),
+    [agents, selectedAgent, isLoading, error, fetchAgents, showSecrets]
   );
-
-  const deleteAgent = useCallback((id: string) => {
-    setAgents((prev) => prev.filter((agent) => agent.id !== id));
-    setSelectedAgent((prev) => (prev?.id === id ? null : prev));
-  }, []);
-
-  const value = {
-    agents,
-    selectedAgent,
-    setSelectedAgent,
-    createAgent,
-    updateAgent,
-    deleteAgent,
-    showSecrets,
-    setShowSecrets,
-  };
 
   return (
     <AgentContext.Provider value={value}>{children}</AgentContext.Provider>

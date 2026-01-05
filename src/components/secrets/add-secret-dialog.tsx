@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +19,7 @@ interface AddSecretDialogProps {
   onOpenChange: (open: boolean) => void;
   onSave: (key: string, value: string) => void;
   editingSecret?: { key: string; value: string } | null;
+  isSaving?: boolean;
 }
 
 export function AddSecretDialog({
@@ -25,6 +27,7 @@ export function AddSecretDialog({
   onOpenChange,
   onSave,
   editingSecret,
+  isSaving = false,
 }: AddSecretDialogProps) {
   const [key, setKey] = useState("");
   const [value, setValue] = useState("");
@@ -42,9 +45,7 @@ export function AddSecretDialog({
   const handleSave = () => {
     if (key.trim() && value.trim()) {
       onSave(key.trim(), value.trim());
-      onOpenChange(false);
-      setKey("");
-      setValue("");
+      // Don't close dialog here - let parent handle it after async save
     }
   };
 
@@ -64,7 +65,7 @@ export function AddSecretDialog({
               value={key}
               onChange={(e) => setKey(e.target.value)}
               placeholder="OPENAI_API_KEY"
-              disabled={isEditing}
+              disabled={isEditing || isSaving}
               className="dark:border-gray-700 dark:bg-gray-800"
             />
           </div>
@@ -74,25 +75,33 @@ export function AddSecretDialog({
               id="value"
               value={value}
               onChange={(e) => setValue(e.target.value)}
-              placeholder="sk-..."
+              placeholder={isEditing ? "Enter new value..." : "sk-..."}
+              disabled={isSaving}
               className="dark:border-gray-700 dark:bg-gray-800"
             />
+            {isEditing && (
+              <p className="text-xs text-gray-500">
+                Enter a new value to update this secret
+              </p>
+            )}
           </div>
         </div>
         <DialogFooter>
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
+            disabled={isSaving}
             className="dark:border-gray-700 dark:bg-gray-800 dark:text-gray-50 dark:hover:bg-gray-700"
           >
             Cancel
           </Button>
           <Button
             onClick={handleSave}
-            disabled={!key.trim() || !value.trim()}
-            className="dark:bg-gray-50 dark:text-gray-900 dark:hover:bg-gray-200"
+            disabled={!key.trim() || !value.trim() || isSaving}
+            className="gap-2 dark:bg-gray-50 dark:text-gray-900 dark:hover:bg-gray-200"
           >
-            Save
+            {isSaving && <Loader2 className="size-4 animate-spin" />}
+            {isSaving ? "Saving..." : "Save"}
           </Button>
         </DialogFooter>
       </DialogContent>

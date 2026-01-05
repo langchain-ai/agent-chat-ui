@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { useQueryState, parseAsBoolean } from "nuqs";
 import {
   Sheet,
   SheetContent,
@@ -10,6 +9,8 @@ import {
 } from "@/components/ui/sheet";
 import { PanelRightOpen, PanelRightClose } from "lucide-react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useSidebarState } from "@/hooks/useSidebarState";
+import { CreateAgentButton } from "./create-agent-button";
 import { TemplatesButton } from "./templates-button";
 import { AgentList } from "./agent-list";
 import { SidebarFooter } from "./sidebar-footer";
@@ -17,10 +18,7 @@ import { UserProfile } from "./user-profile";
 
 export default function Sidebar() {
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
-  const [sidebarOpen, setSidebarOpen] = useQueryState(
-    "sidebarOpen",
-    parseAsBoolean.withDefault(false)
-  );
+  const [sidebarOpen, setSidebarOpen] = useSidebarState();
 
   // On desktop (lg+), render the full sidebar content
   // On mobile, render only the Sheet component
@@ -46,8 +44,9 @@ export default function Sidebar() {
           </span>
         </div>
 
-        {/* Templates Button */}
+        {/* Create Agent & Templates Buttons */}
         <div className="px-2 py-1">
+          <CreateAgentButton />
           <TemplatesButton />
         </div>
 
@@ -76,8 +75,9 @@ export default function Sidebar() {
           </SheetTitle>
         </SheetHeader>
 
-        {/* Templates Button */}
+        {/* Create Agent & Templates Buttons */}
         <div className="px-2 py-1">
+          <CreateAgentButton />
           <TemplatesButton />
         </div>
 
