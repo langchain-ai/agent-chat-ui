@@ -4,6 +4,9 @@ import React, {
   ReactNode,
   useState,
   useEffect,
+  useCallback,
+  useRef,
+  useMemo,
 } from "react";
 import { useStream } from "@langchain/langgraph-sdk/react";
 import { type Message } from "@langchain/langgraph-sdk";
@@ -73,13 +76,20 @@ const StreamSession = ({
 }) => {
   const [threadId, setThreadId] = useQueryState("threadId");
   const { getThreads, setThreads } = useThreads();
-  const streamValue = useTypedStream({
-    apiUrl,
-    apiKey: apiKey ?? undefined,
-    assistantId,
-    threadId: threadId ?? null,
-    fetchStateHistory: true,
-    onCustomEvent: (event, options) => {
+
+  // Use refs to access functions without adding to callback dependencies
+  const setThreadIdRef = useRef(setThreadId);
+  const getThreadsRef = useRef(getThreads);
+  const setThreadsRef = useRef(setThreads);
+
+  // Update refs on each render
+  setThreadIdRef.current = setThreadId;
+  getThreadsRef.current = getThreads;
+  setThreadsRef.current = setThreads;
+
+  // Memoize callbacks to prevent useStream from reinitializing
+  const handleCustomEvent = useCallback(
+    (event: UIMessage | RemoveUIMessage, options: { mutate: (fn: (prev: StateType) => StateType) => void }) => {
       if (isUIMessage(event) || isRemoveUIMessage(event)) {
         options.mutate((prev) => {
           const ui = uiMessageReducer(prev.ui ?? [], event);
@@ -87,13 +97,36 @@ const StreamSession = ({
         });
       }
     },
-    onThreadId: (id) => {
-      setThreadId(id);
+    []
+  );
+
+  const handleThreadId = useCallback(
+    (id: string) => {
+      setThreadIdRef.current(id);
       // Refetch threads list when thread ID changes.
       // Wait for some seconds before fetching so we're able to get the new thread that was created.
-      sleep().then(() => getThreads().then(setThreads).catch(console.error));
+      sleep().then(() =>
+        getThreadsRef.current().then(setThreadsRef.current).catch(console.error)
+      );
     },
-  });
+    [] // Empty deps - refs are always stable
+  );
+
+  // Memoize the entire config object to prevent useStream from reinitializing
+  const streamConfig = useMemo(
+    () => ({
+      apiUrl,
+      apiKey: apiKey ?? undefined,
+      assistantId,
+      threadId: threadId ?? null,
+      fetchStateHistory: true,
+      onCustomEvent: handleCustomEvent,
+      onThreadId: handleThreadId,
+    }),
+    [apiUrl, apiKey, assistantId, threadId, handleCustomEvent, handleThreadId]
+  );
+
+  const streamValue = useTypedStream(streamConfig);
 
   useEffect(() => {
     checkGraphStatus(apiUrl, apiKey).then((ok) => {

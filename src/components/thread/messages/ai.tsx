@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { ToolCalls, ToolResult } from "./tool-calls";
 import { MessageContentComplex } from "@langchain/core/messages";
 import { Fragment } from "react/jsx-runtime";
-import { useMemo } from "react";
+import { useMemo, memo } from "react";
 import { isAgentInboxInterruptSchema } from "@/lib/agent-inbox-interrupt";
 import {
   isClarifyingQuestionInterrupt,
@@ -186,7 +186,7 @@ function Interrupt({
   return <GenericInterruptView interrupt={fallbackValue as Record<string, unknown>} />;
 }
 
-export function AssistantMessage({
+export const AssistantMessage = memo(function AssistantMessage({
   message,
   isLoading,
   handleRegenerate,
@@ -290,7 +290,7 @@ export function AssistantMessage({
       </div>
     </div>
   );
-}
+});
 
 export function AssistantMessageLoading() {
   return (

@@ -13,20 +13,6 @@ import { v4 as uuidv4 } from "uuid";
 import type { Message } from "@langchain/langgraph-sdk";
 import { streamAgentChat } from "@/lib/api/agent-builder";
 
-// Generate 16-char UUID in XXXX-XXXX-XXXX-XXXX format
-function generateShortUuid(): string {
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  const segments = [];
-  for (let i = 0; i < 4; i++) {
-    let segment = "";
-    for (let j = 0; j < 4; j++) {
-      segment += chars[Math.floor(Math.random() * chars.length)];
-    }
-    segments.push(segment);
-  }
-  return segments.join("-");
-}
-
 // Simplified state type matching StreamProvider
 export type AgentStateType = { messages: Message[] };
 
@@ -112,7 +98,7 @@ export function AgentStreamProvider({
       const userContent = lastHumanMessage.content;
 
       // Generate thread ID for new conversation
-      const currentThreadId = threadId || generateShortUuid();
+      const currentThreadId = threadId || uuidv4();
       if (!threadId) {
         setThreadId(currentThreadId);
       }
@@ -156,8 +142,43 @@ export function AgentStreamProvider({
           abortControllerRef.current.signal
         );
 
+        // Helper to finalize current tool call with parsed args
+        const finalizeCurrentToolCall = () => {
+          if (currentToolCallRef.current) {
+            const toolCall = currentToolCallRef.current;
+            let parsedArgs: Record<string, unknown> = {};
+            try {
+              parsedArgs = JSON.parse(toolCall.args);
+            } catch {
+              // Args might be incomplete or invalid JSON
+            }
+
+            // Update tool call with parsed args
+            setMessages((prev) =>
+              prev.map((msg) => {
+                if (msg.id === aiMessageId && msg.type === "ai") {
+                  const existingToolCalls = (msg as any).tool_calls || [];
+                  return {
+                    ...msg,
+                    tool_calls: existingToolCalls.map((tc: any) =>
+                      tc.id === toolCall.id
+                        ? { ...tc, args: parsedArgs }
+                        : tc
+                    ),
+                  };
+                }
+                return msg;
+              })
+            );
+            currentToolCallRef.current = null;
+          }
+        };
+
         for await (const event of stream) {
           if (event.event === "token") {
+            // Finalize any pending tool call before processing token
+            finalizeCurrentToolCall();
+
             // Extract text from content array
             const tokenData = event.data as { content: Array<{ text: string }>; node: string };
             const content = tokenData.content;
@@ -177,15 +198,18 @@ export function AgentStreamProvider({
             const tc = chunks[0];
             if (!tc) continue;
 
-            // First chunk has name - add tool call immediately with pending status
+            // First chunk has name - finalize previous tool call and start new one
             if (tc.name) {
+              // Finalize any pending tool call before starting new one
+              finalizeCurrentToolCall();
+
               const toolCallId = uuidv4();
               currentToolCallRef.current = {
                 id: toolCallId,
                 name: tc.name,
                 args: tc.args || "",
               };
-              // Add tool call to message immediately (with pending status)
+              // Add tool call to message immediately
               setMessages((prev) =>
                 prev.map((msg) => {
                   if (msg.id === aiMessageId && msg.type === "ai") {
@@ -198,7 +222,6 @@ export function AgentStreamProvider({
                           id: toolCallId,
                           name: tc.name,
                           args: {},
-                          status: "pending",
                         },
                       ],
                     };
@@ -211,43 +234,32 @@ export function AgentStreamProvider({
               currentToolCallRef.current.args += tc.args || "";
             }
           } else if (event.event === "tool_result") {
-            const resultData = event.data as { name: string; result: string };
+            // Finalize any pending tool call before processing result
+            finalizeCurrentToolCall();
 
-            // Finalize tool call with parsed args and result
-            if (currentToolCallRef.current) {
-              const toolCall = currentToolCallRef.current;
-              let parsedArgs: Record<string, unknown> = {};
-              try {
-                parsedArgs = JSON.parse(toolCall.args);
-              } catch {
-                // Args might be incomplete or invalid JSON
-              }
+            const resultData = event.data as { result: string };
+            const resultId = uuidv4();
 
-              // Update tool call with parsed args and result
-              setMessages((prev) =>
-                prev.map((msg) => {
-                  if (msg.id === aiMessageId && msg.type === "ai") {
-                    const existingToolCalls = (msg as any).tool_calls || [];
-                    return {
-                      ...msg,
-                      tool_calls: existingToolCalls.map((tc: any) =>
-                        tc.id === toolCall.id
-                          ? {
-                              ...tc,
-                              args: parsedArgs,
-                              result: resultData.result,
-                              status: "completed",
-                            }
-                          : tc
-                      ),
-                    };
-                  }
-                  return msg;
-                })
-              );
-              currentToolCallRef.current = null;
-            }
+            // Add tool result to separate tool_results array
+            setMessages((prev) =>
+              prev.map((msg) => {
+                if (msg.id === aiMessageId && msg.type === "ai") {
+                  const existingResults = (msg as any).tool_results || [];
+                  return {
+                    ...msg,
+                    tool_results: [
+                      ...existingResults,
+                      { id: resultId, result: resultData.result },
+                    ],
+                  };
+                }
+                return msg;
+              })
+            );
           } else if (event.event === "end") {
+            // Finalize any pending tool call before ending
+            finalizeCurrentToolCall();
+
             // Update thread ID if returned
             const endData = event.data as { thread_id?: string };
             if (endData?.thread_id) {

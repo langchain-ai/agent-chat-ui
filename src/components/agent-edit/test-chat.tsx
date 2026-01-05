@@ -13,8 +13,10 @@ import { toast } from "sonner";
 import { MarkdownText } from "@/components/thread/markdown-text";
 import {
   ToolCallDisplay,
+  ToolResultDisplay,
   parseToolCalls,
   type ToolCall,
+  type ToolResult,
 } from "@/components/thread/tool-call-display";
 import { getContentString } from "@/components/thread/utils";
 import type { Message } from "@langchain/langgraph-sdk";
@@ -52,9 +54,10 @@ function AssistantMessage({ message }: { message: Message }) {
             Object.entries(tc.args).map(([k, v]) => [k, String(v)])
           )
         : {},
-    result: tc.result,
-    status: tc.status,
   }));
+
+  // Get tool results from message.tool_results (from tool_result events)
+  const messageToolResults: ToolResult[] = (message as any).tool_results || [];
 
   // Combine both sources (structured first, then parsed from content)
   const allToolCalls = [...structuredToolCalls, ...parsedToolCalls];
@@ -63,6 +66,7 @@ function AssistantMessage({ message }: { message: Message }) {
     <div className="mr-auto flex w-full items-start gap-2">
       <div className="flex w-full flex-col gap-2">
         {allToolCalls.length > 0 && <ToolCallDisplay toolCalls={allToolCalls} />}
+        {messageToolResults.length > 0 && <ToolResultDisplay results={messageToolResults} />}
         {cleanContent.length > 0 && (
           <div className="py-1">
             <MarkdownText>{cleanContent}</MarkdownText>
@@ -116,12 +120,15 @@ function TestChatContent({
 
   const [input, setInput] = useState("");
   const [firstTokenReceived, setFirstTokenReceived] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const lastError = useRef<string | undefined>(undefined);
 
   // Auto-scroll to bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [messages]);
 
   // Handle errors
@@ -208,7 +215,7 @@ function TestChatContent({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0">
         {!chatStarted ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
             <div className="flex size-12 items-center justify-center rounded-full border-2 border-dashed border-gray-300 dark:border-gray-600">
@@ -239,7 +246,6 @@ function TestChatContent({
               )
             )}
             {isLoading && !firstTokenReceived && <AssistantMessageLoading />}
-            <div ref={messagesEndRef} />
           </div>
         )}
       </div>

@@ -59,10 +59,10 @@ export function EditHeader({ agentId }: EditHeaderProps) {
   };
 
   return (
-    <div className="flex items-center justify-between gap-4 border-b border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-900">
-      {/* Left side: Back button + Agent info */}
-      <div className="flex items-center gap-4">
-        <Link href={`/agent/${agentId}`}>
+    <div className="flex items-center gap-4 border-b border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-900">
+      {/* Left side: Back button + Agent info (w-1/2 to match Instructions panel) */}
+      <div className="flex w-1/2 items-center gap-4">
+        <Link href={`/agent/${agentId}`} className="shrink-0">
           <Button
             variant="outline"
             size="icon"
@@ -72,19 +72,14 @@ export function EditHeader({ agentId }: EditHeaderProps) {
           </Button>
         </Link>
 
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <div className="flex items-center gap-2">
-            <input
-              name="agent_name"
-              value={editedConfig.agent_name}
-              onChange={(e) => updateField("agent_name", e.target.value)}
-              placeholder="Agent name..."
-              className="min-w-0 truncate border border-transparent bg-transparent px-1 text-base font-medium leading-snug tracking-tight text-gray-900 outline-none transition-all hover:border-gray-300 focus:border-blue-500 dark:text-gray-50 dark:hover:border-gray-600 dark:focus:border-blue-400"
-            />
-            <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-              Editing
-            </span>
-          </div>
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <input
+            name="agent_name"
+            value={editedConfig.agent_name}
+            onChange={(e) => updateField("agent_name", e.target.value)}
+            placeholder="Agent name..."
+            className="w-full truncate border border-transparent bg-transparent px-1 text-base font-medium leading-snug tracking-tight text-gray-900 outline-none transition-all hover:border-gray-300 focus:border-blue-500 dark:text-gray-50 dark:hover:border-gray-600 dark:focus:border-blue-400"
+          />
           <input
             name="description"
             value={editedConfig.agent_description}
@@ -96,7 +91,11 @@ export function EditHeader({ agentId }: EditHeaderProps) {
       </div>
 
       {/* Right side: Actions */}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-1 items-center justify-end gap-2">
+        <span className="inline-flex items-center rounded-full bg-gray-900 px-2.5 py-0.5 text-xs font-medium text-white dark:bg-white dark:text-gray-900">
+          Editing
+        </span>
+
         <Button
           variant="ghost"
           size="icon"

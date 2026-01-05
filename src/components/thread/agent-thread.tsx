@@ -25,7 +25,7 @@ import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useSidebarState } from "@/hooks/useSidebarState";
 import { MarkdownText } from "./markdown-text";
 import { getContentString } from "./utils";
-import { ToolCallDisplay, parseToolCalls, type ToolCall } from "./tool-call-display";
+import { ToolCallDisplay, ToolResultDisplay, parseToolCalls, type ToolCall, type ToolResult } from "./tool-call-display";
 import { toast } from "sonner";
 import type { Message } from "@langchain/langgraph-sdk";
 import type { AgentSummary } from "@/lib/types/agent-builder";
@@ -61,9 +61,10 @@ function AgentAssistantMessage({ message }: { message: Message }) {
           Object.entries(tc.args).map(([k, v]) => [k, String(v)])
         )
       : {},
-    result: tc.result,
-    status: tc.status,
   }));
+
+  // Get tool results from message.tool_results (from tool_result events)
+  const messageToolResults: ToolResult[] = (message as any).tool_results || [];
 
   // Combine both sources (structured first, then parsed from content)
   const allToolCalls = [...structuredToolCalls, ...parsedToolCalls];
@@ -72,6 +73,7 @@ function AgentAssistantMessage({ message }: { message: Message }) {
     <div className="mr-auto flex w-full items-start gap-2">
       <div className="flex w-full flex-col gap-2">
         {allToolCalls.length > 0 && <ToolCallDisplay toolCalls={allToolCalls} />}
+        {messageToolResults.length > 0 && <ToolResultDisplay results={messageToolResults} />}
         {cleanContent.length > 0 && (
           <div className="py-1">
             <MarkdownText>{cleanContent}</MarkdownText>
@@ -306,7 +308,7 @@ function AgentThreadContent({ agent }: AgentThreadContentProps) {
           footer={
             <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-white dark:bg-black w-full">
               {!chatStarted && (
-                <div className="mx-4 flex min-h-[40vh] grow flex-col items-center justify-center gap-4 text-center max-w-3xl w-full lg:mx-auto">
+                <div className="mx-4 flex min-h-0 grow flex-col items-center justify-center gap-4 text-center max-w-3xl w-full lg:mx-auto">
                   <div className="flex size-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
                     <Bot className="size-8 text-gray-400" />
                   </div>
@@ -321,7 +323,7 @@ function AgentThreadContent({ agent }: AgentThreadContentProps) {
 
               <ScrollToBottom className="animate-in fade-in-0 zoom-in-95 absolute bottom-full left-1/2 mb-4 -translate-x-1/2" />
 
-              <div className="bg-muted relative z-10 mx-4 mb-8 w-full max-w-3xl rounded-2xl border border-solid shadow-xs transition-all lg:mx-auto">
+              <div className={cn("bg-muted relative z-10 mx-4 mb-4 w-full max-w-3xl rounded-2xl border border-solid shadow-xs transition-all lg:mx-auto", !chatStarted && "mb-[20vh]")}>
                 <form
                   onSubmit={handleSubmit}
                   className="grid w-full grid-rows-[1fr_auto] gap-2"

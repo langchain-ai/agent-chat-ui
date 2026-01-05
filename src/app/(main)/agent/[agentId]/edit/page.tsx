@@ -1,16 +1,12 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
 import { AgentEditProvider, useAgentEdit } from "@/providers/AgentEdit";
 import {
   EditHeader,
   InstructionsEditor,
   Toolbox,
+  Middlewares,
   TestChat,
 } from "@/components/agent-edit";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -47,37 +43,30 @@ function EditPageContent() {
     <div className="flex h-full flex-col overflow-hidden bg-white dark:bg-gray-900">
       <EditHeader agentId={agentId} />
 
-      <ResizablePanelGroup orientation="horizontal" className="flex-1 min-h-0">
-        {/* Left Panel: Editor */}
-        <ResizablePanel defaultSize={50} minSize={30}>
-          <ResizablePanelGroup orientation="vertical">
-            {/* Instructions Section */}
-            <ResizablePanel defaultSize={60} minSize={20}>
-              <div className="h-full overflow-auto border-r border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
-                <InstructionsEditor />
-              </div>
-            </ResizablePanel>
-
-            <ResizableHandle withHandle />
-
-            {/* Toolbox Section */}
-            <ResizablePanel defaultSize={40} minSize={20}>
-              <div className="h-full overflow-auto border-r border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
-                <Toolbox />
-              </div>
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        </ResizablePanel>
-
-        <ResizableHandle withHandle />
-
-        {/* Right Panel: Test Chat */}
-        <ResizablePanel defaultSize={50} minSize={30}>
-          <div className="h-full bg-white dark:bg-black">
-            <TestChat />
+      <div className="flex flex-1 min-h-0">
+        {/* Left Panel: 50% */}
+        <div className="flex w-1/2 flex-col border-r border-gray-200 dark:border-gray-700">
+          {/* Instructions: flex-grow, 스크롤 가능 */}
+          <div className="flex flex-1 min-h-0 flex-col overflow-hidden bg-white dark:bg-gray-900">
+            <InstructionsEditor />
           </div>
-        </ResizablePanel>
-      </ResizablePanelGroup>
+
+          {/* Toolbox + Middlewares: 고정 높이, 좌우 배치 */}
+          <div className="flex h-[320px] shrink-0 border-t border-gray-200 dark:border-gray-700">
+            <div className="w-1/2 overflow-auto border-r border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+              <Toolbox />
+            </div>
+            <div className="w-1/2 overflow-auto bg-white dark:bg-gray-900">
+              <Middlewares />
+            </div>
+          </div>
+        </div>
+
+        {/* Right Panel: 50% - TestChat */}
+        <div className="w-1/2 bg-white dark:bg-black">
+          <TestChat />
+        </div>
+      </div>
     </div>
   );
 }

@@ -322,7 +322,7 @@ export function ThreadContent() {
             footer={
               <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-white dark:bg-black w-full">
                 {!chatStarted && (
-                  <div className="mx-4 flex min-h-[40vh] grow flex-col items-center justify-center gap-4 text-center max-w-3xl w-full lg:mx-auto">
+                  <div className="mx-4 flex min-h-0 grow flex-col items-center justify-center gap-4 text-center max-w-3xl w-full lg:mx-auto">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       width="24px"
@@ -350,7 +350,7 @@ export function ThreadContent() {
 
                 <ScrollToBottom className="animate-in fade-in-0 zoom-in-95 absolute bottom-full left-1/2 mb-4 -translate-x-1/2" />
 
-                <div className="bg-muted relative z-10 mx-4 mb-8 w-full max-w-3xl rounded-2xl border border-solid shadow-xs transition-all lg:mx-auto">
+                <div className={cn("bg-muted relative z-10 mx-4 mb-4 w-full max-w-3xl rounded-2xl border border-solid shadow-xs transition-all lg:mx-auto", !chatStarted && "mb-[20vh]")}>
                   <form
                     onSubmit={handleSubmit}
                     className="grid w-full grid-rows-[1fr_auto] gap-2"

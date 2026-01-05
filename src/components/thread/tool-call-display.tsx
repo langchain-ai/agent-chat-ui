@@ -1,15 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Wrench, Loader2, CheckCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { ChevronDown, ChevronRight, Wrench, CheckCircle } from "lucide-react";
 
 export interface ToolCall {
   id?: string;
   name: string;
   parameters: Record<string, string>;
-  result?: string;
-  status?: "pending" | "completed";
+}
+
+export interface ToolResult {
+  id: string;
+  result: string;
 }
 
 interface ToolCallDisplayProps {
@@ -58,49 +60,38 @@ function ToolResultItem({ result }: { result: string }) {
 
 function ToolCallItem({ toolCall }: { toolCall: ToolCall }) {
   const [isOpen, setIsOpen] = useState(false);
-  const isPending = toolCall.status === "pending";
 
   return (
-    <div className="flex flex-col gap-1">
-      {/* Tool Call Card */}
-      <div className="rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50">
-        <button
-          type="button"
-          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
-          onClick={() => setIsOpen(!isOpen)}
-        >
-          {isOpen ? (
-            <ChevronDown className="size-4 text-gray-400" />
-          ) : (
-            <ChevronRight className="size-4 text-gray-400" />
-          )}
-          {isPending ? (
-            <Loader2 className="size-4 text-blue-500 animate-spin" />
-          ) : (
-            <Wrench className="size-4 text-blue-500" />
-          )}
-          <span className="font-medium text-gray-700 dark:text-gray-300">
-            {toolCall.name}
-          </span>
-        </button>
-        {isOpen && Object.keys(toolCall.parameters).length > 0 && (
-          <div className="border-t border-gray-200 px-3 py-2 dark:border-gray-700">
-            {Object.entries(toolCall.parameters).map(([key, value]) => (
-              <div key={key} className="flex gap-2 text-sm">
-                <span className="font-medium text-gray-500 dark:text-gray-400">
-                  {key}:
-                </span>
-                <span className="text-gray-700 dark:text-gray-300 break-all">
-                  &quot;{value}&quot;
-                </span>
-              </div>
-            ))}
-          </div>
+    <div className="rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50">
+      <button
+        type="button"
+        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        {isOpen ? (
+          <ChevronDown className="size-4 text-gray-400" />
+        ) : (
+          <ChevronRight className="size-4 text-gray-400" />
         )}
-      </div>
-
-      {/* Tool Result Card */}
-      {toolCall.result && <ToolResultItem result={toolCall.result} />}
+        <Wrench className="size-4 text-blue-500" />
+        <span className="font-medium text-gray-700 dark:text-gray-300">
+          {toolCall.name}
+        </span>
+      </button>
+      {isOpen && Object.keys(toolCall.parameters).length > 0 && (
+        <div className="border-t border-gray-200 px-3 py-2 dark:border-gray-700">
+          {Object.entries(toolCall.parameters).map(([key, value]) => (
+            <div key={key} className="flex gap-2 text-sm">
+              <span className="font-medium text-gray-500 dark:text-gray-400">
+                {key}:
+              </span>
+              <span className="text-gray-700 dark:text-gray-300 break-all">
+                &quot;{value}&quot;
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -112,6 +103,22 @@ export function ToolCallDisplay({ toolCalls }: ToolCallDisplayProps) {
     <div className="flex flex-col gap-2 my-2">
       {toolCalls.map((toolCall, index) => (
         <ToolCallItem key={`${toolCall.name}-${index}`} toolCall={toolCall} />
+      ))}
+    </div>
+  );
+}
+
+interface ToolResultDisplayProps {
+  results: ToolResult[];
+}
+
+export function ToolResultDisplay({ results }: ToolResultDisplayProps) {
+  if (results.length === 0) return null;
+
+  return (
+    <div className="flex flex-col gap-2 my-2">
+      {results.map((result) => (
+        <ToolResultItem key={result.id} result={result.result} />
       ))}
     </div>
   );
