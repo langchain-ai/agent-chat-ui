@@ -1,16 +1,28 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, RotateCcw, MessageSquare, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, RotateCcw, MessageSquare, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useAgentEdit } from "@/providers/AgentEdit";
 import { useAgents } from "@/providers/Agent";
+import { deleteAgent } from "@/lib/api/agent-builder";
 
 interface EditHeaderProps {
   agentId: string;
 }
 
 export function EditHeader({ agentId }: EditHeaderProps) {
+  const router = useRouter();
   const {
     editedConfig,
     hasChanges,
@@ -20,6 +32,8 @@ export function EditHeader({ agentId }: EditHeaderProps) {
     resetChanges,
   } = useAgentEdit();
   const { refetchAgents } = useAgents();
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   if (!editedConfig) return null;
 
@@ -27,6 +41,20 @@ export function EditHeader({ agentId }: EditHeaderProps) {
     const success = await saveChanges();
     if (success) {
       await refetchAgents();
+    }
+  };
+
+  const handleDelete = async () => {
+    setShowDeleteDialog(false);
+    setIsDeleting(true);
+    try {
+      await deleteAgent(agentId);
+      await refetchAgents();
+      router.push("/");
+    } catch (error) {
+      console.error("Failed to delete agent:", error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -72,6 +100,21 @@ export function EditHeader({ agentId }: EditHeaderProps) {
         <Button
           variant="ghost"
           size="icon"
+          onClick={() => setShowDeleteDialog(true)}
+          disabled={isDeleting || isSaving}
+          title="Delete agent"
+          className="text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
+        >
+          {isDeleting ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Trash2 className="size-4" />
+          )}
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={resetChanges}
           disabled={!hasChanges || isSaving}
           title="Reset all changes"
@@ -88,12 +131,35 @@ export function EditHeader({ agentId }: EditHeaderProps) {
         <Button
           onClick={handleSave}
           disabled={!hasChanges || isSaving}
-          className="gap-2 bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700"
+          className="gap-2 bg-gray-900 text-white hover:bg-gray-800 disabled:bg-gray-300 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100 dark:disabled:bg-gray-700"
         >
           {isSaving && <Loader2 className="size-4 animate-spin" />}
           Save Changes
         </Button>
       </div>
+
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>에이전트 삭제</DialogTitle>
+            <DialogDescription>
+              &quot;{editedConfig.agent_name}&quot; 에이전트를 삭제하시겠습니까?
+              이 작업은 되돌릴 수 없습니다.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              취소
+            </Button>
+            <Button
+              onClick={handleDelete}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              삭제
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

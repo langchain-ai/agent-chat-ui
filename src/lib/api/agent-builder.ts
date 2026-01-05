@@ -76,6 +76,14 @@ export async function updateAgentPrompt(
   });
 }
 
+export async function deleteAgent(
+  agentId: string
+): Promise<{ success: boolean; message: string }> {
+  return fetchApi(`/agents/${agentId}`, {
+    method: "DELETE",
+  });
+}
+
 // ============================================
 // Agent Invoke & Stream APIs
 // ============================================
