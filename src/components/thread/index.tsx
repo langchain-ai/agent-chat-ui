@@ -5,7 +5,7 @@ import { useStreamContext } from "@/providers/Stream";
 import { useState, FormEvent } from "react";
 import { Button } from "../ui/button";
 import { Checkpoint, Message } from "@langchain/langgraph-sdk";
-import { AssistantMessage, AssistantMessageLoading } from "./messages/ai";
+import { AssistantMessage, AssistantMessageLoading, Interrupt } from "./messages/ai";
 import { HumanMessage } from "./messages/human";
 import {
   DO_NOT_RENDER_ID_PREFIX,
@@ -306,14 +306,12 @@ export function ThreadContent() {
                       />
                     ),
                   )}
-                {hasNoAIOrToolMessages && !!stream.interrupt && (
-                  <AssistantMessage
-                    key="interrupt-msg"
-                    message={undefined}
-                    isLoading={isLoading}
-                    handleRegenerate={handleRegenerate}
-                  />
-                )}
+                {/* Single Interrupt render - replaces per-message Interrupt components */}
+                <Interrupt
+                  interrupt={stream.interrupt}
+                  isLastMessage={true}
+                  hasNoAIOrToolMessages={hasNoAIOrToolMessages}
+                />
                 {isLoading && !firstTokenReceived && (
                   <AssistantMessageLoading />
                 )}

@@ -1,3 +1,5 @@
+"use client";
+
 import React, {
   createContext,
   useContext,
@@ -8,8 +10,7 @@ import React, {
   useRef,
   useMemo,
 } from "react";
-import { useStream } from "@langchain/langgraph-sdk/react";
-import { type Message } from "@langchain/langgraph-sdk";
+import { Client, type Checkpoint, type Message, type ThreadState } from "@langchain/langgraph-sdk";
 import {
   uiMessageReducer,
   isUIMessage,
@@ -22,21 +23,51 @@ import { getApiKey } from "@/lib/api-key";
 import { useThreads } from "./Thread";
 import { toast } from "sonner";
 
-export type StateType = { messages: Message[]; ui?: UIMessage[] };
+export type StateType = { messages: Message[]; ui?: UIMessage[]; context?: Record<string, unknown> };
 
-const useTypedStream = useStream<
-  StateType,
-  {
-    UpdateType: {
-      messages?: Message[] | Message | string;
-      ui?: (UIMessage | RemoveUIMessage)[] | UIMessage | RemoveUIMessage;
-      context?: Record<string, unknown>;
+// Interface matching the SDK's useStream return type for compatibility
+interface StreamContextType {
+  // Data
+  messages: Message[];
+  values: StateType;
+  isLoading: boolean;
+  error: unknown;
+  interrupt: unknown;
+  history: ThreadState<StateType>[];
+
+  // SDK compatibility properties (stubs for LoadExternalComponent)
+  isThreadLoading: boolean;
+  branch: string | null;
+  experimental_branchTree: unknown;
+  client: Client;
+  threadId: string | null;
+  assistantId: string;
+
+  // Methods
+  submit: (
+    values: Partial<StateType> | Record<string, unknown> | null | undefined,
+    options?: {
+      streamMode?: string[];
+      streamSubgraphs?: boolean;
+      streamResumable?: boolean;
+      optimisticValues?: (prev: StateType) => Partial<StateType>;
+      checkpoint?: { checkpoint_id?: string | null } | null;
+      command?: { resume?: unknown; goto?: string };
+    }
+  ) => void;
+  stop: () => Promise<void>;
+  getMessagesMetadata: (message: Message) => {
+    firstSeenState?: {
+      parent_checkpoint?: Checkpoint | null;
+      values?: StateType;
     };
-    CustomEventType: UIMessage | RemoveUIMessage;
-  }
->;
+    branch?: string;
+    branchOptions?: string[];
+  } | undefined;
+  setBranch: (branch: string) => void;
+  joinStream: (threadId: string) => void;
+}
 
-type StreamContextType = ReturnType<typeof useTypedStream>;
 const StreamContext = createContext<StreamContextType | undefined>(undefined);
 
 async function sleep(ms = 4000) {
@@ -55,7 +86,6 @@ async function checkGraphStatus(
         },
       }),
     });
-
     return res.ok;
   } catch (e) {
     console.error(e);
@@ -77,6 +107,22 @@ const StreamSession = ({
   const [threadId, setThreadId] = useQueryState("threadId");
   const { getThreads, setThreads } = useThreads();
 
+  // State management (replaces SDK's useSyncExternalStore)
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [ui, setUi] = useState<UIMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+  const [interrupt, setInterrupt] = useState<unknown>(undefined);
+
+  // Refs for abort controller and stable function references
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const messagesRef = useRef<Message[]>([]);
+  const uiRef = useRef<UIMessage[]>([]);
+
+  // Keep refs in sync
+  messagesRef.current = messages;
+  uiRef.current = ui;
+
   // Use refs to access functions without adding to callback dependencies
   const setThreadIdRef = useRef(setThreadId);
   const getThreadsRef = useRef(getThreads);
@@ -87,72 +133,235 @@ const StreamSession = ({
   getThreadsRef.current = getThreads;
   setThreadsRef.current = setThreads;
 
-  // Memoize callbacks to prevent useStream from reinitializing
-  const handleCustomEvent = useCallback(
-    (event: UIMessage | RemoveUIMessage, options: { mutate: (fn: (prev: StateType) => StateType) => void }) => {
-      if (isUIMessage(event) || isRemoveUIMessage(event)) {
-        options.mutate((prev) => {
-          const ui = uiMessageReducer(prev.ui ?? [], event);
-          return { ...prev, ui };
-        });
+  // Create LangGraph client
+  const client = useMemo(() => {
+    return new Client({
+      apiUrl,
+      apiKey: apiKey ?? undefined,
+    });
+  }, [apiUrl, apiKey]);
+
+  // Handle thread ID changes
+  const handleThreadId = useCallback((id: string) => {
+    setThreadIdRef.current(id);
+    // Refetch threads list when thread ID changes.
+    sleep().then(() =>
+      getThreadsRef.current().then(setThreadsRef.current).catch(console.error)
+    );
+  }, []);
+
+  // Stop function
+  const stop = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsLoading(false);
+  }, []);
+
+  // Submit function - main streaming logic
+  const submit = useCallback(
+    async (
+      inputValues: Partial<StateType> | Record<string, unknown> | null | undefined,
+      options?: {
+        streamMode?: string[];
+        streamSubgraphs?: boolean;
+        streamResumable?: boolean;
+        optimisticValues?: (prev: StateType) => Partial<StateType>;
+        checkpoint?: { checkpoint_id?: string | null } | null;
+        command?: { resume?: unknown };
+      }
+    ) => {
+      // Apply optimistic update if provided
+      if (options?.optimisticValues) {
+        const currentState: StateType = { messages: messagesRef.current, ui: uiRef.current };
+        const optimistic = options.optimisticValues(currentState);
+        if (optimistic.messages) {
+          setMessages(optimistic.messages as Message[]);
+        }
+        if (optimistic.ui) {
+          setUi(optimistic.ui as UIMessage[]);
+        }
+      }
+
+      setIsLoading(true);
+      setError(null);
+      setInterrupt(undefined);
+
+      // Create abort controller for this stream
+      abortControllerRef.current = new AbortController();
+
+      try {
+        // Determine current thread ID or create new one
+        let currentThreadId = threadId;
+
+        if (!currentThreadId) {
+          // Create a new thread
+          const thread = await client.threads.create();
+          currentThreadId = thread.thread_id;
+          handleThreadId(currentThreadId);
+        }
+
+        // Build stream options
+        const streamOptions: Record<string, unknown> = {
+          streamMode: options?.streamMode ?? ["values"],
+          streamSubgraphs: options?.streamSubgraphs ?? true,
+        };
+
+        // Add input or command
+        if (options?.command) {
+          streamOptions.command = options.command;
+        } else if (inputValues) {
+          streamOptions.input = inputValues;
+        }
+
+        // Add checkpoint for regeneration
+        if (options?.checkpoint) {
+          streamOptions.checkpoint = options.checkpoint;
+        }
+
+        // Start the stream
+        const stream = client.runs.stream(
+          currentThreadId,
+          assistantId,
+          streamOptions
+        );
+
+        // Process stream events
+        for await (const event of stream) {
+          // Check if aborted
+          if (abortControllerRef.current?.signal.aborted) {
+            break;
+          }
+
+          const eventType = event.event;
+          const eventData = event.data as Record<string, unknown>;
+
+          // Handle values event - update messages
+          if (eventType === "values") {
+            const newMessages = eventData.messages as Message[] | undefined;
+            if (newMessages) {
+              setMessages(newMessages);
+            }
+          }
+
+          // Handle metadata event - may contain interrupt info
+          if (eventType === "metadata" || eventType === "updates") {
+            // Check for interrupt in various locations
+            const interruptData = eventData.__interrupt__ ?? eventData.interrupt;
+            if (interruptData) {
+              setInterrupt(interruptData);
+            }
+          }
+
+          // Handle custom event - UI components
+          if (eventType === "custom") {
+            if (isUIMessage(eventData) || isRemoveUIMessage(eventData)) {
+              setUi((prev) => uiMessageReducer(prev, eventData as UIMessage | RemoveUIMessage));
+            }
+          }
+
+          // Handle error event
+          if (eventType === "error") {
+            setError(eventData);
+          }
+        }
+
+        // After stream completes, check for final interrupt state
+        if (!abortControllerRef.current?.signal.aborted) {
+          try {
+            const state = await client.threads.getState(currentThreadId);
+            if (state.tasks && state.tasks.length > 0) {
+              // Collect interrupts from all tasks
+              const allInterrupts = state.tasks.flatMap(
+                (task: { interrupts?: unknown[] }) => task.interrupts ?? []
+              );
+              if (allInterrupts.length > 0) {
+                setInterrupt(allInterrupts.length === 1 ? allInterrupts[0] : allInterrupts);
+              }
+            }
+          } catch (e) {
+            // Ignore state fetch errors
+            console.warn("Failed to fetch final state:", e);
+          }
+        }
+      } catch (err) {
+        if ((err as Error).name !== "AbortError") {
+          setError(err);
+          console.error("Stream error:", err);
+        }
+      } finally {
+        setIsLoading(false);
+        abortControllerRef.current = null;
       }
     },
-    []
+    [client, assistantId, threadId, handleThreadId]
   );
 
-  const handleThreadId = useCallback(
-    (id: string) => {
-      setThreadIdRef.current(id);
-      // Refetch threads list when thread ID changes.
-      // Wait for some seconds before fetching so we're able to get the new thread that was created.
-      sleep().then(() =>
-        getThreadsRef.current().then(setThreadsRef.current).catch(console.error)
-      );
-    },
-    [] // Empty deps - refs are always stable
+  // Stub functions for branching (not implemented in custom version)
+  const getMessagesMetadata = useCallback(() => undefined, []);
+  const setBranch = useCallback(() => {}, []);
+  const joinStream = useCallback(() => {}, []);
+
+  // Build context value
+  const contextValue: StreamContextType = useMemo(
+    () => ({
+      messages,
+      values: { messages, ui },
+      isLoading,
+      error,
+      interrupt,
+      history: [], // Stub - branching not implemented
+      // SDK compatibility properties
+      isThreadLoading: false, // Thread loading handled elsewhere
+      branch: null, // Branching not implemented
+      experimental_branchTree: undefined,
+      client,
+      threadId,
+      assistantId,
+      // Methods
+      submit,
+      stop,
+      getMessagesMetadata,
+      setBranch,
+      joinStream,
+    }),
+    [messages, ui, isLoading, error, interrupt, client, threadId, assistantId, submit, stop, getMessagesMetadata, setBranch, joinStream]
   );
 
-  // DEBUG: Track render count
-  const renderCountRef = useRef(0);
-  renderCountRef.current += 1;
-
-  // Memoize the entire config object to prevent useStream from reinitializing
-  const streamConfig = useMemo(
-    () => {
-      console.log('[StreamSession] streamConfig recalculating');
-      return {
-        apiUrl,
-        apiKey: apiKey ?? undefined,
-        assistantId,
-        threadId: threadId ?? null,
-        fetchStateHistory: true,
-        onCustomEvent: handleCustomEvent,
-        onThreadId: handleThreadId,
-      };
-    },
-    [apiUrl, apiKey, assistantId, threadId, handleCustomEvent, handleThreadId]
-  );
-
-  const streamValue = useTypedStream(streamConfig);
-
-  // DEBUG: Log StreamSession renders and key state
-  console.log('[StreamSession] render #', renderCountRef.current, {
-    threadId,
-    isLoading: streamValue.isLoading,
-    hasInterrupt: !!streamValue.interrupt,
-    messagesCount: streamValue.messages?.length,
-    historyLength: streamValue.history?.length,
-  });
-
-  // DEBUG: Track streamValue reference changes
-  const prevStreamValueRef = useRef(streamValue);
+  // Clear state when thread changes
   useEffect(() => {
-    if (prevStreamValueRef.current !== streamValue) {
-      console.log('[StreamSession] streamValue reference changed');
-      prevStreamValueRef.current = streamValue;
+    if (!threadId) {
+      setMessages([]);
+      setUi([]);
+      setInterrupt(undefined);
+      setError(null);
+    } else {
+      // Load existing thread state
+      client.threads.getState(threadId).then((state) => {
+        const stateValues = state.values as StateType | undefined;
+        if (stateValues?.messages) {
+          setMessages(stateValues.messages);
+        }
+        if (stateValues?.ui) {
+          setUi(stateValues.ui);
+        }
+        // Check for pending interrupts
+        if (state.tasks && state.tasks.length > 0) {
+          const allInterrupts = state.tasks.flatMap(
+            (task: { interrupts?: unknown[] }) => task.interrupts ?? []
+          );
+          if (allInterrupts.length > 0) {
+            setInterrupt(allInterrupts.length === 1 ? allInterrupts[0] : allInterrupts);
+          }
+        }
+      }).catch((err) => {
+        console.warn("Failed to load thread state:", err);
+      });
     }
-  }, [streamValue]);
+  }, [threadId, client]);
 
+  // Check graph status on mount
   useEffect(() => {
     checkGraphStatus(apiUrl, apiKey).then((ok) => {
       if (!ok) {
@@ -172,7 +381,7 @@ const StreamSession = ({
   }, [apiKey, apiUrl]);
 
   return (
-    <StreamContext.Provider value={streamValue}>
+    <StreamContext.Provider value={contextValue}>
       {children}
     </StreamContext.Provider>
   );

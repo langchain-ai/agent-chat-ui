@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useStreamContext } from "@/providers/Stream";
 import { toast } from "sonner";
 import {
   isMiddlewareRecommendationInterrupt,
@@ -26,14 +25,15 @@ interface MultiInterruptContainerProps {
   interrupts: unknown[];
   isLastMessage: boolean;
   hasNoAIOrToolMessages: boolean;
+  onSubmit: (values: Record<string, unknown>, options?: { command?: { resume?: unknown } }) => void;
 }
 
 export function MultiInterruptContainer({
   interrupts,
   isLastMessage,
   hasNoAIOrToolMessages,
+  onSubmit,
 }: MultiInterruptContainerProps) {
-  const thread = useStreamContext();
   const [decisions, setDecisions] = useState<Record<string, unknown>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -54,10 +54,9 @@ export function MultiInterruptContainer({
     }
 
     // Note: After successful submit, this component will unmount as interrupt is resolved
-    // Do NOT set isSubmitting(false) in finally - it causes state update on unmounted component
     setIsSubmitting(true);
     try {
-      thread.submit(
+      onSubmit(
         {},
         {
           command: { resume: decisions },
@@ -92,6 +91,7 @@ export function MultiInterruptContainer({
           <MiddlewareRecommendationView
             key={interruptId || index}
             interrupt={middlewareInterrupt}
+            onSubmit={onSubmit}
             onDecision={handleDecision}
             decided={decided}
           />
@@ -107,6 +107,7 @@ export function MultiInterruptContainer({
           <ToolRecommendationView
             key={interruptId || index}
             interrupt={toolInterrupt}
+            onSubmit={onSubmit}
             onDecision={handleDecision}
             decided={decided}
           />
@@ -122,6 +123,7 @@ export function MultiInterruptContainer({
           <ClarifyingQuestionView
             key={interruptId || index}
             interrupt={clarifyingInterrupt}
+            onSubmit={onSubmit}
             onDecision={handleDecision}
             decided={decided}
           />

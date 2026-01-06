@@ -4,13 +4,13 @@ import { Send, Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { useStreamContext } from "@/providers/Stream";
 import { ClarifyingQuestionInterrupt } from "@/lib/clarifying-question-interrupt";
 import { Interrupt } from "@langchain/langgraph-sdk";
 import { toast } from "sonner";
 
 interface ClarifyingQuestionViewProps {
   interrupt: Interrupt<ClarifyingQuestionInterrupt>;
+  onSubmit: (values: Record<string, unknown>, options?: { command?: { resume?: unknown } }) => void;
   onDecision?: (interruptId: string, payload: unknown) => void;
   decided?: unknown;
 }
@@ -19,10 +19,10 @@ type OptionValue = "1" | "2" | "3" | "4";
 
 export function ClarifyingQuestionView({
   interrupt,
+  onSubmit,
   onDecision,
   decided,
 }: ClarifyingQuestionViewProps) {
-  const thread = useStreamContext();
   const [selectedOption, setSelectedOption] = useState<OptionValue | null>(
     null
   );
@@ -93,10 +93,9 @@ export function ClarifyingQuestionView({
 
     // Single interrupt mode: submit immediately
     // Note: After successful submit, this component will unmount as interrupt is resolved
-    // Do NOT set isSubmitting(false) in finally - it causes state update on unmounted component
     setIsSubmitting(true);
     try {
-      thread.submit(
+      onSubmit(
         {},
         {
           command: {

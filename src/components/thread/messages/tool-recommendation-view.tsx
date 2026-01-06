@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import { Loader2, Wrench, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useStreamContext } from "@/providers/Stream";
 import { ToolRecommendation } from "@/lib/tool-recommendation-interrupt";
 import { HITLRequest } from "@/components/thread/agent-inbox/types";
 import { Interrupt } from "@langchain/langgraph-sdk";
@@ -11,6 +10,7 @@ import { toast } from "sonner";
 
 interface ToolRecommendationViewProps {
   interrupt: Interrupt<HITLRequest>;
+  onSubmit: (values: Record<string, unknown>, options?: { command?: { resume?: unknown } }) => void;
   onDecision?: (interruptId: string, payload: unknown) => void;
   decided?: unknown;
 }
@@ -45,10 +45,10 @@ function RecommendationItem({
 
 export function ToolRecommendationView({
   interrupt,
+  onSubmit,
   onDecision,
   decided,
 }: ToolRecommendationViewProps) {
-  const thread = useStreamContext();
   const [rejectMessage, setRejectMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -85,10 +85,9 @@ export function ToolRecommendationView({
 
     // Single interrupt mode: submit immediately
     // Note: After successful submit, this component will unmount as interrupt is resolved
-    // Do NOT set isSubmitting(false) in finally - it causes state update on unmounted component
     setIsSubmitting(true);
     try {
-      thread.submit(
+      onSubmit(
         {},
         {
           command: {
@@ -137,7 +136,7 @@ export function ToolRecommendationView({
     // Note: After successful submit, this component will unmount as interrupt is resolved
     setIsSubmitting(true);
     try {
-      thread.submit(
+      onSubmit(
         {},
         {
           command: {
