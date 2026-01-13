@@ -3,23 +3,29 @@ import { Message } from "@langchain/langgraph-sdk";
 import { useStreamContext } from "@/providers/Stream";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
-import { Video, RefreshCw } from "lucide-react";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { useState, FormEvent } from "react";
 import { ensureToolCallsHaveResponses } from "@/lib/ensure-tool-responses";
 import { useArtifactContext } from "./artifact";
+import { User } from "lucide-react";
 
 export function InitialChoicePrompt() {
   const stream = useStreamContext();
   const [artifactContext] = useArtifactContext();
+  const [patientId, setPatientId] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleChoice = (choice: "create" | "refine") => {
-    const messageText = choice === "create" 
-      ? "I would like to create a new video."
-      : "I would like to refine a previous video.";
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!patientId.trim() || isSubmitting || stream.isLoading) return;
+
+    setIsSubmitting(true);
 
     const newHumanMessage: Message = {
       id: uuidv4(),
       type: "human",
-      content: [{ type: "text", text: messageText }] as Message["content"],
+      content: [{ type: "text", text: `the patient id is: ${patientId.trim()}` }] as Message["content"],
     };
 
     const toolMessages = ensureToolCallsHaveResponses(stream.messages);
@@ -44,46 +50,47 @@ export function InitialChoicePrompt() {
         }),
       },
     );
+
+    setPatientId("");
+    setIsSubmitting(false);
   };
 
   return (
     <div className="flex w-full items-center justify-center py-8">
-      <Card className="w-full max-w-2xl">
+      <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-xl">What would you like to do?</CardTitle>
+          <CardTitle className="text-xl flex items-center gap-2">
+            <User className="h-5 w-5" />
+            Enter Patient ID
+          </CardTitle>
           <CardDescription>
-            Choose an option to get started with your video generation agent.
+            Please enter the patient ID to get started.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col gap-4 sm:flex-row">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="patient-id">Patient ID</Label>
+              <Input
+                id="patient-id"
+                type="text"
+                value={patientId}
+                onChange={(e) => setPatientId(e.target.value)}
+                placeholder="Enter patient ID"
+                disabled={isSubmitting || stream.isLoading}
+                autoFocus
+                required
+              />
+            </div>
             <Button
-              onClick={() => handleChoice("create")}
-              variant="default"
+              type="submit"
+              className="w-full"
               size="lg"
-              className="flex-1 flex-col h-auto py-6 gap-3"
-              disabled={stream.isLoading}
+              disabled={!patientId.trim() || isSubmitting || stream.isLoading}
             >
-              <Video className="h-6 w-6" />
-              <span className="text-base font-semibold">Create a New Video</span>
-              <span className="text-sm font-normal opacity-90">
-                Start from scratch with a new video project
-              </span>
+              {isSubmitting || stream.isLoading ? "Submitting..." : "Continue"}
             </Button>
-            <Button
-              onClick={() => handleChoice("refine")}
-              variant="outline"
-              size="lg"
-              className="flex-1 flex-col h-auto py-6 gap-3"
-              disabled={stream.isLoading}
-            >
-              <RefreshCw className="h-6 w-6" />
-              <span className="text-base font-semibold">Refine a Previous Video</span>
-              <span className="text-sm font-normal opacity-90">
-                Improve or modify an existing video
-              </span>
-            </Button>
-          </div>
+          </form>
         </CardContent>
       </Card>
     </div>
