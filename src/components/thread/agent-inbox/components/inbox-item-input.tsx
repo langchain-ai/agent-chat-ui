@@ -33,17 +33,37 @@ function ArgsRenderer({ args }: { args: Record<string, unknown> }) {
         return (
           <div
             key={`args-${key}`}
-            className="flex flex-col items-start gap-1"
+            className="flex flex-col items-start gap-1 w-full"
           >
             <p className="text-sm leading-[18px] text-wrap text-gray-600">
               {prettifyText(key)}
             </p>
-            <span className="w-full max-w-full rounded-xl bg-zinc-100 p-3 text-[13px] leading-[18px] text-black">
+            <span className="w-full max-w-full rounded-xl bg-zinc-100 p-3 text-[13px] leading-[18px] text-black overflow-x-auto">
               <MarkdownText>{stringValue}</MarkdownText>
             </span>
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function SummaryRenderer({ summary }: { summary: string }) {
+  return (
+    <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+      <p className="text-sm font-semibold text-blue-900 mb-1">Impact Summary</p>
+      <p className="text-sm text-blue-800 italic">"{summary}"</p>
+    </div>
+  );
+}
+
+function DiffRenderer({ diff }: { diff: string }) {
+  return (
+    <div className="mb-4 w-full">
+      <p className="text-sm font-semibold text-gray-700 mb-2">Changes (Diff)</p>
+      <div className="rounded-lg bg-zinc-950 p-4 overflow-x-auto max-h-[300px] border border-zinc-800">
+        <MarkdownText>{`\`\`\`diff\n${diff}\n\`\`\``}</MarkdownText>
+      </div>
     </div>
   );
 }
@@ -392,13 +412,13 @@ export function InboxItemInput({
       const newArgs =
         Array.isArray(change) && Array.isArray(key)
           ? {
-              ...response.edited_action.args,
-              ...Object.fromEntries(key.map((k, index) => [k, change[index]])),
-            }
+            ...response.edited_action.args,
+            ...Object.fromEntries(key.map((k, index) => [k, change[index]])),
+          }
           : {
-              ...response.edited_action.args,
-              [key as string]: change as string,
-            };
+            ...response.edited_action.args,
+            [key as string]: change as string,
+          };
 
       const newEdit: DecisionWithEdits = {
         type: "edit",
@@ -456,6 +476,9 @@ export function InboxItemInput({
 
   return (
     <div className="flex w-full max-w-full flex-col items-start justify-start gap-2">
+      {actionRequest?.summary && <SummaryRenderer summary={actionRequest.summary} />}
+      {actionRequest?.diff && <DiffRenderer diff={actionRequest.diff} />}
+
       {showArgsOutsideCards && <ArgsRenderer args={actionArgs} />}
 
       <div className="flex w-full flex-col items-stretch gap-2">

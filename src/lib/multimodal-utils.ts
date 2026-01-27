@@ -1,7 +1,8 @@
 import { ContentBlock } from "@langchain/core/messages";
 import { toast } from "sonner";
 
-// Returns a Promise of a typed multimodal block for images or PDFs
+// Returns a Promise of a typed multimodal block for images only
+// PDFs should be uploaded via /documents/upload endpoint, not as content blocks
 export async function fileToContentBlock(
   file: File,
 ): Promise<ContentBlock.Multimodal.Data> {
@@ -11,32 +12,21 @@ export async function fileToContentBlock(
     "image/gif",
     "image/webp",
   ];
-  const supportedFileTypes = [...supportedImageTypes, "application/pdf"];
 
-  if (!supportedFileTypes.includes(file.type)) {
+  if (!supportedImageTypes.includes(file.type)) {
     toast.error(
-      `Unsupported file type: ${file.type}. Supported types are: ${supportedFileTypes.join(", ")}`,
+      `Unsupported file type: ${file.type}. Images only: ${supportedImageTypes.join(", ")}. PDFs should be uploaded separately.`,
     );
     return Promise.reject(new Error(`Unsupported file type: ${file.type}`));
   }
 
   const data = await fileToBase64(file);
 
-  if (supportedImageTypes.includes(file.type)) {
-    return {
-      type: "image",
-      mimeType: file.type,
-      data,
-      metadata: { name: file.name },
-    };
-  }
-
-  // PDF
   return {
-    type: "file",
-    mimeType: "application/pdf",
+    type: "image",
+    mimeType: file.type,
     data,
-    metadata: { filename: file.name },
+    metadata: { name: file.name },
   };
 }
 

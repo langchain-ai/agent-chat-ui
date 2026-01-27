@@ -1,0 +1,33 @@
+# Development Dockerfile for Next.js
+FROM node:20-slim
+
+WORKDIR /app
+
+# Install pnpm globally
+RUN npm install -g pnpm@10.5.1
+
+# Copy package files
+COPY package.json pnpm-lock.yaml* ./
+
+# Install dependencies (including dev dependencies)
+RUN pnpm install
+
+# Accept build arguments for NEXT_PUBLIC_ environment variables
+ARG NEXT_PUBLIC_LANGSMITH_API_KEY
+ARG NEXT_PUBLIC_LANGSMITH_ENDPOINT
+ARG NEXT_PUBLIC_LANGSMITH_PROJECT
+
+# Set environment variables
+ENV NEXT_PUBLIC_LANGSMITH_API_KEY=${NEXT_PUBLIC_LANGSMITH_API_KEY}
+ENV NEXT_PUBLIC_LANGSMITH_ENDPOINT=${NEXT_PUBLIC_LANGSMITH_ENDPOINT}
+ENV NEXT_PUBLIC_LANGSMITH_PROJECT=${NEXT_PUBLIC_LANGSMITH_PROJECT}
+
+# Set NODE_ENV to development
+ENV NODE_ENV=development
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Expose the dev server port
+EXPOSE 3000
+
+# Run dev server (source code will be mounted as volume)
+CMD ["pnpm", "dev"]

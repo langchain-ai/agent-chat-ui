@@ -4,7 +4,6 @@ import { AIMessage, Checkpoint, Message } from "@langchain/langgraph-sdk";
 import { getContentString } from "../utils";
 import { BranchSwitcher, CommandBar } from "./shared";
 import { MarkdownText } from "../markdown-text";
-import { LoadExternalComponent } from "@langchain/langgraph-sdk/react-ui";
 import { cn } from "@/lib/utils";
 import { ToolCalls, ToolResult } from "./tool-calls";
 import { MessageContentComplex } from "@langchain/core/messages";
@@ -14,6 +13,15 @@ import { ThreadView } from "../agent-inbox";
 import { useQueryState, parseAsBoolean } from "nuqs";
 import { GenericInterruptView } from "./generic-interrupt";
 import { useArtifact } from "../artifact";
+import { ReflexionGraph } from "../reflexion-graph";
+import { DO_NOT_RENDER_ID_PREFIX } from "@/lib/ensure-tool-responses";
+
+// Expose the local useArtifact hook to the generative UI context
+// ensuring the external component finds it when requiring "@local/artifact"
+import { experimental_loadShare } from "@langchain/langgraph-sdk/react-ui";
+experimental_loadShare("@local/artifact", {
+  useArtifact,
+});
 
 function CustomComponent({
   message,
@@ -24,21 +32,31 @@ function CustomComponent({
 }) {
   const artifact = useArtifact();
   const { values } = useStreamContext();
+
   const customComponents = values.ui?.filter(
-    (ui) => ui.metadata?.message_id === message.id,
+    (ui) =>
+      (ui.metadata?.message_id && ui.metadata?.message_id === message.id) ||
+      (ui.metadata?.tool_call_id && (message as any).tool_call_id && ui.metadata?.tool_call_id === (message as any).tool_call_id)
   );
 
   if (!customComponents?.length) return null;
+
   return (
     <Fragment key={message.id}>
-      {customComponents.map((customComponent) => (
-        <LoadExternalComponent
-          key={customComponent.id}
-          stream={thread}
-          message={customComponent}
-          meta={{ ui: customComponent, artifact }}
-        />
-      ))}
+      {customComponents.map((customComponent) => {
+        // Local Override for ReflexionGraph
+        if (customComponent.name === "ReflexionGraph" || customComponent.name === "ReflexionArtifact") {
+          return (
+            <ReflexionGraph
+              key={customComponent.id}
+              html={customComponent.props?.html as any}
+              artifactInstance={artifact}
+            />
+          );
+        }
+
+        return null;
+      })}
     </Fragment>
   );
 }
@@ -78,10 +96,20 @@ function Interrupt({
   isLastMessage,
   hasNoAIOrToolMessages,
 }: InterruptProps) {
+  const thread = useStreamContext();
   const fallbackValue = Array.isArray(interrupt)
     ? (interrupt as Record<string, any>[])
     : (((interrupt as { value?: unknown } | undefined)?.value ??
-        interrupt) as Record<string, any>);
+      interrupt) as Record<string, any>);
+
+  if (interrupt) {
+    const lastMsgId = thread.messages?.length ? thread.messages[thread.messages.length - 1]?.id : "none";
+
+    console.log(`[Interrupt] Status: ${isLastMessage ? 'LAST' : 'NOT-LAST'} | threadLast: ${lastMsgId}`, {
+      type: isAgentInboxInterruptSchema(interrupt) ? "InBox" : "Generic",
+      content: fallbackValue
+    });
+  }
 
   return (
     <>
@@ -90,8 +118,8 @@ function Interrupt({
           <ThreadView interrupt={interrupt} />
         )}
       {interrupt &&
-      !isAgentInboxInterruptSchema(interrupt) &&
-      (isLastMessage || hasNoAIOrToolMessages) ? (
+        !isAgentInboxInterruptSchema(interrupt) &&
+        (isLastMessage || hasNoAIOrToolMessages) ? (
         <GenericInterruptView interrupt={fallbackValue} />
       ) : null}
     </>
@@ -115,13 +143,61 @@ export function AssistantMessage({
   );
 
   const thread = useStreamContext();
+  const threadMessages = thread.messages ?? [];
+
+  // Determine if this is the last VISIBLE message (ignoring filtered tool messages and truly empty AI messages)
+  const visibleMessages = threadMessages.filter((m) => {
+    // For AI messages, check if they have any content at all
+    const hasAnyContent = m.type === "ai" ? (
+      (typeof m.content === 'string' && m.content.trim().length > 0) ||
+      (Array.isArray(m.content) && m.content.length > 0) ||
+      ("tool_calls" in m && Array.isArray(m.tool_calls) && (m.tool_calls as any[]).length > 0)
+    ) : true;
+
+    const isVisible = (
+      m?.id && !m.id.startsWith(DO_NOT_RENDER_ID_PREFIX) &&
+      (m as any).type !== "ui" &&
+      m.type !== "tool" &&
+      hasAnyContent
+    );
+
+    return isVisible;
+  });
+
+  const isLastVisibleMessage =
+    visibleMessages.length > 0 &&
+    visibleMessages[visibleMessages.length - 1]?.id === message?.id;
+
   const isLastMessage =
-    thread.messages[thread.messages.length - 1].id === message?.id;
-  const hasNoAIOrToolMessages = !thread.messages.find(
+    threadMessages.length > 0 &&
+    threadMessages[threadMessages.length - 1]?.id === message?.id;
+
+  const hasNoAIOrToolMessages = !threadMessages.find(
     (m) => m.type === "ai" || m.type === "tool",
   );
   const meta = message ? thread.getMessagesMetadata(message) : undefined;
   const threadInterrupt = thread.interrupt;
+
+  if (message && (isLastMessage || isLastVisibleMessage)) {
+    const hasTools = "tool_calls" in message && (message.tool_calls as any[])?.length > 0;
+    const contentLen = typeof message.content === "string" ? message.content.length : Array.isArray(message.content) ? message.content.length : 0;
+
+    console.log("[AssistantMessage] Rendering latest visible message:", {
+      id: message.id,
+      type: message.type,
+      isLastRaw: isLastMessage,
+      isLastVisible: isLastVisibleMessage,
+      hasInterrupt: !!threadInterrupt,
+      toolCalls: hasTools ? (message.tool_calls as any[]).length : 0,
+      contentLen
+    });
+  }
+
+  if (threadInterrupt && isLastVisibleMessage && message?.id) {
+    console.log("[AssistantMessage] HITL Active on message:", message.id, {
+      interrupt: threadInterrupt
+    });
+  }
 
   const parentCheckpoint = meta?.firstSeenState?.parent_checkpoint;
   const anthropicStreamedToolCalls = Array.isArray(content)
@@ -150,15 +226,26 @@ export function AssistantMessage({
       <div className="flex w-full flex-col gap-2">
         {isToolResult ? (
           <>
-            <ToolResult message={message} />
             <Interrupt
               interrupt={threadInterrupt}
-              isLastMessage={isLastMessage}
+              isLastMessage={isLastVisibleMessage}
               hasNoAIOrToolMessages={hasNoAIOrToolMessages}
             />
+            <ToolResult message={message} />
+            {message && (
+              <CustomComponent
+                message={message}
+                thread={thread}
+              />
+            )}
           </>
         ) : (
           <>
+            <Interrupt
+              interrupt={threadInterrupt}
+              isLastMessage={isLastVisibleMessage}
+              hasNoAIOrToolMessages={hasNoAIOrToolMessages}
+            />
             {contentString.length > 0 && (
               <div className="py-1">
                 <MarkdownText>{contentString}</MarkdownText>
@@ -185,11 +272,6 @@ export function AssistantMessage({
                 thread={thread}
               />
             )}
-            <Interrupt
-              interrupt={threadInterrupt}
-              isLastMessage={isLastMessage}
-              hasNoAIOrToolMessages={hasNoAIOrToolMessages}
-            />
             <div
               className={cn(
                 "mr-auto flex items-center gap-2 transition-opacity",

@@ -15,7 +15,7 @@ export function ThreadView({ interrupt }: ThreadViewProps) {
   const interrupts = useMemo(
     () =>
       (Array.isArray(interrupt) ? interrupt : [interrupt]).filter(
-        (item): item is Interrupt<HITLRequest> => !!item,
+        (item): item is Interrupt<HITLRequest> => !!item && !!item.value,
       ),
     [interrupt],
   );
@@ -31,6 +31,12 @@ export function ThreadView({ interrupt }: ThreadViewProps) {
   const activeInterrupt = interrupts[activeInterruptIndex];
   const activeDescription =
     activeInterrupt?.value?.action_requests?.[0]?.description ?? "";
+
+  // Defensive check: ensure we have valid interrupt data
+  if (!activeInterrupt || !activeInterrupt.value) {
+    console.warn("[ThreadView] No valid interrupt data available");
+    return null;
+  }
 
   const handleShowSidePanel = (
     showStateFlag: boolean,
@@ -51,10 +57,6 @@ export function ThreadView({ interrupt }: ThreadViewProps) {
       setShowDescription(false);
     }
   };
-
-  if (!activeInterrupt) {
-    return null;
-  }
 
   return (
     <div className="flex h-full w-full flex-col rounded-2xl bg-gray-50 p-8 lg:flex-row">

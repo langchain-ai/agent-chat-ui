@@ -1,3 +1,5 @@
+"use client";
+
 import {
   HTMLAttributes,
   ReactNode,
@@ -99,13 +101,27 @@ export function ArtifactProvider(props: { children?: ReactNode }) {
   const content = useState<HTMLElement | null>(null);
   const title = useState<HTMLElement | null>(null);
 
-  const open = useState<string | null>(null);
-  const mounted = useState<string | null>(null);
+  const [openVal, setOpenVal] = useState<string | null>(null);
+  const [mountedVal, setMountedVal] = useState<string | null>(null);
   const context = useState<Record<string, unknown>>({});
+
+  const setOpen: Setter<string | null> = useCallback((val) => {
+    setOpenVal(val);
+  }, []);
+
+  const setMounted: Setter<string | null> = useCallback((val) => {
+    setMountedVal(val);
+  }, []);
 
   return (
     <ArtifactSlotContext.Provider
-      value={{ open, mounted, title, content, context }}
+      value={{
+        open: [openVal, setOpen],
+        mounted: [mountedVal, setMounted],
+        title,
+        content,
+        context
+      }}
     >
       {props.children}
     </ArtifactSlotContext.Provider>
@@ -156,14 +172,14 @@ export function useArtifact() {
     ArtifactContent,
     { open, setOpen, context: ctxContext, setContext: ctxSetContext },
   ] as [
-    typeof ArtifactContent,
-    {
-      open: typeof open;
-      setOpen: typeof setOpen;
-      context: typeof ctxContext;
-      setContext: typeof ctxSetContext;
-    },
-  ];
+      typeof ArtifactContent,
+      {
+        open: typeof open;
+        setOpen: typeof setOpen;
+        context: typeof ctxContext;
+        setContext: typeof ctxSetContext;
+      },
+    ];
 }
 
 /**
@@ -174,7 +190,9 @@ export function useArtifactOpen() {
   const [ctxOpen, setCtxOpen] = context.open;
 
   const open = ctxOpen !== null;
-  const onClose = useCallback(() => setCtxOpen(null), [setCtxOpen]);
+  const onClose = useCallback(() => {
+    setCtxOpen(null);
+  }, [setCtxOpen]);
 
   return [open, onClose] as const;
 }

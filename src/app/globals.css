@@ -40,6 +40,18 @@
   --sidebar-ring: oklch(0.87 0 0);
 }
 
+/* Pulse animation for selected nodes in world map */
+@keyframes node-pulse {
+  0%, 100% { 
+    opacity: 0.6; 
+    transform: scale(1); 
+  }
+  50% { 
+    opacity: 0.9; 
+    transform: scale(1.1); 
+  }
+}
+
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);

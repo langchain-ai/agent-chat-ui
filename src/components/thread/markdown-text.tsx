@@ -6,9 +6,10 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeKatex from "rehype-katex";
 import remarkMath from "remark-math";
-import { FC, memo, useState } from "react";
+import { FC, memo, useState, useEffect, useRef } from "react";
 import { CheckIcon, CopyIcon } from "lucide-react";
 import { SyntaxHighlighter } from "@/components/thread/syntax-highlighter";
+import mermaid from "mermaid";
 
 import { TooltipIconButton } from "@/components/thread/tooltip-icon-button";
 import { cn } from "@/lib/utils";
@@ -216,6 +217,11 @@ const defaultComponents: any = {
       const language = match[1];
       const code = String(children).replace(/\n$/, "");
 
+      // Handle Mermaid diagrams
+      if (language === "mermaid") {
+        return <MermaidDiagram code={code} />;
+      }
+
       return (
         <>
           <CodeHeader
@@ -253,6 +259,66 @@ const MarkdownTextImpl: FC<{ children: string }> = ({ children }) => {
       >
         {children}
       </ReactMarkdown>
+    </div>
+  );
+};
+
+// Mermaid diagram component for client-side rendering
+const MermaidDiagram: FC<{ code: string }> = ({ code }) => {
+  const diagramRef = useRef<HTMLDivElement>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isRendered, setIsRendered] = useState(false);
+
+  useEffect(() => {
+    if (!diagramRef.current || isRendered) return;
+
+    const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
+    const element = diagramRef.current;
+    element.id = id;
+    element.textContent = code;
+
+    // Initialize Mermaid
+    mermaid.initialize({ 
+      startOnLoad: false,
+      theme: 'default',
+      securityLevel: 'loose',
+    });
+
+    // Render the diagram
+    mermaid
+      .run({
+        nodes: [element],
+      })
+      .then(() => {
+        setIsRendered(true);
+        setError(null);
+      })
+      .catch((err) => {
+        console.error("Mermaid rendering error:", err);
+        setError(err.message || "Failed to render diagram");
+      });
+
+    return () => {
+      // Cleanup
+      if (element) {
+        element.innerHTML = "";
+        setIsRendered(false);
+      }
+    };
+  }, [code, isRendered]);
+
+  if (error) {
+    return (
+      <div className="my-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+        <p className="text-red-800 text-sm">Mermaid diagram error: {error}</p>
+        <pre className="mt-2 text-xs text-red-600 overflow-auto">{code}</pre>
+      </div>
+    );
+  }
+
+  return (
+    <div className="my-4 flex justify-center overflow-x-auto">
+      <div ref={diagramRef} className="mermaid" />
     </div>
   );
 };

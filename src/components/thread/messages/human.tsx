@@ -51,26 +51,27 @@ export function HumanMessage({
 
   const handleSubmitEdit = () => {
     setIsEditing(false);
+    console.log("[HumanMessage] Submitting edit:", value);
 
     const newMessage: Message = { type: "human", content: value };
-    thread.submit(
-      { messages: [newMessage] },
-      {
-        checkpoint: parentCheckpoint,
-        streamMode: ["values"],
-        streamSubgraphs: true,
-        streamResumable: true,
-        optimisticValues: (prev) => {
-          const values = meta?.firstSeenState?.values;
-          if (!values) return prev;
+    const options = {
+      checkpoint: parentCheckpoint,
+      streamMode: ["values"] as any,
+      streamSubgraphs: true,
+      streamResumable: true,
+      optimisticValues: (prev: any) => {
+        const values = meta?.firstSeenState?.values;
+        if (!values) return prev;
 
-          return {
-            ...values,
-            messages: [...(values.messages ?? []), newMessage],
-          };
-        },
+        return {
+          ...values,
+          messages: [...(values.messages ?? []), newMessage],
+        };
       },
-    );
+    };
+
+    console.log("[HumanMessage] Stream submit options:", options);
+    thread.submit({ messages: [newMessage] }, options);
   };
 
   return (

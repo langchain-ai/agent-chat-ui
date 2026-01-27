@@ -1,9 +1,12 @@
+"use client";
+
 import { v4 as uuidv4 } from "uuid";
-import { ReactNode, useEffect, useRef } from "react";
+import { ReactNode, useEffect, useRef, useState, FormEvent } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
-import { useState, FormEvent } from "react";
+import { useBranding } from "@/providers/Branding";
+import { withThreadSpan } from "@/lib/otel-client";
 import { Button } from "../ui/button";
 import { Checkpoint, Message } from "@langchain/langgraph-sdk";
 import { AssistantMessage, AssistantMessageLoading } from "./messages/ai";
@@ -19,11 +22,14 @@ import {
   LoaderCircle,
   PanelRightOpen,
   PanelRightClose,
-  SquarePen,
   XIcon,
   Plus,
+  Sparkles,
+  SquarePen,
+  Fingerprint,
+  LayoutDashboard,
 } from "lucide-react";
-import { useQueryState, parseAsBoolean } from "nuqs";
+import { useQueryState, parseAsBoolean, useQueryStates } from "nuqs";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 import ThreadHistory from "./history";
 import { toast } from "sonner";
@@ -45,28 +51,36 @@ import {
   ArtifactTitle,
   useArtifactContext,
 } from "./artifact";
+import { ThemeToggle } from "../theme-toggle";
+import { FolderOpen } from "lucide-react";
+
+import { UserMenu } from "./user-menu";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
   footer?: ReactNode;
   className?: string;
   contentClassName?: string;
+  style?: React.CSSProperties;
 }) {
   const context = useStickToBottomContext();
   return (
     <div
       ref={context.scrollRef}
-      style={{ width: "100%", height: "100%" }}
+      style={{ width: "100%", height: "100%", maxHeight: "100%", overflow: "hidden", display: "flex", flexDirection: "column", ...props.style }}
       className={props.className}
     >
       <div
         ref={context.contentRef}
         className={props.contentClassName}
+        style={{ flex: "1 1 auto", overflowY: "auto", minHeight: 0, position: "relative", zIndex: 1 }}
       >
         {props.content}
       </div>
 
-      {props.footer}
+      <div className="bg-background" style={{ flexShrink: 0, position: "relative", zIndex: 20 }}>
+        {props.footer}
+      </div>
     </div>
   );
 }
@@ -87,31 +101,14 @@ function ScrollToBottom(props: { className?: string }) {
   );
 }
 
-function OpenGitHubRepo() {
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <a
-            href="https://github.com/langchain-ai/agent-chat-ui"
-            target="_blank"
-            className="flex items-center justify-center"
-          >
-            <GitHubSVG
-              width="24"
-              height="24"
-            />
-          </a>
-        </TooltipTrigger>
-        <TooltipContent side="left">
-          <p>Open GitHub repo</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
+interface ThreadProps {
+  embedded?: boolean;
+  className?: string;
+  hideArtifacts?: boolean;
 }
 
-export function Thread() {
+export function Thread({ embedded, className, hideArtifacts }: ThreadProps = {}) {
+  const { branding } = useBranding();
   const [artifactContext, setArtifactContext] = useArtifactContext();
   const [artifactOpen, closeArtifact] = useArtifactOpen();
 
@@ -125,22 +122,68 @@ export function Thread() {
     parseAsBoolean.withDefault(false),
   );
   const [input, setInput] = useState("");
+  const stream = useStreamContext();
+  const {
+    messages = [],
+    isLoading,
+    setApiKey,
+    apiUrl = "http://localhost:8080",
+  } = stream;
   const {
     contentBlocks,
     setContentBlocks,
+    uploadedDocuments,
+    uploading,
+    folderUploading,
+    folderUploadProgress,
     handleFileUpload,
+    uploadFolder,
     dropRef,
     removeBlock,
+    removeDocument,
     resetBlocks: _resetBlocks,
     dragOver,
     handlePaste,
-  } = useFileUpload();
+  } = useFileUpload({ apiUrl, threadId });
   const [firstTokenReceived, setFirstTokenReceived] = useState(false);
-  const isLargeScreen = useMediaQuery("(min-width: 1024px)");
+  const [processedArtifactIds, setProcessedArtifactIds] = useState<Set<string>>(new Set());
+  
+  // Use URL query params for pending artifacts (shared with workbench)
+  const [pendingArtifactIds, setPendingArtifactIds] = useQueryState<string[]>("pendingArtifacts", {
+    parse: (value) => value ? value.split(",").filter(Boolean) : [],
+    serialize: (value) => value && value.length > 0 ? value.join(",") : "",
+    defaultValue: []
+  });
 
-  const stream = useStreamContext();
-  const messages = stream.messages;
-  const isLoading = stream.isLoading;
+  // Trigger enrichment approval when new documents are uploaded (Issue #12)
+  useEffect(() => {
+    if (uploadedDocuments.length === 0) return;
+
+    const newArtifactIds = uploadedDocuments
+      .map((d) => d.artifact_id || d.document_id)
+      .filter((id): id is string => !!id && !processedArtifactIds.has(id));
+
+    if (newArtifactIds.length > 0) {
+      // Mark as processed
+      setProcessedArtifactIds((prev) => {
+        const updated = new Set(prev);
+        newArtifactIds.forEach((id) => updated.add(id));
+        return updated;
+      });
+
+      // Small delay to allow backend to process enrichment
+      const timer = setTimeout(() => {
+        setPendingArtifactIds((prev) => [...prev, ...newArtifactIds]);
+        // Switch to enrichment view in workbench
+        stream.setWorkbenchView("enrichment").catch(console.error);
+      }, 1500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [uploadedDocuments, processedArtifactIds]);
+
+  const isLargeScreen = useMediaQuery("(min-width: 1024px)");
+  const safeMessages = messages ?? [];
 
   const lastError = useRef<string | undefined>(undefined);
 
@@ -158,7 +201,7 @@ export function Thread() {
       return;
     }
     try {
-      const message = (stream.error as any).message;
+      const message = (stream?.error as any)?.message;
       if (!message || lastError.current === message) {
         // Message has already been logged. do not modify ref, return early.
         return;
@@ -180,23 +223,57 @@ export function Thread() {
     }
   }, [stream.error]);
 
-  // TODO: this should be part of the useStream hook
   const prevMessageLength = useRef(0);
   useEffect(() => {
     if (
-      messages.length !== prevMessageLength.current &&
-      messages?.length &&
-      messages[messages.length - 1].type === "ai"
+      safeMessages.length !== prevMessageLength.current &&
+      safeMessages?.length &&
+      safeMessages[safeMessages.length - 1].type === "ai"
     ) {
       setFirstTokenReceived(true);
     }
 
-    prevMessageLength.current = messages.length;
-  }, [messages]);
+    prevMessageLength.current = safeMessages.length;
+  }, [safeMessages]);
+
+  const handleFolderUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("[Thread] handleFolderUpload called");
+    const files = e.target.files;
+    if (!files || files.length === 0) {
+      console.log("[Thread] No files selected");
+      return;
+    }
+
+    console.log("[Thread] Files selected:", files.length, Array.from(files).map(f => `${f.name} (${f.type})`));
+    const fileArray = Array.from(files);
+    const zipFile = fileArray.find((f) => f.name.endsWith(".zip"));
+    const otherFiles = fileArray.filter((f) => !f.name.endsWith(".zip"));
+
+    console.log("[Thread] Calling uploadFolder - zipFile:", zipFile?.name, "otherFiles:", otherFiles.length);
+    const result = await uploadFolder(
+      otherFiles.length > 0 ? otherFiles : null,
+      zipFile || null
+    );
+    console.log("[Thread] uploadFolder result:", result);
+
+    if (result && result.successful > 0) {
+      const artifactIds = result.artifacts
+        .filter((a) => a.status === "success")
+        .map((a) => a.artifact_id);
+      
+      if (artifactIds.length > 0) {
+        setPendingArtifactIds(artifactIds);
+        // Switch to enrichment view in workbench
+        stream.setWorkbenchView("enrichment").catch(console.error);
+      }
+    }
+
+    e.target.value = "";
+  };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if ((input.trim().length === 0 && contentBlocks.length === 0) || isLoading)
+    if ((input.trim().length === 0 && contentBlocks.length === 0 && uploadedDocuments.length === 0) || isLoading || uploading || folderUploading)
       return;
     setFirstTokenReceived(false);
 
@@ -209,40 +286,75 @@ export function Thread() {
       ] as Message["content"],
     };
 
-    const toolMessages = ensureToolCallsHaveResponses(stream.messages);
+    const toolMessages = ensureToolCallsHaveResponses(safeMessages);
 
-    const context =
-      Object.keys(artifactContext).length > 0 ? artifactContext : undefined;
+    const orgContext = typeof window !== 'undefined' ? localStorage.getItem('reflexion_org_context') : null;
+    const context = {
+      ...(Object.keys(artifactContext).length > 0 ? artifactContext : {}),
+      ...(orgContext ? { user_id: orgContext } : {}),
+      // Include uploaded document IDs for Hydration agent to process
+      ...(uploadedDocuments.length > 0 ? { 
+        pending_document_ids: uploadedDocuments.map(d => d.document_id) 
+      } : {})
+    };
 
-    stream.submit(
-      { messages: [...toolMessages, newHumanMessage], context },
+    console.log("[Thread] Submitting new human message:", {
+      content: newHumanMessage.content,
+      context,
+      toolMessagesCount: toolMessages.length,
+      uploadedDocuments: uploadedDocuments.length
+    });
+
+    // Trace message submission, especially for new threads
+    const isNewThread = !threadId;
+    withThreadSpan(
+      "message.submit",
       {
-        streamMode: ["values"],
-        streamSubgraphs: true,
-        streamResumable: true,
-        optimisticValues: (prev) => ({
-          ...prev,
-          context,
-          messages: [
-            ...(prev.messages ?? []),
-            ...toolMessages,
-            newHumanMessage,
-          ],
-        }),
+        "thread.id": threadId || "new",
+        "thread.is_new": isNewThread,
+        "message.has_text": input.trim().length > 0,
+        "message.content_blocks": contentBlocks.length,
+        "message.uploaded_documents": uploadedDocuments.length,
+        "message.tool_messages": toolMessages.length,
+        "api.url": stream.apiUrl || "unknown",
       },
-    );
+      async () => {
+        (stream as any).submit(
+          { messages: [...toolMessages, newHumanMessage], context },
+          {
+            streamMode: ["values"],
+            streamSubgraphs: true,
+            streamResumable: true,
+            optimisticValues: (prev: any) => ({
+              ...(prev || {}),
+              context,
+              messages: [
+                ...((prev?.messages || [])),
+                ...toolMessages,
+                newHumanMessage,
+              ],
+            }),
+          },
+        );
+      }
+    ).catch((err) => {
+      console.error("[OTEL] Failed to trace message submission:", err);
+    });
 
     setInput("");
     setContentBlocks([]);
+    // Note: uploadedDocuments are kept in state so they can be referenced by the agent
+    // They will be cleared when the thread is reset or when explicitly removed
   };
+
+
 
   const handleRegenerate = (
     parentCheckpoint: Checkpoint | null | undefined,
   ) => {
-    // Do this so the loading state is correct
     prevMessageLength.current = prevMessageLength.current - 1;
     setFirstTokenReceived(false);
-    stream.submit(undefined, {
+    (stream as any).submit(undefined, {
       checkpoint: parentCheckpoint,
       streamMode: ["values"],
       streamSubgraphs: true,
@@ -250,16 +362,20 @@ export function Thread() {
     });
   };
 
-  const chatStarted = !!threadId || !!messages.length;
-  const hasNoAIOrToolMessages = !messages.find(
+  const chatStarted = !!threadId || !!safeMessages.length;
+  const hasNoAIOrToolMessages = !safeMessages.find(
     (m) => m.type === "ai" || m.type === "tool",
   );
 
   return (
-    <div className="flex h-screen w-full overflow-hidden">
+    <div className={cn(
+      "flex w-full overflow-hidden",
+      embedded ? "h-full max-h-full" : "h-screen",
+      className
+    )} style={embedded ? { height: '100%', maxHeight: '100%' } : undefined}>
       <div className="relative hidden lg:flex">
         <motion.div
-          className="absolute z-20 h-full overflow-hidden border-r bg-white"
+          className="absolute z-20 h-full overflow-hidden border-r bg-background"
           style={{ width: 300 }}
           animate={
             isLargeScreen
@@ -289,8 +405,8 @@ export function Thread() {
         )}
       >
         <motion.div
-          className={cn(
-            "relative flex min-w-0 flex-1 flex-col overflow-hidden",
+            className={cn(
+            "relative flex min-w-0 flex-1 flex-col overflow-hidden min-h-0",
             !chatStarted && "grid-rows-[1fr]",
           )}
           layout={isLargeScreen}
@@ -325,8 +441,23 @@ export function Thread() {
                   </Button>
                 )}
               </div>
-              <div className="absolute top-2 right-4 flex items-center">
-                <OpenGitHubRepo />
+              <div className="absolute top-2 right-4 flex items-center gap-4">
+                {!embedded && (
+                  <>
+                    <ThemeToggle />
+                    <UserMenu />
+                    <TooltipIconButton
+                      size="lg"
+                      className="p-4"
+                      tooltip="Open Workbench"
+                      variant="ghost"
+                      onClick={() => window.location.href = "/workbench/map"}
+                    >
+                      <LayoutDashboard className="size-5" />
+                    </TooltipIconButton>
+                  </>
+                )}
+
               </div>
             </div>
           )}
@@ -363,17 +494,31 @@ export function Thread() {
                   <LangGraphLogoSVG
                     width={32}
                     height={32}
+                    className="text-primary"
                   />
                   <span className="text-xl font-semibold tracking-tight">
-                    Agent Chat
+                    {branding.brand_title}
                   </span>
                 </motion.button>
               </div>
 
               <div className="flex items-center gap-4">
-                <div className="flex items-center">
-                  <OpenGitHubRepo />
-                </div>
+                {!embedded && (
+                  <div className="flex items-center gap-4">
+                    <ThemeToggle />
+                    <UserMenu />
+                    <TooltipIconButton
+                      size="lg"
+                      className="p-4"
+                      tooltip="Open Workbench"
+                      variant="ghost"
+                      onClick={() => window.location.href = "/workbench/map"}
+                    >
+                      <LayoutDashboard className="size-5" />
+                    </TooltipIconButton>
+                  </div>
+                )}
+
                 <TooltipIconButton
                   size="lg"
                   className="p-4"
@@ -385,22 +530,34 @@ export function Thread() {
                 </TooltipIconButton>
               </div>
 
-              <div className="from-background to-background/0 absolute inset-x-0 top-full h-5 bg-gradient-to-b" />
+              <div className="from-background to-background/0 absolute inset-x-0 top-full h-5 bg-gradient-to-b pointer-events-none" style={{ zIndex: 5 }} />
             </div>
           )}
 
-          <StickToBottom className="relative flex-1 overflow-hidden">
+          <StickToBottom className="relative flex-1 overflow-hidden min-h-0" style={{ maxHeight: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
             <StickyToBottomContent
               className={cn(
-                "absolute inset-0 overflow-y-scroll px-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent",
-                !chatStarted && "mt-[25vh] flex flex-col items-stretch",
-                chatStarted && "grid grid-rows-[1fr_auto]",
+                "px-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent",
+                !chatStarted && "mt-[25vh]",
               )}
-              contentClassName="pt-8 pb-16 max-w-3xl mx-auto flex flex-col gap-4 w-full"
+              contentClassName="pt-8 pb-32 max-w-3xl mx-auto flex flex-col gap-4 w-full"
+              style={{ maxHeight: '100%', height: '100%', flex: '1 1 auto', minHeight: 0, overflow: 'hidden' }}
               content={
                 <>
-                  {messages
-                    .filter((m) => !m.id?.startsWith(DO_NOT_RENDER_ID_PREFIX))
+                  {safeMessages
+                    .filter((m) => {
+                      const hasContentString = typeof m.content === 'string' && m.content.length > 0;
+                      const hasContentArray = Array.isArray(m.content) && m.content.length > 0;
+                      const hasStandardToolCalls = "tool_calls" in m && Array.isArray(m.tool_calls) && (m.tool_calls as any[]).length > 0;
+                      const hasAnthropicToolCalls = Array.isArray(m.content) && m.content.some(c => (c as any).type === "tool_use");
+
+                      return (
+                        m?.id && !m.id.startsWith(DO_NOT_RENDER_ID_PREFIX) &&
+                        (m as any).type !== "ui" &&
+                        m.type !== "tool" &&
+                        (m.type !== "ai" || hasContentString || hasContentArray || hasStandardToolCalls || hasAnthropicToolCalls)
+                      );
+                    })
                     .map((message, index) =>
                       message.type === "human" ? (
                         <HumanMessage
@@ -417,8 +574,6 @@ export function Thread() {
                         />
                       ),
                     )}
-                  {/* Special rendering case where there are no AI/tool messages, but there is an interrupt.
-                    We need to render it outside of the messages list, since there are no messages to render */}
                   {hasNoAIOrToolMessages && !!stream.interrupt && (
                     <AssistantMessage
                       key="interrupt-msg"
@@ -433,12 +588,12 @@ export function Thread() {
                 </>
               }
               footer={
-                <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-white">
+                <div className="flex flex-col items-center gap-8 bg-background shrink-0 w-full relative pt-4" style={{ flexShrink: 0, maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box', zIndex: 20, position: 'relative' }}>
                   {!chatStarted && (
                     <div className="flex items-center gap-3">
-                      <LangGraphLogoSVG className="h-8 flex-shrink-0" />
+                      <LangGraphLogoSVG className="h-8 flex-shrink-0 text-primary" />
                       <h1 className="text-2xl font-semibold tracking-tight">
-                        Agent Chat
+                        {branding.brand_title}
                       </h1>
                     </div>
                   )}
@@ -448,11 +603,12 @@ export function Thread() {
                   <div
                     ref={dropRef}
                     className={cn(
-                      "bg-muted relative z-10 mx-auto mb-8 w-full max-w-3xl rounded-2xl shadow-xs transition-all",
+                      "bg-muted relative mx-auto mb-8 w-full max-w-3xl rounded-2xl shadow-xs transition-all",
                       dragOver
                         ? "border-primary border-2 border-dotted"
                         : "border border-solid",
                     )}
+                    style={{ maxWidth: 'calc(100% - 2rem)', boxSizing: 'border-box', zIndex: 10, position: 'relative' }}
                   >
                     <form
                       onSubmit={handleSubmit}
@@ -499,24 +655,48 @@ export function Thread() {
                             </Label>
                           </div>
                         </div>
-                        <Label
-                          htmlFor="file-input"
-                          className="flex cursor-pointer items-center gap-2"
-                        >
-                          <Plus className="size-5 text-gray-600" />
-                          <span className="text-sm text-gray-600">
-                            Upload PDF or Image
-                          </span>
-                        </Label>
-                        <input
-                          id="file-input"
-                          type="file"
-                          onChange={handleFileUpload}
-                          multiple
-                          accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
-                          className="hidden"
-                        />
-                        {stream.isLoading ? (
+                        <div className="flex items-center gap-4">
+                          <Label
+                            htmlFor="file-input"
+                            className="flex cursor-pointer items-center gap-2"
+                          >
+                            <Plus className="size-5 text-gray-600" />
+                            <span className="text-sm text-gray-600">
+                              Upload File
+                            </span>
+                          </Label>
+                          <input
+                            id="file-input"
+                            type="file"
+                            onChange={handleFileUpload}
+                            multiple
+                            accept="*/*"
+                            className="hidden"
+                          />
+                          <Label
+                            htmlFor="folder-input"
+                            className="flex cursor-pointer items-center gap-2"
+                          >
+                            <FolderOpen className="size-5 text-gray-600" />
+                            <span className="text-sm text-gray-600">
+                              Upload Folder (ZIP)
+                            </span>
+                          </Label>
+                          <input
+                            id="folder-input"
+                            type="file"
+                            onChange={handleFolderUpload}
+                            accept=".zip,application/zip"
+                            className="hidden"
+                          />
+                        </div>
+                        {folderUploading && folderUploadProgress && (
+                          <div className="text-xs text-muted-foreground">
+                            Uploading: {folderUploadProgress.completed} / {folderUploadProgress.total}
+                            {folderUploadProgress.failed > 0 && ` (${folderUploadProgress.failed} failed)`}
+                          </div>
+                        )}
+                        {isLoading ? (
                           <Button
                             key="stop"
                             onClick={() => stream.stop()}
@@ -531,7 +711,9 @@ export function Thread() {
                             className="ml-auto shadow-md transition-all"
                             disabled={
                               isLoading ||
-                              (!input.trim() && contentBlocks.length === 0)
+                              uploading ||
+                              folderUploading ||
+                              (!input.trim() && contentBlocks.length === 0 && uploadedDocuments.length === 0)
                             }
                           >
                             Send
@@ -545,21 +727,24 @@ export function Thread() {
             />
           </StickToBottom>
         </motion.div>
-        <div className="relative flex flex-col border-l">
-          <div className="absolute inset-0 flex min-w-[30vw] flex-col">
-            <div className="grid grid-cols-[1fr_auto] border-b p-4">
-              <ArtifactTitle className="truncate overflow-hidden" />
-              <button
-                onClick={closeArtifact}
-                className="cursor-pointer"
-              >
-                <XIcon className="size-5" />
-              </button>
+        {(!embedded && !hideArtifacts) && (
+          <div className="relative flex flex-col border-l">
+            <div className="absolute inset-0 flex min-w-[30vw] flex-col">
+              <div className="grid grid-cols-[1fr_auto] border-b p-4">
+                <ArtifactTitle className="truncate overflow-hidden" />
+                <button
+                  onClick={closeArtifact}
+                  className="cursor-pointer"
+                >
+                  <XIcon className="size-5" />
+                </button>
+              </div>
+              <ArtifactContent className="relative flex-grow" />
             </div>
-            <ArtifactContent className="relative flex-grow" />
           </div>
-        </div>
+        )}
       </div>
+
     </div>
   );
 }

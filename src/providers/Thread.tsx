@@ -1,3 +1,5 @@
+"use client";
+
 import { validate } from "uuid";
 import { getApiKey } from "@/lib/api-key";
 import { Thread } from "@langchain/langgraph-sdk";
@@ -12,6 +14,8 @@ import {
   SetStateAction,
 } from "react";
 import { createClient } from "./client";
+import { useSession } from "next-auth/react";
+import { withThreadSpan } from "@/lib/otel-client";
 
 interface ThreadContextType {
   getThreads: () => Promise<Thread[]>;
@@ -36,22 +40,43 @@ function getThreadSearchMetadata(
 export function ThreadProvider({ children }: { children: ReactNode }) {
   const [apiUrl] = useQueryState("apiUrl");
   const [assistantId] = useQueryState("assistantId");
+  const { data: session } = useSession();
   const [threads, setThreads] = useState<Thread[]>([]);
   const [threadsLoading, setThreadsLoading] = useState(false);
 
   const getThreads = useCallback(async (): Promise<Thread[]> => {
     if (!apiUrl || !assistantId) return [];
-    const client = createClient(apiUrl, getApiKey() ?? undefined);
 
-    const threads = await client.threads.search({
-      metadata: {
-        ...getThreadSearchMetadata(assistantId),
+    return withThreadSpan(
+      "thread.list",
+      {
+        "thread.assistant_id": assistantId,
+        "api.url": apiUrl,
       },
-      limit: 100,
-    });
+      async () => {
+        // Read organization context from localStorage
+        const orgContext = typeof window !== 'undefined' ? localStorage.getItem('reflexion_org_context') : null;
+        const headers: Record<string, string> = {};
+        if (orgContext) {
+          headers['X-Organization-Context'] = orgContext;
+        }
 
-    return threads;
-  }, [apiUrl, assistantId]);
+        // apiUrl could be null from useQueryState, createClient expects string
+        // Prefer session token (fresh) over localStorage (potentially stale)
+        const token = session?.user?.idToken || getApiKey();
+        const client = createClient(apiUrl || "", token ?? undefined, headers);
+
+        const threads = await client.threads.search({
+          metadata: {
+            ...getThreadSearchMetadata(assistantId),
+          },
+          limit: 100,
+        });
+
+        return threads;
+      }
+    );
+  }, [apiUrl, assistantId, session]);
 
   const value = {
     getThreads,

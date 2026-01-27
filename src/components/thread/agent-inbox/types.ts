@@ -12,6 +12,8 @@ export interface ActionRequest {
   name: string;
   args: Record<string, unknown>;
   description?: string;
+  diff?: string;
+  summary?: string;
 }
 
 export interface ReviewConfig {
@@ -34,11 +36,11 @@ export type DecisionWithEdits =
   | { type: "approve" }
   | { type: "reject"; message?: string }
   | {
-      type: "edit";
-      edited_action: Action;
-      acceptAllowed?: boolean;
-      editsMade?: boolean;
-    };
+    type: "edit";
+    edited_action: Action;
+    acceptAllowed?: boolean;
+    editsMade?: boolean;
+  };
 
 export type Email = {
   id: string;
@@ -66,15 +68,15 @@ export type ThreadData<
 > = {
   thread: Thread<ThreadValues>;
 } & (
-  | {
+    | {
       status: "interrupted";
       interrupts: Interrupt<HITLRequest>[] | undefined;
     }
-  | {
+    | {
       status: "idle" | "busy" | "error";
       interrupts?: never;
     }
-);
+  );
 
 export type ThreadStatusWithAll = ThreadStatus | "all";
 
