@@ -23,6 +23,7 @@ import { ArrowRight } from "lucide-react";
 import { PasswordInput } from "@/components/ui/password-input";
 import { getApiKey } from "@/lib/api-key";
 import { useThreads } from "./Thread";
+import { DEFAULT_HEADERS } from "./client";
 import { toast } from "sonner";
 
 export type StateType = { messages: Message[]; ui?: UIMessage[] };
@@ -82,6 +83,7 @@ const StreamSession = ({
   const streamValue = useTypedStream({
     apiUrl,
     apiKey: apiKey ?? undefined,
+    defaultHeaders: DEFAULT_HEADERS,
     assistantId,
     threadId: threadId ?? null,
     fetchStateHistory: true,
