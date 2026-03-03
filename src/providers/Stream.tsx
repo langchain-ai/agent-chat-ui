@@ -85,6 +85,9 @@ const StreamSession = ({
     assistantId,
     threadId: threadId ?? null,
     fetchStateHistory: true,
+    defaultHeaders: {
+      "x-auth-scheme": "langsmith-api-key"
+    },
     onCustomEvent: (event, options) => {
       if (isUIMessage(event) || isRemoveUIMessage(event)) {
         options.mutate((prev) => {
