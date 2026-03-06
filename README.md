@@ -68,6 +68,16 @@ To use these variables:
 
 When these environment variables are set, the application will use them instead of showing the setup form.
 
+### File Upload Configuration
+
+You can control file upload functionality using the `NEXT_PUBLIC_ENABLE_FILE_UPLOAD` environment variable:
+
+- **Default behavior**: File uploads are **enabled** (upload button, drag & drop, paste functionality)
+- **To disable**: Set `NEXT_PUBLIC_ENABLE_FILE_UPLOAD=false` in your `.env` file
+- **Supported file types**: JPEG, PNG, GIF, WEBP images and PDF files
+
+When disabled, all file upload UI elements are hidden and file handling is disabled.
+
 ## Hiding Messages in the Chat
 
 You can control the visibility of messages within the Agent Chat UI in two main ways:
