@@ -211,9 +211,7 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
               setApiUrl(apiUrl);
               setApiKey(apiKey);
               setAssistantId(assistantId);
-              setAuthScheme(
-                isAgentBuilder ? AGENT_BUILDER_AUTH_SCHEME : "",
-              );
+              setAuthScheme(isAgentBuilder ? AGENT_BUILDER_AUTH_SCHEME : "");
 
               form.reset();
             }}
