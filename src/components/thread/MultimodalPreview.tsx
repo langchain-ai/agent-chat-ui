@@ -3,6 +3,8 @@ import { File, X as XIcon } from "lucide-react";
 import { ContentBlock } from "@langchain/core/messages";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { MIME_TYPES, isSupportedImageType } from "@/lib/multimodal-utils";
+
 export interface MultimodalPreviewProps {
   block: ContentBlock.Multimodal.Data;
   removable?: boolean;
@@ -22,7 +24,7 @@ export const MultimodalPreview: React.FC<MultimodalPreviewProps> = ({
   if (
     block.type === "image" &&
     typeof block.mimeType === "string" &&
-    block.mimeType.startsWith("image/")
+    isSupportedImageType(block.mimeType)
   ) {
     const url = `data:${block.mimeType};base64,${block.data}`;
     let imgClass: string = "rounded-md object-cover h-16 w-16 text-lg";
@@ -52,7 +54,7 @@ export const MultimodalPreview: React.FC<MultimodalPreviewProps> = ({
   }
 
   // PDF block
-  if (block.type === "file" && block.mimeType === "application/pdf") {
+  if (block.type === "file" && block.mimeType === MIME_TYPES.PDF) {
     const filename =
       block.metadata?.filename || block.metadata?.name || "PDF file";
     return (
