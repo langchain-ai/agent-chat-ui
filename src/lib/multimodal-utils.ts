@@ -1,31 +1,46 @@
 import { ContentBlock } from "@langchain/core/messages";
 import { toast } from "sonner";
 
+export const MIME_TYPES = {
+  JPEG: "image/jpeg",
+  PNG: "image/png",
+  GIF: "image/gif",
+  WEBP: "image/webp",
+  PDF: "application/pdf",
+} as const;
+
+export const SUPPORTED_IMAGE_TYPES = [
+  MIME_TYPES.JPEG,
+  MIME_TYPES.PNG,
+  MIME_TYPES.GIF,
+  MIME_TYPES.WEBP,
+] as const;
+
+export const SUPPORTED_FILE_TYPES = [
+  ...SUPPORTED_IMAGE_TYPES,
+  MIME_TYPES.PDF,
+] as const;
+
+export type SupportedImageType = (typeof SUPPORTED_IMAGE_TYPES)[number];
+export type SupportedFileType = (typeof SUPPORTED_FILE_TYPES)[number];
+
 // Returns a Promise of a typed multimodal block for images or PDFs
 export async function fileToContentBlock(
   file: File,
 ): Promise<ContentBlock.Multimodal.Data> {
-  const supportedImageTypes = [
-    "image/jpeg",
-    "image/png",
-    "image/gif",
-    "image/webp",
-  ];
-  const supportedFileTypes = [...supportedImageTypes, "application/pdf"];
-
-  if (!supportedFileTypes.includes(file.type)) {
+  if (!SUPPORTED_FILE_TYPES.includes(file.type as SupportedFileType)) {
     toast.error(
-      `Unsupported file type: ${file.type}. Supported types are: ${supportedFileTypes.join(", ")}`,
+      `Unsupported file type: ${file.type}. Supported types are: ${SUPPORTED_FILE_TYPES.join(", ")}`,
     );
     return Promise.reject(new Error(`Unsupported file type: ${file.type}`));
   }
 
   const data = await fileToBase64(file);
 
-  if (supportedImageTypes.includes(file.type)) {
+  if (SUPPORTED_IMAGE_TYPES.includes(file.type as SupportedImageType)) {
     return {
       type: "image",
-      mimeType: file.type,
+      mimeType: file.type as SupportedImageType,
       data,
       metadata: { name: file.name },
     };
@@ -34,7 +49,7 @@ export async function fileToContentBlock(
   // PDF
   return {
     type: "file",
-    mimeType: "application/pdf",
+    mimeType: MIME_TYPES.PDF,
     data,
     metadata: { filename: file.name },
   };

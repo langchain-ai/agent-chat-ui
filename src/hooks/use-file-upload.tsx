@@ -1,15 +1,12 @@
 import { useState, useRef, useEffect, ChangeEvent } from "react";
 import { toast } from "sonner";
 import { ContentBlock } from "@langchain/core/messages";
-import { fileToContentBlock } from "@/lib/multimodal-utils";
-
-export const SUPPORTED_FILE_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/gif",
-  "image/webp",
-  "application/pdf",
-];
+import {
+  fileToContentBlock,
+  MIME_TYPES,
+  SUPPORTED_FILE_TYPES,
+  type SupportedFileType,
+} from "@/lib/multimodal-utils";
 
 interface UseFileUploadOptions {
   initialBlocks?: ContentBlock.Multimodal.Data[];
@@ -25,15 +22,15 @@ export function useFileUpload({
   const dragCounter = useRef(0);
 
   const isDuplicate = (file: File, blocks: ContentBlock.Multimodal.Data[]) => {
-    if (file.type === "application/pdf") {
+    if (file.type === MIME_TYPES.PDF) {
       return blocks.some(
         (b) =>
           b.type === "file" &&
-          b.mimeType === "application/pdf" &&
+          b.mimeType === MIME_TYPES.PDF &&
           b.metadata?.filename === file.name,
       );
     }
-    if (SUPPORTED_FILE_TYPES.includes(file.type)) {
+    if (SUPPORTED_FILE_TYPES.includes(file.type as SupportedFileType)) {
       return blocks.some(
         (b) =>
           b.type === "image" &&
@@ -49,10 +46,10 @@ export function useFileUpload({
     if (!files) return;
     const fileArray = Array.from(files);
     const validFiles = fileArray.filter((file) =>
-      SUPPORTED_FILE_TYPES.includes(file.type),
+      SUPPORTED_FILE_TYPES.includes(file.type as SupportedFileType),
     );
     const invalidFiles = fileArray.filter(
-      (file) => !SUPPORTED_FILE_TYPES.includes(file.type),
+      (file) => !SUPPORTED_FILE_TYPES.includes(file.type as SupportedFileType),
     );
     const duplicateFiles = validFiles.filter((file) =>
       isDuplicate(file, contentBlocks),
@@ -215,21 +212,21 @@ export function useFileUpload({
     }
     e.preventDefault();
     const validFiles = files.filter((file) =>
-      SUPPORTED_FILE_TYPES.includes(file.type),
+      SUPPORTED_FILE_TYPES.includes(file.type as SupportedFileType),
     );
     const invalidFiles = files.filter(
-      (file) => !SUPPORTED_FILE_TYPES.includes(file.type),
+      (file) => !SUPPORTED_FILE_TYPES.includes(file.type as SupportedFileType),
     );
     const isDuplicate = (file: File) => {
-      if (file.type === "application/pdf") {
+      if (file.type === MIME_TYPES.PDF) {
         return contentBlocks.some(
           (b) =>
             b.type === "file" &&
-            b.mimeType === "application/pdf" &&
+            b.mimeType === MIME_TYPES.PDF &&
             b.metadata?.filename === file.name,
         );
       }
-      if (SUPPORTED_FILE_TYPES.includes(file.type)) {
+      if (SUPPORTED_FILE_TYPES.includes(file.type as SupportedFileType)) {
         return contentBlocks.some(
           (b) =>
             b.type === "image" &&
