@@ -4,8 +4,7 @@ import { ContentBlock } from "@langchain/core/messages";
 import {
   fileToContentBlock,
   MIME_TYPES,
-  SUPPORTED_FILE_TYPES,
-  type SupportedFileType,
+  isSupportedFileType,
 } from "@/lib/multimodal-utils";
 
 interface UseFileUploadOptions {
@@ -30,7 +29,7 @@ export function useFileUpload({
           b.metadata?.filename === file.name,
       );
     }
-    if (SUPPORTED_FILE_TYPES.includes(file.type as SupportedFileType)) {
+    if (isSupportedFileType(file.type)) {
       return blocks.some(
         (b) =>
           b.type === "image" &&
@@ -45,11 +44,9 @@ export function useFileUpload({
     const files = e.target.files;
     if (!files) return;
     const fileArray = Array.from(files);
-    const validFiles = fileArray.filter((file) =>
-      SUPPORTED_FILE_TYPES.includes(file.type as SupportedFileType),
-    );
+    const validFiles = fileArray.filter((file) => isSupportedFileType(file.type));
     const invalidFiles = fileArray.filter(
-      (file) => !SUPPORTED_FILE_TYPES.includes(file.type as SupportedFileType),
+      (file) => !isSupportedFileType(file.type),
     );
     const duplicateFiles = validFiles.filter((file) =>
       isDuplicate(file, contentBlocks),
@@ -105,11 +102,9 @@ export function useFileUpload({
       if (!e.dataTransfer) return;
 
       const files = Array.from(e.dataTransfer.files);
-      const validFiles = files.filter((file) =>
-        SUPPORTED_FILE_TYPES.includes(file.type),
-      );
+      const validFiles = files.filter((file) => isSupportedFileType(file.type));
       const invalidFiles = files.filter(
-        (file) => !SUPPORTED_FILE_TYPES.includes(file.type),
+        (file) => !isSupportedFileType(file.type),
       );
       const duplicateFiles = validFiles.filter((file) =>
         isDuplicate(file, contentBlocks),
@@ -211,11 +206,9 @@ export function useFileUpload({
       return;
     }
     e.preventDefault();
-    const validFiles = files.filter((file) =>
-      SUPPORTED_FILE_TYPES.includes(file.type as SupportedFileType),
-    );
+    const validFiles = files.filter((file) => isSupportedFileType(file.type));
     const invalidFiles = files.filter(
-      (file) => !SUPPORTED_FILE_TYPES.includes(file.type as SupportedFileType),
+      (file) => !isSupportedFileType(file.type),
     );
     const isDuplicate = (file: File) => {
       if (file.type === MIME_TYPES.PDF) {
@@ -226,7 +219,7 @@ export function useFileUpload({
             b.metadata?.filename === file.name,
         );
       }
-      if (SUPPORTED_FILE_TYPES.includes(file.type as SupportedFileType)) {
+      if (isSupportedFileType(file.type)) {
         return contentBlocks.some(
           (b) =>
             b.type === "image" &&

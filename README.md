@@ -38,6 +38,12 @@ pnpm dev
 
 The app will be available at `http://localhost:3000`.
 
+Run unit tests:
+
+```bash
+pnpm test
+```
+
 ## Usage
 
 Once the app is running (or if using the deployed site), you'll be prompted to enter:

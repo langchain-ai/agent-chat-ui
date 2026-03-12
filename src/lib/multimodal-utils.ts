@@ -24,11 +24,21 @@ export const SUPPORTED_FILE_TYPES = [
 export type SupportedImageType = (typeof SUPPORTED_IMAGE_TYPES)[number];
 export type SupportedFileType = (typeof SUPPORTED_FILE_TYPES)[number];
 
+export function isSupportedImageType(
+  type: string,
+): type is SupportedImageType {
+  return (SUPPORTED_IMAGE_TYPES as readonly string[]).includes(type);
+}
+
+export function isSupportedFileType(type: string): type is SupportedFileType {
+  return (SUPPORTED_FILE_TYPES as readonly string[]).includes(type);
+}
+
 // Returns a Promise of a typed multimodal block for images or PDFs
 export async function fileToContentBlock(
   file: File,
 ): Promise<ContentBlock.Multimodal.Data> {
-  if (!SUPPORTED_FILE_TYPES.includes(file.type as SupportedFileType)) {
+  if (!isSupportedFileType(file.type)) {
     toast.error(
       `Unsupported file type: ${file.type}. Supported types are: ${SUPPORTED_FILE_TYPES.join(", ")}`,
     );
@@ -37,10 +47,10 @@ export async function fileToContentBlock(
 
   const data = await fileToBase64(file);
 
-  if (SUPPORTED_IMAGE_TYPES.includes(file.type as SupportedImageType)) {
+  if (isSupportedImageType(file.type)) {
     return {
       type: "image",
-      mimeType: file.type as SupportedImageType,
+      mimeType: file.type,
       data,
       metadata: { name: file.name },
     };
@@ -75,24 +85,18 @@ export function isBase64ContentBlock(
 ): block is ContentBlock.Multimodal.Data {
   if (typeof block !== "object" || block === null || !("type" in block))
     return false;
+
+  const candidate = block as { type: unknown; mimeType?: unknown };
+  if (typeof candidate.mimeType !== "string") return false;
+
   // file type (legacy)
-  if (
-    (block as { type: unknown }).type === "file" &&
-    "mimeType" in block &&
-    typeof (block as { mimeType?: unknown }).mimeType === "string" &&
-    ((block as { mimeType: string }).mimeType.startsWith("image/") ||
-      (block as { mimeType: string }).mimeType === "application/pdf")
-  ) {
-    return true;
+  if (candidate.type === "file") {
+    return isSupportedFileType(candidate.mimeType);
   }
   // image type (new)
-  if (
-    (block as { type: unknown }).type === "image" &&
-    "mimeType" in block &&
-    typeof (block as { mimeType?: unknown }).mimeType === "string" &&
-    (block as { mimeType: string }).mimeType.startsWith("image/")
-  ) {
-    return true;
+  if (candidate.type === "image") {
+    return isSupportedImageType(candidate.mimeType);
   }
+
   return false;
 }
