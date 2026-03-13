@@ -148,4 +148,17 @@
   .shadow-inner-left {
     box-shadow: inset 9px 0 6px -1px rgb(0 0 0 / 0.02);
   }
+
+  @keyframes reasoning-shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  .animate-reasoning-shimmer {
+    animation: reasoning-shimmer 2s linear infinite;
+  }
 }
