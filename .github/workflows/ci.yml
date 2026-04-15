@@ -14,6 +14,9 @@ on:
 # There's no point in testing an outdated version of the code. GitHub only allows
 # a limited number of job runners to be active at the same time, so it's better to cancel
 # pointless jobs early so that more useful jobs can run sooner.
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -23,13 +26,13 @@ jobs:
     name: Check formatting
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v5
         with:
           version: 10.5.1
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: "18.x"
+          node-version: "22.x"
           cache: "pnpm"
       - name: Install dependencies
         run: pnpm install
@@ -40,13 +43,13 @@ jobs:
     name: Check linting
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v5
         with:
           version: 10.5.1
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: "18.x"
+          node-version: "22.x"
           cache: "pnpm"
       - name: Install dependencies
         run: pnpm install
@@ -57,7 +60,7 @@ jobs:
     name: Check README spelling
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: codespell-project/actions-codespell@v2
         with:
           ignore_words_file: .codespellignore
@@ -67,7 +70,7 @@ jobs:
     name: Check code spelling
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: codespell-project/actions-codespell@v2
         with:
           ignore_words_file: .codespellignore
