@@ -245,3 +245,55 @@ const streamValue = useTypedStream({
   },
 });
 ```
+
+## FAQ
+
+### General
+
+**What is Agent Chat UI?**
+Agent Chat UI is a Next.js web application that provides a chat interface for interacting with any LangGraph server. It supports both development and production LangGraph deployments, with built-in authentication via LangSmith API keys.
+
+**How does it differ from LangGraph's built-in UI?**
+Agent Chat UI is a standalone, customizable web application that can connect to any LangGraph server with a `messages` key. It provides a polished chat experience with features like message hiding, streaming, and Agent Builder integration that complement LangGraph's core functionality.
+
+### Setup & Configuration
+
+**Do I need a LangSmith account?**
+A LangSmith API key is only required when connecting to production LangGraph servers. For local development servers, you can connect without authentication.
+
+**Can I use this without running it locally?**
+Yes! You can use the deployed version at [agentchat.vercel.app](https://agentchat.vercel.app) without any local setup.
+
+**What Node.js version is required?**
+Agent Chat UI requires Node.js 18 or later. Check your version with `node --version`.
+
+### Usage
+
+**How do I connect to a LangGraph server?**
+Enter the Deployment URL (e.g., `http://localhost:2024` for local), Assistant/Graph ID, and optionally your LangSmith API key. Click "Continue" to start chatting.
+
+**What is the "Built with Agent Builder" toggle?**
+This toggle enables Agent Builder deployment mode, which automatically sets the authentication scheme to `langsmith-api-key`. Use this when connecting to LangGraph servers deployed via LangSmith Agent Builder.
+
+**Can I hide messages in the chat?**
+Yes, you can control message visibility in two ways:
+1. **Prevent Live Streaming**: Disable real-time message streaming
+2. **Hide Specific Messages**: Use the message controls to hide individual messages
+
+### Troubleshooting
+
+**The chat interface won't connect to my LangGraph server**
+- Verify the Deployment URL is correct and accessible
+- Check that your LangGraph server is running and has a `messages` key
+- For production servers, ensure your LangSmith API key is valid
+- Check browser console for CORS errors if connecting across origins
+
+**I'm getting authentication errors**
+- Ensure your LangSmith API key has the correct permissions
+- Verify the "Built with Agent Builder" toggle matches your deployment type
+- Check that the Assistant/Graph ID is correct for your LangGraph deployment
+
+**Messages are not streaming in real-time**
+- Check your LangGraph server's streaming configuration
+- Verify the `messages` key is properly configured in your graph
+- Ensure your browser supports Server-Sent Events (SSE)
