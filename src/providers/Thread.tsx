@@ -42,7 +42,9 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
   const [apiUrl] = useQueryState("apiUrl", {
     defaultValue: envApiUrl || "",
   });
-  const [assistantId] = useQueryState("assistantId");
+  const [assistantId] = useQueryState("assistantId", {
+    defaultValue: envAssistantId || "",
+  });
   const [authScheme] = useQueryState("authScheme", {
     defaultValue: envAuthScheme || "",
   });
