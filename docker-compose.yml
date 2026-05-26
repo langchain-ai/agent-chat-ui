@@ -1,0 +1,22 @@
+services:
+  web:
+    image: node:22-bookworm
+    container_name: next-web
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - next_node_modules:/app/node_modules
+      - pnpm_store:/pnpm/store
+    environment:
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+      NEXT_TELEMETRY_DISABLED: "1"
+      NODE_OPTIONS: "--max-old-space-size=4096"
+    stdin_open: true
+    tty: true
+    command: sh -c "corepack enable && pnpm dev -H 0.0.0.0"
+
+volumes:
+  next_node_modules:
+  pnpm_store:
