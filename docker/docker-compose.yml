@@ -1,0 +1,12 @@
+name: agent-chat-ui
+services:
+  app:
+    restart: unless-stopped
+    # Build the image using the Dockerfile in the project's root directory
+    build: ../
+    # Set up port mapping
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../:/app
+      - /app/node_modules
