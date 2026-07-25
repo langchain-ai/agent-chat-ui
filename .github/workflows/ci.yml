@@ -26,11 +26,11 @@ jobs:
     name: Check formatting
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
         with:
           version: 10.5.1
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: "22.x"
           cache: "pnpm"
@@ -43,11 +43,11 @@ jobs:
     name: Check linting
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
         with:
           version: 10.5.1
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: "22.x"
           cache: "pnpm"
@@ -60,7 +60,7 @@ jobs:
     name: Check README spelling
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: codespell-project/actions-codespell@v2
         with:
           ignore_words_file: .codespellignore
@@ -70,7 +70,7 @@ jobs:
     name: Check code spelling
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: codespell-project/actions-codespell@v2
         with:
           ignore_words_file: .codespellignore
