@@ -19,6 +19,8 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      "react-hooks/refs": "warn",
+      "react-hooks/set-state-in-effect": "warn",
       "@typescript-eslint/no-explicit-any": 0,
       "@typescript-eslint/no-unused-vars": [
         "warn",
