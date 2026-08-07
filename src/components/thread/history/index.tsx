@@ -12,8 +12,9 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PanelRightOpen, PanelRightClose } from "lucide-react";
+import { PanelRightOpen, PanelRightClose, Trash2 } from "lucide-react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { toast } from "sonner";
 
 function ThreadList({
   threads,
@@ -23,6 +24,24 @@ function ThreadList({
   onThreadClick?: (threadId: string) => void;
 }) {
   const [threadId, setThreadId] = useQueryState("threadId");
+  const { deleteThread } = useThreads();
+
+  const handleDelete = async (
+    e: React.MouseEvent<HTMLButtonElement>,
+    deletingThreadId: string,
+  ) => {
+    e.stopPropagation();
+    try {
+      await deleteThread(deletingThreadId);
+      toast.success("Thread deleted");
+      if (deletingThreadId === threadId) {
+        setThreadId(null);
+      }
+    } catch (error) {
+      toast.error("Failed to delete thread");
+      console.error(error);
+    }
+  };
 
   return (
     <div className="flex h-full w-full flex-col items-start justify-start gap-2 overflow-y-scroll [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent">
@@ -41,11 +60,11 @@ function ThreadList({
         return (
           <div
             key={t.thread_id}
-            className="w-full px-1"
+            className="group flex w-full items-center justify-between gap-2 px-1"
           >
             <Button
               variant="ghost"
-              className="w-[280px] items-start justify-start text-left font-normal"
+              className="flex-1 items-start justify-start text-left font-normal"
               onClick={(e) => {
                 e.preventDefault();
                 onThreadClick?.(t.thread_id);
@@ -54,6 +73,14 @@ function ThreadList({
               }}
             >
               <p className="truncate text-ellipsis">{itemText}</p>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="opacity-0 transition-opacity group-hover:opacity-100"
+              onClick={(e) => handleDelete(e, t.thread_id)}
+            >
+              <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         );
