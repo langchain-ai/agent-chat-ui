@@ -14,11 +14,15 @@ import {
 import { createClient } from "./client";
 
 interface ThreadContextType {
-  getThreads: () => Promise<Thread[]>;
+  getThreads: (limit?: number, offset?: number) => Promise<Thread[]>;
   threads: Thread[];
   setThreads: Dispatch<SetStateAction<Thread[]>>;
   threadsLoading: boolean;
   setThreadsLoading: Dispatch<SetStateAction<boolean>>;
+  hasMore: boolean;
+  setHasMore: Dispatch<SetStateAction<boolean>>;
+  loadMoreThreads: () => Promise<void>;
+  deleteThread: (thread: Thread) => Promise<void>;
 }
 
 const ThreadContext = createContext<ThreadContextType | undefined>(undefined);
@@ -48,25 +52,86 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
   });
   const [threads, setThreads] = useState<Thread[]>([]);
   const [threadsLoading, setThreadsLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  const getThreads = useCallback(async (): Promise<Thread[]> => {
-    const resolvedAssistantId = assistantId || envAssistantId;
-    if (!apiUrl || !resolvedAssistantId) return [];
-    const client = createClient(
-      apiUrl,
-      getApiKey() ?? undefined,
-      authScheme || undefined,
-    );
+  const getThreads = useCallback(
+    async (limit: number = 100, offset: number = 0): Promise<Thread[]> => {
+      const resolvedAssistantId = assistantId || envAssistantId;
+      if (!apiUrl || !resolvedAssistantId) return [];
+      const client = createClient(
+        apiUrl,
+        getApiKey() ?? undefined,
+        authScheme || undefined,
+      );
 
-    const threads = await client.threads.search({
-      metadata: {
-        ...getThreadSearchMetadata(resolvedAssistantId),
-      },
-      limit: 100,
-    });
+      const threads = await client.threads.search({
+        metadata: {
+          ...getThreadSearchMetadata(resolvedAssistantId),
+        },
+        limit,
+        offset,
+      });
 
-    return threads;
-  }, [apiUrl, assistantId, authScheme, envAssistantId]);
+      return threads;
+    },
+    [apiUrl, assistantId, authScheme, envAssistantId],
+  );
+
+  const loadMoreThreads = useCallback(async (): Promise<void> => {
+    if (isLoadingMore || !hasMore) return;
+    setIsLoadingMore(true);
+    try {
+      const newThreads = await getThreads(100, threads.length);
+      if (newThreads.length < 100) {
+        setHasMore(false);
+      } else {
+        setHasMore(true);
+      }
+      setThreads((prev) => {
+        const existingIds = new Set(prev.map((t) => t.thread_id));
+        const filteredNew = newThreads.filter(
+          (t) => !existingIds.has(t.thread_id),
+        );
+        return [...prev, ...filteredNew];
+      });
+    } catch (error) {
+      console.error("Failed to load more threads:", error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [getThreads, hasMore, isLoadingMore, threads.length]);
+
+  const deleteThread = useCallback(
+    async (thread: Thread): Promise<void> => {
+      const resolvedAssistantId = assistantId || envAssistantId;
+      if (!apiUrl || !resolvedAssistantId) return;
+      const client = createClient(
+        apiUrl,
+        getApiKey() ?? undefined,
+        authScheme || undefined,
+      );
+
+      // Optimistic state update: remove thread immediately for 0ms latency
+      setThreads((prev) =>
+        prev.filter((t) => t.thread_id !== thread.thread_id),
+      );
+
+      try {
+        await client.threads.delete(thread.thread_id);
+      } catch (err) {
+        // Roll back the optimistic removal so the UI stays in sync with the backend.
+        console.error("Failed to delete thread:", err);
+        setThreads((prev) =>
+          prev.some((t) => t.thread_id === thread.thread_id)
+            ? prev
+            : [...prev, thread],
+        );
+        throw err;
+      }
+    },
+    [apiUrl, assistantId, authScheme, envAssistantId],
+  );
 
   const value = {
     getThreads,
@@ -74,6 +139,10 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
     setThreads,
     threadsLoading,
     setThreadsLoading,
+    hasMore,
+    setHasMore,
+    loadMoreThreads,
+    deleteThread,
   };
 
   return (
