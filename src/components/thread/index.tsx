@@ -22,6 +22,7 @@ import {
   SquarePen,
   XIcon,
   Plus,
+  Activity,
 } from "lucide-react";
 import { useQueryState, parseAsBoolean } from "nuqs";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
@@ -45,6 +46,7 @@ import {
   ArtifactTitle,
   useArtifactContext,
 } from "./artifact";
+import { ResearchInspector } from "./research-inspector";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -124,6 +126,11 @@ export function Thread() {
     "hideToolCalls",
     parseAsBoolean.withDefault(false),
   );
+  const [inspectorOpen, setInspectorOpen] = useQueryState(
+    "inspectorOpen",
+    parseAsBoolean.withDefault(true),
+  );
+  const [mobileInspectorOpen, setMobileInspectorOpen] = useState(false);
   const [input, setInput] = useState("");
   const {
     contentBlocks,
@@ -137,6 +144,7 @@ export function Thread() {
   } = useFileUpload();
   const [firstTokenReceived, setFirstTokenReceived] = useState(false);
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
+  const isInspectorDesktop = useMediaQuery("(min-width: 1280px)");
 
   const stream = useStreamContext();
   const messages = stream.messages;
@@ -325,7 +333,22 @@ export function Thread() {
                   </Button>
                 )}
               </div>
-              <div className="absolute top-2 right-4 flex items-center">
+              <div className="absolute top-2 right-4 flex items-center gap-3">
+                <TooltipIconButton
+                  size="lg"
+                  className="p-4"
+                  tooltip="Research run"
+                  variant="ghost"
+                  onClick={() => {
+                    if (isInspectorDesktop) {
+                      setInspectorOpen((open) => !open);
+                    } else {
+                      setMobileInspectorOpen(true);
+                    }
+                  }}
+                >
+                  <Activity className="size-5" />
+                </TooltipIconButton>
                 <OpenGitHubRepo />
               </div>
             </div>
@@ -371,6 +394,21 @@ export function Thread() {
               </div>
 
               <div className="flex items-center gap-4">
+                <TooltipIconButton
+                  size="lg"
+                  className="p-4"
+                  tooltip="Research run"
+                  variant="ghost"
+                  onClick={() => {
+                    if (isInspectorDesktop) {
+                      setInspectorOpen((open) => !open);
+                    } else {
+                      setMobileInspectorOpen(true);
+                    }
+                  }}
+                >
+                  <Activity className="size-5" />
+                </TooltipIconButton>
                 <div className="flex items-center">
                   <OpenGitHubRepo />
                 </div>
@@ -560,6 +598,14 @@ export function Thread() {
           </div>
         </div>
       </div>
+      <ResearchInspector
+        messages={messages}
+        isLoading={isLoading}
+        desktopOpen={inspectorOpen}
+        mobileOpen={mobileInspectorOpen}
+        onDesktopOpenChange={setInspectorOpen}
+        onMobileOpenChange={setMobileInspectorOpen}
+      />
     </div>
   );
 }
