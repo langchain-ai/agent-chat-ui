@@ -48,6 +48,22 @@ import {
 } from "./artifact";
 import { ResearchInspector } from "./research-inspector";
 
+const ACTIVE_SKILL = process.env.NEXT_PUBLIC_ACTIVE_SKILL?.trim() || null;
+const MEMORY_USER_ID = process.env.NEXT_PUBLIC_MEMORY_USER_ID?.trim() || null;
+const MEMORY_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_LONG_TERM_MEMORY === "true" &&
+  MEMORY_USER_ID !== null;
+
+const AGENT_CONFIG = {
+  ...(ACTIVE_SKILL ? { active_skill: ACTIVE_SKILL } : {}),
+  ...(MEMORY_ENABLED
+    ? {
+        enable_long_term_memory: true,
+        memory_user_id: MEMORY_USER_ID,
+      }
+    : {}),
+};
+
 function StickyToBottomContent(props: {
   content: ReactNode;
   footer?: ReactNode;
@@ -143,6 +159,12 @@ export function Thread() {
     handlePaste,
   } = useFileUpload();
   const [firstTokenReceived, setFirstTokenReceived] = useState(false);
+  const [runDurationMs, setRunDurationMs] = useState<number | null>(null);
+  const [firstTokenLatencyMs, setFirstTokenLatencyMs] = useState<number | null>(
+    null,
+  );
+  const runStartedAt = useRef<number | null>(null);
+  const firstTokenCaptured = useRef(false);
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
   const isInspectorDesktop = useMediaQuery("(min-width: 1280px)");
 
@@ -197,6 +219,10 @@ export function Thread() {
       messages[messages.length - 1].type === "ai"
     ) {
       setFirstTokenReceived(true);
+      if (runStartedAt.current !== null && !firstTokenCaptured.current) {
+        firstTokenCaptured.current = true;
+        setFirstTokenLatencyMs(performance.now() - runStartedAt.current);
+      }
     }
 
     prevMessageLength.current = messages.length;
@@ -207,6 +233,11 @@ export function Thread() {
     if ((input.trim().length === 0 && contentBlocks.length === 0) || isLoading)
       return;
     setFirstTokenReceived(false);
+    setRunDurationMs(null);
+    setFirstTokenLatencyMs(null);
+    firstTokenCaptured.current = false;
+    const startedAt = performance.now();
+    runStartedAt.current = startedAt;
 
     const newHumanMessage: Message = {
       id: uuidv4(),
@@ -222,9 +253,10 @@ export function Thread() {
     const context =
       Object.keys(artifactContext).length > 0 ? artifactContext : undefined;
 
-    stream.submit(
+    const submission = stream.submit(
       { messages: [...toolMessages, newHumanMessage], context },
       {
+        config: { configurable: AGENT_CONFIG },
         streamMode: ["values"],
         streamSubgraphs: true,
         streamResumable: true,
@@ -239,6 +271,16 @@ export function Thread() {
         }),
       },
     );
+    void submission.then(
+      () => {
+        setRunDurationMs(performance.now() - startedAt);
+        runStartedAt.current = null;
+      },
+      () => {
+        setRunDurationMs(performance.now() - startedAt);
+        runStartedAt.current = null;
+      },
+    );
 
     setInput("");
     setContentBlocks([]);
@@ -250,12 +292,28 @@ export function Thread() {
     // Do this so the loading state is correct
     prevMessageLength.current = prevMessageLength.current - 1;
     setFirstTokenReceived(false);
-    stream.submit(undefined, {
+    setRunDurationMs(null);
+    setFirstTokenLatencyMs(null);
+    firstTokenCaptured.current = false;
+    const startedAt = performance.now();
+    runStartedAt.current = startedAt;
+    const submission = stream.submit(undefined, {
+      config: { configurable: AGENT_CONFIG },
       checkpoint: parentCheckpoint,
       streamMode: ["values"],
       streamSubgraphs: true,
       streamResumable: true,
     });
+    void submission.then(
+      () => {
+        setRunDurationMs(performance.now() - startedAt);
+        runStartedAt.current = null;
+      },
+      () => {
+        setRunDurationMs(performance.now() - startedAt);
+        runStartedAt.current = null;
+      },
+    );
   };
 
   const chatStarted = !!threadId || !!messages.length;
@@ -601,6 +659,10 @@ export function Thread() {
       <ResearchInspector
         messages={messages}
         isLoading={isLoading}
+        activeSkill={ACTIVE_SKILL}
+        memoryEnabled={MEMORY_ENABLED}
+        runDurationMs={runDurationMs}
+        firstTokenLatencyMs={firstTokenLatencyMs}
         desktopOpen={inspectorOpen}
         mobileOpen={mobileInspectorOpen}
         onDesktopOpenChange={setInspectorOpen}
