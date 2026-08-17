@@ -23,6 +23,7 @@ import {
   XIcon,
   Plus,
   Activity,
+  SendHorizontal,
 } from "lucide-react";
 import { useQueryState, parseAsBoolean } from "nuqs";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
@@ -111,7 +112,7 @@ function OpenGitHubRepo() {
       <Tooltip>
         <TooltipTrigger asChild>
           <a
-            href="https://github.com/langchain-ai/agent-chat-ui"
+            href="https://github.com/CRDong233/agent-chat-ui"
             target="_blank"
             className="flex items-center justify-center"
           >
@@ -122,7 +123,7 @@ function OpenGitHubRepo() {
           </a>
         </TooltipTrigger>
         <TooltipContent side="left">
-          <p>Open GitHub repo</p>
+          <p>Open project fork</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
@@ -445,8 +446,8 @@ export function Thread() {
                     width={32}
                     height={32}
                   />
-                  <span className="text-xl font-semibold tracking-tight">
-                    Agent Chat
+                  <span className="text-xl font-semibold">
+                    Evidence Research
                   </span>
                 </motion.button>
               </div>
@@ -533,8 +534,11 @@ export function Thread() {
                   {!chatStarted && (
                     <div className="flex items-center gap-3">
                       <LangGraphLogoSVG className="h-8 flex-shrink-0" />
-                      <h1 className="text-2xl font-semibold tracking-tight">
-                        Agent Chat
+                      <h1 className="text-xl font-semibold sm:text-2xl">
+                        <span className="sm:hidden">Evidence Research</span>
+                        <span className="hidden sm:inline">
+                          Evidence Research Agent
+                        </span>
                       </h1>
                     </div>
                   )}
@@ -579,17 +583,18 @@ export function Thread() {
                         className="field-sizing-content resize-none border-none bg-transparent p-3.5 pb-0 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none"
                       />
 
-                      <div className="flex items-center gap-6 p-2 pt-4">
+                      <div className="flex items-center gap-2 p-2 pt-4 sm:gap-6">
                         <div>
                           <div className="flex items-center space-x-2">
                             <Switch
                               id="render-tool-calls"
+                              aria-label="Hide tool calls"
                               checked={hideToolCalls ?? false}
                               onCheckedChange={setHideToolCalls}
                             />
                             <Label
                               htmlFor="render-tool-calls"
-                              className="text-sm text-gray-600"
+                              className="hidden text-sm text-gray-600 sm:inline"
                             >
                               Hide Tool Calls
                             </Label>
@@ -597,10 +602,10 @@ export function Thread() {
                         </div>
                         <Label
                           htmlFor="file-input"
-                          className="flex cursor-pointer items-center gap-2"
+                          className="flex size-9 cursor-pointer items-center justify-center gap-2 rounded-md hover:bg-gray-200 sm:h-auto sm:w-auto sm:justify-start"
                         >
                           <Plus className="size-5 text-gray-600" />
-                          <span className="text-sm text-gray-600">
+                          <span className="sr-only text-sm text-gray-600 sm:not-sr-only">
                             Upload PDF or Image
                           </span>
                         </Label>
@@ -616,21 +621,28 @@ export function Thread() {
                           <Button
                             key="stop"
                             onClick={() => stream.stop()}
-                            className="ml-auto"
+                            className="ml-auto px-3 sm:px-4"
                           >
                             <LoaderCircle className="h-4 w-4 animate-spin" />
-                            Cancel
+                            <span className="hidden sm:inline">Cancel</span>
+                            <span className="sr-only sm:hidden">
+                              Cancel run
+                            </span>
                           </Button>
                         ) : (
                           <Button
                             type="submit"
-                            className="ml-auto shadow-md transition-all"
+                            className="ml-auto px-3 shadow-md transition-all sm:px-4"
                             disabled={
                               isLoading ||
                               (!input.trim() && contentBlocks.length === 0)
                             }
                           >
-                            Send
+                            <SendHorizontal className="size-4 sm:hidden" />
+                            <span className="hidden sm:inline">Send</span>
+                            <span className="sr-only sm:hidden">
+                              Send message
+                            </span>
                           </Button>
                         )}
                       </div>
