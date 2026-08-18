@@ -101,6 +101,9 @@ export default function ThreadHistory() {
           <Button
             className="hover:bg-gray-100"
             variant="ghost"
+            aria-label={
+              chatHistoryOpen ? "Close thread history" : "Open thread history"
+            }
             onClick={() => setChatHistoryOpen((p) => !p)}
           >
             {chatHistoryOpen ? (

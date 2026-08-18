@@ -382,6 +382,11 @@ export function Thread() {
                   <Button
                     className="hover:bg-gray-100"
                     variant="ghost"
+                    aria-label={
+                      chatHistoryOpen
+                        ? "Close thread history"
+                        : "Open thread history"
+                    }
                     onClick={() => setChatHistoryOpen((p) => !p)}
                   >
                     {chatHistoryOpen ? (
@@ -420,6 +425,11 @@ export function Thread() {
                     <Button
                       className="hover:bg-gray-100"
                       variant="ghost"
+                      aria-label={
+                        chatHistoryOpen
+                          ? "Close thread history"
+                          : "Open thread history"
+                      }
                       onClick={() => setChatHistoryOpen((p) => !p)}
                     >
                       {chatHistoryOpen ? (
@@ -660,6 +670,7 @@ export function Thread() {
               <button
                 onClick={closeArtifact}
                 className="cursor-pointer"
+                aria-label="Close artifact"
               >
                 <XIcon className="size-5" />
               </button>

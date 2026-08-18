@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 
 test.use({ viewport: { width: 1280, height: 800 } });
 
@@ -8,6 +9,13 @@ test("keeps the desktop research inspector stable at the xl boundary", async ({
   const consoleErrors: string[] = [];
   page.on("console", (message) => {
     if (message.type() === "error") consoleErrors.push(message.text());
+  });
+  await page.route("http://localhost:2024/**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: "[]",
+    });
   });
 
   await page.goto("/?inspectorOpen=true");
@@ -33,4 +41,12 @@ test("keeps the desktop research inspector stable at the xl boundary", async ({
   }));
   expect(widths.scroll).toBeLessThanOrEqual(widths.client);
   expect(consoleErrors).toEqual([]);
+
+  const accessibility = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+  expect(
+    accessibility.violations,
+    JSON.stringify(accessibility.violations, null, 2),
+  ).toEqual([]);
 });
