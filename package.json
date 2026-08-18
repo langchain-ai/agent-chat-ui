@@ -17,7 +17,8 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test:telemetry": "playwright test tests/research-telemetry.spec.ts"
+    "test:telemetry": "playwright test tests/research-telemetry.spec.ts",
+    "test:ui": "playwright test --config playwright.ui.config.ts"
   },
   "dependencies": {
     "@langchain/core": "^1.2.5",

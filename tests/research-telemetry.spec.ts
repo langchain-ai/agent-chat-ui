@@ -81,3 +81,39 @@ test("keeps structured failures and pending calls visible", () => {
   );
   expect(pending.find((item) => item.id === "call-3")?.status).toBe("pending");
 });
+
+test("bounds long structured error text without losing its classification", () => {
+  const longMessage = `upstream unavailable: ${"详情 detail ".repeat(80)}`;
+  const timeline = buildResearchTimeline(
+    [
+      {
+        type: "ai",
+        id: "ai-long-error",
+        content: "",
+        tool_calls: [
+          { id: "call-long-error", name: "web_search", args: { query: "RAG" } },
+        ],
+      },
+      {
+        type: "tool",
+        name: "web_search",
+        tool_call_id: "call-long-error",
+        content: JSON.stringify({
+          schema_version: 1,
+          ok: false,
+          error: { kind: "unavailable", message: longMessage, attempts: 1 },
+          telemetry: {
+            attempts: 1,
+            duration_ms: 800,
+            error_kind: "unavailable",
+          },
+        }),
+      },
+    ] as never,
+    false,
+  );
+
+  expect(timeline[0].errorKind).toBe("unavailable");
+  expect(timeline[0].detail.length).toBeLessThanOrEqual(96);
+  expect(timeline[0].detail.endsWith("...")).toBe(true);
+});
