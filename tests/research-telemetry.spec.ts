@@ -1,12 +1,37 @@
 import { expect, test } from "@playwright/test";
+import { readFileSync } from "node:fs";
 
 import {
   buildResearchTelemetry,
   buildResearchTimeline,
 } from "../src/lib/research-telemetry";
 
+const researchHistory = JSON.parse(
+  readFileSync(
+    new URL("./fixtures/research-history.json", import.meta.url),
+    "utf8",
+  ),
+) as { messages: never[] };
+
 const evidenceId = "E-0123456789";
 const evidenceText = `[${evidenceId}] Retrieval guide\nsource: file:///guide.md#char=0,20\nscore: 0.9000\nHybrid retrieval keeps source references.`;
+
+test("replays a historical thread with evidence and retry telemetry", () => {
+  const telemetry = buildResearchTelemetry(researchHistory.messages, false);
+
+  expect(telemetry.evidence).toHaveLength(1);
+  expect(telemetry.evidence[0].citationId).toBe("E-aabbccddee");
+  expect(telemetry.evidence[0].cited).toBe(true);
+  expect(telemetry.metrics.retries).toBe(2);
+  expect(telemetry.metrics.failures).toBe(1);
+  expect(telemetry.metrics.toolDurationMs).toBe(1231.2);
+  expect(telemetry.metrics.totalTokens).toBe(182);
+  expect(
+    telemetry.timeline
+      .filter((item) => item.kind === "tool")
+      .map((item) => item.status),
+  ).toEqual(["completed", "error"]);
+});
 
 test("parses telemetry envelope, stable citations, and tool duration", () => {
   const messages = [
