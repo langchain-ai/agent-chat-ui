@@ -16,7 +16,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test:telemetry": "playwright test tests/research-telemetry.spec.ts"
   },
   "dependencies": {
     "@langchain/core": "^1.2.5",

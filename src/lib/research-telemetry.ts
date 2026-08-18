@@ -74,10 +74,16 @@ function contentToText(content: Message["content"]): string {
 function compact(text: string, maxLength = 96): string {
   const normalized = text.replace(/\s+/g, " ").trim();
   if (normalized.length <= maxLength) return normalized;
-  return `${normalized.slice(0, maxLength - 1)}…`;
+  return `${normalized.slice(0, maxLength - 3)}...`;
 }
 
-function parseToolError(
+function normalizeCitationId(value: string): string {
+  return value.toLowerCase().startsWith("e-")
+    ? `E-${value.slice(2).toLowerCase()}`
+    : value.toUpperCase();
+}
+
+export function parseToolError(
   content: Message["content"],
 ): StructuredToolError | null {
   const text = contentToText(content);
@@ -90,7 +96,7 @@ function parseToolError(
   }
 }
 
-function parseToolResult(
+export function parseToolResult(
   content: Message["content"],
 ): StructuredToolError | null {
   const text = contentToText(content);
@@ -112,7 +118,7 @@ function toolValueToText(content: Message["content"]): string {
   return JSON.stringify(parsed.value ?? "");
 }
 
-function extractEvidence(
+export function extractEvidence(
   content: Message["content"],
   callId: string,
   citedIds: Set<string>,
@@ -126,13 +132,13 @@ function extractEvidence(
     const [, citationId, title, section, source, score, excerpt] = match;
     evidence.push({
       key: `${callId}-${citationId}`,
-      citationId,
+      citationId: normalizeCitationId(citationId),
       title: title.trim(),
       section: section?.trim(),
       source: source.trim(),
       score: Number.parseFloat(score),
       excerpt: compact(excerpt, 180),
-      cited: citedIds.has(citationId),
+      cited: citedIds.has(normalizeCitationId(citationId)),
     });
   }
 
@@ -238,7 +244,7 @@ export function buildResearchTelemetry(
     for (const match of contentToText(message.content).matchAll(
       /\[(E(?:-[0-9a-f]{10}|\d+))]/gi,
     )) {
-      citedIds.add(match[1]);
+      citedIds.add(normalizeCitationId(match[1]));
     }
     if (!message.usage_metadata) return;
     inputTokens += message.usage_metadata.input_tokens;
