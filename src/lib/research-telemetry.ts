@@ -10,6 +10,7 @@ export type TimelineItem = {
   status: TimelineStatus;
   attempts?: number;
   errorKind?: string;
+  durationMs?: number;
 };
 
 export type EvidenceItem = {
@@ -33,6 +34,7 @@ export type ResearchMetrics = {
   retries: number;
   failures: number;
   citations: number;
+  toolDurationMs: number;
 };
 
 export type ResearchTelemetry = {
@@ -43,11 +45,18 @@ export type ResearchTelemetry = {
 };
 
 type StructuredToolError = {
+  schema_version?: number;
   ok?: boolean;
+  value?: unknown;
   error?: {
     kind?: string;
     message?: string;
     attempts?: number;
+  };
+  telemetry?: {
+    attempts?: number;
+    duration_ms?: number;
+    error_kind?: string | null;
   };
 };
 
@@ -81,14 +90,36 @@ function parseToolError(
   }
 }
 
+function parseToolResult(
+  content: Message["content"],
+): StructuredToolError | null {
+  const text = contentToText(content);
+  if (!text.startsWith("{")) return null;
+  try {
+    const parsed = JSON.parse(text) as StructuredToolError;
+    return parsed.schema_version === 1 && typeof parsed.ok === "boolean"
+      ? parsed
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function toolValueToText(content: Message["content"]): string {
+  const parsed = parseToolResult(content);
+  if (!parsed || parsed.ok !== true) return contentToText(content);
+  if (typeof parsed.value === "string") return parsed.value;
+  return JSON.stringify(parsed.value ?? "");
+}
+
 function extractEvidence(
   content: Message["content"],
   callId: string,
   citedIds: Set<string>,
 ): EvidenceItem[] {
-  const text = contentToText(content);
+  const text = toolValueToText(content);
   const pattern =
-    /^\[(E\d+)] ([^\n|]+?)(?: \| section: ([^\n]+))?\nsource: ([^\n]+)\nscore: ([\d.]+)\n([\s\S]*?)(?=\n\n\[E\d+]|$)/gm;
+    /^\[(E(?:-[0-9a-f]{10}|\d+))] ([^\n|]+?)(?: \| section: ([^\n]+))?\nsource: ([^\n]+)\nscore: ([\d.]+)\n([\s\S]*?)(?=\n\n\[E(?:-[0-9a-f]{10}|\d+)]|$)/gim;
   const evidence: EvidenceItem[] = [];
 
   for (const match of text.matchAll(pattern)) {
@@ -151,6 +182,7 @@ export function buildResearchTimeline(
       const callId = call.id ?? `${id}-tool-${callIndex}`;
       const result = resultsByCallId.get(callId);
       const structuredError = result ? parseToolError(result.content) : null;
+      const structuredResult = result ? parseToolResult(result.content) : null;
       const failed = result?.status === "error" || structuredError !== null;
       const query =
         typeof call.args?.query === "string"
@@ -165,8 +197,13 @@ export function buildResearchTimeline(
           ? compact(structuredError?.error?.message ?? "Tool execution failed")
           : compact(query) || "No arguments",
         status: result ? (failed ? "error" : "completed") : "pending",
-        attempts: structuredError?.error?.attempts,
-        errorKind: structuredError?.error?.kind,
+        attempts:
+          structuredResult?.telemetry?.attempts ??
+          structuredError?.error?.attempts,
+        errorKind:
+          structuredResult?.telemetry?.error_kind ??
+          structuredError?.error?.kind,
+        durationMs: structuredResult?.telemetry?.duration_ms,
       });
     });
   });
@@ -198,7 +235,9 @@ export function buildResearchTelemetry(
 
   messages.forEach((message) => {
     if (message.type !== "ai") return;
-    for (const match of contentToText(message.content).matchAll(/\[(E\d+)]/g)) {
+    for (const match of contentToText(message.content).matchAll(
+      /\[(E(?:-[0-9a-f]{10}|\d+))]/gi,
+    )) {
       citedIds.add(match[1]);
     }
     if (!message.usage_metadata) return;
@@ -253,6 +292,10 @@ export function buildResearchTelemetry(
       ),
       failures: toolItems.filter((item) => item.status === "error").length,
       citations: citedIds.size,
+      toolDurationMs: toolItems.reduce(
+        (total, item) => total + (item.durationMs ?? 0),
+        0,
+      ),
     },
     memoryToolsUsed: [...memoryToolsUsed],
   };

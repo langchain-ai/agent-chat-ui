@@ -113,6 +113,11 @@ function Timeline({ items }: { items: TimelineItem[] }) {
                 {item.errorKind ?? "error"} · {item.attempts} attempts
               </p>
             )}
+            {item.durationMs !== undefined && (
+              <p className="mt-1.5 font-mono text-[11px] text-stone-500 tabular-nums">
+                {formatDuration(item.durationMs)}
+              </p>
+            )}
           </div>
         </li>
       ))}
@@ -307,6 +312,10 @@ function RuntimeView({
           <Metric
             label="Retries"
             value={metrics.retries}
+          />
+          <Metric
+            label="Tool execution"
+            value={formatDuration(metrics.toolDurationMs)}
           />
           <Metric
             label="Failures"
