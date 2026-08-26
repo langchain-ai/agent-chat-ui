@@ -201,7 +201,7 @@ To productionize the Agent Chat UI, you'll need to pick one of two ways to authe
 
 The quickest way to productionize the Agent Chat UI is to use the [API Passthrough](https://github.com/bracesproul/langgraph-nextjs-api-passthrough) package ([NPM link here](https://www.npmjs.com/package/langgraph-nextjs-api-passthrough)). This package provides a simple way to proxy requests to your LangGraph server, attaching your LangSmith API key on the server so your users never need one. It does not authenticate the callers of that proxy for you — see [Authenticating the API Passthrough](#authenticating-the-api-passthrough) below, which you should set up before deploying.
 
-This repository already contains the proxy route itself. Beyond setting the environment variables below, you should add your own caller check to that route.
+This repository already contains the proxy route itself. The only configuration you need to do is set the proper environment variables.
 
 ```bash
 NEXT_PUBLIC_ASSISTANT_ID="agent"
@@ -227,60 +227,7 @@ For in depth documentation, consult the [LangGraph Next.js API Passthrough](http
 > [!WARNING]
 > The API passthrough does not authenticate your callers. If you deploy this repository with `LANGGRAPH_API_URL` and `LANGSMITH_API_KEY` set and no gate of your own, anyone who reaches your deployment URL can read, overwrite, and delete every thread and store item in your LangGraph deployment, and start runs billed to your LangSmith account.
 
-Pick one of the two options below before you deploy.
-
-#### Option 1 (recommended): move authentication into your deployment
-
-Set up [custom authentication](#advanced-setup---custom-authentication) on your LangGraph deployment and delete `src/app/api/[..._path]/route.ts`, so your LangSmith key never sits behind a public route.
-
-#### Option 2: gate the proxy route
-
-**1. Reject unauthenticated callers.** The `headers` callback runs on the server before anything is forwarded, so throwing from it rejects the request. Set `status` on the thrown error to pick the response code (it defaults to `500`). In `src/app/api/[..._path]/route.ts`:
-
-```ts
-import { initApiPassthrough } from "langgraph-nextjs-api-passthrough";
-import type { NextRequest } from "next/server";
-
-class UnauthorizedError extends Error {
-  status = 401;
-}
-
-export const { GET, POST, PUT, PATCH, DELETE, OPTIONS, runtime } =
-  initApiPassthrough({
-    apiUrl: process.env.LANGGRAPH_API_URL!,
-    apiKey: process.env.LANGSMITH_API_KEY!,
-    // Switch off the default "edge" runtime if your auth library needs Node APIs.
-    runtime: "nodejs",
-    headers: async (req: NextRequest) => {
-      // Use whatever you already have: NextAuth, Clerk, a signed cookie, etc.
-      const session = await getSession(req);
-      if (!session) throw new UnauthorizedError("Unauthorized");
-      return {};
-    },
-  });
-```
-
-If your session lookup throws or your auth service is unreachable, let the request fail — never fall through to forwarding it.
-
-**2. Reject cross-origin requests.** The `OPTIONS` handler and the `Access-Control-Allow-Origin: *` header come from the passthrough and are not covered by the `headers` callback, so a cookie-based gate still needs its own CSRF check. Add `src/middleware.ts`:
-
-```ts
-import { NextResponse, type NextRequest } from "next/server";
-
-export function middleware(req: NextRequest) {
-  const site = req.headers.get("sec-fetch-site");
-  if (site && site !== "same-origin" && site !== "none") {
-    return new NextResponse("Forbidden", { status: 403 });
-  }
-  return NextResponse.next();
-}
-
-export const config = { matcher: "/api/:path*" };
-```
-
-Set your session cookie `HttpOnly`, `Secure`, and `SameSite=Lax` as well.
-
-**3. Scope requests to the caller.** A gate keeps strangers out, but every authenticated request is still forwarded with the same key, so any logged-in user can reach any other user's threads and store items. Narrow this by forcing owner metadata onto requests with the `bodyParameters` callback, or use Option 1 if your users' data must stay separate.
+Before you deploy, set up [custom authentication](#advanced-setup---custom-authentication) on your LangGraph deployment and delete `src/app/api/[..._path]/route.ts`, so your LangSmith key never sits behind a public route.
 
 ### Advanced Setup - Custom Authentication
 
