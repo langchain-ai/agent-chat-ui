@@ -22,6 +22,8 @@ import {
   SquarePen,
   XIcon,
   Plus,
+  Activity,
+  SendHorizontal,
 } from "lucide-react";
 import { useQueryState, parseAsBoolean } from "nuqs";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
@@ -45,6 +47,23 @@ import {
   ArtifactTitle,
   useArtifactContext,
 } from "./artifact";
+import { ResearchInspector } from "./research-inspector";
+
+const ACTIVE_SKILL = process.env.NEXT_PUBLIC_ACTIVE_SKILL?.trim() || null;
+const MEMORY_USER_ID = process.env.NEXT_PUBLIC_MEMORY_USER_ID?.trim() || null;
+const MEMORY_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_LONG_TERM_MEMORY === "true" &&
+  MEMORY_USER_ID !== null;
+
+const AGENT_CONFIG = {
+  ...(ACTIVE_SKILL ? { active_skill: ACTIVE_SKILL } : {}),
+  ...(MEMORY_ENABLED
+    ? {
+        enable_long_term_memory: true,
+        memory_user_id: MEMORY_USER_ID,
+      }
+    : {}),
+};
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -93,7 +112,7 @@ function OpenGitHubRepo() {
       <Tooltip>
         <TooltipTrigger asChild>
           <a
-            href="https://github.com/langchain-ai/agent-chat-ui"
+            href="https://github.com/CRDong233/agent-chat-ui"
             target="_blank"
             className="flex items-center justify-center"
           >
@@ -104,7 +123,7 @@ function OpenGitHubRepo() {
           </a>
         </TooltipTrigger>
         <TooltipContent side="left">
-          <p>Open GitHub repo</p>
+          <p>Open project fork</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
@@ -124,6 +143,11 @@ export function Thread() {
     "hideToolCalls",
     parseAsBoolean.withDefault(false),
   );
+  const [inspectorOpen, setInspectorOpen] = useQueryState(
+    "inspectorOpen",
+    parseAsBoolean.withDefault(true),
+  );
+  const [mobileInspectorOpen, setMobileInspectorOpen] = useState(false);
   const [input, setInput] = useState("");
   const {
     contentBlocks,
@@ -136,7 +160,14 @@ export function Thread() {
     handlePaste,
   } = useFileUpload();
   const [firstTokenReceived, setFirstTokenReceived] = useState(false);
+  const [runDurationMs, setRunDurationMs] = useState<number | null>(null);
+  const [firstTokenLatencyMs, setFirstTokenLatencyMs] = useState<number | null>(
+    null,
+  );
+  const runStartedAt = useRef<number | null>(null);
+  const firstTokenCaptured = useRef(false);
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
+  const isInspectorDesktop = useMediaQuery("(min-width: 1280px)");
 
   const stream = useStreamContext();
   const messages = stream.messages;
@@ -189,6 +220,10 @@ export function Thread() {
       messages[messages.length - 1].type === "ai"
     ) {
       setFirstTokenReceived(true);
+      if (runStartedAt.current !== null && !firstTokenCaptured.current) {
+        firstTokenCaptured.current = true;
+        setFirstTokenLatencyMs(performance.now() - runStartedAt.current);
+      }
     }
 
     prevMessageLength.current = messages.length;
@@ -199,6 +234,11 @@ export function Thread() {
     if ((input.trim().length === 0 && contentBlocks.length === 0) || isLoading)
       return;
     setFirstTokenReceived(false);
+    setRunDurationMs(null);
+    setFirstTokenLatencyMs(null);
+    firstTokenCaptured.current = false;
+    const startedAt = performance.now();
+    runStartedAt.current = startedAt;
 
     const newHumanMessage: Message = {
       id: uuidv4(),
@@ -214,9 +254,10 @@ export function Thread() {
     const context =
       Object.keys(artifactContext).length > 0 ? artifactContext : undefined;
 
-    stream.submit(
+    const submission = stream.submit(
       { messages: [...toolMessages, newHumanMessage], context },
       {
+        config: { configurable: AGENT_CONFIG },
         streamMode: ["values"],
         streamSubgraphs: true,
         streamResumable: true,
@@ -231,6 +272,16 @@ export function Thread() {
         }),
       },
     );
+    void submission.then(
+      () => {
+        setRunDurationMs(performance.now() - startedAt);
+        runStartedAt.current = null;
+      },
+      () => {
+        setRunDurationMs(performance.now() - startedAt);
+        runStartedAt.current = null;
+      },
+    );
 
     setInput("");
     setContentBlocks([]);
@@ -242,12 +293,28 @@ export function Thread() {
     // Do this so the loading state is correct
     prevMessageLength.current = prevMessageLength.current - 1;
     setFirstTokenReceived(false);
-    stream.submit(undefined, {
+    setRunDurationMs(null);
+    setFirstTokenLatencyMs(null);
+    firstTokenCaptured.current = false;
+    const startedAt = performance.now();
+    runStartedAt.current = startedAt;
+    const submission = stream.submit(undefined, {
+      config: { configurable: AGENT_CONFIG },
       checkpoint: parentCheckpoint,
       streamMode: ["values"],
       streamSubgraphs: true,
       streamResumable: true,
     });
+    void submission.then(
+      () => {
+        setRunDurationMs(performance.now() - startedAt);
+        runStartedAt.current = null;
+      },
+      () => {
+        setRunDurationMs(performance.now() - startedAt);
+        runStartedAt.current = null;
+      },
+    );
   };
 
   const chatStarted = !!threadId || !!messages.length;
@@ -315,6 +382,11 @@ export function Thread() {
                   <Button
                     className="hover:bg-gray-100"
                     variant="ghost"
+                    aria-label={
+                      chatHistoryOpen
+                        ? "Close thread history"
+                        : "Open thread history"
+                    }
                     onClick={() => setChatHistoryOpen((p) => !p)}
                   >
                     {chatHistoryOpen ? (
@@ -325,7 +397,22 @@ export function Thread() {
                   </Button>
                 )}
               </div>
-              <div className="absolute top-2 right-4 flex items-center">
+              <div className="absolute top-2 right-4 flex items-center gap-3">
+                <TooltipIconButton
+                  size="lg"
+                  className="p-4"
+                  tooltip="Research run"
+                  variant="ghost"
+                  onClick={() => {
+                    if (isInspectorDesktop) {
+                      setInspectorOpen((open) => !open);
+                    } else {
+                      setMobileInspectorOpen(true);
+                    }
+                  }}
+                >
+                  <Activity className="size-5" />
+                </TooltipIconButton>
                 <OpenGitHubRepo />
               </div>
             </div>
@@ -338,6 +425,11 @@ export function Thread() {
                     <Button
                       className="hover:bg-gray-100"
                       variant="ghost"
+                      aria-label={
+                        chatHistoryOpen
+                          ? "Close thread history"
+                          : "Open thread history"
+                      }
                       onClick={() => setChatHistoryOpen((p) => !p)}
                     >
                       {chatHistoryOpen ? (
@@ -364,13 +456,28 @@ export function Thread() {
                     width={32}
                     height={32}
                   />
-                  <span className="text-xl font-semibold tracking-tight">
-                    Agent Chat
+                  <span className="text-xl font-semibold">
+                    Evidence Research
                   </span>
                 </motion.button>
               </div>
 
               <div className="flex items-center gap-4">
+                <TooltipIconButton
+                  size="lg"
+                  className="p-4"
+                  tooltip="Research run"
+                  variant="ghost"
+                  onClick={() => {
+                    if (isInspectorDesktop) {
+                      setInspectorOpen((open) => !open);
+                    } else {
+                      setMobileInspectorOpen(true);
+                    }
+                  }}
+                >
+                  <Activity className="size-5" />
+                </TooltipIconButton>
                 <div className="flex items-center">
                   <OpenGitHubRepo />
                 </div>
@@ -437,8 +544,11 @@ export function Thread() {
                   {!chatStarted && (
                     <div className="flex items-center gap-3">
                       <LangGraphLogoSVG className="h-8 flex-shrink-0" />
-                      <h1 className="text-2xl font-semibold tracking-tight">
-                        Agent Chat
+                      <h1 className="text-xl font-semibold sm:text-2xl">
+                        <span className="sm:hidden">Evidence Research</span>
+                        <span className="hidden sm:inline">
+                          Evidence Research Agent
+                        </span>
                       </h1>
                     </div>
                   )}
@@ -483,17 +593,18 @@ export function Thread() {
                         className="field-sizing-content resize-none border-none bg-transparent p-3.5 pb-0 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none"
                       />
 
-                      <div className="flex items-center gap-6 p-2 pt-4">
+                      <div className="flex items-center gap-2 p-2 pt-4 sm:gap-6">
                         <div>
                           <div className="flex items-center space-x-2">
                             <Switch
                               id="render-tool-calls"
+                              aria-label="Hide tool calls"
                               checked={hideToolCalls ?? false}
                               onCheckedChange={setHideToolCalls}
                             />
                             <Label
                               htmlFor="render-tool-calls"
-                              className="text-sm text-gray-600"
+                              className="hidden text-sm text-gray-600 sm:inline"
                             >
                               Hide Tool Calls
                             </Label>
@@ -501,10 +612,10 @@ export function Thread() {
                         </div>
                         <Label
                           htmlFor="file-input"
-                          className="flex cursor-pointer items-center gap-2"
+                          className="flex size-9 cursor-pointer items-center justify-center gap-2 rounded-md hover:bg-gray-200 sm:h-auto sm:w-auto sm:justify-start"
                         >
                           <Plus className="size-5 text-gray-600" />
-                          <span className="text-sm text-gray-600">
+                          <span className="sr-only text-sm text-gray-600 sm:not-sr-only">
                             Upload PDF or Image
                           </span>
                         </Label>
@@ -520,21 +631,28 @@ export function Thread() {
                           <Button
                             key="stop"
                             onClick={() => stream.stop()}
-                            className="ml-auto"
+                            className="ml-auto px-3 sm:px-4"
                           >
                             <LoaderCircle className="h-4 w-4 animate-spin" />
-                            Cancel
+                            <span className="hidden sm:inline">Cancel</span>
+                            <span className="sr-only sm:hidden">
+                              Cancel run
+                            </span>
                           </Button>
                         ) : (
                           <Button
                             type="submit"
-                            className="ml-auto shadow-md transition-all"
+                            className="ml-auto px-3 shadow-md transition-all sm:px-4"
                             disabled={
                               isLoading ||
                               (!input.trim() && contentBlocks.length === 0)
                             }
                           >
-                            Send
+                            <SendHorizontal className="size-4 sm:hidden" />
+                            <span className="hidden sm:inline">Send</span>
+                            <span className="sr-only sm:hidden">
+                              Send message
+                            </span>
                           </Button>
                         )}
                       </div>
@@ -552,6 +670,7 @@ export function Thread() {
               <button
                 onClick={closeArtifact}
                 className="cursor-pointer"
+                aria-label="Close artifact"
               >
                 <XIcon className="size-5" />
               </button>
@@ -560,6 +679,18 @@ export function Thread() {
           </div>
         </div>
       </div>
+      <ResearchInspector
+        messages={messages}
+        isLoading={isLoading}
+        activeSkill={ACTIVE_SKILL}
+        memoryEnabled={MEMORY_ENABLED}
+        runDurationMs={runDurationMs}
+        firstTokenLatencyMs={firstTokenLatencyMs}
+        desktopOpen={inspectorOpen}
+        mobileOpen={mobileInspectorOpen}
+        onDesktopOpenChange={setInspectorOpen}
+        onMobileOpenChange={setMobileInspectorOpen}
+      />
     </div>
   );
 }
