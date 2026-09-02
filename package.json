@@ -13,8 +13,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
+    "lint": "NODE_OPTIONS='--require ./scripts/use-typescript6.cjs' eslint .",
+    "lint:fix": "NODE_OPTIONS='--require ./scripts/use-typescript6.cjs' eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
@@ -66,7 +66,7 @@
     "@types/react-dom": "^19.2.5",
     "@types/react-syntax-highlighter": "^15.5.13",
     "@types/uuid": "^11.0.0",
-    "@typescript/native": "npm:typescript@~7.0.2",
+    "@typescript/typescript6": "~6.0.2",
     "autoprefixer": "^10.5.4",
     "dotenv": "^17.4.2",
     "eslint": "^10.9.1",
@@ -80,7 +80,7 @@
     "prettier-plugin-tailwindcss": "^0.8.1",
     "tailwind-scrollbar": "^4.0.2",
     "tailwindcss": "^4.3.3",
-    "typescript": "npm:@typescript/typescript6@~6.0.2",
+    "typescript": "~7.0.2",
     "typescript-eslint": "^8.68.0"
   },
   "overrides": {
