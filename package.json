@@ -79,7 +79,7 @@
     "prettier-plugin-tailwindcss": "^0.8.1",
     "tailwind-scrollbar": "^4.0.2",
     "tailwindcss": "^4.3.3",
-    "typescript": "~6.0.3",
+    "typescript": "~7.0.2",
     "typescript-eslint": "^8.68.0"
   },
   "overrides": {
