@@ -45,6 +45,7 @@ import {
   ArtifactTitle,
   useArtifactContext,
 } from "./artifact";
+import { isAgentInboxInterruptSchema } from "@/lib/agent-inbox-interrupt";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -214,23 +215,51 @@ export function Thread() {
     const context =
       Object.keys(artifactContext).length > 0 ? artifactContext : undefined;
 
-    stream.submit(
-      { messages: [...toolMessages, newHumanMessage], context },
-      {
-        streamMode: ["values"],
-        streamSubgraphs: true,
-        streamResumable: true,
-        optimisticValues: (prev) => ({
-          ...prev,
-          context,
-          messages: [
-            ...(prev.messages ?? []),
-            ...toolMessages,
-            newHumanMessage,
-          ],
-        }),
-      },
-    );
+    // When there is a pending interrupt that is NOT a standard HITL interrupt
+    // (i.e. a generic / custom interrupt), resume the graph with Command(resume=...)
+    // instead of starting a new run. This prevents the graph from looping back to START.
+    const hasGenericInterrupt =
+      stream.interrupt && !isAgentInboxInterruptSchema(stream.interrupt);
+
+    if (hasGenericInterrupt) {
+      stream.submit(
+        {},
+        {
+          command: {
+            resume: input.trim(),
+          },
+          streamMode: ["values"],
+          streamSubgraphs: true,
+          streamResumable: true,
+          optimisticValues: (prev) => ({
+            ...prev,
+            messages: [
+              ...(prev.messages ?? []),
+              ...toolMessages,
+              newHumanMessage,
+            ],
+          }),
+        },
+      );
+    } else {
+      stream.submit(
+        { messages: [...toolMessages, newHumanMessage], context },
+        {
+          streamMode: ["values"],
+          streamSubgraphs: true,
+          streamResumable: true,
+          optimisticValues: (prev) => ({
+            ...prev,
+            context,
+            messages: [
+              ...(prev.messages ?? []),
+              ...toolMessages,
+              newHumanMessage,
+            ],
+          }),
+        },
+      );
+    }
 
     setInput("");
     setContentBlocks([]);
