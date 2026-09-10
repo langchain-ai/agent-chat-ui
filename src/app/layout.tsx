@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Inter } from "next/font/google";
+import { IBM_Plex_Sans } from "next/font/google";
 import React from "react";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 
-const inter = Inter({
+const plex = IBM_Plex_Sans({
   subsets: ["latin"],
   preload: true,
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Agent Chat",
-  description: "Agent Chat UX by LangChain",
+  title: "Evidence Research Agent",
+  description: "Traceable research with evidence, runtime metrics, and memory",
 };
 
 export default function RootLayout({
@@ -22,7 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={plex.className}>
         <NuqsAdapter>{children}</NuqsAdapter>
       </body>
     </html>
