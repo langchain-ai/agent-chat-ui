@@ -1,5 +1,6 @@
 import { validate } from "uuid";
 import { getApiKey } from "@/lib/api-key";
+import { resolveApiUrl } from "@/lib/resolve-api-url";
 import { Thread } from "@langchain/langgraph-sdk";
 import { useQueryState } from "nuqs";
 import {
@@ -50,11 +51,12 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
   const [threadsLoading, setThreadsLoading] = useState(false);
 
   const getThreads = useCallback(async (): Promise<Thread[]> => {
+    const finalApiUrl = resolveApiUrl(apiUrl, envApiUrl);
     const resolvedAssistantId = assistantId || envAssistantId;
-    if (!apiUrl || !resolvedAssistantId) return [];
+    if (!finalApiUrl || !resolvedAssistantId) return [];
     const client = createClient(
-      apiUrl,
-      getApiKey() ?? undefined,
+      finalApiUrl,
+      getApiKey(finalApiUrl) ?? undefined,
       authScheme || undefined,
     );
 
@@ -66,7 +68,7 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
     });
 
     return threads;
-  }, [apiUrl, assistantId, authScheme, envAssistantId]);
+  }, [apiUrl, envApiUrl, assistantId, authScheme, envAssistantId]);
 
   const value = {
     getThreads,
