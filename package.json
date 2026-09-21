@@ -68,7 +68,7 @@
     "@types/uuid": "^11.0.0",
     "@typescript/typescript6": "~6.0.2",
     "autoprefixer": "^10.6.1",
-    "dotenv": "^17.4.2",
+    "dotenv": "^18.0.0",
     "eslint": "^10.10.0",
     "eslint-config-next": "16.3.5",
     "eslint-plugin-react-hooks": "^7.1.1",
