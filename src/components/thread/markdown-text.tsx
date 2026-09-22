@@ -13,8 +13,6 @@ import { SyntaxHighlighter } from "@/components/thread/syntax-highlighter";
 import { TooltipIconButton } from "@/components/thread/tooltip-icon-button";
 import { cn } from "@/lib/utils";
 
-import "katex/dist/katex.min.css";
-
 interface CodeHeaderProps {
   language?: string;
   code: string;
