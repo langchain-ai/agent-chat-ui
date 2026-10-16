@@ -7,6 +7,15 @@ function isComplexValue(value: any): boolean {
   return Array.isArray(value) || (typeof value === "object" && value !== null);
 }
 
+type ToolContentBlock = {
+  type?: string;
+  text?: string;
+  base64?: string;
+  mime_type?: string;
+  data?: string;
+  mimeType?: string;
+};
+
 export function ToolCalls({
   toolCalls,
 }: {
@@ -67,6 +76,20 @@ export function ToolCalls({
 
 export function ToolResult({ message }: { message: ToolMessage }) {
   const [isExpanded, setIsExpanded] = useState(false);
+
+  const contentBlocks = Array.isArray(message.content)
+    ? (message.content as ToolContentBlock[])
+    : [];
+  const imageBlocks = contentBlocks.filter(
+    (block) =>
+      block?.type === "image" &&
+      typeof (block.base64 ?? block.data) === "string" &&
+      typeof (block.mime_type ?? block.mimeType) === "string",
+  );
+  const textBlocks = contentBlocks.filter(
+    (block) => block?.type === "text" && typeof block.text === "string",
+  );
+  const hasImageContent = imageBlocks.length > 0;
 
   let parsedContent: any;
   let isJsonContent = false;
@@ -133,7 +156,31 @@ export function ToolResult({ message }: { message: ToolMessage }) {
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.2 }}
               >
-                {isJsonContent ? (
+                {hasImageContent ? (
+                  <div className="space-y-3">
+                    {textBlocks.map((block, index) => (
+                      <div
+                        className="text-sm whitespace-pre-wrap"
+                        key={index}
+                      >
+                        {block.text}
+                      </div>
+                    ))}
+                    {imageBlocks.map((block, index) => {
+                      const imageData = block.base64 ?? block.data;
+                      const mimeType = block.mime_type ?? block.mimeType;
+
+                      return (
+                        <img
+                          key={index}
+                          src={`data:${mimeType};base64,${imageData}`}
+                          alt={`Tool result image${imageBlocks.length > 1 ? ` ${index + 1}` : ""}`}
+                          className="h-auto max-w-full rounded-lg border border-gray-200"
+                        />
+                      );
+                    })}
+                  </div>
+                ) : isJsonContent ? (
                   <table className="min-w-full divide-y divide-gray-200">
                     <tbody className="divide-y divide-gray-200">
                       {(Array.isArray(parsedContent)
@@ -170,20 +217,21 @@ export function ToolResult({ message }: { message: ToolMessage }) {
               </motion.div>
             </AnimatePresence>
           </div>
-          {((shouldTruncate && !isJsonContent) ||
-            (isJsonContent &&
-              Array.isArray(parsedContent) &&
-              parsedContent.length > 5)) && (
-            <motion.button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="flex w-full cursor-pointer items-center justify-center border-t-[1px] border-gray-200 py-2 text-gray-500 transition-all duration-200 ease-in-out hover:bg-gray-50 hover:text-gray-600"
-              initial={{ scale: 1 }}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              {isExpanded ? <ChevronUp /> : <ChevronDown />}
-            </motion.button>
-          )}
+          {!hasImageContent &&
+            ((shouldTruncate && !isJsonContent) ||
+              (isJsonContent &&
+                Array.isArray(parsedContent) &&
+                parsedContent.length > 5)) && (
+              <motion.button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="flex w-full cursor-pointer items-center justify-center border-t-[1px] border-gray-200 py-2 text-gray-500 transition-all duration-200 ease-in-out hover:bg-gray-50 hover:text-gray-600"
+                initial={{ scale: 1 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                {isExpanded ? <ChevronUp /> : <ChevronDown />}
+              </motion.button>
+            )}
         </motion.div>
       </div>
     </div>
