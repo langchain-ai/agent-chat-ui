@@ -189,6 +189,68 @@ export function Writer(props: {
 }
 ```
 
+### Generic artifacts
+
+The app ships a built-in generative UI component named `artifact`, so agents can render common content types in the side panel without bundling any UI components on the graph server. Push a UI message with the name `artifact` and a payload matching this contract:
+
+```typescript
+interface ArtifactPayload {
+  type:
+    | "markdown"
+    | "text"
+    | "code"
+    | "image"
+    | "audio"
+    | "video"
+    | "pdf"
+    | "file"
+    | "link"
+    | "json"
+    | "table"
+    | "chart";
+  title?: string; // shown in the chat card and side panel
+  description?: string;
+  content?: string; // markdown/text/code source, or a JSON string
+  url?: string; // image/audio/video/pdf/file/link target
+  data?: unknown; // table rows or chart data (array of records)
+  mimeType?: string;
+  fileName?: string;
+  language?: string; // code language, e.g. "python"
+  chart?: {
+    // for type: "chart"
+    kind?: "line" | "bar" | "area";
+    xKey?: string;
+    series?: { key: string; label?: string; color?: string }[];
+  };
+}
+```
+
+_Python example:_
+
+```python
+from langgraph.graph.ui import push_ui_message
+
+def report_node(state):
+    ai_message = AIMessage(content="Here is the sales chart you asked for.")
+    push_ui_message(
+        "artifact",
+        {
+            "type": "chart",
+            "title": "Quarterly sales",
+            "description": "Revenue per quarter",
+            "chart": {"kind": "bar", "xKey": "quarter"},
+            "data": [
+                {"quarter": "Q1", "revenue": 120},
+                {"quarter": "Q2", "revenue": 180},
+            ],
+        },
+        message=ai_message,
+    )
+    return {"messages": [ai_message]}
+```
+
+The chat shows a compact card with an "Open artifact" button that opens the rendered content in the side panel. Payloads travel through the UI message stream, so keep them small: for large files, pass a `url` (or an ID your server can resolve) instead of embedding file contents in state.
+
 ## Going to Production
 
 Once you're ready to go to production, you'll need to update how you connect, and authenticate requests to your deployment. By default, the Agent Chat UI is setup for local development, and connects to your LangGraph server directly from the client. This is not possible if you want to go to production, because it requires every user to have their own LangSmith API key, and set the LangGraph configuration themselves.
