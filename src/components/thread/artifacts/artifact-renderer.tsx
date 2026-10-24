@@ -95,6 +95,20 @@ function MarkdownArtifact({ payload }: { payload: ArtifactPayload }) {
   );
 }
 
+function HtmlArtifact({ payload }: { payload: ArtifactPayload }) {
+  if (!payload.content) return <FallbackArtifact payload={payload} />;
+  return (
+    <Section className="h-full p-0">
+      <iframe
+        sandbox=""
+        srcDoc={payload.content}
+        title={payload.title ?? "HTML artifact"}
+        className="min-h-[70vh] w-full flex-grow rounded-md border bg-white"
+      />
+    </Section>
+  );
+}
+
 function TextArtifact({ payload }: { payload: ArtifactPayload }) {
   if (payload.content == null) return <FallbackArtifact payload={payload} />;
   return (
@@ -455,6 +469,8 @@ export const ArtifactRenderer: FC<{ artifact: unknown }> = ({ artifact }) => {
   switch (payload.type) {
     case "markdown":
       return <MarkdownArtifact payload={payload} />;
+    case "html":
+      return <HtmlArtifact payload={payload} />;
     case "text":
       return <TextArtifact payload={payload} />;
     case "code":

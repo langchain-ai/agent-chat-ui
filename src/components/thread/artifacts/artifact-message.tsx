@@ -8,6 +8,7 @@ import {
   File as FileIcon,
   FileText,
   Film,
+  Globe,
   Image as ImageIcon,
   Link as LinkIcon,
   LucideIcon,
@@ -27,6 +28,7 @@ import {
 
 const TYPE_ICONS: Record<ArtifactType, LucideIcon> = {
   markdown: FileText,
+  html: Globe,
   text: FileText,
   code: Code,
   image: ImageIcon,

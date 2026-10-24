@@ -9,6 +9,7 @@
  */
 export type ArtifactType =
   | "markdown"
+  | "html"
   | "text"
   | "code"
   | "image"
@@ -66,6 +67,7 @@ export interface ArtifactPayload {
 
 const ARTIFACT_TYPES: readonly string[] = [
   "markdown",
+  "html",
   "text",
   "code",
   "image",

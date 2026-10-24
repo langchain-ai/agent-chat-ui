@@ -197,6 +197,7 @@ The app ships a built-in generative UI component named `artifact`, so agents can
 interface ArtifactPayload {
   type:
     | "markdown"
+    | "html"
     | "text"
     | "code"
     | "image"
@@ -210,7 +211,7 @@ interface ArtifactPayload {
     | "chart";
   title?: string; // shown in the chat card and side panel
   description?: string;
-  content?: string; // markdown/text/code source, or a JSON string
+  content?: string; // markdown/html/text/code source, or a JSON string
   url?: string; // image/audio/video/pdf/file/link target
   data?: unknown; // table rows or chart data (array of records)
   mimeType?: string;
@@ -249,7 +250,7 @@ def report_node(state):
     return {"messages": [ai_message]}
 ```
 
-The chat shows a compact card with an "Open artifact" button that opens the rendered content in the side panel. Payloads travel through the UI message stream, so keep them small: for large files, pass a `url` (or an ID your server can resolve) instead of embedding file contents in state.
+The chat shows a compact card with an "Open artifact" button that opens the rendered content in the side panel. HTML artifacts render in a sandboxed preview iframe with scripts disabled. Payloads travel through the UI message stream, so keep them small: for large files, pass a `url` (or an ID your server can resolve) instead of embedding file contents in state.
 
 ## Going to Production
 
