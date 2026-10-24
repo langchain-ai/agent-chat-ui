@@ -1,0 +1,50 @@
+{
+  "messages": [
+    {
+      "type": "human",
+      "id": "human-history-1",
+      "content": "How does hybrid retrieval keep citations stable?"
+    },
+    {
+      "type": "ai",
+      "id": "ai-history-1",
+      "content": "",
+      "tool_calls": [
+        {
+          "id": "call-history-knowledge",
+          "name": "knowledge_search",
+          "args": { "query": "hybrid retrieval stable citations" }
+        }
+      ]
+    },
+    {
+      "type": "tool",
+      "name": "knowledge_search",
+      "tool_call_id": "call-history-knowledge",
+      "content": "{\"schema_version\":1,\"ok\":true,\"value\":\"[E-AABBCCDDEE] Retrieval guide\\nsource: file:///guide.md#char=0,20\\nscore: 0.9200\\nHybrid retrieval keeps source references.\",\"telemetry\":{\"attempts\":2,\"duration_ms\":431.2,\"error_kind\":null}}"
+    },
+    {
+      "type": "ai",
+      "id": "ai-history-2",
+      "content": "Stable citations are derived from the source chunk and referenced as [E-AABBCCDDEE].",
+      "usage_metadata": {
+        "input_tokens": 140,
+        "output_tokens": 42,
+        "total_tokens": 182
+      },
+      "tool_calls": [
+        {
+          "id": "call-history-web",
+          "name": "web_search",
+          "args": { "query": "retrieval citation tracing" }
+        }
+      ]
+    },
+    {
+      "type": "tool",
+      "name": "web_search",
+      "tool_call_id": "call-history-web",
+      "content": "{\"schema_version\":1,\"ok\":false,\"error\":{\"kind\":\"unavailable\",\"message\":\"upstream unavailable\",\"attempts\":2},\"telemetry\":{\"attempts\":2,\"duration_ms\":800,\"error_kind\":\"unavailable\"}}"
+    }
+  ]
+}
