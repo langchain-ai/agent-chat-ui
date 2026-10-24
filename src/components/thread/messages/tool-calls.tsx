@@ -1,10 +1,164 @@
-import { AIMessage, ToolMessage } from "@langchain/langgraph-sdk";
-import { useState } from "react";
+import { AIMessage, Message, ToolMessage } from "@langchain/langgraph-sdk";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  ExternalLink,
+  Eye,
+  FileCode2,
+} from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { useStreamContext } from "@/providers/Stream";
+import { useArtifact } from "../artifact";
 
 function isComplexValue(value: any): boolean {
   return Array.isArray(value) || (typeof value === "object" && value !== null);
+}
+
+function inferMimeType(filePath: string): string {
+  const lower = filePath.toLowerCase();
+  if (lower.endsWith(".html") || lower.endsWith(".htm")) return "text/html";
+  if (lower.endsWith(".svg")) return "image/svg+xml";
+  if (lower.endsWith(".md") || lower.endsWith(".markdown")) {
+    return "text/markdown";
+  }
+  return "text/plain";
+}
+
+type PreviewableArtifact = {
+  path: string;
+  content: string;
+  mimeType: string;
+};
+
+function getArtifactPath(args: Record<string, unknown> | undefined): string {
+  const candidates = [args?.file_path, args?.path, args?.filename, args?.name];
+  const value = candidates.find((v) => typeof v === "string" && v.length > 0);
+  return typeof value === "string" ? value : "";
+}
+
+export function findPreviewableArtifact(
+  toolMessage: ToolMessage,
+  messages: Message[],
+): PreviewableArtifact | null {
+  if (!toolMessage.tool_call_id) return null;
+
+  for (const message of messages) {
+    if (message.type !== "ai" || !("tool_calls" in message)) continue;
+    const toolCalls = (message as AIMessage).tool_calls ?? [];
+    const call = toolCalls.find((tc) => tc.id === toolMessage.tool_call_id);
+    if (!call) continue;
+
+    const args = call.args as Record<string, unknown> | undefined;
+    const filePath = getArtifactPath(args);
+    const content = args?.content;
+    const mimeType = inferMimeType(filePath);
+    const isPreviewable = [
+      "text/html",
+      "image/svg+xml",
+      "text/markdown",
+    ].includes(mimeType);
+    if (!filePath || typeof content !== "string" || !isPreviewable) {
+      return null;
+    }
+
+    return { path: filePath, content, mimeType };
+  }
+
+  return null;
+}
+
+function ArtifactPreviewCard({ artifact }: { artifact: PreviewableArtifact }) {
+  const [ArtifactContent, artifactControls] = useArtifact();
+  const { setOpen } = artifactControls;
+
+  useEffect(() => {
+    setOpen(true);
+  }, [artifact.path, setOpen]);
+
+  const copyAccess = async () => {
+    const lines = [
+      `Artifact path: ${artifact.path}`,
+      `MIME type: ${artifact.mimeType}`,
+      "UI: click Preview to open the rendered artifact panel, or Open tab to view it in a new browser tab.",
+    ];
+    await navigator.clipboard.writeText(lines.join("\n"));
+    toast.success("Artifact access instructions copied");
+  };
+
+  const openBlob = () => {
+    const blob = new Blob([artifact.content], { type: artifact.mimeType });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank", "noopener,noreferrer");
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  };
+
+  return (
+    <div className="mb-3 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="flex items-start gap-3 border-b border-slate-100 bg-slate-50 px-4 py-3">
+        <div className="rounded-lg bg-slate-900 p-2 text-white">
+          <FileCode2 className="size-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="font-medium text-slate-950">Previewable artifact</div>
+          <div className="truncate font-mono text-xs text-slate-500">
+            {artifact.path}
+          </div>
+          <div className="mt-1 truncate font-mono text-xs text-slate-500">
+            {artifact.mimeType}
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2 px-4 py-3">
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => setOpen(true)}
+        >
+          <Eye className="size-4" />
+          Preview
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={openBlob}
+        >
+          <ExternalLink className="size-4" />
+          Open tab
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={copyAccess}
+        >
+          <Copy className="size-4" />
+          Copy access
+        </Button>
+      </div>
+      <ArtifactContent
+        title={
+          <div className="min-w-0">
+            <div className="truncate font-medium">{artifact.path}</div>
+            <div className="truncate font-mono text-xs text-slate-500">
+              {artifact.mimeType}
+            </div>
+          </div>
+        }
+      >
+        <iframe
+          title={artifact.path}
+          srcDoc={artifact.content}
+          sandbox="allow-scripts allow-forms allow-popups allow-downloads"
+          className="h-full w-full border-0 bg-white"
+        />
+      </ArtifactContent>
+    </div>
+  );
 }
 
 export function ToolCalls({
@@ -67,6 +221,8 @@ export function ToolCalls({
 
 export function ToolResult({ message }: { message: ToolMessage }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const stream = useStreamContext();
+  const writtenArtifact = findPreviewableArtifact(message, stream.messages);
 
   let parsedContent: any;
   let isJsonContent = false;
@@ -122,6 +278,9 @@ export function ToolResult({ message }: { message: ToolMessage }) {
           transition={{ duration: 0.3 }}
         >
           <div className="p-3">
+            {writtenArtifact && (
+              <ArtifactPreviewCard artifact={writtenArtifact} />
+            )}
             <AnimatePresence
               mode="wait"
               initial={false}
