@@ -15,6 +15,9 @@ import { ThreadView } from "../agent-inbox";
 import { useQueryState, parseAsBoolean } from "nuqs";
 import { GenericInterruptView } from "./generic-interrupt";
 import { useArtifact } from "../artifact";
+import { ArtifactMessage } from "../artifacts/artifact-message";
+
+const uiComponents = { artifact: ArtifactMessage };
 
 function CustomComponent({
   message,
@@ -38,6 +41,7 @@ function CustomComponent({
           stream={thread as unknown as ReturnType<typeof useStream>}
           message={customComponent}
           meta={{ ui: customComponent, artifact }}
+          components={uiComponents}
         />
       ))}
     </Fragment>
