@@ -7,6 +7,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { BranchSwitcher, CommandBar } from "./shared";
 import { MultimodalPreview } from "@/components/thread/MultimodalPreview";
 import { isBase64ContentBlock } from "@/lib/multimodal-utils";
+import { ensureToolCallsHaveResponses } from "@/lib/ensure-tool-responses";
+import { v4 as uuidv4 } from "uuid";
+import { toast } from "sonner";
 
 function EditableContent({
   value,
@@ -50,25 +53,45 @@ export function HumanMessage({
   const contentString = getContentString(message.content);
 
   const handleSubmitEdit = () => {
+    // The edit forks the thread from the checkpoint right before this message,
+    // so the messages the server will see are the ones stored in that checkpoint.
+    const parentState = parentCheckpoint
+      ? thread.history?.find(
+          (state) =>
+            state.checkpoint.checkpoint_id === parentCheckpoint.checkpoint_id,
+        )
+      : undefined;
+
+    if (!parentCheckpoint || !parentState) {
+      toast.error("Unable to edit message", {
+        description:
+          "Could not find the checkpoint before this message. Please reload the thread and try again.",
+        richColors: true,
+        closeButton: true,
+      });
+      return;
+    }
+
     setIsEditing(false);
 
-    const newMessage: Message = { type: "human", content: value };
+    const previousMessages = parentState.values.messages ?? [];
+    // The parent checkpoint may end with tool calls that never got a response
+    // (e.g. the run was stopped mid tool call), so pair them like a normal submit.
+    const toolMessages = ensureToolCallsHaveResponses(previousMessages);
+    const newMessage: Message = { id: uuidv4(), type: "human", content: value };
+
     thread.submit(
-      { messages: [newMessage] },
+      { messages: [...toolMessages, newMessage] },
       {
         checkpoint: parentCheckpoint,
         streamMode: ["values"],
         streamSubgraphs: true,
         streamResumable: true,
-        optimisticValues: (prev) => {
-          const values = meta?.firstSeenState?.values;
-          if (!values) return prev;
-
-          return {
-            ...values,
-            messages: [...(values.messages ?? []), newMessage],
-          };
-        },
+        optimisticValues: (prev) => ({
+          ...prev,
+          ...parentState.values,
+          messages: [...previousMessages, ...toolMessages, newMessage],
+        }),
       },
     );
   };
